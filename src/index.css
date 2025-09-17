@@ -1,0 +1,287 @@
+/* Gaming Typography */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Gaming Design System - Scout Management */
+:root {
+  /* Scout Gaming Colors */
+  --scout-blue: 210 85% 45%;
+  --adventure-green: 145 75% 50%;
+  --achievement-gold: 45 90% 60%;
+  --badge-red: 355 80% 55%;
+  --camp-orange: 25 85% 55%;
+  --progress-purple: 270 65% 55%;
+  --success-light-green: 145 50% 85%;
+  --warning-amber: 45 75% 65%;
+  
+  /* Gaming UI Colors */
+  --gaming-bg: 210 25% 97%;
+  --gaming-surface: 0 0% 100%;
+  --gaming-text: 210 15% 20%;
+  --gaming-text-light: 210 10% 50%;
+  
+  /* Shadows & Effects */
+  --gaming-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --gaming-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
+  --gaming-glow: 0 0 20px rgba(33, 150, 243, 0.3);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: hsl(var(--gaming-bg));
+  color: hsl(var(--gaming-text));
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+}
+
+/* Gaming Button Styles */
+.btn-gaming {
+  background: linear-gradient(135deg, hsl(var(--scout-blue)), hsl(var(--adventure-green)));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+  box-shadow: var(--gaming-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gaming:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--gaming-shadow-lg);
+}
+
+.btn-gaming:active {
+  transform: translateY(0);
+}
+
+/* Gaming Card Styles */
+.card-gaming {
+  background: var(--gaming-surface);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--gaming-shadow);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-gaming:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--gaming-shadow-lg);
+  border-color: hsl(var(--scout-blue) / 0.2);
+}
+
+.card-gaming::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, hsl(var(--scout-blue)), hsl(var(--adventure-green)), hsl(var(--achievement-gold)));
+  border-radius: 16px 16px 0 0;
+}
+
+/* Gaming Stats Cards */
+.stats-card {
+  background: linear-gradient(135deg, hsl(var(--gaming-surface)), hsl(var(--gaming-bg)));
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--gaming-shadow);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.stats-card:hover {
+  transform: scale(1.05);
+  box-shadow: var(--gaming-shadow-lg);
+}
+
+.stats-card.blue { border-color: hsl(var(--scout-blue) / 0.3); }
+.stats-card.green { border-color: hsl(var(--adventure-green) / 0.3); }
+.stats-card.gold { border-color: hsl(var(--achievement-gold) / 0.3); }
+.stats-card.red { border-color: hsl(var(--badge-red) / 0.3); }
+.stats-card.orange { border-color: hsl(var(--camp-orange) / 0.3); }
+.stats-card.purple { border-color: hsl(var(--progress-purple) / 0.3); }
+
+/* Gaming Progress Bars */
+.progress-gaming {
+  background: hsl(var(--gaming-bg));
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-gaming .progress-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, hsl(var(--adventure-green)), hsl(var(--achievement-gold)));
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.progress-gaming .progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Gaming Badges */
+.badge-gaming {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge-gaming.success {
+  background: linear-gradient(135deg, hsl(var(--adventure-green)), hsl(var(--success-light-green)));
+  color: hsl(145 60% 25%);
+}
+
+.badge-gaming.warning {
+  background: linear-gradient(135deg, hsl(var(--warning-amber)), hsl(var(--achievement-gold)));
+  color: hsl(45 60% 25%);
+}
+
+.badge-gaming.error {
+  background: linear-gradient(135deg, hsl(var(--badge-red)), hsl(355 50% 85%));
+  color: hsl(355 60% 25%);
+}
+
+.badge-gaming.info {
+  background: linear-gradient(135deg, hsl(var(--scout-blue)), hsl(210 50% 85%));
+  color: hsl(210 60% 25%);
+}
+
+/* Gaming Form Inputs */
+.input-gaming {
+  background: var(--gaming-surface);
+  border: 2px solid hsl(var(--gaming-bg));
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input-gaming:focus {
+  outline: none;
+  border-color: hsl(var(--scout-blue));
+  box-shadow: 0 0 0 3px hsl(var(--scout-blue) / 0.1);
+}
+
+/* Gaming Table Styles */
+.table-gaming {
+  background: var(--gaming-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--gaming-shadow);
+}
+
+.table-gaming th {
+  background: linear-gradient(135deg, hsl(var(--scout-blue)), hsl(var(--adventure-green)));
+  color: white;
+  font-weight: 600;
+  padding: 16px;
+  text-align: left;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-gaming td {
+  padding: 16px;
+  border-bottom: 1px solid hsl(var(--gaming-bg));
+}
+
+.table-gaming tbody tr:hover {
+  background: hsl(var(--gaming-bg) / 0.5);
+}
+
+/* Gaming Animations */
+@keyframes bounceIn {
+  0% { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+  50% { transform: scale(1.05) rotate(2deg); }
+  70% { transform: scale(0.9) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes slideInUp {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-slide-in {
+  animation: slideInUp 0.5s ease-out;
+}
+
+/* Gaming Sidebar */
+.sidebar-gaming {
+  background: linear-gradient(180deg, hsl(var(--gaming-surface)), hsl(var(--gaming-bg)));
+  border-right: 1px solid hsl(var(--gaming-bg));
+}
+
+.sidebar-gaming .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 4px 8px;
+  border-radius: 12px;
+  color: hsl(var(--gaming-text-light));
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.sidebar-gaming .nav-item:hover {
+  background: hsl(var(--scout-blue) / 0.1);
+  color: hsl(var(--scout-blue));
+  transform: translateX(4px);
+}
+
+.sidebar-gaming .nav-item.active {
+  background: linear-gradient(135deg, hsl(var(--scout-blue)), hsl(var(--adventure-green)));
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--gaming-shadow);
+}
+
+/* Gaming Header */
+.header-gaming {
+  background: linear-gradient(135deg, hsl(var(--scout-blue)), hsl(var(--adventure-green)));
+  color: white;
+  box-shadow: var(--gaming-shadow);
+}
