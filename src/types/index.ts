@@ -2,8 +2,9 @@ export interface Scout {
   id: string;
   nombres: string;
   apellidos: string;
-  fechaNacimiento: string;
+  fecha_nacimiento: string;
   edad: number;
+  sexo: 'MASCULINO' | 'FEMENINO';
   pais: string;
   departamento: string;
   provincia: string;
@@ -11,23 +12,26 @@ export interface Scout {
   direccion: string;
   celular: string;
   telefono: string;
-  tipoDocumento: 'DNI' | 'Carnet de Extranjería';
-  numeroDocumento: string;
+  tipo_documento: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  numero_documento: string;
   foto?: string;
   correo: string;
-  centroEstudio: string;
+  centro_estudio: string;
   ocupacion: string;
-  centroLaboral: string;
-  esDirigente: boolean;
-  fechaIngreso: string;
+  centro_laboral: string;
+  es_dirigente: boolean;
+  fecha_ingreso: string;
   activo: boolean;
+  codigo_scout?: string;
+  rama_actual?: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
+  estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
 }
 
 export interface Familiar {
   id: string;
   nombres: string;
   apellidos: string;
-  parentesco: 'Papa' | 'Mama' | 'Hermano' | 'Hermana' | 'Primo' | 'Prima' | 'Tío' | 'Tía' | 'Hijo' | 'Hija' | 'Abuelo' | 'Abuela';
+  parentesco: 'PADRE' | 'MADRE' | 'TUTOR' | 'HERMANO' | 'TIO' | 'ABUELO' | 'OTRO';
   celular: string;
   telefono: string;
   correo: string;
@@ -36,7 +40,7 @@ export interface Familiar {
 }
 
 export interface Rama {
-  tipo: 'Manada' | 'Tropa' | 'Caminante' | 'Clan';
+  tipo: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
   detalles?: {
     seisena?: string;
     patrulla?: string;

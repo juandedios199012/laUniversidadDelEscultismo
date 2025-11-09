@@ -1,0 +1,629 @@
+{
+  "info": {
+    "name": "Scout System API",
+    "description": "Colección completa del API del Sistema Scout Lima 12",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://tu-proyecto.supabase.co",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "tu-anon-key-aqui",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "SCOUTS",
+      "item": [
+        {
+          "name": "Obtener Todos los Scouts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/scouts?select=*&estado=eq.activo&order=apellidos.asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "scouts"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "estado",
+                  "value": "eq.activo"
+                },
+                {
+                  "key": "order",
+                  "value": "apellidos.asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registrar Scout Completo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_nombres\": \"Juan Carlos\",\n  \"p_apellidos\": \"Pérez López\",\n  \"p_fecha_nacimiento\": \"2010-05-15\",\n  \"p_numero_documento\": \"12345678\",\n  \"p_tipo_documento\": \"DNI\",\n  \"p_celular\": \"987654321\",\n  \"p_correo\": \"juan.perez@email.com\",\n  \"p_departamento\": \"Lima\",\n  \"p_provincia\": \"Lima\",\n  \"p_distrito\": \"San Borja\",\n  \"p_direccion\": \"Av. Ejemplo 123\",\n  \"p_centro_estudio\": \"Colegio San Patricio\",\n  \"p_es_dirigente\": false,\n  \"p_rama_actual\": \"Scouts\",\n  \"p_familiar_nombres\": \"María\",\n  \"p_familiar_apellidos\": \"López\",\n  \"p_parentesco\": \"madre\",\n  \"p_familiar_celular\": \"987654320\",\n  \"p_familiar_correo\": \"maria.lopez@email.com\",\n  \"p_familiar_ocupacion\": \"Doctora\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/rpc/registrar_scout_completo",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "rpc", "registrar_scout_completo"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Scouts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/scouts?or=(nombres.ilike.*Juan*,apellidos.ilike.*Pérez*,codigo_scout.ilike.*SC001*)&estado=eq.activo",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "scouts"],
+              "query": [
+                {
+                  "key": "or",
+                  "value": "(nombres.ilike.*Juan*,apellidos.ilike.*Pérez*,codigo_scout.ilike.*SC001*)"
+                },
+                {
+                  "key": "estado",
+                  "value": "eq.activo"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Scouts por Rama",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/scouts?rama_actual=eq.Scouts&estado=eq.activo",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "scouts"],
+              "query": [
+                {
+                  "key": "rama_actual",
+                  "value": "eq.Scouts"
+                },
+                {
+                  "key": "estado",
+                  "value": "eq.activo"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ASISTENCIAS",
+      "item": [
+        {
+          "name": "Registrar Asistencia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_scout_id\": \"uuid-del-scout-aqui\",\n  \"p_fecha\": \"2024-10-23\",\n  \"p_estado_asistencia\": \"presente\",\n  \"p_tipo_evento\": \"Reunión Regular\",\n  \"p_hora_llegada\": \"15:00\",\n  \"p_registrado_por\": \"Dirigente Principal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/rpc/registrar_asistencia",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "rpc", "registrar_asistencia"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Asistencias por Scout",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/asistencias?scout_id=eq.uuid-del-scout&order=fecha.desc&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "asistencias"],
+              "query": [
+                {
+                  "key": "scout_id",
+                  "value": "eq.uuid-del-scout"
+                },
+                {
+                  "key": "order",
+                  "value": "fecha.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ACTIVIDADES",
+      "item": [
+        {
+          "name": "Obtener Todas las Actividades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/actividades_scout?select=*&order=fecha_inicio.desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "actividades_scout"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "order",
+                  "value": "fecha_inicio.desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Nueva Actividad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Campamento de Primavera 2024\",\n  \"descripcion\": \"Campamento de 3 días en Cieneguilla con actividades al aire libre\",\n  \"tipo_actividad\": \"Campamento\",\n  \"fecha_inicio\": \"2024-11-15T08:00:00\",\n  \"fecha_fin\": \"2024-11-17T18:00:00\",\n  \"lugar\": \"Campamento Cieneguilla\",\n  \"direccion_lugar\": \"Km 35 Carretera Central, Cieneguilla\",\n  \"rama_objetivo\": \"Scouts\",\n  \"dirigente_responsable\": \"Carlos Ruiz\",\n  \"costo\": 150.00,\n  \"maximo_participantes\": 30,\n  \"estado\": \"planificada\",\n  \"requiere_autorizacion\": true,\n  \"requiere_pago\": true,\n  \"edad_minima\": 11,\n  \"edad_maxima\": 14,\n  \"equipamiento_necesario\": \"Sleeping, carpa, ropa de abrigo, linterna\",\n  \"observaciones\": \"Incluye todas las comidas y actividades\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/actividades_scout",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "actividades_scout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ESTADÍSTICAS",
+      "item": [
+        {
+          "name": "Estadísticas Generales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/rpc/get_estadisticas_generales",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "rpc", "get_estadisticas_generales"]
+            }
+          }
+        },
+        {
+          "name": "Scouts por Rama",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/rpc/get_scouts_por_rama",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "rpc", "get_scouts_por_rama"]
+            }
+          }
+        },
+        {
+          "name": "Tendencias Mensuales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"año_param\": 2024\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/rpc/get_tendencias_mensuales",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "rpc", "get_tendencias_mensuales"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATRULLAS",
+      "item": [
+        {
+          "name": "Obtener Todas las Patrullas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/patrullas?select=*&order=nombre.asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "patrullas"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "order",
+                  "value": "nombre.asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Nueva Patrulla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Águilas Doradas\",\n  \"rama\": \"Scouts\",\n  \"lema\": \"Alto y lejos\",\n  \"grito\": \"¡Águilas al vuelo!\",\n  \"colores\": \"Dorado y marrón\",\n  \"totem\": \"Águila Imperial\",\n  \"estado\": \"activa\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/patrullas",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "patrullas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "DIRIGENTES",
+      "item": [
+        {
+          "name": "Obtener Todos los Dirigentes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/dirigentes?select=*,scouts(nombres,apellidos,celular,correo)&estado_dirigente=eq.activo",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "dirigentes"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*,scouts(nombres,apellidos,celular,correo)"
+                },
+                {
+                  "key": "estado_dirigente",
+                  "value": "eq.activo"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registrar Nuevo Dirigente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scout_id\": \"uuid-del-scout-aqui\",\n  \"codigo_dirigente\": \"D2024001\",\n  \"fecha_ingreso_dirigente\": \"2024-03-15\",\n  \"rama_responsable\": \"Scouts\",\n  \"cargo\": \"Dirigente\",\n  \"nivel_formacion\": \"Básico\",\n  \"insignia_madera\": false,\n  \"estado_dirigente\": \"activo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/dirigentes",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "dirigentes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "INVENTARIO",
+      "item": [
+        {
+          "name": "Obtener Todos los Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/inventario?select=*&order=nombre.asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "inventario"],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "order",
+                  "value": "nombre.asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Nuevo Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{apiKey}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carpa 6 personas\",\n  \"categoria\": \"camping\",\n  \"descripcion\": \"Carpa familiar para 6 personas, impermeable\",\n  \"cantidad\": 2,\n  \"cantidad_minima\": 1,\n  \"estado\": \"disponible\",\n  \"ubicacion\": \"Almacén Principal\",\n  \"costo\": 450.00,\n  \"proveedor\": \"Outdoor Adventures\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rest/v1/inventario",
+              "host": ["{{baseUrl}}"],
+              "path": ["rest", "v1", "inventario"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,18 +6,18 @@ export const DEPARTAMENTOS_PERU = [
   'Tumbes', 'Ucayali'
 ];
 
-export const RAMAS_EDADES = {
-  'Manada': { min: 7, max: 10 },
-  'Tropa': { min: 11, max: 14 },
-  'Caminante': { min: 15, max: 17 },
-  'Clan': { min: 18, max: 21 }
+export const EDADES_POR_RAMA = {
+  'Lobatos': { min: 7, max: 10 },
+  'Scouts': { min: 11, max: 14 },
+  'Rovers': { min: 15, max: 17 },
+  'Dirigentes': { min: 18, max: 65 }
 };
 
-export const NOMBRAMIENTOS_POR_RAMA = {
-  'Manada': ['Seisenero', 'Seisenera', 'Lobato', 'Lobata'],
-  'Tropa': ['Guía', 'Subguía', 'Primer Scout', 'Segundo Scout'],
-  'Caminante': ['Primer Caminante', 'Segundo Caminante'],
-  'Clan': ['Presidente', 'Tesorero', 'Secretario', 'Rover']
+export const CARGOS_POR_RAMA = {
+  'Lobatos': ['Seisenero', 'Seisenera', 'Lobato', 'Lobata'],
+  'Scouts': ['Guía', 'Subguía', 'Primer Scout', 'Segundo Scout'],
+  'Rovers': ['Primer Rover', 'Segundo Rover'],
+  'Dirigentes': ['Jefe de Grupo', 'Jefe de Rama', 'Subjefe', 'Dirigente']
 };
 
 export const AREAS_CRECIMIENTO = [

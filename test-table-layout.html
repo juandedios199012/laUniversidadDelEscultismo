@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRUEBA DNGI-03 - Distribución de Columnas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.2;
+            color: #000;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin: 15px 0 10px 0;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            margin-bottom: 15px;
+            table-layout: fixed; /* Fuerza el ancho de las columnas */
+        }
+        
+        .data-table td, .data-table th {
+            border: 1px solid #000;
+            padding: 4px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .header-cell {
+            background-color: #808080;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9px;
+            padding: 3px;
+            vertical-align: middle;
+        }
+        
+        .data-cell {
+            min-height: 20px;
+            background-color: white;
+            font-size: 10px;
+            padding: 3px;
+        }
+        
+        .filled-cell {
+            font-weight: bold;
+            text-align: center;
+            background-color: white;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="section-title">Datos del Miembro Juvenil (menor de edad)</div>
+    
+    <table class="data-table">
+        <!-- Fila 1: Apellidos y Nombres (50% cada uno) -->
+        <tr>
+            <td class="header-cell" style="width: 50%;">APELLIDOS COMPLETOS</td>
+            <td class="header-cell" style="width: 50%;">NOMBRES COMPLETOS</td>
+        </tr>
+        <tr>
+            <td class="data-cell">GARCIA LOPEZ</td>
+            <td class="data-cell">JUAN CARLOS</td>
+        </tr>
+        
+        <!-- Fila 2: Sexo, Fecha, Tipo Doc, Número Doc (25% cada uno) -->
+        <tr>
+            <td class="header-cell" style="width: 25%;">SEXO</td>
+            <td class="header-cell" style="width: 25%;">FECHA DE NACIMIENTO</td>
+            <td class="header-cell" style="width: 25%;">TIPO DE<br>DOCUMENTO</td>
+            <td class="header-cell" style="width: 25%;">NÚMERO DE<br>DOCUMENTO</td>
+        </tr>
+        <tr>
+            <td class="data-cell">MASCULINO</td>
+            <td class="data-cell">01/01/2010</td>
+            <td class="data-cell">DNI</td>
+            <td class="data-cell">12345678</td>
+        </tr>
+        
+        <!-- Fila 3: Región, Localidad, Numeral, Unidad (25% cada uno) -->
+        <tr>
+            <td class="header-cell">REGIÓN</td>
+            <td class="header-cell">LOCALIDAD</td>
+            <td class="header-cell">NUMERAL</td>
+            <td class="header-cell">UNIDAD</td>
+        </tr>
+        <tr>
+            <td class="filled-cell">XVIII</td>
+            <td class="filled-cell">LIMA</td>
+            <td class="filled-cell">12</td>
+            <td class="filled-cell">TROPA</td>
+        </tr>
+        
+        <!-- Fila 4: Dirección (75%) + Código Postal (25%) -->
+        <tr>
+            <td class="header-cell" style="width: 75%;" colspan="3">DIRECCIÓN</td>
+            <td class="header-cell" style="width: 25%;">CÓDIGO<br>POSTAL</td>
+        </tr>
+        <tr>
+            <td class="data-cell" colspan="3">AV. PRINCIPAL 123 LIMA</td>
+            <td class="data-cell">15001</td>
+        </tr>
+        
+        <!-- Fila 5: Departamento (33%) + Provincia (33%) + Distrito (34%) -->
+        <tr>
+            <td class="header-cell" style="width: 33%;">DEPARTAMENTO</td>
+            <td class="header-cell" style="width: 33%;">PROVINCIA</td>
+            <td class="header-cell" style="width: 34%;" colspan="2">DISTRITO</td>
+        </tr>
+        <tr>
+            <td class="data-cell">LIMA</td>
+            <td class="data-cell">LIMA</td>
+            <td class="data-cell" colspan="2">SAN ISIDRO</td>
+        </tr>
+        
+        <!-- Fila 6: Correo Institucional (50%) + Correo Personal (50%) -->
+        <tr>
+            <td class="header-cell" style="width: 50%;" colspan="2">CORREO ELECTRONICO INSTITUCIONAL</td>
+            <td class="header-cell" style="width: 50%;" colspan="2">CORREO ELECTRÓNICO<br>PERSONAL</td>
+        </tr>
+        <tr>
+            <td class="data-cell" colspan="2">juan@scout.org.pe</td>
+            <td class="data-cell" colspan="2">juan@gmail.com</td>
+        </tr>
+        
+        <!-- Fila 7: Celular (33%) + Teléfono (33%) + Religión (34%) -->
+        <tr>
+            <td class="header-cell" style="width: 33%;">CELULAR</td>
+            <td class="header-cell" style="width: 33%;">TELEFONO DEL DOMICILIO</td>
+            <td class="header-cell" style="width: 34%;" colspan="2">RELIGIÓN O CREDO</td>
+        </tr>
+        <tr>
+            <td class="data-cell">987654321</td>
+            <td class="data-cell">4567890</td>
+            <td class="data-cell" colspan="2">CATÓLICA</td>
+        </tr>
+        
+        <!-- Fila 8: Centro de Estudios (75%) + Año de Estudios (25%) -->
+        <tr>
+            <td class="header-cell" style="width: 75%;" colspan="3">CENTRO DE ESTUDIOS</td>
+            <td class="header-cell" style="width: 25%;">AÑO DE<br>ESTUDIOS</td>
+        </tr>
+        <tr>
+            <td class="data-cell" colspan="3">COLEGIO SAN MARTÍN</td>
+            <td class="data-cell">6to PRIMARIA</td>
+        </tr>
+        
+        <!-- Fila 9: Información médica (5 columnas de 20% cada una) -->
+        <tr>
+            <td class="header-cell" style="width: 20%;">GRUPO SANGUÍNEO</td>
+            <td class="header-cell" style="width: 20%;">FACTOR SANGUÍNEO</td>
+            <td class="header-cell" style="width: 20%;">SEGURO<br>MÉDICO</td>
+            <td class="header-cell" style="width: 20%;">TIPO DE<br>DISCAPACIDAD</td>
+            <td class="header-cell" style="width: 20%;">CARNÉ<br>CONADIS</td>
+        </tr>
+        <tr>
+            <td class="data-cell">O</td>
+            <td class="data-cell">+</td>
+            <td class="data-cell">ESSALUD</td>
+            <td class="data-cell">NINGUNA</td>
+            <td class="data-cell">NO APLICA</td>
+        </tr>
+    </table>
+    
+    <!-- Campo adicional para especificar discapacidad -->
+    <table class="data-table" style="margin-top: 5px;">
+        <tr>
+            <td class="header-cell">SI CUENTA CON ALGÚN TIPO DE DISCAPACIDAD, POR FAVOR ESPECIFIQUE EL CASO</td>
+        </tr>
+        <tr>
+            <td class="data-cell" style="height: 40px;">NO APLICA</td>
+        </tr>
+    </table>
+</body>
+</html>

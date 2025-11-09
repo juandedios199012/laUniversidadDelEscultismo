@@ -1,510 +1,1167 @@
-import React, { useState } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Target, 
-  Plus, 
-  Trash2, 
-  Save,
-  Users,
-  Award,
-  Timer
-} from 'lucide-react';
-import FormField from '../Forms/FormField';
-import Input from '../Forms/Input';
-import Select from '../Forms/Select';
-import { AREAS_CRECIMIENTO } from '../../data/constants';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User } from 'lucide-react';
+import { ProgramaSemanalEntry, ProgramaActividad } from '../../lib/supabase';
+import ProgramaSemanalService from '../../services/programaSemanalService';
 
-interface Actividad {
-  id: string;
-  horaInicial: string;
-  horaFinal: string;
-  duracion: string;
-  nombre: string;
-  responsable: string;
-  desarrollo: string;
-  materiales: string;
-  puntajes: Record<string, number>;
-}
+interface ProgramaSemanalProps {}
 
-interface ProgramaData {
-  rama: string;
-  fecha: string;
-  responsable: string;
-  objetivo: string;
-  areasCrecimiento: string[];
-  actividades: Actividad[];
-}
+export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
+  // ============= ESTADOS =============
+  const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRama, setFilterRama] = useState<string>('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
 
-export default function ProgramaSemanal() {
-  const [formData, setFormData] = useState<ProgramaData>({
-    rama: '',
-    fecha: '',
-    responsable: '',
-    objetivo: '',
-    areasCrecimiento: [],
-    actividades: []
+  // Estados para modales
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedPrograma, setSelectedPrograma] = useState<ProgramaSemanalEntry | null>(null);
+
+  // Estados para formularios
+  const [createForm, setCreateForm] = useState({
+    fecha_inicio: '',
+    fecha_fin: '',
+    tema_central: '',
+    rama: 'TROPA' as 'MANADA' | 'TROPA' | 'COMUNIDAD' | 'CLAN',
+    objetivos: [''],
+    actividades: [{ nombre: '', descripcion: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }] as ProgramaActividad[],
+    responsable_programa: '',
+    observaciones_generales: ''
   });
 
-  const [programas, setProgramas] = useState([
-    {
-      id: 1,
-      rama: 'Tropa',
-      fecha: '2024-01-20',
-      responsable: 'Carlos Mendoza',
-      objetivo: 'Desarrollar habilidades de campismo y trabajo en equipo',
-      areasCrecimiento: ['Corporalidad', 'Sociabilidad'],
-      actividades: [
+  const [editForm, setEditForm] = useState<typeof createForm>(createForm);
+
+  // ============= DATOS DEMO Y CONFIGURACIÓN =============
+  const ramas = [
+    { value: 'MANADA', label: 'Manada (7-10 años)', color: 'yellow' },
+    { value: 'TROPA', label: 'Tropa (11-14 años)', color: 'green' },
+    { value: 'COMUNIDAD', label: 'Comunidad (15-17 años)', color: 'blue' },
+    { value: 'CLAN', label: 'Clan (18-21 años)', color: 'purple' }
+  ];
+
+  const estadosPrograma = [
+    { value: 'PLANIFICADO', label: 'Planificado', color: 'blue' },
+    { value: 'EN_CURSO', label: 'En Curso', color: 'yellow' },
+    { value: 'COMPLETADO', label: 'Completado', color: 'green' },
+    { value: 'CANCELADO', label: 'Cancelado', color: 'red' }
+  ];
+
+  // ============= EFECTOS =============
+  useEffect(() => {
+    loadProgramas();
+  }, []);
+
+  // ============= FUNCIONES DE CARGA =============
+  const loadProgramas = async () => {
+    setLoading(true);
+    try {
+      console.log('📅 Cargando programas semanales desde Supabase...');
+      const programasData = await ProgramaSemanalService.getProgramas();
+      console.log('📊 Datos recibidos:', programasData.length, 'programas');
+      setProgramas(programasData);
+      
+    } catch (error) {
+      console.error('❌ Error loading programas semanales:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.warn(`⚠️ Usando datos demo debido al error: ${errorMessage}`);
+      
+      // Fallback a datos demo en caso de error
+      const programasDemo: ProgramaSemanalEntry[] = [
         {
           id: '1',
-          horaInicial: '15:00',
-          horaFinal: '15:30',
-          duracion: '0:30',
-          nombre: 'Ceremonia de Apertura',
-          responsable: 'Carlos Mendoza',
-          desarrollo: 'Formación, saludo a la bandera y oración scout',
-          materiales: 'Bandera, silbato',
-          puntajes: { 'Fénix': 10, 'Águila': 10, 'Cóndor': 10 }
+          fecha_inicio: '2024-12-23',
+          fecha_fin: '2024-12-29',
+          tema_central: 'Aventura Navideña Scout',
+          rama: 'TROPA',
+          objetivos: ['Fomentar espíritu navideño', 'Desarrollar habilidades de supervivencia', 'Fortalecer lazos de amistad'],
+          actividades: [
+            { nombre: 'Campamento Navideño', descripcion: 'Acampada especial con actividades temáticas', hora_inicio: '09:00', duracion_minutos: 720, responsable: 'Carlos Ruiz', materiales: ['Carpas', 'Material de cocina', 'Decoraciones navideñas'], observaciones: 'Verificar permisos del área' },
+            { nombre: 'Taller de Regalos', descripcion: 'Creación de regalos artesanales', hora_inicio: '15:00', duracion_minutos: 120, responsable: 'María González', materiales: ['Materiales de manualidades'], observaciones: '' }
+          ],
+          responsable_programa: 'Ana Torres',
+          observaciones_generales: 'Coordinar con comité de padres para apoyo logístico',
+          estado: 'PLANIFICADO',
+          fecha_creacion: '2024-12-15',
+          fecha_actualizacion: '2024-12-20'
         },
         {
           id: '2',
-          horaInicial: '15:30',
-          horaFinal: '16:15',
-          duracion: '0:45',
-          nombre: 'Taller de Nudos',
-          responsable: 'María González',
-          desarrollo: 'Práctica de nudos básicos: llano, ballestrinque, as de guía',
-          materiales: 'Cuerdas, manual de nudos',
-          puntajes: { 'Fénix': 15, 'Águila': 12, 'Cóndor': 18 }
+          fecha_inicio: '2024-12-16',
+          fecha_fin: '2024-12-22',
+          tema_central: 'Habilidades de Supervivencia',
+          rama: 'COMUNIDAD',
+          objetivos: ['Aprender técnicas de supervivencia', 'Desarrollar liderazgo', 'Trabajo en equipo extremo'],
+          actividades: [
+            { nombre: 'Construcción de Refugios', descripcion: 'Aprender a construir refugios naturales', hora_inicio: '08:00', duracion_minutos: 240, responsable: 'Luis Mendoza', materiales: ['Cuerdas', 'Lonas', 'Herramientas básicas'], observaciones: 'Revisar condiciones meteorológicas' },
+            { nombre: 'Orientación y Navegación', descripcion: 'Uso de brújula y técnicas de orientación', hora_inicio: '14:00', duracion_minutos: 180, responsable: 'Patricia Silva', materiales: ['Brújulas', 'Mapas topográficos'], observaciones: '' }
+          ],
+          responsable_programa: 'Roberto López',
+          observaciones_generales: 'Actividad avanzada, verificar nivel de preparación',
+          estado: 'EN_CURSO',
+          fecha_creacion: '2024-12-10',
+          fecha_actualizacion: '2024-12-18'
+        },
+        {
+          id: '3',
+          fecha_inicio: '2024-12-09',
+          fecha_fin: '2024-12-15',
+          tema_central: 'Juegos y Destrezas de Manada',
+          rama: 'MANADA',
+          objetivos: ['Desarrollar motricidad', 'Aprender valores scouts', 'Diversión y aprendizaje'],
+          actividades: [
+            { nombre: 'Gran Juego: La Selva de Baloo', descripcion: 'Juego temático del Libro de la Selva', hora_inicio: '10:00', duracion_minutos: 180, responsable: 'Carmen Vega', materiales: ['Disfraces', 'Obstáculos', 'Premios'], observaciones: 'Actividad completada exitosamente' },
+            { nombre: 'Taller de Manualidades', descripcion: 'Creación de animales de la selva', hora_inicio: '15:00', duracion_minutos: 90, responsable: 'Diego Morales', materiales: ['Papel', 'Colores', 'Pegamento'], observaciones: 'Muy buena participación' }
+          ],
+          responsable_programa: 'Isabel Ramírez',
+          observaciones_generales: 'Programa ejecutado con excelentes resultados',
+          estado: 'COMPLETADO',
+          fecha_creacion: '2024-12-01',
+          fecha_actualizacion: '2024-12-15'
         }
-      ]
+      ];
+      setProgramas(programasDemo);
+      
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const ramas = [
-    { value: 'Manada', label: 'Manada (7-10 años)' },
-    { value: 'Tropa', label: 'Tropa (11-14 años)' },
-    { value: 'Caminante', label: 'Caminante (15-17 años)' },
-    { value: 'Clan', label: 'Clan (18-21 años)' }
-  ];
-
-  const dirigentes = [
-    { value: 'carlos-mendoza', label: 'Carlos Mendoza' },
-    { value: 'maria-gonzalez', label: 'María González' },
-    { value: 'pedro-lopez', label: 'Pedro López' },
-    { value: 'ana-torres', label: 'Ana Torres' }
-  ];
-
-  const patrullas = ['Fénix', 'Águila', 'Cóndor', 'Jaguar'];
-
-  const calcularDuracion = (horaInicial: string, horaFinal: string): string => {
-    if (!horaInicial || !horaFinal) return '';
-    
-    const [horaIni, minIni] = horaInicial.split(':').map(Number);
-    const [horaFin, minFin] = horaFinal.split(':').map(Number);
-    
-    const minutosIni = horaIni * 60 + minIni;
-    const minutosFin = horaFin * 60 + minFin;
-    
-    const diferencia = minutosFin - minutosIni;
-    const horas = Math.floor(diferencia / 60);
-    const minutos = diferencia % 60;
-    
-    return `${horas}:${minutos.toString().padStart(2, '0')}`;
   };
 
-  const agregarActividad = () => {
-    const nuevaActividad: Actividad = {
-      id: Date.now().toString(),
-      horaInicial: '',
-      horaFinal: '',
-      duracion: '',
-      nombre: '',
-      responsable: '',
-      desarrollo: '',
-      materiales: '',
-      puntajes: {}
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      actividades: [...prev.actividades, nuevaActividad]
-    }));
-  };
-
-  const eliminarActividad = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      actividades: prev.actividades.filter(act => act.id !== id)
-    }));
-  };
-
-  const actualizarActividad = (id: string, campo: string, valor: any) => {
-    setFormData(prev => ({
-      ...prev,
-      actividades: prev.actividades.map(act => {
-        if (act.id === id) {
-          const actividadActualizada = { ...act, [campo]: valor };
-          
-          // Calcular duración automáticamente
-          if (campo === 'horaInicial' || campo === 'horaFinal') {
-            actividadActualizada.duracion = calcularDuracion(
-              actividadActualizada.horaInicial,
-              actividadActualizada.horaFinal
-            );
-          }
-          
-          return actividadActualizada;
-        }
-        return act;
-      })
-    }));
-  };
-
-  const actualizarPuntaje = (actividadId: string, patrulla: string, puntaje: number) => {
-    setFormData(prev => ({
-      ...prev,
-      actividades: prev.actividades.map(act => {
-        if (act.id === actividadId) {
-          return {
-            ...act,
-            puntajes: { ...act.puntajes, [patrulla]: puntaje }
-          };
-        }
-        return act;
-      })
-    }));
-  };
-
-  const handleAreasCrecimientoChange = (area: string) => {
-    setFormData(prev => ({
-      ...prev,
-      areasCrecimiento: prev.areasCrecimiento.includes(area)
-        ? prev.areasCrecimiento.filter(a => a !== area)
-        : [...prev.areasCrecimiento, area]
-    }));
-  };
-
-  const guardarPrograma = () => {
-    const nuevoPrograma = {
-      id: programas.length + 1,
-      ...formData
-    };
-    
-    setProgramas([nuevoPrograma, ...programas]);
-    
-    // Limpiar formulario
-    setFormData({
-      rama: '',
-      fecha: '',
-      responsable: '',
-      objetivo: '',
-      areasCrecimiento: [],
-      actividades: []
+  // ============= FUNCIONES DE MODAL =============
+  const openCreateModal = () => {
+    setCreateForm({
+      fecha_inicio: '',
+      fecha_fin: '',
+      tema_central: '',
+      rama: 'TROPA',
+      objetivos: [''],
+      actividades: [{ nombre: '', descripcion: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }],
+      responsable_programa: '',
+      observaciones_generales: ''
     });
+    setIsCreateModalOpen(true);
   };
 
+  const openEditModal = (programa: ProgramaSemanalEntry) => {
+    setSelectedPrograma(programa);
+    setEditForm({
+      fecha_inicio: programa.fecha_inicio,
+      fecha_fin: programa.fecha_fin,
+      tema_central: programa.tema_central,
+      rama: programa.rama,
+      objetivos: programa.objetivos,
+      actividades: programa.actividades,
+      responsable_programa: programa.responsable_programa,
+      observaciones_generales: programa.observaciones_generales || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const openViewModal = (programa: ProgramaSemanalEntry) => {
+    setSelectedPrograma(programa);
+    setIsViewModalOpen(true);
+  };
+
+  // ============= FUNCIONES CRUD =============
+  const handleCreatePrograma = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await ProgramaSemanalService.crearPrograma(createForm);
+      await loadProgramas();
+      setIsCreateModalOpen(false);
+      alert('Programa semanal creado exitosamente');
+    } catch (err) {
+      console.error('Error creating programa:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePrograma = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPrograma) return;
+    
+    setLoading(true);
+    try {
+      await ProgramaSemanalService.updatePrograma(selectedPrograma.id, editForm);
+      await loadProgramas();
+      setIsEditModalOpen(false);
+      alert('Programa semanal actualizado exitosamente');
+    } catch (err) {
+      console.error('Error updating programa:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePrograma = async (programa: ProgramaSemanalEntry) => {
+    if (!confirm(`¿Estás seguro de eliminar el programa "${programa.tema_central}"?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await ProgramaSemanalService.deletePrograma(programa.id);
+      await loadProgramas();
+      alert('Programa semanal eliminado exitosamente');
+    } catch (err) {
+      console.error('Error deleting programa:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============= FUNCIONES DE FORMULARIO =============
+  const addObjetivo = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      objetivos: [...prev.objetivos, '']
+    }));
+  };
+
+  const removeObjetivo = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      objetivos: prev.objetivos.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateObjetivo = (index: number, value: string, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      objetivos: prev.objetivos.map((obj, i) => i === index ? value : obj)
+    }));
+  };
+
+  const addActividad = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      actividades: [...prev.actividades, { nombre: '', descripcion: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }]
+    }));
+  };
+
+  const removeActividad = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      actividades: prev.actividades.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateActividad = (index: number, field: keyof ProgramaActividad, value: any, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      actividades: prev.actividades.map((act, i) => i === index ? { ...act, [field]: value } : act)
+    }));
+  };
+
+  // ============= FUNCIONES DE FILTRADO =============
+  const filteredProgramas = programas.filter(programa => {
+    const matchesSearch = programa.tema_central.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         programa.responsable_programa.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRama = !filterRama || programa.rama === filterRama;
+    const matchesEstado = !filterEstado || programa.estado === filterEstado;
+    
+    return matchesSearch && matchesRama && matchesEstado;
+  });
+
+  // ============= FUNCIONES DE UTILIDAD =============
+  const getEstadoColor = (estado: string) => {
+    const colors = {
+      'PLANIFICADO': 'bg-blue-100 text-blue-800',
+      'EN_CURSO': 'bg-yellow-100 text-yellow-800',
+      'COMPLETADO': 'bg-green-100 text-green-800',
+      'CANCELADO': 'bg-red-100 text-red-800'
+    };
+    return colors[estado as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getRamaColor = (rama: string) => {
+    const colors = {
+      'MANADA': 'bg-yellow-100 text-yellow-800',
+      'TROPA': 'bg-green-100 text-green-800',
+      'COMUNIDAD': 'bg-blue-100 text-blue-800',
+      'CLAN': 'bg-purple-100 text-purple-800'
+    };
+    return colors[rama as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+    return `${mins}m`;
+  };
+
+  // ============= COMPONENTE PRINCIPAL =============
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Programa Semanal</h1>
-        <p className="text-gray-600">Planificación detallada de actividades semanales por rama</p>
-      </div>
-
-      {/* Formulario de Nuevo Programa */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Nuevo Programa Semanal</h2>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto w-full">
         
-        {/* Datos de Cabecera */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <FormField label="Rama">
-            <Select
-              value={formData.rama}
-              onChange={(e) => setFormData(prev => ({ ...prev, rama: e.target.value }))}
-              options={ramas}
-              placeholder="Seleccionar rama"
-            />
-          </FormField>
-
-          <FormField label="Fecha">
-            <Input
-              type="date"
-              value={formData.fecha}
-              onChange={(e) => setFormData(prev => ({ ...prev, fecha: e.target.value }))}
-            />
-          </FormField>
-
-          <FormField label="Responsable">
-            <Select
-              value={formData.responsable}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsable: e.target.value }))}
-              options={dirigentes}
-              placeholder="Seleccionar dirigente"
-            />
-          </FormField>
-
-          <FormField label="Objetivo">
-            <Input
-              value={formData.objetivo}
-              onChange={(e) => setFormData(prev => ({ ...prev, objetivo: e.target.value }))}
-              placeholder="Objetivo del programa"
-            />
-          </FormField>
-        </div>
-
-        {/* Áreas de Crecimiento */}
-        <FormField label="Áreas de Crecimiento" className="mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-            {AREAS_CRECIMIENTO.map((area) => (
-              <label key={area} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.areasCrecimiento.includes(area)}
-                  onChange={() => handleAreasCrecimientoChange(area)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{area}</span>
-              </label>
-            ))}
-          </div>
-        </FormField>
-
-        {/* Actividades */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-800">Actividades</h3>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white p-6 rounded-xl mb-6 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+                <Calendar className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Programa Semanal</h1>
+                <p className="text-green-100">Planificación y gestión de actividades scouts semanales</p>
+              </div>
+            </div>
             <button
-              onClick={agregarActividad}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              onClick={openCreateModal}
+              className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200 hover:shadow-xl"
             >
-              <Plus className="w-4 h-4" />
-              <span>Agregar Actividad</span>
+              <Plus className="w-5 h-5" />
+              <span>Nuevo Programa</span>
             </button>
           </div>
+        </div>
 
-          <div className="space-y-6">
-            {formData.actividades.map((actividad, index) => (
-              <div key={actividad.id} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-gray-800">Actividad {index + 1}</h4>
-                  <button
-                    onClick={() => eliminarActividad(actividad.id)}
-                    className="text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Programas Activos</p>
+                <p className="text-2xl font-bold text-gray-900">{programas.filter(p => p.estado === 'PLANIFICADO' || p.estado === 'EN_CURSO').length}</p>
+              </div>
+              <Calendar className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <FormField label="Hora Inicial">
-                    <Input
-                      type="time"
-                      value={actividad.horaInicial}
-                      onChange={(e) => actualizarActividad(actividad.id, 'horaInicial', e.target.value)}
-                    />
-                  </FormField>
+          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Esta Semana</p>
+                <p className="text-2xl font-bold text-blue-600">{programas.filter(p => p.estado === 'EN_CURSO').length}</p>
+              </div>
+              <Clock className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
 
-                  <FormField label="Hora Final">
-                    <Input
-                      type="time"
-                      value={actividad.horaFinal}
-                      onChange={(e) => actualizarActividad(actividad.id, 'horaFinal', e.target.value)}
-                    />
-                  </FormField>
+          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completados</p>
+                <p className="text-2xl font-bold text-green-600">{programas.filter(p => p.estado === 'COMPLETADO').length}</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
 
-                  <FormField label="Duración">
-                    <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
-                      <Timer className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-700">{actividad.duracion || '0:00'}</span>
+          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Actividades</p>
+                <p className="text-2xl font-bold text-purple-600">{programas.reduce((acc, p) => acc + p.actividades.length, 0)}</p>
+              </div>
+              <Target className="w-8 h-8 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros */}
+        <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar programas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+              />
+            </div>
+            <select
+              value={filterRama}
+              onChange={(e) => setFilterRama(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+            >
+              <option value="">Todas las ramas</option>
+              {ramas.map(rama => (
+                <option key={rama.value} value={rama.value}>{rama.label}</option>
+              ))}
+            </select>
+            <select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+            >
+              <option value="">Todos los estados</option>
+              {estadosPrograma.map(estado => (
+                <option key={estado.value} value={estado.value}>{estado.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Lista de Programas */}
+        <div className="space-y-6">
+          {filteredProgramas.map((programa) => (
+            <div key={programa.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-bold text-gray-900">{programa.tema_central}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(programa.estado)}`}>
+                        {estadosPrograma.find(e => e.value === programa.estado)?.label}
+                      </span>
                     </div>
-                  </FormField>
-
-                  <FormField label="Responsable">
-                    <Select
-                      value={actividad.responsable}
-                      onChange={(e) => actualizarActividad(actividad.id, 'responsable', e.target.value)}
-                      options={dirigentes}
-                      placeholder="Seleccionar"
-                    />
-                  </FormField>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(programa.fecha_inicio).toLocaleDateString()} - {new Date(programa.fecha_fin).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRamaColor(programa.rama)}`}>
+                          {ramas.find(r => r.value === programa.rama)?.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        <span>{programa.responsable_programa}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        <span>{programa.actividades.length} actividades</span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <p><strong>Objetivos:</strong> {programa.objetivos.slice(0, 2).join(', ')}
+                        {programa.objetivos.length > 2 && ` y ${programa.objetivos.length - 2} más...`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => openViewModal(programa)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Ver detalles"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openEditModal(programa)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      title="Editar"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeletePrograma(programa)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <FormField label="Nombre de la Actividad">
-                    <Input
-                      value={actividad.nombre}
-                      onChange={(e) => actualizarActividad(actividad.id, 'nombre', e.target.value)}
-                      placeholder="Ej: Taller de nudos"
-                    />
-                  </FormField>
-
-                  <FormField label="Materiales">
-                    <Input
-                      value={actividad.materiales}
-                      onChange={(e) => actualizarActividad(actividad.id, 'materiales', e.target.value)}
-                      placeholder="Ej: Cuerdas, manual, silbato"
-                    />
-                  </FormField>
-                </div>
-
-                <FormField label="Desarrollo" className="mb-4">
-                  <textarea
-                    rows={3}
-                    value={actividad.desarrollo}
-                    onChange={(e) => actualizarActividad(actividad.id, 'desarrollo', e.target.value)}
-                    placeholder="Describe cómo se desarrollará la actividad..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </FormField>
-
-                {/* Puntajes por Patrulla */}
-                <FormField label="Puntajes por Patrulla">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {patrullas.map((patrulla) => (
-                      <div key={patrulla} className="flex items-center space-x-2">
-                        <label className="text-sm font-medium text-gray-700 min-w-0 flex-1">
-                          {patrulla}:
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={actividad.puntajes[patrulla] || ''}
-                          onChange={(e) => actualizarPuntaje(actividad.id, patrulla, parseInt(e.target.value) || 0)}
-                          className="w-16 text-center"
-                          placeholder="0"
-                        />
+                
+                {/* Preview de actividades */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Actividades Principales:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {programa.actividades.slice(0, 2).map((actividad, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-medium text-gray-900">{actividad.nombre}</h5>
+                          <span className="text-xs text-gray-500">{formatDuration(actividad.duracion_minutos)}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{actividad.descripcion}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>🕒 {actividad.hora_inicio}</span>
+                          {actividad.responsable && <span>👤 {actividad.responsable}</span>}
+                        </div>
                       </div>
                     ))}
                   </div>
-                </FormField>
+                  {programa.actividades.length > 2 && (
+                    <p className="text-sm text-gray-500 mt-2">Y {programa.actividades.length - 2} actividades más...</p>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* Botón Guardar */}
-        <div className="flex justify-end">
-          <button
-            onClick={guardarPrograma}
-            disabled={!formData.rama || !formData.fecha || !formData.responsable}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>Guardar Programa</span>
-          </button>
-        </div>
+        {/* Loading state */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && filteredProgramas.length === 0 && (
+          <div className="text-center py-8">
+            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay programas</h3>
+            <p className="text-gray-600 mb-4">
+              {searchQuery || filterRama || filterEstado ? 'No se encontraron programas con los filtros aplicados.' : 'Comienza creando tu primer programa semanal.'}
+            </p>
+            <button
+              onClick={openCreateModal}
+              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Crear Programa
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Lista de Programas Existentes */}
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-800">Programas Registrados</h2>
-        
-        {programas.map((programa) => (
-          <div key={programa.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Cabecera del Programa */}
-            <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
+      {/* Modal Crear Programa */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Plus className="w-6 h-6 mr-2 text-green-600" />
+                  Nuevo Programa Semanal
+                </h2>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            <form onSubmit={handleCreatePrograma} className="p-6 space-y-6">
+              {/* Información Básica */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Inicio *
+                  </label>
+                  <input
+                    type="date"
+                    value={createForm.fecha_inicio}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Fin *
+                  </label>
+                  <input
+                    type="date"
+                    value={createForm.fecha_fin}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tema Central *
+                  </label>
+                  <input
+                    type="text"
+                    value={createForm.tema_central}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, tema_central: e.target.value }))}
+                    placeholder="Ej: Aventura Navideña Scout"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rama *
+                  </label>
+                  <select
+                    value={createForm.rama}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, rama: e.target.value as any }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    {ramas.map(rama => (
+                      <option key={rama.value} value={rama.value}>{rama.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Responsable del Programa *
+                  </label>
+                  <input
+                    type="text"
+                    value={createForm.responsable_programa}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, responsable_programa: e.target.value }))}
+                    placeholder="Nombre del dirigente responsable"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Objetivos */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Objetivos del Programa *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => addObjetivo(setCreateForm)}
+                    className="text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    + Agregar Objetivo
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {createForm.objetivos.map((objetivo, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={objetivo}
+                        onChange={(e) => updateObjetivo(index, e.target.value, setCreateForm)}
+                        placeholder={`Objetivo ${index + 1}`}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      />
+                      {createForm.objetivos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeObjetivo(index, setCreateForm)}
+                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actividades */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Actividades *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => addActividad(setCreateForm)}
+                    className="text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    + Agregar Actividad
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {createForm.actividades.map((actividad, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
+                        {createForm.actividades.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeActividad(index, setCreateForm)}
+                            className="text-red-600 hover:bg-red-50 p-1 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+                          <input
+                            type="text"
+                            value={actividad.nombre}
+                            onChange={(e) => updateActividad(index, 'nombre', e.target.value, setCreateForm)}
+                            placeholder="Nombre de la actividad"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Hora de Inicio</label>
+                          <input
+                            type="time"
+                            value={actividad.hora_inicio}
+                            onChange={(e) => updateActividad(index, 'hora_inicio', e.target.value, setCreateForm)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
+                          <input
+                            type="number"
+                            value={actividad.duracion_minutos}
+                            onChange={(e) => updateActividad(index, 'duracion_minutos', parseInt(e.target.value) || 60, setCreateForm)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Responsable</label>
+                          <input
+                            type="text"
+                            value={actividad.responsable}
+                            onChange={(e) => updateActividad(index, 'responsable', e.target.value, setCreateForm)}
+                            placeholder="Dirigente responsable"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                          <textarea
+                            value={actividad.descripcion}
+                            onChange={(e) => updateActividad(index, 'descripcion', e.target.value, setCreateForm)}
+                            placeholder="Descripción de la actividad..."
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observaciones Generales */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Observaciones Generales
+                </label>
+                <textarea
+                  value={createForm.observaciones_generales}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, observaciones_generales: e.target.value }))}
+                  placeholder="Notas adicionales sobre el programa..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Botones */}
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {loading ? 'Creando...' : 'Crear Programa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Programa (Similar al crear, reutilizando lógica) */}
+      {isEditModalOpen && selectedPrograma && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Edit className="w-6 h-6 mr-2 text-green-600" />
+                  Editar Programa: {selectedPrograma.tema_central}
+                </h2>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            <form onSubmit={handleUpdatePrograma} className="p-6 space-y-6">
+              {/* Formulario idéntico al crear pero usando editForm */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Inicio *
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.fecha_inicio}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Fin *
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.fecha_fin}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tema Central *
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.tema_central}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, tema_central: e.target.value }))}
+                    placeholder="Ej: Aventura Navideña Scout"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rama *
+                  </label>
+                  <select
+                    value={editForm.rama}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, rama: e.target.value as any }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    {ramas.map(rama => (
+                      <option key={rama.value} value={rama.value}>{rama.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Responsable del Programa *
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.responsable_programa}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, responsable_programa: e.target.value }))}
+                    placeholder="Nombre del dirigente responsable"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Objetivos para editar */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Objetivos del Programa *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => addObjetivo(setEditForm)}
+                    className="text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    + Agregar Objetivo
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editForm.objetivos.map((objetivo, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={objetivo}
+                        onChange={(e) => updateObjetivo(index, e.target.value, setEditForm)}
+                        placeholder={`Objetivo ${index + 1}`}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      />
+                      {editForm.objetivos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeObjetivo(index, setEditForm)}
+                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actividades para editar */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Actividades *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => addActividad(setEditForm)}
+                    className="text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    + Agregar Actividad
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {editForm.actividades.map((actividad, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
+                        {editForm.actividades.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeActividad(index, setEditForm)}
+                            className="text-red-600 hover:bg-red-50 p-1 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+                          <input
+                            type="text"
+                            value={actividad.nombre}
+                            onChange={(e) => updateActividad(index, 'nombre', e.target.value, setEditForm)}
+                            placeholder="Nombre de la actividad"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Hora de Inicio</label>
+                          <input
+                            type="time"
+                            value={actividad.hora_inicio}
+                            onChange={(e) => updateActividad(index, 'hora_inicio', e.target.value, setEditForm)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
+                          <input
+                            type="number"
+                            value={actividad.duracion_minutos}
+                            onChange={(e) => updateActividad(index, 'duracion_minutos', parseInt(e.target.value) || 60, setEditForm)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Responsable</label>
+                          <input
+                            type="text"
+                            value={actividad.responsable || ''}
+                            onChange={(e) => updateActividad(index, 'responsable', e.target.value, setEditForm)}
+                            placeholder="Dirigente responsable"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                          <textarea
+                            value={actividad.descripcion}
+                            onChange={(e) => updateActividad(index, 'descripcion', e.target.value, setEditForm)}
+                            placeholder="Descripción de la actividad..."
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observaciones Generales */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Observaciones Generales
+                </label>
+                <textarea
+                  value={editForm.observaciones_generales}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, observaciones_generales: e.target.value }))}
+                  placeholder="Notas adicionales sobre el programa..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Botones */}
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {loading ? 'Actualizando...' : 'Actualizar Programa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Programa */}
+      {isViewModalOpen && selectedPrograma && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Eye className="w-6 h-6 mr-2 text-blue-600" />
+                  {selectedPrograma.tema_central}
+                </h2>
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Información del Programa */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Programa {programa.rama}
-                    </h3>
-                    <p className="text-sm text-gray-600">{programa.fecha}</p>
+                    <h3 className="font-semibold text-gray-900 mb-2">Información General</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Periodo:</span>
+                        <span className="font-medium">{new Date(selectedPrograma.fecha_inicio).toLocaleDateString()} - {new Date(selectedPrograma.fecha_fin).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Rama:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRamaColor(selectedPrograma.rama)}`}>
+                          {ramas.find(r => r.value === selectedPrograma.rama)?.label}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Estado:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(selectedPrograma.estado)}`}>
+                          {estadosPrograma.find(e => e.value === selectedPrograma.estado)?.label}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Responsable:</span>
+                        <span className="font-medium">{selectedPrograma.responsable_programa}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Responsable</p>
-                  <p className="font-medium text-gray-800">{programa.responsable}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Objetivo</p>
-                  <p className="text-gray-800">{programa.objetivo}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Áreas de Crecimiento</p>
-                  <div className="flex flex-wrap gap-1">
-                    {programa.areasCrecimiento.map((area) => (
-                      <span
-                        key={area}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                      >
-                        {area}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Actividades */}
-            <div className="p-6">
-              <h4 className="font-medium text-gray-800 mb-4">Actividades Programadas</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 text-sm font-medium text-gray-600">Horario</th>
-                      <th className="text-left py-3 text-sm font-medium text-gray-600">Actividad</th>
-                      <th className="text-left py-3 text-sm font-medium text-gray-600">Responsable</th>
-                      <th className="text-left py-3 text-sm font-medium text-gray-600">Duración</th>
-                      <th className="text-center py-3 text-sm font-medium text-gray-600">Puntajes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {programa.actividades.map((actividad) => (
-                      <tr key={actividad.id} className="border-b border-gray-100">
-                        <td className="py-3">
-                          <div className="flex items-center space-x-1 text-sm">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span>{actividad.horaInicial} - {actividad.horaFinal}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <div>
-                            <p className="font-medium text-gray-800">{actividad.nombre}</p>
-                            <p className="text-sm text-gray-600">{actividad.desarrollo}</p>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center space-x-1">
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm">{actividad.responsable}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            {actividad.duracion}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex justify-center space-x-2">
-                            {Object.entries(actividad.puntajes).map(([patrulla, puntaje]) => (
-                              <span
-                                key={patrulla}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
-                              >
-                                {patrulla}: {puntaje}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Objetivos</h3>
+                    <ul className="space-y-1">
+                      {selectedPrograma.objetivos.map((objetivo, index) => (
+                        <li key={index} className="text-sm text-gray-700 flex items-start">
+                          <span className="text-green-600 mr-2">•</span>
+                          {objetivo}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actividades */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4">Actividades Programadas</h3>
+                <div className="space-y-4">
+                  {selectedPrograma.actividades.map((actividad, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{actividad.nombre}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{actividad.descripcion}</p>
+                        </div>
+                        <div className="ml-4 text-right text-sm text-gray-500">
+                          <div>🕒 {actividad.hora_inicio}</div>
+                          <div>⏱️ {formatDuration(actividad.duracion_minutos)}</div>
+                        </div>
+                      </div>
+                      
+                      {actividad.responsable && (
+                        <div className="text-sm text-gray-600 mb-2">
+                          <strong>Responsable:</strong> {actividad.responsable}
+                        </div>
+                      )}
+                      
+                      {actividad.materiales && actividad.materiales.length > 0 && actividad.materiales[0] && (
+                        <div className="text-sm text-gray-600 mb-2">
+                          <strong>Materiales:</strong> {actividad.materiales.join(', ')}
+                        </div>
+                      )}
+                      
+                      {actividad.observaciones && (
+                        <div className="text-sm text-gray-600">
+                          <strong>Observaciones:</strong> {actividad.observaciones}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observaciones Generales */}
+              {selectedPrograma.observaciones_generales && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Observaciones Generales</h3>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                    {selectedPrograma.observaciones_generales}
+                  </p>
+                </div>
+              )}
+
+              {/* Botones de Acción */}
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    openEditModal(selectedPrograma);
+                  }}
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar Programa
+                </button>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

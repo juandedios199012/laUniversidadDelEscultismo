@@ -153,3 +153,6 @@ temp/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# SQL files
+*.sql

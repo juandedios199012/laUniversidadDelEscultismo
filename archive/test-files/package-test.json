@@ -1,0 +1,29 @@
+{
+  "name": "scout-sistema-testing",
+  "version": "1.0.0",
+  "description": "Scripts de validación automatizada para el Sistema Scout",
+  "type": "module",
+  "scripts": {
+    "test:database": "node test-database-functions.js",
+    "test:services": "node test-services-integration.js",
+    "test:all": "npm run test:database && npm run test:services",
+    "validate": "npm run test:all",
+    "health-check": "npm run test:database"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "scout",
+    "testing", 
+    "database-functions",
+    "microservices",
+    "supabase"
+  ],
+  "author": "Sistema Scout Lima 12",
+  "license": "MIT"
+}

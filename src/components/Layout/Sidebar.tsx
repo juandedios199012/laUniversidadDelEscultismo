@@ -7,12 +7,16 @@ import {
   MapPin,
   Book,
   Package,
-  BarChart3,
+  BarChart,
   Home,
-  UserCheck,
   Award,
   Star,
-  Trophy
+  Trophy,
+  Flag,
+  Map,
+  DollarSign,
+  FileText,
+  Palette
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,17 +26,24 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500' },
-  { id: 'registro', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500' },
+  { id: 'registro-scout', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500' },
+  { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500' },
+  { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500' },
+  { id: 'documentos-dngi03', label: 'Documento DNGI-03', icon: FileText, gradient: 'from-amber-500 to-orange-500' },
+  { id: 'documentos-masivos', label: 'Documentos Masivos', icon: FileText, gradient: 'from-purple-500 to-pink-500' },
+  { id: 'editor-visual', label: '🎨 Editor Visual', icon: Palette, gradient: 'from-violet-500 to-purple-500' },
+  { id: 'grupo-scout', label: 'Grupo Scout', icon: Flag, gradient: 'from-purple-500 to-violet-500' },
   { id: 'comite-padres', label: 'Comité Padres', icon: Users, gradient: 'from-purple-500 to-violet-500' },
   { id: 'dirigentes', label: 'Dirigentes', icon: Shield, gradient: 'from-orange-500 to-red-500' },
   { id: 'patrullas', label: 'Patrullas', icon: Award, gradient: 'from-red-500 to-pink-500' },
-  { id: 'inscripcion', label: 'Inscripción', icon: UserCheck, gradient: 'from-teal-500 to-cyan-500' },
   { id: 'programa-semanal', label: 'Programa', icon: Calendar, gradient: 'from-indigo-500 to-purple-500' },
   { id: 'asistencia', label: 'Asistencia', icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500' },
   { id: 'actividades', label: 'Actividades', icon: MapPin, gradient: 'from-cyan-500 to-blue-500' },
+  { id: 'mapas', label: 'Mapas', icon: Map, gradient: 'from-emerald-500 to-teal-500' },
   { id: 'libro-oro', label: 'Libro de Oro', icon: Book, gradient: 'from-yellow-500 to-orange-500' },
   { id: 'inventario', label: 'Inventario', icon: Package, gradient: 'from-gray-500 to-slate-500' },
-  { id: 'reportes', label: 'Reportes', icon: BarChart3, gradient: 'from-blue-600 to-indigo-600' }
+  { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign, gradient: 'from-green-600 to-emerald-600' },
+  { id: 'reportes', label: 'Reportes', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' }
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {

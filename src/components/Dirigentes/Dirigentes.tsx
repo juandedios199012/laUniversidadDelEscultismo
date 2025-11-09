@@ -1,348 +1,793 @@
-import { useState } from 'react';
-import { Shield, Save, UserPlus, Trash2, Search, Clock, Award } from 'lucide-react';
-import FormField from '../Forms/FormField';
-import Input from '../Forms/Input';
-import Select from '../Forms/Select';
-
-interface DirigenteStraslado {
-  id: string;
-  rama: string;
-  fechaIngreso: string;
-  fechaSalida?: string;
-  activo: boolean;
-}
+import { useState, useEffect } from 'react';
+import { Shield, Users, Save, UserPlus, Award, Plus, Search, Edit, Eye, Phone, Mail, Trash2 } from 'lucide-react';
+import DirigenteService from '../../services/dirigenteService';
 
 interface Dirigente {
   id: string;
-  nombre: string;
-  fechaIngresoGeneral: string;
-  ramaActual: string;
-  telefono: string;
-  correo: string;
-  historialRamas: DirigenteStraslado[];
-  activo: boolean;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono?: string;
+  cargo: string;
+  rama: string;
+  estado: 'activo' | 'inactivo' | 'licencia';
+  fecha_ingreso: string;
+  nivel_formacion?: string;
+  especialidades?: string[];
 }
 
 export default function Dirigentes() {
+  const [dirigentes, setDirigentes] = useState<Dirigente[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Estados para modales
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedDirigente, setSelectedDirigente] = useState<Dirigente | null>(null);
+
+  // Estado para formularios
   const [formData, setFormData] = useState({
-    nombre: '',
-    fechaIngresoGeneral: '',
-    rama: '',
-    usarFechaGeneral: false,
+    nombres: '',
+    apellidos: '',
+    email: '',
     telefono: '',
-    correo: ''
+    rama: 'TROPA',
+    cargo: 'Dirigente',
+    nivel_formacion: 'Básica',
+    estado: 'activo' as 'activo' | 'inactivo' | 'licencia',
+    fecha_ingreso: new Date().toISOString().split('T')[0],
+    especialidades: [] as string[],
+    observaciones: ''
   });
 
-  const [dirigentes, setDirigentes] = useState<Dirigente[]>([
-    {
-      id: '1',
-      nombre: 'Carlos Mendoza Torres',
-      fechaIngresoGeneral: '15-01-2020',
-      ramaActual: 'Tropa',
-      telefono: '987654321',
-      correo: 'carlos.mendoza@email.com',
-      historialRamas: [
-        {
-          id: '1',
-          rama: 'Manada',
-          fechaIngreso: '15-01-2020',
-          fechaSalida: '10-03-2022',
-          activo: false
-        },
-        {
-          id: '2',
-          rama: 'Tropa',
-          fechaIngreso: '11-03-2022',
-          activo: true
-        }
-      ],
-      activo: true
-    }
-  ]);
-
+  // Datos de configuración
   const ramas = [
-    { value: 'Manada', label: 'Manada (7-10 años)' },
-    { value: 'Tropa', label: 'Tropa (11-14 años)' },
-    { value: 'Caminante', label: 'Caminante (15-17 años)' },
-    { value: 'Clan', label: 'Clan (18-21 años)' }
+    { value: 'MANADA', label: 'Manada (7-10 años)' },
+    { value: 'TROPA', label: 'Tropa (11-14 años)' },
+    { value: 'COMUNIDAD', label: 'Comunidad (15-17 años)' },
+    { value: 'CLAN', label: 'Clan (18+ años)' }
   ];
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const cargos = [
+    { value: 'Dirigente', label: 'Dirigente' },
+    { value: 'Jefe de Grupo', label: 'Jefe de Grupo' },
+    { value: 'Subjefe de Grupo', label: 'Subjefe de Grupo' },
+    { value: 'Coordinador', label: 'Coordinador' },
+    { value: 'Asistente', label: 'Asistente' },
+    { value: 'Especialista', label: 'Especialista' }
+  ];
 
-  const calcularTiempoEnRama = (fechaIngreso: string, fechaSalida?: string) => {
-    const inicio = new Date(fechaIngreso.split('-').reverse().join('-'));
-    const fin = fechaSalida ? new Date(fechaSalida.split('-').reverse().join('-')) : new Date();
-    
-    const diffTime = Math.abs(fin.getTime() - inicio.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(diffDays / 365);
-    const months = Math.floor((diffDays % 365) / 30);
-    
-    if (years > 0) {
-      return `${years} año${years > 1 ? 's' : ''} ${months > 0 ? `${months} mes${months > 1 ? 'es' : ''}` : ''}`;
+  const nivelesFormacion = [
+    { value: 'Básica', label: 'Formación Básica' },
+    { value: 'Intermedia', label: 'Formación Intermedia' },
+    { value: 'Avanzada', label: 'Formación Avanzada' },
+    { value: 'Especializada', label: 'Formación Especializada' }
+  ];
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadDirigentes();
+  }, []);
+
+  const loadDirigentes = async () => {
+    try {
+      setLoading(true);
+      const data = await DirigenteService.getDirigentes();
+      setDirigentes(data);
+    } catch (err) {
+      setError('Error al cargar dirigentes');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    return `${months} mes${months > 1 ? 'es' : ''}`;
   };
 
-  const handleSave = () => {
-    const fechaIngresoRama = formData.usarFechaGeneral ? formData.fechaIngresoGeneral : new Date().toLocaleDateString('es-PE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).replace(/\//g, '-');
+  // ============= 🆕 CREAR DIRIGENTE =============
+  const handleCreateDirigente = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const resultado = await DirigenteService.crearDirigente({
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        email: formData.email,
+        telefono: formData.telefono,
+        cargo: formData.cargo,
+        rama: formData.rama,
+        fecha_ingreso: formData.fecha_ingreso,
+        estado: formData.estado,
+        nivel_formacion: formData.nivel_formacion,
+        especialidades: formData.especialidades,
+        observaciones: formData.observaciones
+      });
 
-    const nuevoDirigente: Dirigente = {
-      id: (dirigentes.length + 1).toString(),
-      nombre: formData.nombre,
-      fechaIngresoGeneral: formData.fechaIngresoGeneral,
-      ramaActual: formData.rama,
-      telefono: formData.telefono,
-      correo: formData.correo,
-      historialRamas: [
-        {
-          id: '1',
-          rama: formData.rama,
-          fechaIngreso: fechaIngresoRama,
-          activo: true
-        }
-      ],
-      activo: true
-    };
+      if (resultado.success) {
+        await loadDirigentes();
+        setShowAddForm(false);
+        resetForm();
+      } else {
+        setError(resultado.error || 'Error al crear dirigente');
+      }
+    } catch (err) {
+      setError('Error al crear dirigente');
+      console.error(err);
+    }
+  };
 
-    setDirigentes(prev => [nuevoDirigente, ...prev]);
+  // ============= ✏️ EDITAR DIRIGENTE =============
+  const handleEditDirigente = (dirigente: Dirigente) => {
+    setSelectedDirigente(dirigente);
     setFormData({
-      nombre: '',
-      fechaIngresoGeneral: '',
-      rama: '',
-      usarFechaGeneral: false,
+      nombres: dirigente.nombres,
+      apellidos: dirigente.apellidos,
+      email: dirigente.email,
+      telefono: dirigente.telefono || '',
+      rama: dirigente.rama,
+      cargo: dirigente.cargo,
+      nivel_formacion: dirigente.nivel_formacion || 'Básica',
+      estado: dirigente.estado,
+      fecha_ingreso: dirigente.fecha_ingreso,
+      especialidades: dirigente.especialidades || [],
+      observaciones: ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateDirigente = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDirigente) return;
+
+    try {
+      const resultado = await DirigenteService.updateDirigente(selectedDirigente.id, {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        email: formData.email,
+        telefono: formData.telefono,
+        cargo: formData.cargo,
+        rama: formData.rama,
+        estado: formData.estado,
+        nivel_formacion: formData.nivel_formacion,
+        especialidades: formData.especialidades,
+        observaciones: formData.observaciones
+      });
+
+      if (resultado.success) {
+        await loadDirigentes();
+        setShowEditModal(false);
+        setSelectedDirigente(null);
+        resetForm();
+      } else {
+        setError(resultado.error || 'Error al actualizar dirigente');
+      }
+    } catch (err) {
+      setError('Error al actualizar dirigente');
+      console.error(err);
+    }
+  };
+
+  // ============= 🗑️ ELIMINAR DIRIGENTE =============
+  const handleDeleteDirigente = async (dirigente: Dirigente) => {
+    if (window.confirm(`¿Estás seguro de eliminar a "${dirigente.nombres} ${dirigente.apellidos}"? Esta acción no se puede deshacer.`)) {
+      try {
+        const resultado = await DirigenteService.deleteDirigente(dirigente.id);
+        
+        if (resultado.success) {
+          await loadDirigentes();
+        } else {
+          setError(resultado.error || 'Error al eliminar dirigente');
+        }
+      } catch (err) {
+        setError('Error al eliminar dirigente');
+        console.error(err);
+      }
+    }
+  };
+
+  // ============= 👁️ VER DETALLES =============
+  const handleViewDirigente = (dirigente: Dirigente) => {
+    setSelectedDirigente(dirigente);
+    setShowViewModal(true);
+  };
+
+  // ============= 🔧 UTILIDADES =============
+  const resetForm = () => {
+    setFormData({
+      nombres: '',
+      apellidos: '',
+      email: '',
       telefono: '',
-      correo: ''
+      rama: 'TROPA',
+      cargo: 'Dirigente',
+      nivel_formacion: 'Básica',
+      estado: 'activo',
+      fecha_ingreso: new Date().toISOString().split('T')[0],
+      especialidades: [],
+      observaciones: ''
     });
   };
 
-  const handleDelete = (id: string) => {
-    setDirigentes(prev => prev.filter(dirigente => dirigente.id !== id));
+  const getEstadoColor = (estado: string) => {
+    const colors = {
+      'activo': 'bg-green-100 text-green-800',
+      'inactivo': 'bg-red-100 text-red-800',
+      'licencia': 'bg-yellow-100 text-yellow-800'
+    };
+    return colors[estado as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleTrasladoRama = (dirigenteId: string, nuevaRama: string) => {
-    setDirigentes(prev => prev.map(dirigente => {
-      if (dirigente.id === dirigenteId) {
-        const historialActualizado = dirigente.historialRamas.map(historial => ({
-          ...historial,
-          activo: false,
-          fechaSalida: historial.activo ? new Date().toLocaleDateString('es-PE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).replace(/\//g, '-') : historial.fechaSalida
-        }));
+  const filteredDirigentes = dirigentes.filter(dirigente =>
+    `${dirigente.nombres} ${dirigente.apellidos} ${dirigente.email} ${dirigente.rama} ${dirigente.cargo}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
 
-        historialActualizado.push({
-          id: (historialActualizado.length + 1).toString(),
-          rama: nuevaRama,
-          fechaIngreso: new Date().toLocaleDateString('es-PE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).replace(/\//g, '-'),
-          fechaSalida: undefined,
-          activo: true
-        });
-
-        return {
-          ...dirigente,
-          ramaActual: nuevaRama,
-          historialRamas: historialActualizado
-        };
-      }
-      return dirigente;
-    }));
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Dirigentes Scout</h1>
-        <p className="text-gray-600">Administración de dirigentes y sus asignaciones por rama</p>
-      </div>
-
-      {/* Formulario de Registro */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-          <UserPlus className="w-5 h-5 mr-2 text-orange-600" />
-          Registrar Nuevo Dirigente
-        </h2>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto w-full">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          <FormField label="Dirigente Scout">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.nombre}
-                onChange={(e) => handleInputChange('nombre', e.target.value)}
-                placeholder="Buscar Boy Scout registrado"
-                className="pl-10"
-              />
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 md:p-6 rounded-lg mb-6 shadow-lg">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center space-x-3">
+              <Shield className="w-6 h-6 md:w-8 md:h-8" />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl md:text-3xl font-bold">Administración de Dirigentes</h1>
+                <p className="text-blue-100 text-sm md:text-base">Gestión de dirigentes y sus asignaciones por rama</p>
+              </div>
             </div>
-            <small className="text-gray-500 mt-1">
-              Busca si ya está registrado como scout
-            </small>
-          </FormField>
-
-          <FormField label="Fecha de Ingreso como Dirigente">
-            <Input
-              type="date"
-              value={formData.fechaIngresoGeneral}
-              onChange={(e) => handleInputChange('fechaIngresoGeneral', e.target.value)}
-            />
-            <small className="text-gray-500 mt-1">Formato: DD-MM-AAAA</small>
-          </FormField>
-
-          <FormField label="Rama Asignada">
-            <Select
-              value={formData.rama}
-              onChange={(e) => handleInputChange('rama', e.target.value)}
-              options={ramas}
-              placeholder="Seleccionar rama"
-            />
-          </FormField>
-
-          <FormField label="Teléfono">
-            <Input
-              value={formData.telefono}
-              onChange={(e) => handleInputChange('telefono', e.target.value)}
-              placeholder="987654321"
-            />
-          </FormField>
-
-          <FormField label="Correo Electrónico">
-            <Input
-              type="email"
-              value={formData.correo}
-              onChange={(e) => handleInputChange('correo', e.target.value)}
-              placeholder="ejemplo@correo.com"
-            />
-          </FormField>
+            <div className="flex justify-center md:justify-start">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 font-medium flex items-center space-x-2 shadow-sm transition-colors duration-200 w-full max-w-xs md:w-auto"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="text-base font-semibold">Nuevo Dirigente</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="mb-6">
-          <label className="flex items-center space-x-3">
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Dirigentes Activos</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{dirigentes.filter(d => d.estado === 'activo').length}</p>
+              </div>
+              <Shield className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Formación Avanzada</p>
+                <p className="text-xl md:text-2xl font-bold text-green-600">{dirigentes.filter(d => d.nivel_formacion === 'Avanzada').length}</p>
+              </div>
+              <Award className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Total Dirigentes</p>
+                <p className="text-xl md:text-2xl font-bold text-yellow-600">{dirigentes.length}</p>
+              </div>
+              <Users className="w-6 h-6 md:w-8 md:h-8 text-yellow-600" />
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs md:text-sm font-medium text-gray-600">En Licencia</p>
+                <p className="text-xl md:text-2xl font-bold text-orange-600">{dirigentes.filter(d => d.estado === 'licencia').length}</p>
+              </div>
+              <UserPlus className="w-6 h-6 md:w-8 md:h-8 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de búsqueda */}
+        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+          <div className="flex items-center space-x-2">
+            <Search className="w-5 h-5 text-gray-400" />
             <input
-              type="checkbox"
-              checked={formData.usarFechaGeneral}
-              onChange={(e) => handleInputChange('usarFechaGeneral', e.target.checked)}
-              className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+              type="text"
+              placeholder="Buscar dirigentes por nombre, email, rama o cargo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 border-0 focus:ring-0 text-sm"
             />
-            <span className="text-gray-700">
-              Usar la misma fecha de ingreso para esta rama específica
-            </span>
-          </label>
+          </div>
         </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={handleSave}
-            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg flex items-center transition-colors"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Registrar Dirigente
-          </button>
+        {/* Tabla de dirigentes */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Lista de Dirigentes</h2>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dirigente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rama
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cargo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Formación
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contacto
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredDirigentes.map((dirigente) => (
+                  <tr key={dirigente.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {dirigente.nombres} {dirigente.apellidos}
+                      </div>
+                      <div className="text-sm text-gray-500">{dirigente.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        {dirigente.rama}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {dirigente.cargo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEstadoColor(dirigente.estado)}`}>
+                        {dirigente.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {dirigente.nivel_formacion || 'Básica'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-2">
+                        {dirigente.telefono && (
+                          <Phone className="w-4 h-4" />
+                        )}
+                        <Mail className="w-4 h-4" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => handleViewDirigente(dirigente)}
+                          className="text-gray-600 hover:text-gray-900"
+                          title="Ver detalles"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditDirigente(dirigente)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Editar dirigente"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDirigente(dirigente)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Eliminar dirigente"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {filteredDirigentes.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No se encontraron dirigentes que coincidan con la búsqueda.
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Tabla de Dirigentes */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-          <Shield className="w-5 h-5 mr-2 text-orange-600" />
-          Dirigentes Actuales ({dirigentes.filter(d => d.activo).length} activos)
-        </h2>
-
-        <div className="space-y-6">
-          {dirigentes.map((dirigente) => (
-            <div key={dirigente.id} className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-orange-600" />
-                  </div>
+        {/* ============= 🆕 MODAL AGREGAR DIRIGENTE ============= */}
+        {showAddForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+              <h2 className="text-lg font-semibold mb-4">Nuevo Dirigente</h2>
+              
+              <form onSubmit={handleCreateDirigente} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{dirigente.nombre}</h3>
-                    <p className="text-sm text-gray-600">
-                      Dirigente desde: {dirigente.fechaIngresoGeneral}
-                    </p>
+                    <label className="block text-sm font-medium text-gray-700">Nombres</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nombres}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nombres: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Apellidos</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.apellidos}
+                      onChange={(e) => setFormData(prev => ({ ...prev, apellidos: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-                    {dirigente.ramaActual}
-                  </span>
-                  <Select
-                    value=""
-                    onChange={(e) => e.target.value && handleTrasladoRama(dirigente.id, e.target.value)}
-                    options={[
-                      { value: '', label: 'Trasladar a...' },
-                      ...ramas.filter(rama => rama.value !== dirigente.ramaActual)
-                    ]}
-                    className="text-sm"
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                  <input
+                    type="tel"
+                    value={formData.telefono}
+                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Rama</label>
+                    <select
+                      value={formData.rama}
+                      onChange={(e) => setFormData(prev => ({ ...prev, rama: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {ramas.map(rama => (
+                        <option key={rama.value} value={rama.value}>
+                          {rama.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Cargo</label>
+                    <select
+                      value={formData.cargo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cargo: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {cargos.map(cargo => (
+                        <option key={cargo.value} value={cargo.value}>
+                          {cargo.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nivel de Formación</label>
+                    <select
+                      value={formData.nivel_formacion}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nivel_formacion: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {nivelesFormacion.map(nivel => (
+                        <option key={nivel.value} value={nivel.value}>
+                          {nivel.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Estado</label>
+                    <select
+                      value={formData.estado}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value as 'activo' | 'inactivo' | 'licencia' }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                      <option value="licencia">En Licencia</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Fecha de Ingreso</label>
+                  <input
+                    type="date"
+                    value={formData.fecha_ingreso}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+                  <textarea
+                    value={formData.observaciones}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observaciones: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
                   <button
-                    onClick={() => handleDelete(dirigente.id)}
-                    className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                    title="Eliminar dirigente"
+                    type="button"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center space-x-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Registrar Dirigente</span>
                   </button>
                 </div>
-              </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Historial de Ramas
-                </h4>
-                <div className="space-y-2">
-                  {dirigente.historialRamas.map((historial) => (
-                    <div key={historial.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                      <div className="flex items-center space-x-3">
-                        <Award className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium text-gray-800">{historial.rama}</span>
-                        <span className="text-sm text-gray-600">
-                          {historial.fechaIngreso} {historial.fechaSalida ? `- ${historial.fechaSalida}` : '- Presente'}
+        {/* ============= ✏️ MODAL EDITAR DIRIGENTE ============= */}
+        {showEditModal && selectedDirigente && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+              <h2 className="text-lg font-semibold mb-4">Editar Dirigente</h2>
+              
+              <form onSubmit={handleUpdateDirigente} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nombres</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nombres}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nombres: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Apellidos</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.apellidos}
+                      onChange={(e) => setFormData(prev => ({ ...prev, apellidos: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                  <input
+                    type="tel"
+                    value={formData.telefono}
+                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Rama</label>
+                    <select
+                      value={formData.rama}
+                      onChange={(e) => setFormData(prev => ({ ...prev, rama: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {ramas.map(rama => (
+                        <option key={rama.value} value={rama.value}>
+                          {rama.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Cargo</label>
+                    <select
+                      value={formData.cargo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cargo: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {cargos.map(cargo => (
+                        <option key={cargo.value} value={cargo.value}>
+                          {cargo.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nivel de Formación</label>
+                    <select
+                      value={formData.nivel_formacion}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nivel_formacion: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      {nivelesFormacion.map(nivel => (
+                        <option key={nivel.value} value={nivel.value}>
+                          {nivel.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Estado</label>
+                    <select
+                      value={formData.estado}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value as 'activo' | 'inactivo' | 'licencia' }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                      <option value="licencia">En Licencia</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+                  <textarea
+                    value={formData.observaciones}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observaciones: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedDirigente(null);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center space-x-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Actualizar Dirigente</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ============= 👁️ MODAL VER DIRIGENTE ============= */}
+        {showViewModal && selectedDirigente && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-lg font-semibold">Detalles del Dirigente</h2>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedDirigente(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div><strong>Nombre Completo:</strong> {selectedDirigente.nombres} {selectedDirigente.apellidos}</div>
+                <div><strong>Email:</strong> {selectedDirigente.email}</div>
+                <div><strong>Teléfono:</strong> {selectedDirigente.telefono || 'No registrado'}</div>
+                <div><strong>Rama:</strong> <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">{selectedDirigente.rama}</span></div>
+                <div><strong>Cargo:</strong> {selectedDirigente.cargo}</div>
+                <div><strong>Estado:</strong> <span className={`px-2 py-1 rounded-full text-sm ${getEstadoColor(selectedDirigente.estado)}`}>{selectedDirigente.estado}</span></div>
+                <div><strong>Nivel de Formación:</strong> {selectedDirigente.nivel_formacion || 'Básica'}</div>
+                <div><strong>Fecha de Ingreso:</strong> {new Date(selectedDirigente.fecha_ingreso).toLocaleDateString()}</div>
+                {selectedDirigente.especialidades && selectedDirigente.especialidades.length > 0 && (
+                  <div>
+                    <strong>Especialidades:</strong>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedDirigente.especialidades.map((esp, index) => (
+                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">
+                          {esp}
                         </span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-600">
-                          {calcularTiempoEnRama(historial.fechaIngreso, historial.fechaSalida)}
-                        </span>
-                        {historial.activo && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Actual
-                          </span>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>Contacto: {dirigente.telefono} | {dirigente.correo}</span>
-                  <span>
-                    Tiempo total como dirigente: {calcularTiempoEnRama(dirigente.fechaIngresoGeneral)}
-                  </span>
-                </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
-        {dirigentes.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Shield className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No hay dirigentes registrados</p>
+        {/* ============= 🚨 MENSAJE DE ERROR ============= */}
+        {error && (
+          <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+            {error}
+            <button
+              onClick={() => setError(null)}
+              className="ml-4 text-red-900 hover:text-red-700"
+            >
+              ×
+            </button>
           </div>
         )}
       </div>
