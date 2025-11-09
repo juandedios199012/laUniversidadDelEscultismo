@@ -221,3 +221,4 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ## 🏕️ ¡Siempre Listos! ⚜️
 
 *Este sistema ha sido desarrollado con amor y dedicación para facilitar la gestión de nuestros scouts y fortalecer el movimiento scout en el Perú.*
+# Actualización Sun Nov  9 04:09:20 -05 2025
