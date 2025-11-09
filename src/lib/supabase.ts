@@ -5,7 +5,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Debug: mostrar información en consola
+console.log('🔍 Debug Supabase Config:');
+console.log('- VITE_SUPABASE_URL:', supabaseUrl ? '✅ Configurada' : '❌ No encontrada');
+console.log('- VITE_SUPABASE_ANON_KEY:', supabaseKey ? '✅ Configurada' : '❌ No encontrada');
+console.log('- Environment MODE:', import.meta.env.MODE);
+console.log('- All env vars:', import.meta.env);
+
 if (!supabaseUrl || !supabaseKey) {
+  const errorMsg = `❌ Configuración de Supabase incompleta:
+  - URL: ${supabaseUrl ? '✅' : '❌ Faltante'}
+  - Key: ${supabaseKey ? '✅' : '❌ Faltante'}
+  
+  Verifica las variables de entorno en Azure Static Web Apps:
+  - VITE_SUPABASE_URL
+  - VITE_SUPABASE_ANON_KEY`;
+  
+  console.error(errorMsg);
   throw new Error('Faltan las variables de entorno de Supabase. Revisa tu archivo .env.local');
 }
 
