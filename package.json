@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "build": "vite build --config vite.config.ts",
+    "build": "npm run build:clean && vite build --config vite.config.ts",
+    "build:clean": "rm -rf node_modules/.vite && rm -rf dist",
+    "build:azure": "npm ci && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
