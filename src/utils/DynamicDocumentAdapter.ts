@@ -28,8 +28,17 @@ export class DynamicDocumentAdapter {
     // Adaptar Scout al formato de estrategia
     const strategyScout = this.adaptScoutData(scout);
 
-    // Por ahora solo HTML funcional
-    return this.generateHTMLFromDesign(design, strategyScout);
+    // Generar según el formato solicitado
+    switch (format) {
+      case 'html':
+        return this.generateHTMLFromDesign(design, strategyScout);
+      case 'pdf':
+        return this.generatePDFFromDesign(design, strategyScout);
+      case 'word':
+        return this.generateWordFromDesign(design, strategyScout);
+      default:
+        return this.generateHTMLFromDesign(design, strategyScout);
+    }
   }
 
   /**
@@ -56,6 +65,81 @@ export class DynamicDocumentAdapter {
       mimeType: 'text/html',
       format: 'HTML Document'
     };
+  }
+
+  /**
+   * Generar PDF usando diseño personalizado
+   */
+  private async generatePDFFromDesign(
+    design: TableDesign, 
+    scout: StrategyScout
+  ): Promise<{
+    data: ArrayBuffer;
+    filename: string;
+    mimeType: string;
+    format: string;
+  }> {
+    try {
+      console.log('📄 Generando PDF para:', scout.nombres, scout.apellidos);
+      
+      // Importar y usar el generador PDF dinámico
+      const { DynamicPDFGenerator } = await import('./DynamicPDFGenerator');
+      const pdfGenerator = new DynamicPDFGenerator(design);
+      const pdfData = await pdfGenerator.generatePDF(scout);
+      
+      console.log('📊 PDF generado, tamaño:', pdfData.byteLength, 'bytes');
+      
+      const filename = this.generateFilename(scout, 'pdf');
+      
+      return {
+        data: pdfData.buffer instanceof ArrayBuffer ? pdfData.buffer : new ArrayBuffer(pdfData.byteLength),
+        filename,
+        mimeType: 'application/pdf',
+        format: 'PDF Document'
+      };
+    } catch (error) {
+      console.error('❌ Error generando PDF, usando fallback a HTML:', error);
+      // Fallback a HTML si PDF falla
+      const htmlResult = await this.generateHTMLFromDesign(design, scout);
+      return {
+        ...htmlResult,
+        filename: this.generateFilename(scout, 'html'),
+        format: 'HTML Document (PDF fallback)'
+      };
+    }
+  }
+
+  /**
+   * Generar Word usando diseño personalizado
+   */
+  private async generateWordFromDesign(
+    design: TableDesign, 
+    scout: StrategyScout
+  ): Promise<{
+    data: ArrayBuffer;
+    filename: string;
+    mimeType: string;
+    format: string;
+  }> {
+    try {
+      // Importar y usar el generador Word dinámico
+      const { DynamicWordGenerator } = await import('./DynamicWordGenerator');
+      const wordGenerator = new DynamicWordGenerator(design);
+      const wordData = await wordGenerator.generateDocument(scout);
+      
+      const filename = this.generateFilename(scout, 'docx');
+      
+      return {
+        data: new ArrayBuffer(wordData.byteLength),
+        filename,
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        format: 'Word Document'
+      };
+    } catch (error) {
+      console.error('Error generando Word:', error);
+      // Fallback a HTML si Word falla
+      return this.generateHTMLFromDesign(design, scout);
+    }
   }
 
   /**

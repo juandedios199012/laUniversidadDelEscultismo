@@ -35,12 +35,45 @@ export interface TableDesign {
   totalColumns: number;
   defaultCellWidth: number;
   defaultRowHeight: number;
+  // Configuración de bordes
   borderWidth: number;
   borderColor: string;
+  borderStyle: 'solid' | 'dashed' | 'dotted' | 'none';
+  // Configuración de espaciado
+  cellPadding: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  cellMargin: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  // Configuración de fuente
   font: {
     family: string;
     size: number;
+    weight: 'normal' | 'bold' | 'lighter' | 'bolder';
+    style: 'normal' | 'italic' | 'oblique';
   };
+  // Configuración de tabla
+  tableLayout: 'auto' | 'fixed';
+  tableMargin: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  // Configuración de colores por defecto
+  defaultBackgroundColor: string;
+  defaultTextColor: string;
+  alternateRowColor?: string;
+  headerBackgroundColor: string;
+  headerTextColor: string;
+  // Metadatos
   created_at: string;
   updated_at: string;
 }
@@ -73,27 +106,180 @@ interface TableDesignerProps {
   mode?: 'create' | 'edit';
 }
 
-export const TableDesigner: React.FC<TableDesignerProps> = ({
-  onSave,
-  onChange,
-  initialDesign
+export const TableDesigner: React.FC<TableDesignerProps> = ({ 
+  initialDesign,
+  onSave = () => {}
 }) => {
-  const [design, setDesign] = useState<TableDesign>(
-    initialDesign || createDefaultDesign()
-  );
+  const [design, setDesign] = useState<TableDesign>(() => {
+    if (initialDesign) {
+      // Merge initialDesign con valores por defecto para asegurar todas las propiedades
+      const defaultDesign = createDefaultDesign();
+      return {
+        ...defaultDesign,
+        ...initialDesign,
+        // Asegurar objetos anidados
+        cellPadding: {
+          ...defaultDesign.cellPadding,
+          ...(initialDesign.cellPadding || {})
+        },
+        cellMargin: {
+          ...defaultDesign.cellMargin,
+          ...(initialDesign.cellMargin || {})
+        },
+        font: {
+          ...defaultDesign.font,
+          ...(initialDesign.font || {})
+        },
+        tableMargin: {
+          ...defaultDesign.tableMargin,
+          ...(initialDesign.tableMargin || {})
+        }
+      };
+    }
+    return createDefaultDesign();
+  });
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [draggedField, setDraggedField] = useState<string | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error' | null, text: string }>({ type: null, text: '' });
+  const [savedDesigns, setSavedDesigns] = useState<any[]>([]);
+  const [isLoadingDesigns, setIsLoadingDesigns] = useState(false);
+  const [showSavedDesigns, setShowSavedDesigns] = useState(false);
   
   const tableRef = useRef<HTMLTableElement>(null);
 
-  // Notificar cambios del diseño en tiempo real
-  useEffect(() => {
-    if (onChange) {
-      onChange(design);
+  // Cargar diseños guardados
+  const loadSavedDesigns = useCallback(async () => {
+    try {
+      console.log('🔄 Iniciando carga de diseños guardados...');
+      setIsLoadingDesigns(true);
+      const { tableDesignService } = await import('../../services/tableDesignService');
+      console.log('📦 Servicio importado exitosamente');
+      const designs = await tableDesignService.getAllDesigns();
+      console.log('✅ Diseños obtenidos de la base de datos:', designs);
+      console.log('📊 Cantidad de diseños encontrados:', designs.length);
+      setSavedDesigns(designs);
+    } catch (error) {
+      console.error('❌ Error cargando diseños:', error);
+    } finally {
+      setIsLoadingDesigns(false);
     }
-  }, [design, onChange]);
+  }, []);
+
+  // Cargar un diseño específico
+  const handleLoadDesign = useCallback(async (savedDesign: any) => {
+    try {
+      console.log('📂 Iniciando carga de diseño:', savedDesign);
+      
+      if (!savedDesign) {
+        console.error('❌ No se proporcionó un diseño válido');
+        alert('Error: Diseño no válido');
+        return;
+      }
+
+      console.log('🔍 Validando design_data:', savedDesign.design_data);
+
+      if (!savedDesign.design_data) {
+        console.error('❌ El diseño no tiene datos válidos');
+        alert('Error: El diseño no contiene datos válidos');
+        return;
+      }
+      
+      console.log('🎯 Creando diseño por defecto...');
+      const defaultDesign = createDefaultDesign();
+      console.log('✅ Diseño por defecto creado:', defaultDesign);
+      
+      console.log('🔄 Mezclando datos guardados con valores por defecto...');
+      // Convertir el design_data del formato guardado al formato del componente
+      const loadedDesign = {
+        ...defaultDesign,
+        // Datos básicos
+        id: savedDesign.design_data.id || savedDesign.id || defaultDesign.id,
+        name: savedDesign.name || defaultDesign.name,
+        description: savedDesign.description || defaultDesign.description,
+        // Estructura
+        rows: savedDesign.design_data.rows || defaultDesign.rows,
+        totalColumns: savedDesign.design_data.totalColumns || defaultDesign.totalColumns,
+        // Dimensiones
+        defaultCellWidth: savedDesign.design_data.defaultCellWidth || defaultDesign.defaultCellWidth,
+        defaultRowHeight: savedDesign.design_data.defaultRowHeight || defaultDesign.defaultRowHeight,
+        // Bordes (usar valores guardados si existen, sino usar por defecto)
+        borderWidth: savedDesign.design_data.borderWidth !== undefined ? savedDesign.design_data.borderWidth : defaultDesign.borderWidth,
+        borderColor: savedDesign.design_data.borderColor || defaultDesign.borderColor,
+        borderStyle: savedDesign.design_data.borderStyle || defaultDesign.borderStyle,
+        // Espaciado (merge con valores por defecto)
+        cellPadding: {
+          ...defaultDesign.cellPadding,
+          ...(savedDesign.design_data.cellPadding || {})
+        },
+        cellMargin: {
+          ...defaultDesign.cellMargin,
+          ...(savedDesign.design_data.cellMargin || {})
+        },
+        // Fuente (merge con valores por defecto)
+        font: {
+          ...defaultDesign.font,
+          ...(savedDesign.design_data.font || {})
+        },
+        // Tabla
+        tableLayout: savedDesign.design_data.tableLayout || defaultDesign.tableLayout,
+        tableMargin: {
+          ...defaultDesign.tableMargin,
+          ...(savedDesign.design_data.tableMargin || {})
+        },
+        // Colores
+        defaultBackgroundColor: savedDesign.design_data.defaultBackgroundColor || defaultDesign.defaultBackgroundColor,
+        defaultTextColor: savedDesign.design_data.defaultTextColor || defaultDesign.defaultTextColor,
+        alternateRowColor: savedDesign.design_data.alternateRowColor !== undefined ? savedDesign.design_data.alternateRowColor : defaultDesign.alternateRowColor,
+        headerBackgroundColor: savedDesign.design_data.headerBackgroundColor || defaultDesign.headerBackgroundColor,
+        headerTextColor: savedDesign.design_data.headerTextColor || defaultDesign.headerTextColor,
+        // Timestamps
+        created_at: savedDesign.created_at || new Date().toISOString(),
+        updated_at: savedDesign.updated_at || new Date().toISOString()
+      };
+      
+      console.log('🎯 Diseño final procesado:', loadedDesign);
+      
+      console.log('📝 Aplicando diseño al estado...');
+      setDesign(loadedDesign);
+      
+      console.log('✅ Diseño cargado exitosamente en el estado');
+      alert(`Diseño "${savedDesign.name}" cargado exitosamente`);
+      
+    } catch (error) {
+      console.error('❌ Error cargando diseño:', error);
+      console.error('📋 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      alert('Error cargando diseño: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    }
+  }, []);
+
+  // Eliminar un diseño
+  const handleDeleteDesign = useCallback(async (designId: string, designName: string) => {
+    try {
+      const confirmDelete = confirm(`¿Estás seguro de eliminar el diseño "${designName}"?`);
+      if (!confirmDelete) return;
+
+      console.log('🗑️ Eliminando diseño:', designId);
+      const { tableDesignService } = await import('../../services/tableDesignService');
+      await tableDesignService.deleteDesign(designId);
+      
+      // Refrescar lista de diseños
+      await loadSavedDesigns();
+      
+      console.log('✅ Diseño eliminado exitosamente');
+      alert(`Diseño "${designName}" eliminado exitosamente`);
+    } catch (error) {
+      console.error('❌ Error eliminando diseño:', error);
+      alert('Error eliminando diseño: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    }
+  }, [loadSavedDesigns]);
+
+  // Cargar diseños al iniciar componente
+  useEffect(() => {
+    loadSavedDesigns();
+  }, [loadSavedDesigns]);
 
   // Crear diseño por defecto
   function createDefaultDesign(): TableDesign {
@@ -104,12 +290,39 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
       totalColumns: 4,
       defaultCellWidth: 25,
       defaultRowHeight: 40,
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: '#000000',
+      borderStyle: 'solid',
+      cellPadding: {
+        top: 3,
+        right: 3,
+        bottom: 3,
+        left: 3
+      },
+      cellMargin: {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+      },
       font: {
         family: 'Calibri',
-        size: 10
+        size: 10,
+        weight: 'normal',
+        style: 'normal'
       },
+      tableLayout: 'auto',
+      tableMargin: {
+        top: 10,
+        right: 10,
+        bottom: 10,
+        left: 10
+      },
+      defaultBackgroundColor: '#ffffff',
+      defaultTextColor: '#000000',
+      alternateRowColor: '#f7f7f7',
+      headerBackgroundColor: '#4a5568',
+      headerTextColor: '#ffffff',
       rows: [
         {
           id: 'row_1',
@@ -263,9 +476,69 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
   }, [design.totalColumns]);
 
   // Guardar diseño
-  const handleSave = useCallback(() => {
-    onSave(design);
-  }, [design, onSave]);
+  const handleSave = useCallback(async () => {
+    try {
+      setIsSaving(true);
+      setSaveMessage({ type: null, text: '' });
+      
+      console.log('🚀 Iniciando guardado de diseño:', design);
+      
+      // Validar que el diseño tenga nombre
+      if (!design.name.trim()) {
+        setSaveMessage({ type: 'error', text: 'Por favor ingresa un nombre para el diseño' });
+        return;
+      }
+
+      // Preparar datos para guardar
+      const saveData = {
+        name: design.name,
+        description: design.description || `Diseño personalizado creado el ${new Date().toLocaleDateString()}`,
+        design_data: {
+          id: design.id,
+          name: design.name,
+          rows: design.rows,
+          totalColumns: design.totalColumns,
+          defaultCellWidth: design.defaultCellWidth,
+          defaultRowHeight: design.defaultRowHeight,
+          borderWidth: design.borderWidth,
+          borderColor: design.borderColor,
+          font: design.font
+        },
+        category: 'custom'
+      };
+
+      console.log('📝 Datos a guardar:', saveData);
+
+      // Importar y usar el servicio
+      const { tableDesignService } = await import('../../services/tableDesignService');
+      const savedDesign = await tableDesignService.saveDesign(saveData);
+      
+      console.log('✅ Diseño guardado exitosamente:', savedDesign);
+      
+      // Refrescar lista de diseños guardados
+      await loadSavedDesigns();
+      
+      // Mostrar mensaje de éxito
+      setSaveMessage({ type: 'success', text: `Diseño "${design.name}" guardado exitosamente!` });
+      
+      // Llamar al callback si existe
+      onSave(design);
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => {
+        setSaveMessage({ type: null, text: '' });
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ Error guardando diseño:', error);
+      setSaveMessage({ 
+        type: 'error', 
+        text: `Error al guardar: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [design, onSave, setIsSaving, setSaveMessage, loadSavedDesigns]);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -331,16 +604,18 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
             <div>
               <label className="block text-sm font-medium mb-1">Fuente:</label>
               <select
-                value={design.font.family}
+                value={design.font?.family || 'Calibri'}
                 onChange={(e) => setDesign(prev => ({ 
                   ...prev, 
-                  font: { ...prev.font, family: e.target.value }
+                  font: { ...(prev.font || { family: 'Calibri', size: 10, weight: 'normal', style: 'normal' }), family: e.target.value }
                 }))}
                 className="w-full p-2 border rounded text-sm"
               >
                 <option value="Calibri">Calibri</option>
                 <option value="Arial">Arial</option>
                 <option value="Times New Roman">Times New Roman</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Georgia">Georgia</option>
               </select>
             </div>
 
@@ -348,15 +623,221 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
               <label className="block text-sm font-medium mb-1">Tamaño fuente:</label>
               <input
                 type="number"
-                min="8"
-                max="16"
-                value={design.font.size}
+                min="6"
+                max="24"
+                value={design.font?.size || 10}
                 onChange={(e) => setDesign(prev => ({ 
                   ...prev, 
-                  font: { ...prev.font, size: parseInt(e.target.value) }
+                  font: { ...(prev.font || { family: 'Calibri', size: 10, weight: 'normal', style: 'normal' }), size: parseInt(e.target.value) }
                 }))}
                 className="w-full p-2 border rounded text-sm"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Peso fuente:</label>
+              <select
+                value={design.font?.weight || 'normal'}
+                onChange={(e) => setDesign(prev => ({ 
+                  ...prev, 
+                  font: { ...(prev.font || { family: 'Calibri', size: 10, weight: 'normal', style: 'normal' }), weight: e.target.value as any }
+                }))}
+                className="w-full p-2 border rounded text-sm"
+              >
+                <option value="normal">Normal</option>
+                <option value="bold">Negrita</option>
+                <option value="lighter">Ligero</option>
+                <option value="bolder">Muy negrita</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Estilo fuente:</label>
+              <select
+                value={design.font?.style || 'normal'}
+                onChange={(e) => setDesign(prev => ({ 
+                  ...prev, 
+                  font: { ...(prev.font || { family: 'Calibri', size: 10, weight: 'normal', style: 'normal' }), style: e.target.value as any }
+                }))}
+                className="w-full p-2 border rounded text-sm"
+              >
+                <option value="normal">Normal</option>
+                <option value="italic">Cursiva</option>
+                <option value="oblique">Oblicua</option>
+              </select>
+            </div>
+
+            {/* Configuración de Bordes */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium text-gray-800 mb-3">🔲 Configuración de Bordes</h4>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Grosor borde:</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={design.borderWidth}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    borderWidth: parseFloat(e.target.value)
+                  }))}
+                  className="w-full p-2 border rounded text-sm"
+                />
+                <span className="text-xs text-gray-500">px (0.1 = muy fino como Word)</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Color borde:</label>
+                <input
+                  type="color"
+                  value={design.borderColor}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    borderColor: e.target.value
+                  }))}
+                  className="w-full p-1 border rounded h-10"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Estilo borde:</label>
+                <select
+                  value={design.borderStyle}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    borderStyle: e.target.value as any
+                  }))}
+                  className="w-full p-2 border rounded text-sm"
+                >
+                  <option value="solid">Sólido</option>
+                  <option value="dashed">Discontinuo</option>
+                  <option value="dotted">Punteado</option>
+                  <option value="none">Sin borde</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Configuración de Espaciado */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium text-gray-800 mb-3">📏 Espaciado de Celdas</h4>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium mb-1">Arriba:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={design.cellPadding?.top || 3}
+                    onChange={(e) => setDesign(prev => ({ 
+                      ...prev, 
+                      cellPadding: { ...(prev.cellPadding || { top: 3, right: 3, bottom: 3, left: 3 }), top: parseInt(e.target.value) }
+                    }))}
+                    className="w-full p-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Abajo:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={design.cellPadding?.bottom || 3}
+                    onChange={(e) => setDesign(prev => ({ 
+                      ...prev, 
+                      cellPadding: { ...(prev.cellPadding || { top: 3, right: 3, bottom: 3, left: 3 }), bottom: parseInt(e.target.value) }
+                    }))}
+                    className="w-full p-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Izquierda:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={design.cellPadding?.left || 3}
+                    onChange={(e) => setDesign(prev => ({ 
+                      ...prev, 
+                      cellPadding: { ...(prev.cellPadding || { top: 3, right: 3, bottom: 3, left: 3 }), left: parseInt(e.target.value) }
+                    }))}
+                    className="w-full p-1 border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Derecha:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={design.cellPadding?.right || 3}
+                    onChange={(e) => setDesign(prev => ({ 
+                      ...prev, 
+                      cellPadding: { ...(prev.cellPadding || { top: 3, right: 3, bottom: 3, left: 3 }), right: parseInt(e.target.value) }
+                    }))}
+                    className="w-full p-1 border rounded text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Configuración de Colores */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium text-gray-800 mb-3">🎨 Colores por Defecto</h4>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Fondo celda:</label>
+                <input
+                  type="color"
+                  value={design.defaultBackgroundColor}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    defaultBackgroundColor: e.target.value
+                  }))}
+                  className="w-full p-1 border rounded h-8"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Texto celda:</label>
+                <input
+                  type="color"
+                  value={design.defaultTextColor}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    defaultTextColor: e.target.value
+                  }))}
+                  className="w-full p-1 border rounded h-8"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Fondo encabezado:</label>
+                <input
+                  type="color"
+                  value={design.headerBackgroundColor}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    headerBackgroundColor: e.target.value
+                  }))}
+                  className="w-full p-1 border rounded h-8"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Texto encabezado:</label>
+                <input
+                  type="color"
+                  value={design.headerTextColor}
+                  onChange={(e) => setDesign(prev => ({ 
+                    ...prev, 
+                    headerTextColor: e.target.value
+                  }))}
+                  className="w-full p-1 border rounded h-8"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -407,11 +888,93 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
               
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                disabled={isSaving || !design.name.trim()}
+                className={`px-4 py-2 rounded transition-all ${
+                  isSaving 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white`}
               >
-                💾 Guardar Diseño
+                {isSaving ? '⏳ Guardando...' : '💾 Guardar Diseño'}
               </button>
             </div>
+          </div>
+
+          {/* Mensaje de estado */}
+          {saveMessage.type && (
+            <div className={`mb-4 p-3 rounded-lg ${
+              saveMessage.type === 'success' 
+                ? 'bg-green-100 border border-green-400 text-green-700' 
+                : 'bg-red-100 border border-red-400 text-red-700'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {saveMessage.type === 'success' ? '✅' : '❌'}
+                </span>
+                <span>{saveMessage.text}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Diseños guardados */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-gray-700">
+                📚 Diseños Guardados ({savedDesigns.length})
+              </h3>
+              <button
+                onClick={() => setShowSavedDesigns(!showSavedDesigns)}
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+              >
+                {showSavedDesigns ? '🔼 Ocultar' : '🔽 Mostrar'}
+              </button>
+            </div>
+            
+            {showSavedDesigns && (
+              <div className="bg-gray-50 border rounded-lg p-3 max-h-32 overflow-y-auto">
+                {isLoadingDesigns ? (
+                  <div className="text-center text-gray-500">
+                    ⏳ Cargando diseños...
+                  </div>
+                ) : savedDesigns.length === 0 ? (
+                  <div className="text-center text-gray-500">
+                    📝 No hay diseños guardados
+                  </div>
+                ) : (
+                  <div className="grid gap-2">
+                    {savedDesigns.map((savedDesign) => (
+                      <div
+                        key={savedDesign.id}
+                        className="flex items-center justify-between bg-white p-2 rounded border hover:bg-blue-50"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{savedDesign.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(savedDesign.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleLoadDesign(savedDesign)}
+                            className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                            title="Cargar diseño"
+                          >
+                            📂
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDesign(savedDesign.id, savedDesign.name)}
+                            className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                            title="Eliminar diseño"
+                          >
+                            �️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tabla editable */}
@@ -420,8 +983,8 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
               ref={tableRef}
               className="w-full border-collapse"
               style={{ 
-                fontFamily: design.font.family,
-                fontSize: `${design.font.size}px`
+                fontFamily: design.font?.family || 'Calibri',
+                fontSize: `${design.font?.size || 10}px`
               }}
             >
               <tbody>

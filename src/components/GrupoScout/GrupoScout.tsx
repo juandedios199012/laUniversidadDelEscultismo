@@ -8,6 +8,7 @@ export default function GrupoScout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<GrupoScout | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -73,6 +74,7 @@ export default function GrupoScout() {
       lugar_reunion: ''
     });
     setShowForm(false);
+    setEditingGroup(null);
   };
 
   // CRUD Operations
@@ -80,25 +82,47 @@ export default function GrupoScout() {
     try {
       setLoading(true);
       
-      console.log('💾 Guardando grupo scout...', formData);
-      
-      const { error } = await supabase
-        .from('grupos_scout')
-        .insert([{
-          nombre: formData.nombre,
-          numeral: formData.numeral,
-          localidad: formData.localidad,
-          region: formData.region,
-          fecha_fundacion: formData.fecha_fundacion,
-          fundador: formData.fundador,
-          lugar_reunion: formData.lugar_reunion,
-          codigo_grupo: `GR${String(Date.now()).slice(-4)}`, // Código temporal
-          activo: true
-        }]);
+      if (editingGroup) {
+        // Actualizar grupo existente
+        console.log('✏️ Actualizando grupo scout...', editingGroup.id);
+        
+        const { error } = await supabase
+          .from('grupos_scout')
+          .update({
+            nombre: formData.nombre,
+            numeral: formData.numeral,
+            localidad: formData.localidad,
+            region: formData.region,
+            fecha_fundacion: formData.fecha_fundacion,
+            fundador: formData.fundador,
+            lugar_reunion: formData.lugar_reunion
+          })
+          .eq('id', editingGroup.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        console.log('✅ Grupo scout actualizado exitosamente');
+      } else {
+        // Crear nuevo grupo
+        console.log('💾 Guardando grupo scout...', formData);
+        
+        const { error } = await supabase
+          .from('grupos_scout')
+          .insert([{
+            nombre: formData.nombre,
+            numeral: formData.numeral,
+            localidad: formData.localidad,
+            region: formData.region,
+            fecha_fundacion: formData.fecha_fundacion,
+            fundador: formData.fundador,
+            lugar_reunion: formData.lugar_reunion,
+            codigo_grupo: `GR${String(Date.now()).slice(-4)}`, // Código temporal
+            activo: true
+          }]);
 
-      console.log('✅ Grupo scout guardado exitosamente');
+        if (error) throw error;
+        console.log('✅ Grupo scout guardado exitosamente');
+      }
+
       resetForm();
       await loadData(); // Recargar datos
       
@@ -111,35 +135,18 @@ export default function GrupoScout() {
   };
 
   const handleEdit = async (grupo: GrupoScout) => {
-    try {
-      setLoading(true);
-      
-      console.log('✏️ Editando grupo scout...', grupo.id);
-      
-      const { error } = await supabase
-        .from('grupos_scout')
-        .update({
-          nombre: grupo.nombre,
-          numeral: grupo.numeral,
-          localidad: grupo.localidad,
-          region: grupo.region,
-          fecha_fundacion: grupo.fecha_fundacion,
-          fundador: grupo.fundador,
-          lugar_reunion: grupo.lugar_reunion
-        })
-        .eq('id', grupo.id);
-
-      if (error) throw error;
-
-      console.log('✅ Grupo scout actualizado exitosamente');
-      await loadData(); // Recargar datos
-      
-    } catch (error: any) {
-      console.error('❌ Error al actualizar grupo:', error);
-      setError(error.message || 'Error al actualizar el grupo scout');
-    } finally {
-      setLoading(false);
-    }
+    // Cargar datos del grupo en el formulario
+    setFormData({
+      nombre: grupo.nombre || '',
+      numeral: grupo.numeral || '',
+      localidad: grupo.localidad || '',
+      region: grupo.region || '',
+      fecha_fundacion: grupo.fecha_fundacion || '',
+      fundador: grupo.fundador || '',
+      lugar_reunion: grupo.lugar_reunion || ''
+    });
+    setEditingGroup(grupo);
+    setShowForm(true);
   };
 
   const handleDelete = async (grupoId: string) => {
@@ -221,7 +228,9 @@ export default function GrupoScout() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Nuevo Grupo Scout</h2>
+              <h2 className="text-xl font-semibold">
+                {editingGroup ? 'Editar Grupo Scout' : 'Nuevo Grupo Scout'}
+              </h2>
               <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded">
                 <X className="w-5 h-5" />
               </button>
@@ -256,6 +265,27 @@ export default function GrupoScout() {
                 onChange={(e) => handleInputChange('region', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               />
+              <input
+                type="date"
+                placeholder="Fecha de fundación"
+                value={formData.fecha_fundacion}
+                onChange={(e) => handleInputChange('fecha_fundacion', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <input
+                type="text"
+                placeholder="Fundador (opcional)"
+                value={formData.fundador}
+                onChange={(e) => handleInputChange('fundador', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <textarea
+                placeholder="Lugar de reunión (opcional)"
+                value={formData.lugar_reunion}
+                onChange={(e) => handleInputChange('lugar_reunion', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows={2}
+              />
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -266,14 +296,11 @@ export default function GrupoScout() {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  // TODO: Save to database
-                  console.log('Guardando grupo:', formData);
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                onClick={handleSave}
+                disabled={loading || !formData.nombre.trim()}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Guardar
+                {loading ? 'Guardando...' : (editingGroup ? 'Actualizar' : 'Guardar')}
               </button>
             </div>
           </div>
@@ -336,14 +363,14 @@ export default function GrupoScout() {
 
                   <div className="flex items-center gap-2 ml-4">
                     <button
-                      onClick={() => console.log('Editar grupo:', grupo.id)}
+                      onClick={() => handleEdit(grupo)}
                       className="text-blue-600 hover:text-blue-900 p-1 rounded"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => console.log('Eliminar grupo:', grupo.id)}
+                      onClick={() => handleDelete(grupo.id)}
                       className="text-red-600 hover:text-red-900 p-1 rounded"
                       title="Eliminar"
                     >

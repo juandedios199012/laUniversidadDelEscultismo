@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import Header from './components/Layout/Header';
-import Sidebar from './components/Layout/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import RegistroScout from './components/RegistroScout/RegistroScout';
@@ -21,8 +19,29 @@ import DNGI03DocumentGenerator from './components/documents/DNGI03DocumentGenera
 import BulkDocumentGenerator from './components/documents/BulkDocumentGenerator';
 import VisualDocumentDesignerDemo from './pages/VisualDocumentDesignerDemo';
 
-function App() {
+// Authentication imports
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginPage from './pages/LoginPage';
+import LoadingSpinner from './components/ui/LoadingSpinner';
+import ProtectedLayout from './components/Layout/ProtectedLayout';
+
+function AppContent() {
+  const { user, loading } = useAuth();
   const [activeModule, setActiveModule] = useState('dashboard');
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(var(--gaming-bg))' }}>
+        <LoadingSpinner size="lg" message="Cargando aplicación..." />
+      </div>
+    );
+  }
+
+  // Mostrar login si no hay usuario autenticado
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -69,18 +88,19 @@ function App() {
     }
   };
 
+  // Renderizar la aplicación protegida
   return (
-    <div className="min-h-screen" style={{ background: 'hsl(var(--gaming-bg))' }}>
-      <Header />
-      <div className="flex pt-16">
-        <Sidebar activeTab={activeModule} onTabChange={setActiveModule} />
-        <main className="flex-1 ml-64 p-6">
-          <div className="animate-slide-in">
-            {renderActiveModule()}
-          </div>
-        </main>
-      </div>
-    </div>
+    <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
+      {renderActiveModule()}
+    </ProtectedLayout>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

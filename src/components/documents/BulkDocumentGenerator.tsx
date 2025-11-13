@@ -8,6 +8,10 @@ import { Scout } from '../../lib/supabase';
 import ScoutService from '../../services/scoutService';
 import BulkDocumentUtils from '../../utils/BulkDocumentUtils';
 import FileDownloadUtils, { DownloadableDocument } from '../../utils/FileDownloadUtils';
+import { BulkDynamicDocumentGenerator } from '../../utils/DynamicDocumentAdapter';
+import { DocumentFormat } from '../../utils/DocumentGenerationStrategy';
+import { TableDesign } from './TableDesigner';
+import { tableDesignService, TableDesign as DBTableDesign } from '../../services/tableDesignService';
 
 interface BulkDocumentGeneratorProps {
   userRole: string;
@@ -21,13 +25,14 @@ interface GenerationProgress {
   isGenerating: boolean;
 }
 
-export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
-  userRole,
-  userName
-}) => {
+export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = () => {
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [selectedScouts, setSelectedScouts] = useState<Set<string>>(new Set());
+  const [availableDesigns, setAvailableDesigns] = useState<DBTableDesign[]>([]);
+  const [selectedDesign, setSelectedDesign] = useState<DBTableDesign | null>(null);
+  const [documentFormat, setDocumentFormat] = useState<DocumentFormat>('html');
   const [loading, setLoading] = useState(true);
+  const [loadingDesigns, setLoadingDesigns] = useState(true);
   const [progress, setProgress] = useState<GenerationProgress>({
     total: 0,
     completed: 0,
@@ -37,7 +42,49 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
 
   useEffect(() => {
     loadScouts();
+    loadDesigns();
   }, []);
+
+  // Cargar diseños disponibles
+  const loadDesigns = async () => {
+    try {
+      setLoadingDesigns(true);
+      const designs = await tableDesignService.getAllDesigns();
+      
+      // Eliminar duplicados por nombre Y categoría (más estricto)
+      const uniqueDesigns = designs.filter((design, index, self) => {
+        const isDuplicate = self.findIndex(d => 
+          d.name === design.name && 
+          d.category === design.category
+        ) !== index;
+        
+        if (isDuplicate) {
+          console.log('🗑️ Removiendo duplicado:', design.name);
+        }
+        return !isDuplicate;
+      });
+      
+      console.log('📚 Total diseños obtenidos:', designs.length);
+      console.log('📚 Diseños únicos después de filtro:', uniqueDesigns.length);
+      console.log('📋 Diseños únicos:', uniqueDesigns.map(d => `${d.name} (${d.category})`));
+      
+      setAvailableDesigns(uniqueDesigns);
+      
+      // Seleccionar diseño por defecto si existe
+      const defaultDesign = uniqueDesigns.find(d => d.is_default && d.category === 'dngi03');
+      if (defaultDesign) {
+        setSelectedDesign(defaultDesign);
+        console.log('✅ Diseño por defecto seleccionado:', defaultDesign.name);
+      } else if (uniqueDesigns.length > 0) {
+        setSelectedDesign(uniqueDesigns[0]);
+        console.log('✅ Primer diseño seleccionado:', uniqueDesigns[0].name);
+      }
+    } catch (error) {
+      console.error('Error cargando diseños:', error);
+    } finally {
+      setLoadingDesigns(false);
+    }
+  };
 
   const loadScouts = async () => {
     try {
@@ -69,14 +116,11 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
     }
   };
 
-  const generateSingleDocument = async (scout: Scout): Promise<Blob> => {
-    // Generar documento Word real
-            const scoutName = `${scout.nombres} ${scout.apellidos}`;
-    return await FileDownloadUtils.createRealWordDocument(scoutName);
-  };
-
   const generateBulkDocuments = async () => {
-    if (selectedScouts.size === 0) return;
+    if (selectedScouts.size === 0 || !selectedDesign) {
+      alert('Por favor selecciona scouts y un diseño de plantilla');
+      return;
+    }
 
     setProgress({
       total: selectedScouts.size,
@@ -88,46 +132,87 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
     try {
       const selectedScoutsData = scouts.filter(s => selectedScouts.has(s.id));
       
-      // Generar documentos y recopilar para ZIP
-      const documents: DownloadableDocument[] = [];
-      
-      // Usar el sistema optimizado de generación masiva
-      const generatedBlobs = await BulkDocumentUtils.processBulkDocuments(
-        selectedScoutsData,
-        async (scout) => {
-          // Lógica de generación del documento DNGI-03
-          return await generateSingleDocument(scout);
+      // Convertir el diseño de la DB al formato del componente
+      const designForGeneration: TableDesign = {
+        id: selectedDesign.design_data.id || selectedDesign.id,
+        name: selectedDesign.name,
+        description: selectedDesign.description,
+        rows: selectedDesign.design_data.rows || [],
+        totalColumns: selectedDesign.design_data.totalColumns || 4,
+        defaultCellWidth: selectedDesign.design_data.defaultCellWidth || 120,
+        defaultRowHeight: selectedDesign.design_data.defaultRowHeight || 30,
+        borderWidth: selectedDesign.design_data.borderWidth || 0.5,
+        borderColor: selectedDesign.design_data.borderColor || '#000000',
+        borderStyle: selectedDesign.design_data.borderStyle || 'solid',
+        cellPadding: selectedDesign.design_data.cellPadding || { top: 3, right: 3, bottom: 3, left: 3 },
+        cellMargin: selectedDesign.design_data.cellMargin || { top: 0, right: 0, bottom: 0, left: 0 },
+        font: selectedDesign.design_data.font || {
+          family: 'Arial',
+          size: 12,
+          weight: 'normal',
+          style: 'normal'
         },
-        {
-          progressCallback: (completed, currentName) => {
-            setProgress(prev => ({
-              ...prev,
-              completed,
-              current: currentName
-            }));
-          }
+        tableLayout: selectedDesign.design_data.tableLayout || 'auto',
+        tableMargin: selectedDesign.design_data.tableMargin || { top: 10, right: 10, bottom: 10, left: 10 },
+        defaultBackgroundColor: selectedDesign.design_data.defaultBackgroundColor || '#ffffff',
+        defaultTextColor: selectedDesign.design_data.defaultTextColor || '#000000',
+        alternateRowColor: selectedDesign.design_data.alternateRowColor,
+        headerBackgroundColor: selectedDesign.design_data.headerBackgroundColor || '#4a5568',
+        headerTextColor: selectedDesign.design_data.headerTextColor || '#ffffff',
+        created_at: selectedDesign.created_at,
+        updated_at: selectedDesign.updated_at
+      };
+
+      // Usar el generador dinámico con diseño personalizado
+      console.log('🎯 Generando documentos con formato:', documentFormat);
+      console.log('🎨 Usando plantilla:', selectedDesign.name);
+      console.log('👥 Scouts seleccionados:', selectedScoutsData.length);
+      
+      const bulkGenerator = new BulkDynamicDocumentGenerator();
+      const { documents, errors } = await bulkGenerator.generateBulkDocuments(
+        designForGeneration,
+        selectedScoutsData,
+        documentFormat,
+        (completed, currentName) => {
+          setProgress(prev => ({
+            ...prev,
+            completed,
+            current: currentName
+          }));
         }
       );
 
-      // Preparar documentos para el ZIP
-      selectedScoutsData.forEach((scout, index) => {
-        const filename = FileDownloadUtils.generateScoutFilename(
-          `${scout.nombres} ${scout.apellidos}`,
-          'DNGI-03'
-        );
-        
-        documents.push({
-          filename,
-          content: generatedBlobs[index],
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      console.log('📄 Documentos generados:', documents.length);
+      console.log('❌ Errores encontrados:', errors.length);
+      
+      // Verificar tipos de documentos generados
+      documents.forEach((doc, index) => {
+        console.log(`📝 Documento ${index + 1}:`, {
+          filename: doc.filename,
+          mimeType: doc.mimeType,
+          size: doc.document.byteLength
         });
       });
 
+      // Preparar documentos para el ZIP
+      const downloadableDocuments: DownloadableDocument[] = documents.map(doc => {
+        // Crear un ArrayBuffer correcto desde el Uint8Array
+        const arrayBuffer = new ArrayBuffer(doc.document.byteLength);
+        const uint8View = new Uint8Array(arrayBuffer);
+        uint8View.set(doc.document);
+        
+        return {
+          filename: doc.filename,
+          content: new Blob([arrayBuffer], { type: doc.mimeType }),
+          mimeType: doc.mimeType
+        };
+      });
+
       // Descargar ZIP con todos los documentos
-      const zipFilename = `DNGI-03_Lote_${new Date().toISOString().slice(0, 10)}.zip`;
+      const zipFilename = `DNGI-03_${selectedDesign.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.zip`;
       
       await FileDownloadUtils.downloadMultipleFilesAsZip(
-        documents,
+        downloadableDocuments,
         zipFilename,
         (_, current) => {
           setProgress(prev => ({
@@ -137,13 +222,15 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
         }
       );
 
-      const totalDocuments = selectedScouts.size;
-      
-      alert(`✅ ${totalDocuments} documentos DNGI-03 generados y descargados exitosamente
-      📦 Archivo: ${zipFilename}`);
-      
-      console.log(`🚀 Generación masiva completada: ${totalDocuments} documentos`);
-      
+      alert(`✅ ${documents.length} documentos DNGI-03 generados y descargados exitosamente
+      📦 Archivo: ${zipFilename}
+      🎨 Plantilla: ${selectedDesign.name}`);
+
+      if (errors.length > 0) {
+        console.warn('Errores en algunos documentos:', errors);
+        alert(`Generación completada con ${errors.length} errores. Ver consola para detalles.`);
+      }
+
     } catch (error) {
       console.error('Error generating bulk documents:', error);
       alert('❌ Error al generar los documentos');
@@ -188,12 +275,76 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = ({
           </div>
           <button
             onClick={generateBulkDocuments}
-            disabled={selectedScouts.size === 0 || progress.isGenerating}
+            disabled={selectedScouts.size === 0 || progress.isGenerating || !selectedDesign}
             className="mt-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Generar {selectedScouts.size > 0 ? selectedScouts.size : ''} Documentos
           </button>
+        </div>
+      </div>
+
+      {/* Template and Format Selection */}
+      <div className="bg-white p-4 rounded-lg shadow border space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          🎨 Configuración de Plantilla y Formato
+        </h3>
+        
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Selector de Plantilla */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Plantilla de Diseño
+            </label>
+            {loadingDesigns ? (
+              <div className="flex items-center p-2 text-gray-500">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Cargando plantillas...
+              </div>
+            ) : (
+              <select
+                value={selectedDesign?.id || ''}
+                onChange={(e) => {
+                  const design = availableDesigns.find(d => d.id === e.target.value);
+                  setSelectedDesign(design || null);
+                }}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Seleccionar plantilla...</option>
+                {availableDesigns.map(design => (
+                  <option key={design.id} value={design.id}>
+                    {design.name} {design.is_default ? '(Por defecto)' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedDesign && (
+              <p className="text-xs text-gray-500 mt-1">
+                📝 {selectedDesign.description}
+              </p>
+            )}
+          </div>
+
+          {/* Selector de Formato */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Formato de Documento
+            </label>
+            <select
+              value={documentFormat}
+              onChange={(e) => setDocumentFormat(e.target.value as DocumentFormat)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="html">📄 HTML (Recomendado)</option>
+              <option value="word">📝 Word (.docx)</option>
+              <option value="pdf">📋 PDF</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {documentFormat === 'html' && '🌐 Perfecto para impresión y visualización'}
+              {documentFormat === 'word' && '✏️ Editable con Microsoft Word'}
+              {documentFormat === 'pdf' && '🔒 Formato fijo, listo para imprimir'}
+            </p>
+          </div>
         </div>
       </div>
 

@@ -19,29 +19,38 @@ export class DynamicPDFGenerator {
    * Generar PDF con diseño personalizado
    */
   async generatePDF(scout: StrategyScout): Promise<Uint8Array> {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-    const scoutData = this.mapScoutToData(scout);
+      const scoutData = this.mapScoutToData(scout);
 
-    // Configurar fuente
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(this.design.font.size);
+      // Configurar fuente
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(this.design.font.size);
 
-    // Título del documento
-    doc.setFontSize(this.design.font.size + 4);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Datos del Miembro Juvenil (menor de edad)', 105, 20, { align: 'center' });
+      // Título del documento
+      doc.setFontSize(this.design.font.size + 4);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Datos del Miembro Juvenil (menor de edad)', 105, 20, { align: 'center' });
 
-    // Generar tabla dinámica
-    await this.generateDynamicTable(doc, scoutData);
+      // Generar tabla dinámica
+      await this.generateDynamicTable(doc, scoutData);
 
-    // Convertir a Uint8Array
-    const pdfArrayBuffer = doc.output('arraybuffer');
-    return new Uint8Array(pdfArrayBuffer);
+      // Convertir a Uint8Array de forma segura
+      const pdfOutput = doc.output('arraybuffer');
+      const uint8Array = new Uint8Array(pdfOutput);
+      
+      console.log('✅ PDF generado correctamente, tamaño:', uint8Array.byteLength);
+      
+      return uint8Array;
+    } catch (error) {
+      console.error('❌ Error en generatePDF:', error);
+      throw new Error(`Error generando PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   }
 
   /**
@@ -65,7 +74,9 @@ export class DynamicPDFGenerator {
             fillColor: this.hexToRgb(cell.backgroundColor || '#FFFFFF'),
             textColor: this.hexToRgb(cell.textColor || '#000000'),
             halign: this.convertAlignment(cell.textAlign || 'left'),
-            valign: 'middle'
+            valign: 'middle',
+            lineWidth: 0.1, // Borde fino para cada celda
+            cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } // Padding uniforme
           },
           colSpan: cell.colspan || 1,
           rowSpan: cell.rowspan || 1
@@ -85,9 +96,21 @@ export class DynamicPDFGenerator {
       styles: {
         fontSize: this.design.font.size,
         font: 'helvetica',
-        cellPadding: 2,
+        cellPadding: {
+          top: this.design.cellPadding?.top || 3,
+          right: this.design.cellPadding?.right || 3,
+          bottom: this.design.cellPadding?.bottom || 3,
+          left: this.design.cellPadding?.left || 3
+        },
         lineWidth: this.design.borderWidth || 0.5,
-        lineColor: this.hexToRgb(this.design.borderColor || '#000000')
+        lineColor: this.hexToRgb(this.design.borderColor || '#000000'),
+        textColor: this.hexToRgb(this.design.defaultTextColor || '#000000')
+      },
+      headStyles: {
+        fillColor: this.hexToRgb(this.design.headerBackgroundColor || '#4a5568'),
+        textColor: this.hexToRgb(this.design.headerTextColor || '#ffffff'),
+        fontStyle: this.design.font.weight === 'bold' ? 'bold' : 'normal',
+        lineWidth: this.design.borderWidth || 0.5
       },
       columnStyles: {
         0: { cellWidth: 'auto' },
@@ -96,7 +119,13 @@ export class DynamicPDFGenerator {
         3: { cellWidth: 'auto' }
       },
       tableWidth: 'auto',
-      margin: { top: 10, left: 10, right: 10 }
+      margin: {
+        top: this.design.tableMargin?.top || 10,
+        left: this.design.tableMargin?.left || 10,
+        right: this.design.tableMargin?.right || 10
+      },
+      tableLineWidth: this.design.borderWidth || 0.5,
+      tableLineColor: this.hexToRgb(this.design.borderColor || '#000000')
     });
   }
 
