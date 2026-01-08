@@ -4,7 +4,7 @@ import { Award, Users, Save, UserPlus, Shield } from 'lucide-react';
 export default function PatrullasSimple() {
   const [formData, setFormData] = useState({
     nombre: '',
-    rama: 'Scouts',
+    rama: 'Tropa',
     dirigente: '',
     lema: '',
     grito: '',
@@ -12,9 +12,10 @@ export default function PatrullasSimple() {
   });
 
   const ramas = [
-    { value: 'Lobatos', label: 'Lobatos (7-10 años)' },
-    { value: 'Scouts', label: 'Scouts (11-14 años)' },
-    { value: 'Rovers', label: 'Rovers (15-21 años)' }
+    { value: 'Manada', label: 'Manada (7-10 años)' },
+    { value: 'Tropa', label: 'Tropa (11-14 años)' },
+    { value: 'Caminantes', label: 'Caminantes (15-17 años)' },
+    { value: 'Clan', label: 'Clan (18-21 años)' }
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,7 +24,7 @@ export default function PatrullasSimple() {
     // Reset form
     setFormData({
       nombre: '',
-      rama: 'Scouts',
+      rama: 'Tropa',
       dirigente: '',
       lema: '',
       grito: '',

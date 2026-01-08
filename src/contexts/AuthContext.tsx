@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
 
 interface AuthContextType {
@@ -18,36 +18,13 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  console.log('🔐 AuthProvider inicializando...');
+  
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Obtener usuario actual al cargar
-    const initializeAuth = async () => {
-      try {
-        setLoading(true);
-        const currentUser = await AuthService.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('❌ Error inicializando autenticación:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = AuthService.onAuthStateChange((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  // Sin verificación de autenticación - acceso directo
+  // La autenticación está deshabilitada temporalmente
 
   const signInWithGoogle = async () => {
     const result = await AuthService.signInWithGoogle();
@@ -91,6 +68,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUpWithPassword,
     signOut,
   };
+
+  console.log('✅ AuthProvider renderizando children con valores:', { user, loading });
 
   return (
     <AuthContext.Provider value={value}>

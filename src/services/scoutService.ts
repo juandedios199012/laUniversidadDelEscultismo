@@ -21,12 +21,13 @@ class ScoutService {
   private static mapRamaToDb(rama?: string): string | null {
     if (!rama) return null;
     const r = rama.trim().toLowerCase();
-    if (['manada', 'lobatos', 'lobato', 'lobata'].includes(r)) return 'Lobatos';
-    if (['tropa', 'scouts', 'scout'].includes(r)) return 'Scouts';
-    if (['comunidad', 'rovers', 'rover'].includes(r)) return 'Rovers';
+    if (['manada', 'lobatos', 'lobato', 'lobata'].includes(r)) return 'Manada';
+    if (['tropa', 'scouts', 'scout'].includes(r)) return 'Tropa';
+    if (['caminantes', 'caminante'].includes(r)) return 'Caminantes';
+    if (['comunidad', 'rovers', 'rover', 'clan'].includes(r)) return 'Clan';
     if (['dirigente', 'dirigentes', 'dirigencia'].includes(r)) return 'Dirigentes';
-    // default to Scouts to avoid enum errors
-    return 'Scouts';
+    // default to Tropa to avoid enum errors
+    return 'Tropa';
   }
 
   private static mapParentescoToDb(parentesco?: string): string | null {
@@ -59,31 +60,34 @@ class ScoutService {
     try {
       console.log('🔍 Llamando a api_buscar_scouts...');
       
-      // Primero probemos sin filtros para ver si trae todos los scouts
       const { data, error } = await supabase
         .rpc('api_buscar_scouts', { p_filtros: {} });
 
-      console.log('📊 Respuesta completa de api_buscar_scouts:', { data, error });
-
       if (error) {
-        console.error('❌ Error en la llamada:', error);
-        throw error;
+        console.error('❌ Error en la llamada RPC:', error);
+        console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
+        return [];
       }
+      
+      console.log('📦 Respuesta completa:', data);
       
       // La función devuelve un objeto con estructura estándar
       if (data?.success && data?.data) {
-        console.log('✅ Datos obtenidos exitosamente:', data.data);
-        console.log('✅ Cantidad de scouts:', Array.isArray(data.data) ? data.data.length : 'No es array');
-        // Los scouts están directamente en data.data, no en data.data.scouts
+        console.log('✅ Scouts obtenidos:', data.data.length);
         return Array.isArray(data.data) ? data.data : [];
       }
       
+      // Si data es directamente un array
+      if (Array.isArray(data)) {
+        console.log('✅ Scouts obtenidos (array directo):', data.length);
+        return data;
+      }
+      
       console.log('⚠️ No se encontraron datos en la respuesta');
-      console.log('⚠️ Estructura de data:', data);
       return [];
     } catch (error) {
       console.error('❌ Error al obtener scouts:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -132,19 +136,24 @@ class ScoutService {
    */
   static async searchScouts(query: string): Promise<Scout[]> {
     try {
-      // Usar consulta directa con búsqueda de texto
+      console.log('🔍 Buscando scouts con query:', query);
+      
       const { data, error } = await supabase
-        .from('scouts')
-        .select('*')
-        .or(`nombres.ilike.%${query}%,apellidos.ilike.%${query}%,numero_documento.ilike.%${query}%`)
-        .order('fecha_ingreso', { ascending: false });
+        .rpc('api_buscar_scouts', { 
+          p_filtros: { buscar_texto: query } 
+        });
 
       if (error) {
         console.error('❌ Error en búsqueda de scouts:', error);
         return [];
       }
       
-      return data || [];
+      if (data?.success && data?.data) {
+        console.log('✅ Scouts encontrados:', data.data.length);
+        return Array.isArray(data.data) ? data.data : [];
+      }
+
+      return [];
     } catch (error) {
       console.error('❌ Error en búsqueda de scouts:', error);
       return [];
@@ -201,18 +210,18 @@ class ScoutService {
    */
   static async getScoutsByRama(rama: string): Promise<Scout[]> {
     try {
-      // Usar consulta directa filtrando por rama
-      const { data, error } = await supabase
-        .from('scouts')
-        .select('*')
-        .or(`rama.eq.${rama},rama_actual.eq.${rama},seccion.eq.${rama}`)
-        .order('fecha_ingreso', { ascending: false });
+      console.log('🎯 Obteniendo scouts por rama:', rama);
+      
+      const { data, error } = await supabase.rpc('api_buscar_scouts', {
+        p_filtros: { rama_actual: rama }
+      });
 
       if (error) {
         console.error('❌ Error al obtener scouts por rama:', error);
         return [];
       }
       
+      console.log('✅ Scouts obtenidos:', data?.length || 0);
       return data || [];
     } catch (error) {
       console.error('❌ Error al obtener scouts por rama:', error);
@@ -283,39 +292,10 @@ class ScoutService {
         });
 
       if (error) {
-        console.warn('🔄 Función api_registrar_scout no disponible, usando inserción directa:', error);
-        
-        // Fallback: inserción directa en la tabla scouts
-        const scoutId = crypto.randomUUID();
-        const codigoScout = `SCT${Date.now().toString().slice(-6)}`;
-        
-        const { error: insertError } = await supabase
-          .from('scouts')
-          .insert({
-            id: scoutId,
-            nombres: scoutData.nombres,
-            apellidos: scoutData.apellidos,
-            fecha_nacimiento: scoutData.fecha_nacimiento,
-            sexo: scoutData.sexo,
-            numero_documento: scoutData.numero_documento,
-            tipo_documento: tipoDocDb,
-            celular: scoutData.telefono || '',
-            correo: scoutData.email || '',
-            direccion: scoutData.direccion || '',
-            distrito: scoutData.distrito || '',
-            rama_actual: ramaDb,
-            codigo_scout: codigoScout,
-            estado: 'ACTIVO',
-            fecha_ingreso: new Date().toISOString().split('T')[0]
-          })
-          .select();
-          
-        if (insertError) throw insertError;
-        
+        console.error('❌ Error con api_registrar_scout:', error);
         return {
-          success: true,
-          scout_id: scoutId,
-          codigo_scout: codigoScout
+          success: false,
+          error: error.message || 'Error al registrar scout'
         };
       }
       
@@ -331,47 +311,10 @@ class ScoutService {
       return { success: false, error: data?.message || 'Error desconocido' };
     } catch (error) {
       console.error('❌ Error al registrar scout:', error);
-      
-      // Último intento con inserción directa
-      try {
-        const scoutId = crypto.randomUUID();
-        const codigoScout = `SCT${Date.now().toString().slice(-6)}`;
-        
-        const { error: insertError } = await supabase
-          .from('scouts')
-          .insert({
-            id: scoutId,
-            nombres: scoutData.nombres,
-            apellidos: scoutData.apellidos,
-            fecha_nacimiento: scoutData.fecha_nacimiento,
-            sexo: scoutData.sexo,
-            numero_documento: scoutData.numero_documento,
-            tipo_documento: tipoDocDb,
-            celular: scoutData.telefono || '',
-            correo: scoutData.email || '',
-            direccion: scoutData.direccion || '',
-            distrito: scoutData.distrito || '',
-            rama_actual: ramaDb,
-            codigo_scout: codigoScout,
-            estado: 'ACTIVO',
-            fecha_ingreso: new Date().toISOString().split('T')[0]
-          })
-          .select();
-          
-        if (insertError) throw insertError;
-        
-        return {
-          success: true,
-          scout_id: scoutId,
-          codigo_scout: codigoScout
-        };
-      } catch (fallbackError) {
-        console.error('❌ Error en inserción de respaldo:', fallbackError);
-        return { 
-          success: false, 
-          error: `Error al registrar scout: ${String(fallbackError)}` 
-        };
-      }
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido al registrar scout'
+      };
     }
   }
 
@@ -515,21 +458,100 @@ class ScoutService {
     try {
       console.log('👨‍👩‍👧‍👦 Obteniendo familiares para scout:', scoutId);
       
-      const { data, error } = await supabase
-        .from('familiares_scout')
-        .select('*')
-        .eq('scout_id', scoutId);
+      // Usar api_obtener_scout que ya retorna los familiares
+      const { data, error } = await supabase.rpc('api_obtener_scout', {
+        p_scout_id: scoutId
+      });
       
       if (error) {
-        console.error('❌ Error al obtener familiares:', error);
+        console.error('❌ Error al obtener scout con familiares:', error);
         return [];
       }
       
-      console.log('✅ Familiares obtenidos:', data);
-      return data || [];
+      const familiares = data?.familiares || [];
+      console.log('✅ Familiares obtenidos:', familiares.length);
+      return familiares;
     } catch (error) {
       console.error('❌ Error al obtener familiares del scout:', error);
       return [];
+    }
+  }
+
+  /**
+   * 👨‍👩‍👧‍👦 CRUD de Familiares
+   */
+  
+  /**
+   * Crear un familiar para un scout
+   */
+  static async createFamiliar(scoutId: string, familiarData: any) {
+    try {
+      console.log('📝 Creando familiar para scout:', scoutId);
+      
+      const { data, error } = await supabase.rpc('api_registrar_familiar', {
+        p_scout_id: scoutId,
+        p_familiar_data: familiarData
+      });
+
+      if (error) {
+        console.error('❌ Error al crear familiar:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Familiar creado:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error al crear familiar:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Actualizar un familiar existente
+   */
+  static async updateFamiliar(familiarId: string, updates: any) {
+    try {
+      console.log('✏️ Actualizando familiar:', familiarId);
+      
+      const { data, error } = await supabase.rpc('api_actualizar_familiar', {
+        p_familiar_id: familiarId,
+        p_familiar_data: updates
+      });
+
+      if (error) {
+        console.error('❌ Error al actualizar familiar:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Familiar actualizado:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error al actualizar familiar:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Eliminar un familiar
+   */
+  static async deleteFamiliar(familiarId: string) {
+    try {
+      console.log('🗑️ Eliminando familiar:', familiarId);
+      
+      const { data, error } = await supabase.rpc('api_eliminar_familiar', {
+        p_familiar_id: familiarId
+      });
+
+      if (error) {
+        console.error('❌ Error al eliminar familiar:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Familiar eliminado');
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error al eliminar familiar:', error);
+      return { success: false, error: error.message };
     }
   }
 }

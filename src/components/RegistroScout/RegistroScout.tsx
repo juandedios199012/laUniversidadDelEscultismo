@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { 
   UserCheck, Save, FileText, 
   User, Heart, Users, Flag, ChevronDown, ChevronUp, Plus,
-  AlertCircle, Search, Edit, Eye, Phone, Mail
+  AlertCircle, Search, Edit, Eye, Phone, Mail, Activity, Church
 } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import type { Scout } from '../../lib/supabase';
+import type { Familiar } from '../../types';
+import FamiliarModal from './FamiliarModal';
+import FamiliarTable from './FamiliarTable';
 
 interface FormularioScout {
   nombres: string;
@@ -15,24 +18,32 @@ interface FormularioScout {
   numero_documento: string;
   tipo_documento: string;
   celular: string;
+  celular_secundario: string;
+  telefono: string;
   correo: string;
+  correo_secundario: string;
+  correo_institucional: string;
   departamento: string;
   provincia: string;
   distrito: string;
   direccion: string;
+  codigo_postal: string;
   centro_estudio: string;
+  anio_estudios: string;
   ocupacion: string;
   centro_laboral: string;
   es_dirigente: boolean;
   rama_actual: string;
   rama: string;
-  // Datos del familiar
-  familiar_nombres: string;
-  familiar_apellidos: string;
-  parentesco: string;
-  familiar_celular: string;
-  familiar_correo: string;
-  familiar_ocupacion: string;
+  codigo_asociado: string;
+  religion: string;
+  grupo_sanguineo: string;
+  factor_sanguineo: string;
+  seguro_medico: string;
+  tipo_discapacidad: string;
+  carnet_conadis: string;
+  descripcion_discapacidad: string;
+  fecha_ingreso: string;
 }
 
 export default function RegistroScout() {
@@ -44,6 +55,12 @@ export default function RegistroScout() {
   const [busqueda, setBusqueda] = useState('');
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [estadisticas, setEstadisticas] = useState<any>(null);
+  const [familiares, setFamiliares] = useState<Familiar[]>([]);
+  const [familiarModal, setFamiliarModal] = useState<{
+    isOpen: boolean;
+    familiar: Familiar | null;
+    index: number | null;
+  }>({ isOpen: false, familiar: null, index: null });
 
   const [formData, setFormData] = useState<FormularioScout>({
     nombres: '',
@@ -53,30 +70,41 @@ export default function RegistroScout() {
     numero_documento: '',
     tipo_documento: 'DNI',
     celular: '',
+    celular_secundario: '',
+    telefono: '',
     correo: '',
+    correo_secundario: '',
+    correo_institucional: '',
     departamento: '',
     provincia: '',
     distrito: '',
     direccion: '',
+    codigo_postal: '',
     centro_estudio: '',
+    anio_estudios: '',
     ocupacion: '',
     centro_laboral: '',
     es_dirigente: false,
     rama_actual: '',
     rama: '',
-    familiar_nombres: '',
-    familiar_apellidos: '',
-    parentesco: '',
-    familiar_celular: '',
-    familiar_correo: '',
-    familiar_ocupacion: ''
+    codigo_asociado: '',
+    religion: '',
+    grupo_sanguineo: '',
+    factor_sanguineo: '',
+    seguro_medico: '',
+    tipo_discapacidad: '',
+    carnet_conadis: '',
+    descripcion_discapacidad: '',
+    fecha_ingreso: ''
   });
 
   const [seccionesAbiertas, setSeccionesAbiertas] = useState({
     datosPersonales: true,
     datosContacto: false,
     datosEducacion: false,
-    datosFamiliar: false,
+    datosReligiosos: false,
+    datosSalud: false,
+    datosFamiliares: false,
     datosScout: false
   });
 
@@ -98,11 +126,54 @@ export default function RegistroScout() {
   ];
 
   const ramaOptions = [
-    { value: 'Lobatos', label: '🐺 Lobatos (6-10 años)' },
-    { value: 'Scouts', label: '🦅 Scouts (11-14 años)' },
-    { value: 'Rovers', label: '🥾 Rovers (15-17 años)' },
-    { value: 'Dirigentes', label: '�‍🏫 Dirigentes (18+ años)' }
+    { value: 'Manada', label: '🐺 Manada (7-10 años)' },
+    { value: 'Tropa', label: '🦅 Tropa (11-14 años)' },
+    { value: 'Caminantes', label: '🏕️ Caminantes (15-17 años)' },
+    { value: 'Clan', label: '🥾 Clan (18-21 años)' },
+    { value: 'Dirigentes', label: '👨‍🏫 Dirigentes (22+ años)' }
   ];
+
+  const grupoSanguineoOptions = [
+    { value: 'A', label: 'A' },
+    { value: 'B', label: 'B' },
+    { value: 'AB', label: 'AB' },
+    { value: 'O', label: 'O' }
+  ];
+
+  const factorSanguineoOptions = [
+    { value: 'POSITIVO', label: 'Positivo (+)' },
+    { value: 'NEGATIVO', label: 'Negativo (-)' }
+  ];
+
+  // Funciones de manejo de familiares
+  const handleAgregarFamiliar = () => {
+    setFamiliarModal({ isOpen: true, familiar: null, index: null });
+  };
+
+  const handleEditarFamiliar = (familiar: Familiar, index: number) => {
+    setFamiliarModal({ isOpen: true, familiar, index });
+  };
+
+  const handleEliminarFamiliar = (index: number) => {
+    if (familiares.length === 1) {
+      alert('Debe haber al menos un familiar responsable registrado');
+      return;
+    }
+    setFamiliares(familiares.filter((_, i) => i !== index));
+  };
+
+  const handleGuardarFamiliar = (familiar: Familiar) => {
+    if (familiarModal.index !== null) {
+      // Editar familiar existente
+      const nuevosFamiliares = [...familiares];
+      nuevosFamiliares[familiarModal.index] = familiar;
+      setFamiliares(nuevosFamiliares);
+    } else {
+      // Agregar nuevo familiar
+      setFamiliares([...familiares, familiar]);
+    }
+    setFamiliarModal({ isOpen: false, familiar: null, index: null });
+  };
 
   // Efectos
   useEffect(() => {
@@ -128,11 +199,20 @@ export default function RegistroScout() {
   const cargarScouts = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('🔄 Iniciando carga de scouts...');
+      
       const data = await ScoutService.getAllScouts();
+      console.log('📊 Datos recibidos:', data);
+      
       setScouts(data);
+      
+      if (data.length === 0) {
+        console.log('⚠️ No se encontraron scouts en la base de datos');
+      }
     } catch (error) {
-      console.error('Error al cargar scouts:', error);
-      setError('Error al cargar la lista de scouts');
+      console.error('❌ Error al cargar scouts:', error);
+      setError('Error al cargar la lista de scouts. Verifica la conexión a la base de datos.');
     } finally {
       setLoading(false);
     }
@@ -228,24 +308,34 @@ export default function RegistroScout() {
       numero_documento: '',
       tipo_documento: 'DNI',
       celular: '',
+      celular_secundario: '',
+      telefono: '',
       correo: '',
+      correo_secundario: '',
+      correo_institucional: '',
       departamento: '',
       provincia: '',
       distrito: '',
       direccion: '',
+      codigo_postal: '',
       centro_estudio: '',
+      anio_estudios: '',
       ocupacion: '',
       centro_laboral: '',
       es_dirigente: false,
       rama_actual: '',
       rama: '',
-      familiar_nombres: '',
-      familiar_apellidos: '',
-      parentesco: '',
-      familiar_celular: '',
-      familiar_correo: '',
-      familiar_ocupacion: ''
+      codigo_asociado: '',
+      religion: '',
+      grupo_sanguineo: '',
+      factor_sanguineo: '',
+      seguro_medico: '',
+      tipo_discapacidad: '',
+      carnet_conadis: '',
+      descripcion_discapacidad: '',
+      fecha_ingreso: ''
     });
+    setFamiliares([]);
     setModoEdicion(false);
     setScoutSeleccionado(null);
     setError(null);
@@ -265,6 +355,9 @@ export default function RegistroScout() {
     const hoy = new Date();
     const edad = hoy.getFullYear() - fechaNac.getFullYear();
     if (edad < 5) return 'La edad mínima para registro es 5 años';
+
+    // Validar familiares
+    if (familiares.length === 0) return 'Debe agregar al menos un familiar responsable';
 
     return null;
   };
@@ -291,16 +384,30 @@ export default function RegistroScout() {
           numero_documento: formData.numero_documento,
           tipo_documento: formData.tipo_documento as any,
           celular: formData.celular,
+          celular_secundario: formData.celular_secundario,
+          telefono: formData.telefono,
           correo: formData.correo,
+          correo_secundario: formData.correo_secundario,
+          correo_institucional: formData.correo_institucional,
           departamento: formData.departamento,
           provincia: formData.provincia,
           distrito: formData.distrito,
           direccion: formData.direccion,
+          codigo_postal: formData.codigo_postal,
           centro_estudio: formData.centro_estudio,
+          anio_estudios: formData.anio_estudios,
           ocupacion: formData.ocupacion,
           centro_laboral: formData.centro_laboral,
           es_dirigente: formData.es_dirigente,
-          rama_actual: formData.rama_actual as any
+          rama_actual: formData.rama_actual as any,
+          codigo_asociado: formData.codigo_asociado,
+          religion: formData.religion,
+          grupo_sanguineo: formData.grupo_sanguineo,
+          factor_sanguineo: formData.factor_sanguineo,
+          seguro_medico: formData.seguro_medico,
+          tipo_discapacidad: formData.tipo_discapacidad,
+          carnet_conadis: formData.carnet_conadis,
+          descripcion_discapacidad: formData.descripcion_discapacidad
         });
       } else {
         // Registrar nuevo scout
@@ -311,16 +418,33 @@ export default function RegistroScout() {
           sexo: formData.sexo as 'MASCULINO' | 'FEMENINO',
           numero_documento: formData.numero_documento,
           tipo_documento: formData.tipo_documento,
-          telefono: formData.celular,
-          email: formData.correo,
+          celular: formData.celular,
+          celular_secundario: formData.celular_secundario,
+          telefono: formData.telefono,
+          correo: formData.correo,
+          correo_secundario: formData.correo_secundario,
+          correo_institucional: formData.correo_institucional,
           direccion: formData.direccion,
+          departamento: formData.departamento,
+          provincia: formData.provincia,
           distrito: formData.distrito,
+          codigo_postal: formData.codigo_postal,
+          centro_estudio: formData.centro_estudio,
+          anio_estudios: formData.anio_estudios,
+          ocupacion: formData.ocupacion,
+          centro_laboral: formData.centro_laboral,
+          es_dirigente: formData.es_dirigente,
           rama: formData.rama || formData.rama_actual,
-          familiar_nombres: formData.familiar_nombres,
-          familiar_apellidos: formData.familiar_apellidos,
-          parentesco: formData.parentesco,
-          familiar_telefono: formData.familiar_celular,
-          familiar_email: formData.familiar_correo
+          codigo_asociado: formData.codigo_asociado,
+          religion: formData.religion,
+          grupo_sanguineo: formData.grupo_sanguineo,
+          factor_sanguineo: formData.factor_sanguineo,
+          seguro_medico: formData.seguro_medico,
+          tipo_discapacidad: formData.tipo_discapacidad,
+          carnet_conadis: formData.carnet_conadis,
+          descripcion_discapacidad: formData.descripcion_discapacidad,
+          fecha_ingreso: formData.fecha_ingreso,
+          familiares: familiares
         });
         
         if (!resultado.success) {
@@ -353,24 +477,61 @@ export default function RegistroScout() {
       numero_documento: scout.numero_documento,
       tipo_documento: scout.tipo_documento || 'DNI',
       celular: scout.celular || '',
+      celular_secundario: scout.celular_secundario || '',
+      telefono: scout.telefono || '',
       correo: scout.correo || '',
+      correo_secundario: scout.correo_secundario || '',
+      correo_institucional: scout.correo_institucional || '',
       departamento: scout.departamento || '',
       provincia: scout.provincia || '',
       distrito: scout.distrito || '',
       direccion: scout.direccion || '',
+      codigo_postal: scout.codigo_postal || '',
       centro_estudio: scout.centro_estudio || '',
+      anio_estudios: scout.anio_estudios || '',
       ocupacion: scout.ocupacion || '',
       centro_laboral: scout.centro_laboral || '',
       es_dirigente: scout.es_dirigente,
       rama_actual: scout.rama_actual || '',
       rama: scout.rama_actual || '',
-      familiar_nombres: '',
-      familiar_apellidos: '',
-      parentesco: '',
-      familiar_celular: '',
-      familiar_correo: '',
-      familiar_ocupacion: ''
+      codigo_asociado: scout.codigo_asociado || '',
+      religion: scout.religion || '',
+      grupo_sanguineo: scout.grupo_sanguineo || '',
+      factor_sanguineo: scout.factor_sanguineo || '',
+      seguro_medico: scout.seguro_medico || '',
+      tipo_discapacidad: scout.tipo_discapacidad || '',
+      carnet_conadis: scout.carnet_conadis || '',
+      descripcion_discapacidad: scout.descripcion_discapacidad || '',
+      fecha_ingreso: scout.fecha_ingreso || ''
     });
+    
+    // Cargar familiares si existen
+    if (scout.familiares && Array.isArray(scout.familiares)) {
+      setFamiliares(scout.familiares.map(f => ({
+        id: f.id,
+        nombres: f.nombres,
+        apellidos: f.apellidos,
+        parentesco: f.parentesco,
+        sexo: f.sexo || '',
+        tipo_documento: f.tipo_documento || 'DNI',
+        numero_documento: f.numero_documento || '',
+        celular: f.celular,
+        celular_secundario: f.celular_secundario || '',
+        telefono: f.telefono || '',
+        correo: f.correo || '',
+        correo_secundario: f.correo_secundario || '',
+        direccion: f.direccion || '',
+        departamento: f.departamento || '',
+        provincia: f.provincia || '',
+        distrito: f.distrito || '',
+        profesion: f.profesion || f.ocupacion || '',
+        centro_laboral: f.centro_laboral || '',
+        cargo: f.cargo || '',
+        es_contacto_emergencia: f.es_contacto_emergencia || false,
+        es_autorizado_recoger: f.es_autorizado_recoger || false
+      })));
+    }
+    
     setScoutSeleccionado(scout);
     setModoEdicion(true);
     setMostrarFormulario(true);
@@ -685,7 +846,7 @@ export default function RegistroScout() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Celular
+                        Celular Principal
                       </label>
                       <input
                         type="tel"
@@ -698,13 +859,65 @@ export default function RegistroScout() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Correo Electrónico
+                        Celular Secundario
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.celular_secundario}
+                        onChange={(e) => handleInputChange('celular_secundario', e.target.value)}
+                        placeholder="Celular alternativo (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Teléfono Fijo
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.telefono}
+                        onChange={(e) => handleInputChange('telefono', e.target.value)}
+                        placeholder="Teléfono fijo (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Correo Electrónico Principal
                       </label>
                       <input
                         type="email"
                         value={formData.correo}
                         onChange={(e) => handleInputChange('correo', e.target.value)}
                         placeholder="correo@ejemplo.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Correo Electrónico Secundario
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.correo_secundario}
+                        onChange={(e) => handleInputChange('correo_secundario', e.target.value)}
+                        placeholder="correo2@ejemplo.com (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Correo Institucional
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.correo_institucional}
+                        onChange={(e) => handleInputChange('correo_institucional', e.target.value)}
+                        placeholder="correo@colegio.edu.pe (opcional)"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -760,6 +973,160 @@ export default function RegistroScout() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Código Postal
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.codigo_postal}
+                        onChange={(e) => handleInputChange('codigo_postal', e.target.value)}
+                        placeholder="Código postal (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Datos Religiosos */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <button
+                  type="button"
+                  onClick={() => toggleSeccion('datosReligiosos')}
+                  className="flex items-center justify-between w-full text-left mb-4"
+                >
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <Church className="w-5 h-5 text-indigo-600" />
+                    Datos Religiosos
+                  </h3>
+                  {seccionesAbiertas.datosReligiosos ? 
+                    <ChevronUp className="w-5 h-5 text-gray-600" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  }
+                </button>
+
+                {seccionesAbiertas.datosReligiosos && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Religión
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.religion}
+                        onChange={(e) => handleInputChange('religion', e.target.value)}
+                        placeholder="Religión (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Datos Médicos y Salud */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <button
+                  type="button"
+                  onClick={() => toggleSeccion('datosSalud')}
+                  className="flex items-center justify-between w-full text-left mb-4"
+                >
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-red-600" />
+                    Datos Médicos y Salud
+                  </h3>
+                  {seccionesAbiertas.datosSalud ? 
+                    <ChevronUp className="w-5 h-5 text-gray-600" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  }
+                </button>
+
+                {seccionesAbiertas.datosSalud && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Grupo Sanguíneo
+                      </label>
+                      <select
+                        value={formData.grupo_sanguineo}
+                        onChange={(e) => handleInputChange('grupo_sanguineo', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {grupoSanguineoOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Factor Sanguíneo
+                      </label>
+                      <select
+                        value={formData.factor_sanguineo}
+                        onChange={(e) => handleInputChange('factor_sanguineo', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {factorSanguineoOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Seguro Médico
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.seguro_medico}
+                        onChange={(e) => handleInputChange('seguro_medico', e.target.value)}
+                        placeholder="Nombre del seguro (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de Discapacidad
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.tipo_discapacidad}
+                        onChange={(e) => handleInputChange('tipo_discapacidad', e.target.value)}
+                        placeholder="Tipo de discapacidad (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Carnet CONADIS
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.carnet_conadis}
+                        onChange={(e) => handleInputChange('carnet_conadis', e.target.value)}
+                        placeholder="Número de carnet (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Descripción de la Discapacidad
+                      </label>
+                      <textarea
+                        value={formData.descripcion_discapacidad}
+                        onChange={(e) => handleInputChange('descripcion_discapacidad', e.target.value)}
+                        placeholder="Descripción detallada (opcional)"
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -798,6 +1165,19 @@ export default function RegistroScout() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Año de Estudios
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.anio_estudios}
+                        onChange={(e) => handleInputChange('anio_estudios', e.target.value)}
+                        placeholder="1ro primaria, 3ro secundaria, etc."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Ocupación
                       </label>
                       <input
@@ -825,108 +1205,30 @@ export default function RegistroScout() {
                 )}
               </div>
 
-              {/* Datos del Familiar */}
+              {/* Datos de Familiares Responsables */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <button
                   type="button"
-                  onClick={() => toggleSeccion('datosFamiliar')}
+                  onClick={() => toggleSeccion('datosFamiliares')}
                   className="flex items-center justify-between w-full text-left mb-4"
                 >
                   <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     <Heart className="w-5 h-5 text-pink-600" />
-                    Datos del Familiar Responsable
+                    Datos de Familiares Responsables
                   </h3>
-                  {seccionesAbiertas.datosFamiliar ? 
+                  {seccionesAbiertas.datosFamiliares ? 
                     <ChevronUp className="w-5 h-5 text-gray-600" /> : 
                     <ChevronDown className="w-5 h-5 text-gray-600" />
                   }
                 </button>
 
-                {seccionesAbiertas.datosFamiliar && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombres del Familiar
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.familiar_nombres}
-                        onChange={(e) => handleInputChange('familiar_nombres', e.target.value)}
-                        placeholder="Nombres del familiar"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Apellidos del Familiar
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.familiar_apellidos}
-                        onChange={(e) => handleInputChange('familiar_apellidos', e.target.value)}
-                        placeholder="Apellidos del familiar"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Parentesco
-                      </label>
-                      <select
-                        value={formData.parentesco}
-                        onChange={(e) => handleInputChange('parentesco', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Seleccionar parentesco</option>
-                        {parentescoOptions.map(option => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Celular del Familiar
-                      </label>
-                      <input
-                        type="tel"
-                        value={formData.familiar_celular}
-                        onChange={(e) => handleInputChange('familiar_celular', e.target.value)}
-                        placeholder="Celular del familiar"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Correo del Familiar
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.familiar_correo}
-                        onChange={(e) => handleInputChange('familiar_correo', e.target.value)}
-                        placeholder="correo@ejemplo.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Ocupación del Familiar
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.familiar_ocupacion}
-                        onChange={(e) => handleInputChange('familiar_ocupacion', e.target.value)}
-                        placeholder="Ocupación del familiar"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
+                {seccionesAbiertas.datosFamiliares && (
+                  <FamiliarTable
+                    familiares={familiares}
+                    onEdit={handleEditarFamiliar}
+                    onDelete={handleEliminarFamiliar}
+                    onAdd={handleAgregarFamiliar}
+                  />
                 )}
               </div>
 
@@ -969,6 +1271,31 @@ export default function RegistroScout() {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Código de Asociado
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.codigo_asociado}
+                        onChange={(e) => handleInputChange('codigo_asociado', e.target.value)}
+                        placeholder="Código de asociado (opcional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de Ingreso
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.fecha_ingreso}
+                        onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
                     </div>
 
                     <div>
@@ -1116,6 +1443,14 @@ export default function RegistroScout() {
           )}
         </div>
       </div>
+
+      {/* Modal de Familiar */}
+      <FamiliarModal
+        isOpen={familiarModal.isOpen}
+        familiar={familiarModal.familiar}
+        onClose={() => setFamiliarModal({ isOpen: false, familiar: null, index: null })}
+        onSave={handleGuardarFamiliar}
+      />
     </div>
   );
 }

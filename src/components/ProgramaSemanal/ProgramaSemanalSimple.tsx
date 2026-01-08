@@ -20,9 +20,10 @@ export default function ProgramaSemanalSimple() {
   });
 
   const ramas = [
-    { value: 'Lobatos', label: 'Manada - Lobatos (7-10 años)' },
-    { value: 'Scouts', label: 'Tropa - Scouts (11-14 años)' },
-    { value: 'Rovers', label: 'Clan - Rovers (15-21 años)' }
+    { value: 'Manada', label: 'Manada (7-10 años)' },
+    { value: 'Tropa', label: 'Tropa (11-14 años)' },
+    { value: 'Caminantes', label: 'Caminantes (15-17 años)' },
+    { value: 'Clan', label: 'Clan (18-21 años)' }
   ];
 
   const handleSubmit = (e: React.FormEvent) => {

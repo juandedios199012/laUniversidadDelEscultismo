@@ -15,46 +15,12 @@ import ActividadesScout from './components/ActividadesScout/ActividadesScout';
 import Inventario from './components/Inventario/Inventario';
 import Presupuestos from './components/Presupuestos/Presupuestos';
 import Maps from './components/Maps/Maps';
-import DNGI03DocumentGenerator from './components/documents/DNGI03DocumentGenerator';
-import BulkDocumentGenerator from './components/documents/BulkDocumentGenerator';
-import VisualDocumentDesignerDemo from './pages/VisualDocumentDesignerDemo';
-
-// Authentication imports
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import LoginPage from './pages/LoginPage';
-import LoadingSpinner from './components/ui/LoadingSpinner';
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 
-function AppContent() {
-  const { user, loading } = useAuth();
+function App() {
+  console.log('📱 App renderizando...');
   const [activeModule, setActiveModule] = useState('dashboard');
-
-  // BYPASS TEMPORAL: Si loading tarda más de 3 segundos, continuar
-  const [bypassAuth, setBypassAuth] = React.useState(false);
-  
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) {
-        console.warn('⚠️ Auth timeout - bypassing');
-        setBypassAuth(true);
-      }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  // Mostrar loading mientras se verifica la autenticación
-  if (loading && !bypassAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(var(--gaming-bg))' }}>
-        <LoadingSpinner size="lg" message="Cargando aplicación..." />
-      </div>
-    );
-  }
-
-  // Mostrar login si no hay usuario autenticado (excepto si hay bypass)
-  if (!user && !bypassAuth) {
-    return <LoginPage />;
-  }
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -66,12 +32,6 @@ function AppContent() {
         return <GestionScouts />;
       case 'inscripcion-anual':
         return <InscripcionAnualMejorada />;
-      case 'documentos-dngi03':
-        return <DNGI03DocumentGenerator userRole="dirigente" userName="Admin" />;
-      case 'documentos-masivos':
-        return <BulkDocumentGenerator userRole="dirigente" userName="Admin" />;
-      case 'editor-visual':
-        return <VisualDocumentDesignerDemo />;
       case 'grupo-scout':
         return <GrupoScout />;
       case 'asistencia':
@@ -101,18 +61,11 @@ function AppContent() {
     }
   };
 
-  // Renderizar la aplicación protegida
-  return (
-    <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
-      {renderActiveModule()}
-    </ProtectedLayout>
-  );
-}
-
-function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
+        {renderActiveModule()}
+      </ProtectedLayout>
     </AuthProvider>
   );
 }

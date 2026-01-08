@@ -9,7 +9,14 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Faltan las variables de entorno de Supabase. Revisa la configuración.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Cliente Supabase con configuración para permitir llamadas sin autenticación
+// Las funciones RPC con SECURITY DEFINER funcionan sin usuario autenticado
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
 
 // ============= INTERFACES DE PRESUPUESTOS =============
 
@@ -110,14 +117,18 @@ export interface ReporteFinanciero {
 export interface Scout {
   id: string;
   codigo_scout: string;
+  codigo_asociado?: string;
   nombres: string;
   apellidos: string;
   fecha_nacimiento: string;
   edad: number;
   sexo: 'MASCULINO' | 'FEMENINO';
   celular?: string;
+  celular_secundario?: string;
   telefono?: string;
   correo?: string;
+  correo_secundario?: string;
+  correo_institucional?: string;
   tipo_documento: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
   numero_documento: string;
   pais: string;
@@ -125,12 +136,21 @@ export interface Scout {
   provincia?: string;
   distrito?: string;
   direccion?: string;
+  codigo_postal?: string;
   centro_estudio?: string;
+  anio_estudios?: string;
   ocupacion?: string;
   centro_laboral?: string;
+  religion?: string;
+  grupo_sanguineo?: 'A' | 'B' | 'AB' | 'O';
+  factor_sanguineo?: 'POSITIVO' | 'NEGATIVO';
+  seguro_medico?: string;
+  tipo_discapacidad?: string;
+  carnet_conadis?: string;
+  descripcion_discapacidad?: string;
   es_dirigente: boolean;
-  fecha_ingreso: string;
-  rama_actual?: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
+  fecha_ingreso?: string;
+  rama_actual?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
   foto_url?: string;
   observaciones?: string;
@@ -145,14 +165,28 @@ export interface FamiliarScout {
   scout_id: string;
   nombres: string;
   apellidos: string;
+  fecha_nacimiento?: string;
+  edad?: number;
+  sexo?: 'MASCULINO' | 'FEMENINO';
+  tipo_documento?: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  numero_documento?: string;
   parentesco: 'PADRE' | 'MADRE' | 'TUTOR' | 'ABUELO' | 'ABUELA' | 'TIO' | 'TIA' | 'HERMANO' | 'HERMANA' | 'OTRO';
   celular?: string;
+  celular_secundario?: string;
   telefono?: string;
   correo?: string;
+  correo_secundario?: string;
+  direccion?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
   ocupacion?: string;
+  profesion?: string;
   centro_laboral?: string;
+  cargo?: string;
   es_contacto_emergencia: boolean;
   es_responsable_legal: boolean;
+  es_autorizado_recoger: boolean;
   observaciones?: string;
   created_at: string;
 }
@@ -242,7 +276,7 @@ export interface LibroOroEntry {
   titulo: string;
   fecha: string;
   patrulla?: string;
-  rama?: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
+  rama?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   tipo_logro: string; // 'Campamento', 'Servicio Comunitario', 'Competencia', 'Liderazgo', 'Ceremonia', 'Proyecto Especial', 'Reconocimiento', 'Otro'
   logro: string;
   descripcion: string;

@@ -10,33 +10,62 @@ export interface Scout {
   provincia: string;
   distrito: string;
   direccion: string;
+  codigo_postal?: string;
   celular: string;
-  telefono: string;
+  celular_secundario?: string;
+  telefono?: string;
+  correo: string;
+  correo_secundario?: string;
+  correo_institucional?: string;
   tipo_documento: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
   numero_documento: string;
   foto?: string;
-  correo: string;
   centro_estudio: string;
+  anio_estudios?: string;
   ocupacion: string;
   centro_laboral: string;
+  religion?: string;
+  grupo_sanguineo?: 'A' | 'B' | 'AB' | 'O';
+  factor_sanguineo?: 'POSITIVO' | 'NEGATIVO';
+  seguro_medico?: string;
+  tipo_discapacidad?: string;
+  carnet_conadis?: string;
+  descripcion_discapacidad?: string;
   es_dirigente: boolean;
-  fecha_ingreso: string;
+  fecha_ingreso?: string;
   activo: boolean;
   codigo_scout?: string;
-  rama_actual?: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
+  codigo_asociado?: string;
+  rama_actual?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
 }
 
 export interface Familiar {
-  id: string;
+  id?: string;
   nombres: string;
   apellidos: string;
+  fecha_nacimiento?: string;
+  edad?: number;
+  sexo?: 'MASCULINO' | 'FEMENINO';
+  tipo_documento?: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  numero_documento?: string;
   parentesco: 'PADRE' | 'MADRE' | 'TUTOR' | 'HERMANO' | 'TIO' | 'ABUELO' | 'OTRO';
   celular: string;
-  telefono: string;
+  celular_secundario?: string;
+  telefono?: string;
   correo: string;
-  ocupacion: string;
-  centroLaboral: string;
+  correo_secundario?: string;
+  direccion?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+  ocupacion?: string;
+  profesion?: string;
+  centro_laboral?: string;
+  cargo?: string;
+  es_contacto_emergencia: boolean;
+  es_autorizado_recoger: boolean;
+  observaciones?: string;
 }
 
 export interface Rama {

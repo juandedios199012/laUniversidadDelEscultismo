@@ -177,7 +177,7 @@ export interface DirigenteDocumentData {
   nombres: string;
   apellidos: string;
   cargo: 'JEFE_GRUPO' | 'SUBJEFE_GRUPO' | 'JEFE_RAMA' | 'SUBJEFE_RAMA' | 'DIRIGENTE' | 'ASISTENTE';
-  ramaResponsable?: 'Lobatos' | 'Scouts' | 'Rovers' | 'Dirigentes';
+  ramaResponsable?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   fechaInicioCargo: Date;
   estado: 'ACTIVO' | 'INACTIVO' | 'LICENCIA' | 'SUSPENDIDO';
   certificaciones: string[];

@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { pdf } from '@react-pdf/renderer';
+import { FileText } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import type { Scout } from '../../lib/supabase';
+import { getScoutData } from '../../modules/reports/services/reportDataService';
+import { generateReportMetadata } from '../../modules/reports/services/pdfService';
+import DNGI03Template from '../../modules/reports/templates/pdf/DNGI03Template';
 
 interface ListaScoutsProps {
   onVerScout?: (scout: Scout) => void;
@@ -108,6 +113,43 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
     } catch (error) {
       console.error('Error al eliminar scout:', error);
       alert('Error al eliminar el scout');
+    }
+  };
+
+  const handleGenerarPDF = async (scout: Scout) => {
+    try {
+      console.log('📄 Generando PDF para scout:', scout.id);
+      
+      // Obtener datos completos del scout
+      const scoutData = await getScoutData(scout.id);
+      
+      if (!scoutData) {
+        alert('No se pudieron obtener los datos del scout');
+        return;
+      }
+
+      // Generar metadata
+      const metadata = generateReportMetadata();
+
+      // Generar documento PDF
+      const doc = <DNGI03Template scout={scoutData} metadata={metadata} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+
+      // Descargar PDF
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `DNGI03_${scout.codigo_scout}_${scout.nombres}_${scout.apellidos}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('✅ PDF generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error generando PDF:', error);
+      alert('Error al generar el PDF. Revisa la consola para más detalles.');
     }
   };
 
@@ -309,9 +351,10 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      scout.rama_actual === 'Lobatos' ? 'bg-yellow-100 text-yellow-800' :
-                      scout.rama_actual === 'Scouts' ? 'bg-green-100 text-green-800' :
-                      scout.rama_actual === 'Rovers' ? 'bg-blue-100 text-blue-800' :
+                      scout.rama_actual === 'Manada' ? 'bg-yellow-100 text-yellow-800' :
+                      scout.rama_actual === 'Tropa' ? 'bg-green-100 text-green-800' :
+                      scout.rama_actual === 'Caminantes' ? 'bg-orange-100 text-orange-800' :
+                      scout.rama_actual === 'Clan' ? 'bg-blue-100 text-blue-800' :
                       'bg-purple-100 text-purple-800'
                     }`}>
                       {scout.rama_actual}
@@ -338,6 +381,13 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                         title="Ver perfil"
                       >
                         👁️
+                      </button>
+                      <button
+                        onClick={() => handleGenerarPDF(scout)}
+                        className="text-purple-600 hover:text-purple-900 px-2 py-1 rounded transition-colors"
+                        title="Generar PDF DNGI-03"
+                      >
+                        📄
                       </button>
                       <button
                         onClick={() => onEditarScout?.(scout)}

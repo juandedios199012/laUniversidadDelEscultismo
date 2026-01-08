@@ -7,16 +7,18 @@ export const DEPARTAMENTOS_PERU = [
 ];
 
 export const EDADES_POR_RAMA = {
-  'Lobatos': { min: 7, max: 10 },
-  'Scouts': { min: 11, max: 14 },
-  'Rovers': { min: 15, max: 17 },
-  'Dirigentes': { min: 18, max: 65 }
+  'Manada': { min: 7, max: 10 },
+  'Tropa': { min: 11, max: 14 },
+  'Caminantes': { min: 15, max: 17 },
+  'Clan': { min: 18, max: 21 },
+  'Dirigentes': { min: 22, max: 65 }
 };
 
 export const CARGOS_POR_RAMA = {
-  'Lobatos': ['Seisenero', 'Seisenera', 'Lobato', 'Lobata'],
-  'Scouts': ['Guía', 'Subguía', 'Primer Scout', 'Segundo Scout'],
-  'Rovers': ['Primer Rover', 'Segundo Rover'],
+  'Manada': ['Seisenero', 'Seisenera', 'Lobato', 'Lobata'],
+  'Tropa': ['Guía', 'Subguía', 'Primer Scout', 'Segundo Scout'],
+  'Caminantes': ['Coordinador', 'Secretario', 'Tesorero', 'Caminante'],
+  'Clan': ['Primer Rover', 'Segundo Rover'],
   'Dirigentes': ['Jefe de Grupo', 'Jefe de Rama', 'Subjefe', 'Dirigente']
 };
 

@@ -14,9 +14,7 @@ import {
   Trophy,
   Flag,
   Map,
-  DollarSign,
-  FileText,
-  Palette
+  DollarSign
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,9 +27,6 @@ const menuItems = [
   { id: 'registro-scout', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500' },
   { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500' },
-  { id: 'documentos-dngi03', label: 'Documento DNGI-03', icon: FileText, gradient: 'from-amber-500 to-orange-500' },
-  { id: 'documentos-masivos', label: 'Documentos Masivos', icon: FileText, gradient: 'from-purple-500 to-pink-500' },
-  { id: 'editor-visual', label: '🎨 Editor Visual', icon: Palette, gradient: 'from-violet-500 to-purple-500' },
   { id: 'grupo-scout', label: 'Grupo Scout', icon: Flag, gradient: 'from-purple-500 to-violet-500' },
   { id: 'comite-padres', label: 'Comité Padres', icon: Users, gradient: 'from-purple-500 to-violet-500' },
   { id: 'dirigentes', label: 'Dirigentes', icon: Shield, gradient: 'from-orange-500 to-red-500' },
@@ -108,7 +103,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-600">Módulos Activos</span>
-              <span className="text-xs font-bold text-blue-600">12/12</span>
+              <span className="text-xs font-bold text-blue-600">16/16</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full w-full"></div>
