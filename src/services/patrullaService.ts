@@ -17,33 +17,13 @@ export class PatrullaService {
    * 🦅 Crear nueva patrulla
    * Endpoint: POST /api/patrullas
    */
-  static async crearPatrulla(patrulla: {
-    nombre: string;
-    lema?: string;
-    color_principal?: string;
-    color_secundario?: string;
-    rama: string;
-    grito_patrulla?: string;
-    animal_totem?: string;
-    fecha_fundacion?: string;
-    historia?: string;
-    metas_anuales?: string[];
-  }): Promise<{ success: boolean; patrulla_id?: string; error?: string }> {
+  static async crearPatrulla(patrulla: { nombre: string; rama: string }): Promise<{ success: boolean; patrulla_id?: string; error?: string }> {
     try {
       const { data, error } = await supabase
         .rpc('crear_patrulla', {
           p_nombre: patrulla.nombre,
-          p_lema: patrulla.lema,
-          p_color_principal: patrulla.color_principal,
-          p_color_secundario: patrulla.color_secundario,
-          p_rama: patrulla.rama,
-          p_grito_patrulla: patrulla.grito_patrulla,
-          p_animal_totem: patrulla.animal_totem,
-          p_fecha_fundacion: patrulla.fecha_fundacion,
-          p_historia: patrulla.historia,
-          p_metas_anuales: patrulla.metas_anuales || []
+          p_rama: patrulla.rama
         });
-
       if (error) throw error;
       return data;
     } catch (error) {

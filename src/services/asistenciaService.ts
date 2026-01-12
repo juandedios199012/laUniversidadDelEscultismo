@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 
 /**
@@ -17,50 +18,30 @@ import { supabase } from '../lib/supabase';
  * ======================================================================
  */
 export class AsistenciaService {
-
-  // ============= 📊 GESTIÓN DE REUNIONES =============
-  
   /**
-   * 📅 Crear nueva reunión
-   * Endpoint: POST /api/asistencia/reuniones
+   * 📊 Registrar asistencia masiva
+   * Endpoint: POST /api/asistencia/masiva
    */
-  static async crearReunion(reunion: {
-    fecha: string;
-    titulo: string;
-    descripcion?: string;
-    rama?: string;
-    tipo_actividad?: string;
-    ubicacion?: string;
-    hora_inicio?: string;
-    hora_fin?: string;
-    responsable?: string;
-  }): Promise<{ success: boolean; reunion_id?: string; error?: string }> {
+  static async registrarAsistenciaMasiva(registros: Array<{
+    reunion_id: string;
+    scout_id: string;
+    estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+    hora_llegada?: string;
+    observaciones?: string;
+    registrado_por?: string;
+  }>): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
-        .from('reuniones')
-        .insert({
-          fecha: reunion.fecha,
-          titulo: reunion.titulo,
-          descripcion: reunion.descripcion,
-          rama: reunion.rama,
-          tipo_actividad: reunion.tipo_actividad,
-          ubicacion: reunion.ubicacion,
-          hora_inicio: reunion.hora_inicio,
-          hora_fin: reunion.hora_fin,
-          responsable: reunion.responsable,
-          estado: 'programada',
-          created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
-
+      const { error } = await supabase
+        .from('asistencias')
+        .insert(registros);
       if (error) throw error;
-      return { success: true, reunion_id: data.id };
+      return { success: true };
     } catch (error) {
-      console.error('❌ Error al crear reunión:', error);
+      console.error('❌ Error al registrar asistencia masiva:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
+  // ...otros métodos de la clase...
 
   /**
    * 📋 Obtener todas las reuniones
@@ -74,29 +55,41 @@ export class AsistenciaService {
   }): Promise<any[]> {
     try {
       let query = supabase
-        .from('reuniones')
+        .from('programa_semanal')
         .select('*');
 
       if (filtros?.fecha_desde) {
-        query = query.gte('fecha', filtros.fecha_desde);
+        query = query.gte('fecha_inicio', filtros.fecha_desde);
       }
 
       if (filtros?.fecha_hasta) {
-        query = query.lte('fecha', filtros.fecha_hasta);
+        query = query.lte('fecha_fin', filtros.fecha_hasta);
       }
 
       if (filtros?.rama) {
         query = query.eq('rama', filtros.rama);
       }
 
-      if (filtros?.tipo_actividad) {
-        query = query.eq('tipo_actividad', filtros.tipo_actividad);
-      }
+      // No hay tipo_actividad en programa_semanal, se omite ese filtro
 
-      const { data, error } = await query.order('fecha', { ascending: false });
+      const { data, error } = await query.order('fecha_inicio', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      // Mapear los campos para que coincidan con la interfaz Reunion
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        fecha: row.fecha_inicio,
+        titulo: row.tema_central,
+        descripcion: row.objetivos ? row.objetivos.join(', ') : '',
+        rama: row.rama,
+        tipo_actividad: 'reunion_semanal',
+        ubicacion: '',
+        hora_inicio: '',
+        hora_fin: '',
+        responsable: row.responsable_programa || '',
+        total_invitados: undefined,
+        asistencias_registradas: undefined
+      }));
     } catch (error) {
       console.error('❌ Error al obtener reuniones:', error);
       return [];
@@ -110,7 +103,7 @@ export class AsistenciaService {
   static async getReunionById(id: string): Promise<any | null> {
     try {
       const { data, error } = await supabase
-        .from('reuniones')
+        .from('inscripciones')
         .select('*')
         .eq('id', id)
         .single();
@@ -135,7 +128,7 @@ export class AsistenciaService {
       };
 
       const { error } = await supabase
-        .from('reuniones')
+        .from('inscripciones')
         .update(updateData)
         .eq('id', id);
 
@@ -154,7 +147,7 @@ export class AsistenciaService {
   static async deleteReunion(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase
-        .from('reuniones')
+        .from('inscripciones')
         .delete()
         .eq('id', id);
 
@@ -203,32 +196,7 @@ export class AsistenciaService {
     }
   }
 
-  /**
-   * 📊 Registrar asistencia masiva
-   * Endpoint: POST /api/asistencia/masiva
-   */
-  static async registrarAsistenciaMasiva(asistencias: Array<{
-    reunion_id: string;
-    scout_id: string;
-    estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
-    hora_llegada?: string;
-    observaciones?: string;
-  }>): Promise<{
-    success: boolean;
-    registros_procesados: number;
-    errores: Array<{ scout_id: string; error: string }>;
-  }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('registrar_asistencia_masiva', { p_asistencias: asistencias });
 
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error en asistencia masiva:', error);
-      throw error;
-    }
-  }
 
   /**
    * 📋 Obtener asistencias de una reunión
@@ -359,7 +327,7 @@ export class AsistenciaService {
   }> {
     try {
       const { data, error } = await supabase
-        .rpc('obtener_estadisticas_asistencia_general', { p_filtros: filtros || {} });
+        .rpc('api_obtener_estadisticas_generales', { p_filtros: filtros || {} });
 
       if (error) throw error;
       return data;
@@ -402,20 +370,19 @@ export class AsistenciaService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('❌ Error al obtener reporte de reunión:', error);
+      console.error('❌ Error al obtener reporte de asistencia por reunión:', error);
       throw error;
     }
   }
-
-  /**
-   * 📊 Obtener tendencias de asistencia
-   * Endpoint: GET /api/asistencia/tendencias
-   */
-  static async getTendenciasAsistencia(periodo: 'mes' | 'trimestre' | 'semestre' | 'año'): Promise<{
-    datos_temporales: Array<{
-      periodo: string;
-      total_reuniones: number;
-      promedio_asistencia: number;
+    /**
+     * ======================================================================
+     * 📝 NOTAS DE IMPLEMENTACIÓN
+     * ======================================================================
+     * 
+     * Este servicio implementa el patrón de arquitectura de microservicio/API:
+     * 
+     * 1. 🔄 TODAS las operaciones usan Database Functions
+     * 2. 📊 Lógica de asistencia y estadísticas en el backend
       scouts_activos: number;
     }>;
     tendencia_general: 'creciente' | 'estable' | 'decreciente';
@@ -544,42 +511,10 @@ export class AsistenciaService {
       estado_asistencia?: 'presente' | 'ausente' | 'tardanza' | 'excusado';
       hora_inicio?: string;
       ubicacion?: string;
-    }>;
+    }>
   }>> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_calendario_asistencias', { p_filtros: filtros });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener calendario:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🔔 Configurar notificaciones de asistencia
-   * Endpoint: POST /api/asistencia/notificaciones
-   */
-  static async configurarNotificaciones(config: {
-    scout_id?: string;
-    rama?: string;
-    tipo_notificacion: 'ausencia_consecutiva' | 'asistencia_irregular' | 'reunion_programada';
-    umbral?: number;
-    metodo_envio: 'email' | 'sms' | 'push';
-    activo: boolean;
-  }): Promise<{ success: boolean; notificacion_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('configurar_notificaciones_asistencia', { p_config: config });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al configurar notificaciones:', error);
-      throw error;
-    }
+    // Implementación pendiente
+    return [];
   }
 }
 
@@ -612,5 +547,4 @@ export class AsistenciaService {
  * - Agregar gamificación por asistencia perfecta
  * ======================================================================
  */
-
 export default AsistenciaService;

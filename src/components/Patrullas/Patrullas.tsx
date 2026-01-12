@@ -27,15 +27,7 @@ interface Patrulla {
 
 interface PatrullaFormData {
   nombre: string;
-  lema: string;
-  color_principal: string;
-  color_secundario: string;
   rama: string;
-  grito_patrulla: string;
-  animal_totem: string;
-  fecha_fundacion: string;
-  historia: string;
-  metas_anuales: string[];
 }
 
 // ==================== COMPONENT ====================
@@ -51,15 +43,7 @@ export default function PatrullasNew() {
   const [selectedPatrulla, setSelectedPatrulla] = useState<Patrulla | null>(null);
   const [formData, setFormData] = useState<PatrullaFormData>({
     nombre: '',
-    lema: '',
-    color_principal: '',
-    color_secundario: '',
-    rama: '',
-    grito_patrulla: '',
-    animal_totem: '',
-    fecha_fundacion: '',
-    historia: '',
-    metas_anuales: []
+    rama: ''
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [statistics, setStatistics] = useState({
@@ -71,10 +55,10 @@ export default function PatrullasNew() {
 
   // ============= CONFIGURACION =============
   const ramas = [
-    { value: 'MANADA', label: 'Manada (Lobatos/Lobeznas)' },
-    { value: 'TROPA', label: 'Tropa (Scouts)' },
-    { value: 'COMUNIDAD', label: 'Comunidad (Caminantes)' },
-    { value: 'CLAN', label: 'Clan (Rovers)' }
+    { value: 'Manada', label: 'Manada' },
+    { value: 'Tropa', label: 'Tropa' },
+    { value: 'Comunidad', label: 'Comunidad' },
+    { value: 'Clan', label: 'Clan' }
   ];
 
   const animales_totem = [
@@ -160,19 +144,16 @@ export default function PatrullasNew() {
   // ============= FUNCIONES CRUD =============
   const handleCreatePatrulla = async () => {
     try {
-      const errors = validateForm();
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
+      if (!formData.nombre.trim() || !formData.rama) {
+        setFormErrors({ nombre: 'El nombre es obligatorio', rama: 'La rama es obligatoria' });
         return;
       }
-
       setLoading(true);
       const result = await PatrullaService.crearPatrulla(formData);
-      
       if (result.success) {
         await loadPatrullas();
         setShowCreateModal(false);
-        resetForm();
+        setFormData({ nombre: '', rama: '' });
         alert('✅ Patrulla creada exitosamente');
       } else {
         alert(`❌ Error: ${result.error}`);
@@ -206,7 +187,14 @@ export default function PatrullasNew() {
     try {
       if (!selectedPatrulla) return;
 
-      const errors = validateForm();
+      // Validación mínima inline (nombre y rama requeridos)
+      const errors: any = {};
+      if (!formData.nombre || formData.nombre.trim() === '') {
+        errors.nombre = 'El nombre es obligatorio';
+      }
+      if (!formData.rama || formData.rama.trim() === '') {
+        errors.rama = 'La rama es obligatoria';
+      }
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
         return;
@@ -261,35 +249,11 @@ export default function PatrullasNew() {
   };
 
   // ============= FUNCIONES AUXILIARES =============
-  const validateForm = (): Record<string, string> => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.nombre.trim()) {
-      errors.nombre = 'El nombre es obligatorio';
-    }
-    if (!formData.rama) {
-      errors.rama = 'La rama es obligatoria';
-    }
-    if (!formData.animal_totem) {
-      errors.animal_totem = 'El animal tótem es obligatorio';
-    }
-
-    return errors;
-  };
+  // Validación mínima solo para nombre y rama
+  // (eliminada función validateForm, validación inline en handleCreatePatrulla)
 
   const resetForm = () => {
-    setFormData({
-      nombre: '',
-      lema: '',
-      color_principal: '',
-      color_secundario: '',
-      rama: '',
-      grito_patrulla: '',
-      animal_totem: '',
-      fecha_fundacion: '',
-      historia: '',
-      metas_anuales: []
-    });
+    setFormData({ nombre: '', rama: '' });
     setFormErrors({});
     setSelectedPatrulla(null);
   };
@@ -608,121 +572,6 @@ export default function PatrullasNew() {
                       <p className="text-red-500 text-xs mt-1">{formErrors.rama}</p>
                     )}
                   </div>
-
-                  {/* Animal Tótem */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Animal Tótem *
-                    </label>
-                    <select
-                      value={formData.animal_totem}
-                      onChange={(e) => setFormData(prev => ({ ...prev, animal_totem: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar animal</option>
-                      {animales_totem.map(animal => (
-                        <option key={animal} value={animal}>
-                          {animal}
-                        </option>
-                      ))}
-                    </select>
-                    {formErrors.animal_totem && (
-                      <p className="text-red-500 text-xs mt-1">{formErrors.animal_totem}</p>
-                    )}
-                  </div>
-
-                  {/* Lema */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lema
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.lema}
-                      onChange={(e) => setFormData(prev => ({ ...prev, lema: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ej: Vuela alto, vuela libre"
-                    />
-                  </div>
-
-                  {/* Color Principal */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color Principal
-                    </label>
-                    <select
-                      value={formData.color_principal}
-                      onChange={(e) => setFormData(prev => ({ ...prev, color_principal: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar color</option>
-                      {colores.map(color => (
-                        <option key={color} value={color}>
-                          {color}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Color Secundario */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color Secundario
-                    </label>
-                    <select
-                      value={formData.color_secundario}
-                      onChange={(e) => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar color</option>
-                      {colores.map(color => (
-                        <option key={color} value={color}>
-                          {color}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Grito de Patrulla */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grito de Patrulla
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.grito_patrulla}
-                    onChange={(e) => setFormData(prev => ({ ...prev, grito_patrulla: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Ej: ¡Águilas al vuelo!"
-                  />
-                </div>
-
-                {/* Fecha de Fundación */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Fundación
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.fecha_fundacion}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fecha_fundacion: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Historia */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Historia de la Patrulla
-                  </label>
-                  <textarea
-                    value={formData.historia}
-                    onChange={(e) => setFormData(prev => ({ ...prev, historia: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Breve historia de cómo se formó la patrulla..."
-                  />
                 </div>
               </div>
 
