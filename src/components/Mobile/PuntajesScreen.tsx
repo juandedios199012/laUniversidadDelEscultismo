@@ -359,7 +359,8 @@ export default function PuntajesScreen() {
                 )}
 
                 {/* RANKING DE PATRULLAS */}
-                {mostrarRanking && ranking3">
+                {mostrarRanking && ranking.length > 0 && (
+                  <div className="space-y-3">
                     {/* KPIs del Ranking - SIEMPRE VISIBLES Y COMPACTOS */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg p-2 text-white shadow-sm">
