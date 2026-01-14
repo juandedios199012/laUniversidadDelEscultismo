@@ -1,12 +1,26 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*"]
+    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*", "/sw.js", "/manifest.json"]
   },
   "mimeTypes": {
-    ".json": "text/json"
+    ".json": "application/json",
+    ".js": "application/javascript"
   },
   "routes": [
+    {
+      "route": "/sw.js",
+      "headers": {
+        "Service-Worker-Allowed": "/",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "route": "/manifest.json",
+      "headers": {
+        "Content-Type": "application/manifest+json"
+      }
+    },
     {
       "route": "/api/*",
       "allowedRoles": ["anonymous"]
