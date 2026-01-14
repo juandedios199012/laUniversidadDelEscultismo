@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
+import { Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, Medal } from 'lucide-react';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
 
 interface Programa {
@@ -22,12 +22,23 @@ interface Patrulla {
   puntaje_actual?: number;
 }
 
+interface RankingPatrulla {
+  patrulla_id: string;
+  patrulla_nombre: string;
+  color_patrulla: string;
+  total_puntaje: number;
+  actividades_participadas: number;
+  posicion?: number;
+}
+
 export default function PuntajesScreen() {
   const [programas, setProgramas] = useState<Programa[]>([]);
   const [programaSeleccionado, setProgramaSeleccionado] = useState<string>('');
   const [actividadSeleccionada, setActividadSeleccionada] = useState<string>('');
   const [patrullas, setPatrullas] = useState<Patrulla[]>([]);
   const [puntajes, setPuntajes] = useState<Record<string, number>>({});
+  const [ranking, setRanking] = useState<RankingPatrulla[]>([]);
+  const [mostrarRanking, setMostrarRanking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [paso, setPaso] = useState<1 | 2 | 3>(1); // Flujo de 3 pasos
@@ -76,6 +87,32 @@ export default function PuntajesScreen() {
     setPatrullas([]);
     setPuntajes({});
     setPaso(2);
+    
+    // Cargar ranking del programa seleccionado
+    cargarRankingPrograma(programaId);
+  };
+
+  const cargarRankingPrograma = async (programaId: string) => {
+    console.log('🏆 Cargando ranking para programa:', programaId);
+    try {
+      const rankingData = await ProgramaSemanalService.obtenerTotalesPrograma(programaId);
+      console.log('📊 Ranking recibido:', rankingData?.length || 0);
+      
+      // Asignar posiciones y ordenar por puntaje descendente
+      const rankingConPosiciones = (rankingData || [])
+        .sort((a, b) => b.total_puntaje - a.total_puntaje)
+        .map((patrulla, index) => ({
+          ...patrulla,
+          posicion: index + 1
+        }));
+      
+      setRanking(rankingConPosiciones);
+      setMostrarRanking(rankingConPosiciones.length > 0);
+    } catch (error) {
+      console.error('❌ Error al cargar ranking:', error);
+      setRanking([]);
+      setMostrarRanking(false);
+    }
   };
 
   const seleccionarActividad = async (actividadId: string) => {
@@ -91,6 +128,16 @@ export default function PuntajesScreen() {
       const patrullasData = await ProgramaSemanalService.obtenerPatrullasPorRama(programa.rama);
       console.log('📦 Patrullas recibidas:', patrullasData?.length || 0);
       
+      // Cargar puntajes existentes para esta actividad
+      const puntajesExistentes = await ProgramaSemanalService.obtenerPuntajesActividad(actividadId);
+      console.log('📋 Puntajes existentes:', puntajesExistentes?.length || 0);
+      
+      // Crear mapa de puntajes existentes
+      const puntajesMap: Record<string, number> = {};
+      puntajesExistentes.forEach(p => {
+        puntajesMap[p.patrulla_id] = p.puntaje;
+      });
+      
       const patrullasFormateadas = (patrullasData || []).map(p => ({
         id: p.id,
         nombre: p.nombre,
@@ -98,7 +145,10 @@ export default function PuntajesScreen() {
       }));
       
       setPatrullas(patrullasFormateadas);
+      setPuntajes(puntajesMap); // Establecer puntajes existentes
       setPaso(3);
+      
+      console.log('✅ Puntajes cargados:', puntajesMap);
     } catch (error) {
       console.error('❌ Error al cargar patrullas:', error);
       setPatrullas([]);
@@ -113,6 +163,8 @@ export default function PuntajesScreen() {
     setActividadSeleccionada('');
     setPatrullas([]);
     setPuntajes({});
+    setRanking([]);
+    setMostrarRanking(false);
   };
 
   const volverAActividades = () => {
@@ -155,6 +207,13 @@ export default function PuntajesScreen() {
 
       if (result.success) {
         setMensaje(`✅ ${result.puntajes_registrados} puntajes guardados`);
+        
+        // Recargar el ranking actualizado
+        if (programaSeleccionado) {
+          await cargarRankingPrograma(programaSeleccionado);
+        }
+        
+        // Limpiar formulario
         setPuntajes({});
         setTimeout(() => setMensaje(''), 3000);
       } else {
@@ -286,8 +345,108 @@ export default function PuntajesScreen() {
                   <p className="text-blue-900 font-semibold">{programa.tema_central}</p>
                 </div>
 
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700">
+                {/* Estado vacío de ranking */}
+                {!mostrarRanking && (
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 text-center border-2 border-dashed border-purple-300">
+                    <Trophy className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                    <p className="text-purple-900 font-semibold mb-1">Sin ranking disponible</p>
+                    <p className="text-sm text-purple-600">
+                      Asigna puntajes a las actividades para ver el ranking
+                    </p>
+                  </div>
+                )}
+
+                {/* RANKING DE PATRULLAS */}
+                {mostrarRanking && ranking.length > 0 && (
+                  <div className="space-y-4">
+                    {/* KPIs del Ranking */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl p-3 text-white shadow-md">
+                        <Trophy className="w-5 h-5 mb-1 mx-auto" />
+                        <div className="text-center">
+                          <div className="text-2xl font-bold">{ranking[0]?.total_puntaje || 0}</div>
+                          <div className="text-xs opacity-90">1° Lugar</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-gray-300 to-gray-400 rounded-xl p-3 text-white shadow-md">
+                        <Medal className="w-5 h-5 mb-1 mx-auto" />
+                        <div className="text-center">
+                          <div className="text-2xl font-bold">{ranking[1]?.total_puntaje || 0}</div>
+                          <div className="text-xs opacity-90">2° Lugar</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl p-3 text-white shadow-md">
+                        <Medal className="w-5 h-5 mb-1 mx-auto" />
+                        <div className="text-center">
+                          <div className="text-2xl font-bold">{ranking[2]?.total_puntaje || 0}</div>
+                          <div className="text-xs opacity-90">3° Lugar</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tabla de Ranking */}
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                      <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-3 text-white">
+                        <h3 className="font-bold flex items-center">
+                          <Trophy className="w-5 h-5 mr-2" />
+                          Ranking de Patrullas
+                        </h3>
+                      </div>
+                      
+                      <div className="divide-y">
+                        {ranking.map((patrulla, index) => {
+                          const isTop3 = index < 3;
+                          const medallColors = [
+                            'bg-yellow-100 text-yellow-800 border-yellow-300',
+                            'bg-gray-100 text-gray-700 border-gray-300',
+                            'bg-orange-100 text-orange-700 border-orange-300'
+                          ];
+                          
+                          return (
+                            <div
+                              key={patrulla.patrulla_id}
+                              className={`flex items-center p-4 transition-all ${
+                                isTop3 ? 'bg-gradient-to-r from-gray-50 to-white' : 'hover:bg-gray-50'
+                              }`}
+                            >
+                              {/* Posición */}
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-3 ${
+                                isTop3 
+                                  ? `border-2 ${medallColors[index]}` 
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              
+                              {/* Info Patrulla */}
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-800 flex items-center">
+                                  {patrulla.patrulla_nombre}
+                                  {index === 0 && <Trophy className="w-4 h-4 text-yellow-500 ml-2" />}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {patrulla.actividades_participadas} actividad{patrulla.actividades_participadas !== 1 ? 'es' : ''}
+                                </div>
+                              </div>
+                              
+                              {/* Puntaje */}
+                              <div className={`text-right ${
+                                isTop3 ? 'text-purple-600 font-bold' : 'text-gray-700 font-semibold'
+                              }`}>
+                                <div className="text-2xl">{patrulla.total_puntaje}</div>
+                                <div className="text-xs text-gray-500">puntos</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">\n                  <h3 className="font-semibold text-gray-700">
                     Actividades ({programa.actividades.length})
                   </h3>
 
@@ -367,34 +526,50 @@ export default function PuntajesScreen() {
                 Asignar Puntajes
               </h3>
 
-              {patrullas.map(patrulla => (
-                <div key={patrulla.id} className="bg-white rounded-xl p-4 shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Star className="w-5 h-5 text-yellow-500" />
-                      <span className="font-semibold">{patrulla.nombre}</span>
+              {patrullas.map(patrulla => {
+                const puntajeActual = puntajes[patrulla.id];
+                const tienePuntaje = puntajeActual !== undefined && puntajeActual > 0;
+                
+                return (
+                  <div key={patrulla.id} className={`bg-white rounded-xl p-4 shadow border-2 transition-all ${
+                    tienePuntaje ? 'border-green-400 bg-green-50' : 'border-gray-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Star className={`w-5 h-5 ${tienePuntaje ? 'text-green-500' : 'text-yellow-500'}`} />
+                        <span className="font-semibold">{patrulla.nombre}</span>
+                        {tienePuntaje && (
+                          <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                            ✓ Asignado
+                          </span>
+                        )}
+                      </div>
+                      {patrulla.puntaje_actual !== undefined && (
+                        <span className="text-sm text-gray-500">
+                          Total: {patrulla.puntaje_actual} pts
+                        </span>
+                      )}
                     </div>
-                    {patrulla.puntaje_actual !== undefined && (
-                      <span className="text-sm text-gray-500">
-                        Total: {patrulla.puntaje_actual} pts
-                      </span>
-                    )}
-                  </div>
 
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={puntajes[patrulla.id] || ''}
-                      onChange={(e) => handlePuntajeChange(patrulla.id, e.target.value)}
-                      placeholder="Puntos"
-                      className="flex-1 p-3 border border-gray-300 rounded-lg text-lg text-center"
-                    />
-                    <span className="text-gray-500">pts</span>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={puntajeActual || ''}
+                        onChange={(e) => handlePuntajeChange(patrulla.id, e.target.value)}
+                        placeholder="Puntos"
+                        className={`flex-1 p-3 border-2 rounded-lg text-lg text-center font-semibold transition-all ${
+                          tienePuntaje 
+                            ? 'border-green-400 bg-white text-green-700' 
+                            : 'border-gray-300 text-gray-700'
+                        }`}
+                      />
+                      <span className="text-gray-500">pts</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <button
                 onClick={guardarPuntajes}
