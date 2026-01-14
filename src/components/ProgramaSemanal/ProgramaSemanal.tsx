@@ -31,7 +31,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     fecha_inicio: '',
     fecha_fin: '',
     tema_central: '',
-    rama: 'TROPA' as 'MANADA' | 'TROPA' | 'COMUNIDAD' | 'CLAN',
+    rama: 'Tropa' as 'Manada' | 'Tropa' | 'Comunidad' | 'Clan',
     objetivos: [''],
     actividades: [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }] as ProgramaActividad[],
     responsable_programa: '',
@@ -42,10 +42,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
   // ============= DATOS DEMO Y CONFIGURACIÓN =============
   const ramas = [
-    { value: 'MANADA', label: 'Manada (7-10 años)', color: 'yellow' },
-    { value: 'TROPA', label: 'Tropa (11-14 años)', color: 'green' },
-    { value: 'COMUNIDAD', label: 'Comunidad (15-17 años)', color: 'blue' },
-    { value: 'CLAN', label: 'Clan (18-21 años)', color: 'purple' }
+    { value: 'Manada', label: 'Manada (7-10 años)', color: 'yellow' },
+    { value: 'Tropa', label: 'Tropa (11-14 años)', color: 'green' },
+    { value: 'Comunidad', label: 'Comunidad (15-17 años)', color: 'blue' },
+    { value: 'Clan', label: 'Clan (18-21 años)', color: 'purple' }
   ];
 
   const estadosPrograma = [
@@ -72,8 +72,6 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         actividades: Array.isArray(p.programa_actividades)
           ? p.programa_actividades
           : (Array.isArray(p.actividades) ? p.actividades : []),
-        // Normalizar rama a mayúsculas (por si acaso)
-        rama: (p.rama || '').toUpperCase(),
       }));
       console.log('📊 Datos recibidos:', programasNormalizados.length, 'programas');
       setProgramas(programasNormalizados);
@@ -97,7 +95,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       fecha_inicio: '',
       fecha_fin: '',
       tema_central: '',
-      rama: 'TROPA',
+      rama: 'Tropa',
       objetivos: [''],
       actividades: [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }],
       responsable_programa: '',
@@ -112,8 +110,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       fecha_inicio: programa.fecha_inicio,
       fecha_fin: programa.fecha_fin,
       tema_central: programa.tema_central,
-      // Normalizar rama a mayúsculas para que coincida con el select
-      rama: (programa.rama || '').toUpperCase(),
+      rama: programa.rama || 'Tropa',
       objetivos: Array.isArray(programa.objetivos) ? programa.objetivos : [''],
       actividades: Array.isArray(programa.actividades) ? programa.actividades.map(a => ({
         ...a,

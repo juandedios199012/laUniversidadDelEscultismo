@@ -230,7 +230,50 @@ class ScoutService {
   }
 
   /**
-   * ➕ Registrar nuevo scout
+   * ➕ Registrar nuevo scout (alias de createScout para compatibilidad)
+   * Endpoint: POST /api/scouts
+   */
+  static async createScout(scoutData: {
+    nombres: string;
+    apellidos: string;
+    fecha_nacimiento: string;
+    sexo?: 'M' | 'F' | 'MASCULINO' | 'FEMENINO';
+    numero_documento?: string;
+    tipo_documento?: string;
+    telefono?: string;
+    email?: string;
+    direccion?: string;
+    distrito?: string;
+    departamento?: string;
+    provincia?: string;
+    rama_actual: string;
+    estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
+    es_dirigente?: boolean;
+    fecha_ingreso?: string;
+    // Datos del familiar (opcionales)
+    familiar_nombres?: string;
+    familiar_apellidos?: string;
+    parentesco?: string;
+    familiar_telefono?: string;
+    familiar_email?: string;
+  }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
+    // Normalizar sexo a formato DB
+    let sexoNormalizado: 'MASCULINO' | 'FEMENINO' = 'MASCULINO';
+    if (scoutData.sexo === 'F' || scoutData.sexo === 'FEMENINO') {
+      sexoNormalizado = 'FEMENINO';
+    }
+
+    // Llamar a registrarScout con formato normalizado
+    return this.registrarScout({
+      ...scoutData,
+      sexo: sexoNormalizado,
+      numero_documento: scoutData.numero_documento || '',
+      rama: scoutData.rama_actual
+    });
+  }
+
+  /**
+   * ➕ Registrar nuevo scout (método legacy)
    * Endpoint: POST /api/scouts
    */
   static async registrarScout(scoutData: {
@@ -267,32 +310,41 @@ class ScoutService {
         email: scoutData.familiar_email
       } : null;
 
-      // Intentar primero con la función de la base de datos
+      // Preparar datos para la función
+      const scoutDataJson = {
+        nombres: scoutData.nombres,
+        apellidos: scoutData.apellidos,
+        fecha_nacimiento: scoutData.fecha_nacimiento,
+        sexo: scoutData.sexo,
+        numero_documento: scoutData.numero_documento || null,
+        tipo_documento: tipoDocDb,
+        celular: scoutData.telefono,
+        correo: scoutData.email,
+        direccion: scoutData.direccion,
+        distrito: scoutData.distrito,
+        departamento: scoutData.direccion,
+        provincia: scoutData.direccion,
+        rama_actual: ramaDb,
+        pais: 'Perú'
+      };
+
+      const familiarDataJson = datosFamiliar ? {
+        nombres: datosFamiliar.nombres,
+        apellidos: datosFamiliar.apellidos,
+        parentesco: datosFamiliar.parentesco,
+        celular: datosFamiliar.telefono,
+        correo: datosFamiliar.email
+      } : null;
+
+      // Registrar scout (persona + scout + rol)
       const { data, error } = await supabase
-        .rpc('api_registrar_scout', {
-          p_data: {
-            nombres: scoutData.nombres,
-            apellidos: scoutData.apellidos,
-            fecha_nacimiento: scoutData.fecha_nacimiento,
-            sexo: scoutData.sexo,
-            documento_identidad: scoutData.numero_documento,
-            tipo_documento: tipoDocDb,
-            telefono: scoutData.telefono,
-            email: scoutData.email,
-            direccion: scoutData.direccion,
-            distrito: scoutData.distrito,
-            rama: ramaDb,
-            // Datos del familiar si existen
-            familiar_nombres: scoutData.familiar_nombres,
-            familiar_apellidos: scoutData.familiar_apellidos,
-            parentesco: datosFamiliar?.parentesco,
-            familiar_telefono: scoutData.familiar_telefono,
-            familiar_email: scoutData.familiar_email
-          }
+        .rpc('api_registrar_scout_completo', {
+          p_scout_data: scoutDataJson,
+          p_familiar_data: familiarDataJson
         });
 
       if (error) {
-        console.error('❌ Error con api_registrar_scout:', error);
+        console.error('❌ Error al registrar scout:', error);
         return {
           success: false,
           error: error.message || 'Error al registrar scout'

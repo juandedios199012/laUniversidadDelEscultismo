@@ -11,10 +11,8 @@ import { supabase } from '../lib/supabase';
  */
 export class ProgramaSemanalService {
 
-  // ============= 📅 GESTIÓN DE PROGRAMAS SEMANALES =============
-  
   /**
-   * 📅 Crear programa semanal
+   * Crear programa semanal
    * Endpoint: POST /api/programa-semanal
    */
   static async crearPrograma(programa: {
@@ -446,13 +444,15 @@ export class ProgramaSemanalService {
   /**
    * 📋 Obtener patrullas activas por rama
    */
-  static async obtenerPatrullasActivas(rama: string): Promise<Array<{
+  static async obtenerPatrullasPorRama(rama: string): Promise<Array<{
     id: string;
     nombre: string;
     color_patrulla: string;
     animal_totem: string;
   }>> {
     try {
+      console.log('🔍 Buscando patrullas de rama:', rama);
+
       const { data, error } = await supabase
         .from('patrullas')
         .select('id, nombre, color_patrulla, animal_totem')
@@ -461,6 +461,7 @@ export class ProgramaSemanalService {
         .order('nombre');
 
       if (error) throw error;
+      console.log('📦 Patrullas encontradas:', data?.length || 0);
       return data || [];
     } catch (error) {
       console.error('❌ Error al obtener patrullas:', error);

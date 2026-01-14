@@ -156,3 +156,34 @@ playwright/.cache/
 
 # SQL files
 *.sql
+
+# ==========================================
+# MOBILE APP (React Native / Expo)
+# ==========================================
+mobile/node_modules/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/eas-build/
+mobile/.env
+mobile/.env.local
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/*.xcworkspace
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Android
+mobile/android/.gradle
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties

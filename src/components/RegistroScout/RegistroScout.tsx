@@ -346,8 +346,9 @@ export default function RegistroScout() {
     if (!formData.apellidos.trim()) return 'Los apellidos son obligatorios';
     if (!formData.fecha_nacimiento) return 'La fecha de nacimiento es obligatoria';
     if (!formData.sexo) return 'El sexo es obligatorio';
-    if (!formData.numero_documento.trim()) return 'El número de documento es obligatorio';
-    if (formData.numero_documento.trim().length < 8) return 'El número de documento debe tener al menos 8 caracteres';
+    // Número de documento es opcional
+    // if (!formData.numero_documento.trim()) return 'El número de documento es obligatorio';
+    if (formData.numero_documento.trim() && formData.numero_documento.trim().length < 8) return 'El número de documento debe tener al menos 8 caracteres';
     if (!formData.rama_actual.trim()) return 'La rama es obligatoria';
     
     // Validar edad mínima (5 años mínimo según backend)
@@ -356,8 +357,8 @@ export default function RegistroScout() {
     const edad = hoy.getFullYear() - fechaNac.getFullYear();
     if (edad < 5) return 'La edad mínima para registro es 5 años';
 
-    // Validar familiares
-    if (familiares.length === 0) return 'Debe agregar al menos un familiar responsable';
+    // Familiares son opcionales
+    // if (familiares.length === 0) return 'Debe agregar al menos un familiar responsable';
 
     return null;
   };
@@ -810,15 +811,14 @@ export default function RegistroScout() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Número de Documento *
+                        Número de Documento
                       </label>
                       <input
                         type="text"
                         value={formData.numero_documento}
                         onChange={(e) => handleInputChange('numero_documento', e.target.value)}
-                        placeholder="Número de documento"
+                        placeholder="Número de documento (opcional)"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
                       />
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
 import ScoutService from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 
 // ==================== INTERFACES ====================
 interface Reunion {
@@ -86,12 +87,27 @@ export default function AsistenciaNew() {
   const handleRegistrarAsistenciaMasiva = async () => {
     setLoading(true);
     try {
+      // Obtener usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('❌ Debes estar autenticado para registrar asistencia');
+        return;
+      }
+
       // Supabase: inserción masiva
+      // Mapear a valores del enum
+      const estadoMap: Record<string, string> = {
+        'presente': 'PRESENTE',
+        'ausente': 'AUSENTE',
+        'tardanza': 'TARDANZA',
+        'excusado': 'JUSTIFICADO'
+      };
       const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
-        reunion_id: selectedPrograma?.id,
+        actividad_id: selectedPrograma?.id,
         scout_id,
-        estado,
-        registrado_por: 'Sistema'
+        estado_asistencia: estadoMap[estado] || 'PRESENTE',
+        fecha: selectedPrograma?.fecha || new Date().toISOString().split('T')[0],
+        registrado_por: user.id
       }));
       const { data, error } = await AsistenciaService.registrarAsistenciaMasiva(registros);
       if (error) throw error;
@@ -382,13 +398,20 @@ export default function AsistenciaNew() {
       }
 
       setLoading(true);
+      // Obtener usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('❌ Debes estar autenticado para registrar asistencia');
+        return;
+      }
+
       const result = await AsistenciaService.registrarAsistencia({
         reunion_id: asistenciaFormData.reunion_id,
         scout_id: asistenciaFormData.scout_id,
         estado: asistenciaFormData.estado,
         hora_llegada: asistenciaFormData.hora_llegada || undefined,
         observaciones: asistenciaFormData.observaciones || undefined,
-        registrado_por: 'Sistema'
+        registrado_por: user.id
       });
       
       if (result.success) {

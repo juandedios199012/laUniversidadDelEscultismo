@@ -228,20 +228,22 @@ BEGIN
         RETURN create_standard_response(false, 'Datos inválidos', NULL, v_validation -> 'errors');
     END IF;
     
-    -- STEP 1.5: Validar documento (acepta ambos nombres de campo)
+    -- STEP 1.5: Validar documento (acepta ambos nombres de campo) - OPCIONAL
     v_documento_identidad := TRIM(COALESCE(p_data ->> 'documento_identidad', p_data ->> 'numero_documento'));
     
-    IF v_documento_identidad IS NULL OR LENGTH(v_documento_identidad) = 0 THEN
-        RETURN create_standard_response(
-            false, 
-            'Documento de identidad es requerido',
-            NULL,
-            json_build_array('Campo documento_identidad o numero_documento requerido')
-        );
-    END IF;
+    -- Documento es opcional, solo validar unicidad si se proporciona
+    -- IF v_documento_identidad IS NULL OR LENGTH(v_documento_identidad) = 0 THEN
+    --     RETURN create_standard_response(
+    --         false, 
+    --         'Documento de identidad es requerido',
+    --         NULL,
+    --         json_build_array('Campo documento_identidad o numero_documento requerido')
+    --     );
+    -- END IF;
     
-    -- STEP 2: Verificar documento único
-    IF EXISTS (SELECT 1 FROM scouts WHERE numero_documento = v_documento_identidad) THEN
+    -- STEP 2: Verificar documento único solo si se proporciona
+    IF v_documento_identidad IS NOT NULL AND LENGTH(v_documento_identidad) > 0 
+       AND EXISTS (SELECT 1 FROM scouts WHERE numero_documento = v_documento_identidad) THEN
         RETURN create_standard_response(
             false, 
             'Ya existe un scout con este documento de identidad',
@@ -305,8 +307,8 @@ BEGIN
             WHEN v_sexo_input IN ('FEMENINO', 'MUJER', 'F', 'FEMALE') THEN 'FEMENINO'::sexo_enum
             ELSE 'MASCULINO'::sexo_enum -- Default seguro
         END,
-        -- MAPEO CORREGIDO: acepta tanto 'documento_identidad' como 'numero_documento'
-        TRIM(COALESCE(p_data ->> 'documento_identidad', p_data ->> 'numero_documento')),
+        -- MAPEO CORREGIDO: acepta tanto 'documento_identidad' como 'numero_documento' - OPCIONAL (puede ser NULL)
+        NULLIF(TRIM(COALESCE(p_data ->> 'documento_identidad', p_data ->> 'numero_documento')), ''),
         CASE 
             WHEN v_tipo_doc_input IN ('DNI', 'DOCUMENTO_NACIONAL_IDENTIDAD') THEN 'DNI'::tipo_documento_enum
             WHEN v_tipo_doc_input IN ('CARNET_EXTRANJERIA', 'CE', 'EXTRANJERIA') THEN 'CARNET_EXTRANJERIA'::tipo_documento_enum

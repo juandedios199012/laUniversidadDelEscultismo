@@ -15,12 +15,15 @@ import ActividadesScout from './components/ActividadesScout/ActividadesScout';
 import Inventario from './components/Inventario/Inventario';
 import Presupuestos from './components/Presupuestos/Presupuestos';
 import Maps from './components/Maps/Maps';
+import MobileApp from './components/Mobile/MobileApp';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
+import { useMobileDetect } from './hooks/useMobileDetect';
 
 function App() {
   console.log('📱 App renderizando...');
   const [activeModule, setActiveModule] = useState('dashboard');
+  const { isMobile } = useMobileDetect();
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -61,6 +64,16 @@ function App() {
     }
   };
 
+  // Si es pantalla mobile (<768px), renderizar interfaz mobile
+  if (isMobile) {
+    return (
+      <AuthProvider>
+        <MobileApp />
+      </AuthProvider>
+    );
+  }
+
+  // Desktop: renderizar interfaz normal
   return (
     <AuthProvider>
       <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>

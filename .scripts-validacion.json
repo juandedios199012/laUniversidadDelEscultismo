@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "vite --config vite.config.ts",
+    "build": "tsc && vite build",
+    "test:asistencia": "node test-asistencia.js",
+    "validate": "bash validar-sistema.sh && node test-asistencia.js",
+    "validate:watch": "nodemon --watch src --exec 'npm run validate'"
+  }
+}

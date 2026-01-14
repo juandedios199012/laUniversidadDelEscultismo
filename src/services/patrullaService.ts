@@ -69,6 +69,52 @@ export class PatrullaService {
     }
   }
 
+  /**
+   * ✏️ Actualizar patrulla
+   * Endpoint: PUT /api/patrullas/{id}
+   */
+  static async updatePatrulla(id: string, datos: Partial<{
+    nombre: string;
+    lema: string;
+    animal_totem: string;
+    color_patrulla: string;
+    rama: string;
+    fecha_fundacion: string;
+  }>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .rpc('actualizar_patrulla', {
+          p_patrulla_id: id,
+          p_datos: datos
+        });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al actualizar patrulla:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🗑️ Eliminar patrulla (cambiar estado a ELIMINADO)
+   * Endpoint: DELETE /api/patrullas/{id}
+   */
+  static async deletePatrulla(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('patrullas')
+        .update({ estado: 'ELIMINADO', updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error al eliminar patrulla:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
   // ============= 👥 GESTIÓN DE MIEMBROS =============
   
   /**

@@ -148,9 +148,10 @@ export const VerScoutModal: React.FC<VerScoutModalProps> = ({
                     </h3>
                     <div className="flex items-center space-x-4 mt-2">
                       <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                        scout.rama_actual === 'Lobatos' ? 'bg-yellow-100 text-yellow-800' :
-                        scout.rama_actual === 'Scouts' ? 'bg-green-100 text-green-800' :
-                        scout.rama_actual === 'Rovers' ? 'bg-blue-100 text-blue-800' :
+                        scout.rama_actual === 'Manada' ? 'bg-yellow-100 text-yellow-800' :
+                        scout.rama_actual === 'Tropa' ? 'bg-green-100 text-green-800' :
+                        scout.rama_actual === 'Comunidad' ? 'bg-orange-100 text-orange-800' :
+                        scout.rama_actual === 'Clan' ? 'bg-blue-100 text-blue-800' :
                         'bg-purple-100 text-purple-800'
                       }`}>
                         {scout.rama_actual}

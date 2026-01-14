@@ -18,22 +18,115 @@ import { supabase } from '../lib/supabase';
  * ======================================================================
  */
 export class AsistenciaService {
+  
+  // ============= 📱 FUNCIONES MOBILE =============
+  
+  /**
+   * 📱 Obtener scouts por rama (Mobile)
+   */
+  static async obtenerScoutsPorRama(rama: string) {
+    try {
+      console.log('🔍 Cargando scouts de rama:', rama);
+      
+      const { data, error } = await supabase
+        .from('scouts')
+        .select(`
+          id,
+          codigo_asociado,
+          rama_actual,
+          estado,
+          personas!inner(
+            nombres,
+            apellidos
+          )
+        `)
+        .eq('rama_actual', rama)
+        .eq('estado', 'ACTIVO');
+
+      if (error) {
+        console.error('❌ Error en query:', error);
+        throw error;
+      }
+      
+      console.log('📦 Scouts encontrados:', data?.length || 0);
+      
+      const scouts = (data || []).map(s => ({
+        id: s.id,
+        codigo_asociado: s.codigo_asociado,
+        nombres: (s.personas as any)?.nombres || '',
+        apellidos: (s.personas as any)?.apellidos || '',
+        rama_actual: s.rama_actual
+      }));
+      
+      // Ordenar por apellido en el cliente
+      return scouts.sort((a, b) => a.apellidos.localeCompare(b.apellidos));
+    } catch (error) {
+      console.error('Error al obtener scouts por rama:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 📱 Registrar asistencia masiva simplificada (Mobile)
+   */
+  static async registrarAsistenciaMasiva(registros: Array<{
+    scout_id: string;
+    fecha: string;
+    presente: boolean;
+    rama: string;
+  }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
+    try {
+      const registrosFormateados = registros.map(r => ({
+        scout_id: r.scout_id,
+        fecha: r.fecha,
+        estado_asistencia: r.presente ? 'Presente' : 'Ausente',
+        rama: r.rama,
+        registrado_por: 'mobile_app'
+      }));
+
+      const { data, error } = await supabase
+        .from('asistencias')
+        .insert(registrosFormateados);
+
+      if (error) throw error;
+      
+      return { 
+        success: true, 
+        registros_creados: registros.length 
+      };
+    } catch (error) {
+      console.error('Error al registrar asistencia masiva:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error desconocido' 
+      };
+    }
+  }
+
+  // ============= 📊 FUNCIONES ORIGINALES =============
+  
   /**
    * 📊 Registrar asistencia masiva
    * Endpoint: POST /api/asistencia/masiva
+   * Usa UPSERT para actualizar registros existentes
    */
-  static async registrarAsistenciaMasiva(registros: Array<{
-    reunion_id: string;
+  static async registrarAsistenciaMasivaOriginal(registros: Array<{
+    actividad_id: string;
     scout_id: string;
-    estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+    estado_asistencia: string;
     hora_llegada?: string;
     observaciones?: string;
     registrado_por?: string;
+    fecha?: string;
   }>): Promise<{ success: boolean; error?: string }> {
     try {
+      // Usar upsert para actualizar si existe o insertar si es nuevo
+      // La constraint debe ser única en (actividad_id, scout_id)
       const { error } = await supabase
         .from('asistencias')
-        .insert(registros);
+        .upsert(registros, {
+          onConflict: 'actividad_id,scout_id'
+        });
       if (error) throw error;
       return { success: true };
     } catch (error) {
@@ -77,7 +170,7 @@ export class AsistenciaService {
       if (error) throw error;
       // Mapear los campos para que coincidan con la interfaz Reunion
       return (data || []).map((row: any) => ({
-        id: row.id,
+        id: row.id, // Este id será el que se use como actividad_id en asistencias
         fecha: row.fecha_inicio,
         titulo: row.tema_central,
         descripcion: row.objetivos ? row.objetivos.join(', ') : '',
@@ -166,25 +259,31 @@ export class AsistenciaService {
    * Endpoint: POST /api/asistencia/registros
    */
   static async registrarAsistencia(asistencia: {
-    reunion_id: string;
+    actividad_id: string;
     scout_id: string;
-    estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+    estado_asistencia: 'presente' | 'ausente' | 'tardanza' | 'excusado';
     hora_llegada?: string;
     observaciones?: string;
     registrado_por?: string;
+    fecha?: string;
   }): Promise<{ success: boolean; asistencia_id?: string; error?: string }> {
     try {
+      // Solo incluir registrado_por si es un UUID válido
+      const asistenciaData: any = {
+        actividad_id: asistencia.actividad_id,
+        scout_id: asistencia.scout_id,
+        fecha: asistencia.fecha,
+        estado_asistencia: asistencia.estado_asistencia,
+        hora_llegada: asistencia.hora_llegada,
+        observaciones: asistencia.observaciones,
+        created_at: new Date().toISOString()
+      };
+      if (asistencia.registrado_por && /^[0-9a-fA-F-]{36}$/.test(asistencia.registrado_por)) {
+        asistenciaData.registrado_por = asistencia.registrado_por;
+      }
       const { data, error } = await supabase
         .from('asistencias')
-        .insert({
-          reunion_id: asistencia.reunion_id,
-          scout_id: asistencia.scout_id,
-          estado: asistencia.estado,
-          hora_llegada: asistencia.hora_llegada,
-          observaciones: asistencia.observaciones,
-          registrado_por: asistencia.registrado_por,
-          created_at: new Date().toISOString()
-        })
+        .insert(asistenciaData)
         .select('id')
         .single();
 
@@ -212,6 +311,30 @@ export class AsistenciaService {
     } catch (error) {
       console.error('❌ Error al obtener asistencias:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 📋 Obtener asistencias por actividad_id
+   * Usado para cargar estado guardado en asistencia masiva
+   */
+  static async getAsistenciasPorActividad(actividadId: string): Promise<Array<{
+    scout_id: string;
+    estado_asistencia: string;
+    hora_llegada?: string;
+    observaciones?: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('asistencias')
+        .select('scout_id, estado_asistencia, hora_llegada, observaciones')
+        .eq('actividad_id', actividadId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error al obtener asistencias:', error);
+      return [];
     }
   }
 

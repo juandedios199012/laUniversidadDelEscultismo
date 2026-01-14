@@ -28,6 +28,10 @@ interface Patrulla {
 interface PatrullaFormData {
   nombre: string;
   rama: string;
+  lema?: string;
+  animal_totem?: string;
+  color_patrulla?: string;
+  fecha_fundacion?: string;
 }
 
 // ==================== COMPONENT ====================
@@ -96,12 +100,12 @@ export default function PatrullasNew() {
           lema: 'Vuela alto, vuela libre',
           color_principal: 'Dorado',
           color_secundario: 'Marrón',
-          rama: 'TROPA',
+          rama: 'Tropa',
           grito_patrulla: '¡Águilas al vuelo!',
           animal_totem: 'Águila',
           fecha_fundacion: '2024-01-15',
           historia: 'Fundada con el propósito de promover la excelencia.',
-          estado: 'activa',
+          estado: 'ACTIVO',
           miembros_count: 8,
           total_puntos: 340,
           posicion_ranking: 1
@@ -112,11 +116,11 @@ export default function PatrullasNew() {
           lema: 'Unidos en la manada',
           color_principal: 'Gris',
           color_secundario: 'Azul',
-          rama: 'MANADA',
+          rama: 'Manada',
           grito_patrulla: '¡Lobos, aullido de victoria!',
           animal_totem: 'Lobo',
           fecha_fundacion: '2024-02-10',
-          estado: 'activa',
+          estado: 'ACTIVO',
           miembros_count: 6,
           total_puntos: 280,
           posicion_ranking: 2
@@ -129,7 +133,7 @@ export default function PatrullasNew() {
 
   const calculateStatistics = () => {
     const total = patrullas.length;
-    const activas = patrullas.filter(p => p.estado === 'activa').length;
+    const activas = patrullas.filter(p => p.estado === 'ACTIVO' || p.estado === 'activa').length;
     const totalMiembros = patrullas.reduce((sum, p) => sum + (p.miembros_count || 0), 0);
     const promedio = total > 0 ? totalMiembros / total : 0;
 
@@ -171,14 +175,10 @@ export default function PatrullasNew() {
     setFormData({
       nombre: patrulla.nombre || '',
       lema: patrulla.lema || '',
-      color_principal: patrulla.color_principal || '',
-      color_secundario: patrulla.color_secundario || '',
-      rama: patrulla.rama || '',
-      grito_patrulla: patrulla.grito_patrulla || '',
       animal_totem: patrulla.animal_totem || '',
-      fecha_fundacion: patrulla.fecha_fundacion || '',
-      historia: patrulla.historia || '',
-      metas_anuales: patrulla.metas_anuales || []
+      color_patrulla: patrulla.color_principal || patrulla.color_secundario || '',
+      rama: patrulla.rama || '',
+      fecha_fundacion: patrulla.fecha_fundacion || ''
     });
     setShowEditModal(true);
   };
@@ -201,19 +201,17 @@ export default function PatrullasNew() {
       }
 
       setLoading(true);
-      // Aquí iría la llamada al servicio de actualización
-      // const result = await PatrullaService.updatePatrulla(selectedPatrulla.id, formData);
+      const result = await PatrullaService.updatePatrulla(selectedPatrulla.id, formData);
       
-      // Demo: actualizar en estado local
-      setPatrullas(prev => prev.map(p => 
-        p.id === selectedPatrulla.id 
-          ? { ...p, ...formData }
-          : p
-      ));
-
-      setShowEditModal(false);
-      resetForm();
-      alert('✅ Patrulla actualizada exitosamente');
+      if (result.success) {
+        // Recargar datos desde la BD para mantener sincronización
+        await loadPatrullas();
+        setShowEditModal(false);
+        resetForm();
+        alert('✅ Patrulla actualizada exitosamente');
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
     } catch (error) {
       console.error('Error actualizando patrulla:', error);
       alert('❌ Error al actualizar la patrulla');
@@ -229,12 +227,14 @@ export default function PatrullasNew() {
 
     try {
       setLoading(true);
-      // Aquí iría la llamada al servicio de eliminación
-      // await PatrullaService.deletePatrulla(patrulla.id);
+      const result = await PatrullaService.deletePatrulla(patrulla.id);
       
-      // Demo: eliminar del estado local
-      setPatrullas(prev => prev.filter(p => p.id !== patrulla.id));
-      alert('✅ Patrulla eliminada exitosamente');
+      if (result.success) {
+        await loadPatrullas(); // Recargar lista desde BD
+        alert('✅ Patrulla eliminada exitosamente');
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
     } catch (error) {
       console.error('Error eliminando patrulla:', error);
       alert('❌ Error al eliminar la patrulla');
@@ -268,11 +268,20 @@ export default function PatrullasNew() {
 
   const getRamaColor = (rama: string) => {
     switch (rama) {
-      case 'MANADA': return 'text-yellow-700 bg-yellow-100';
-      case 'TROPA': return 'text-green-700 bg-green-100';
-      case 'COMUNIDAD': return 'text-blue-700 bg-blue-100';
-      case 'CLAN': return 'text-purple-700 bg-purple-100';
-      default: return 'text-gray-700 bg-gray-100';
+      case 'Manada':
+      case 'MANADA': 
+        return 'text-yellow-700 bg-yellow-100';
+      case 'Tropa':
+      case 'TROPA': 
+        return 'text-green-700 bg-green-100';
+      case 'Comunidad':
+      case 'COMUNIDAD': 
+        return 'text-blue-700 bg-blue-100';
+      case 'Clan':
+      case 'CLAN': 
+        return 'text-purple-700 bg-purple-100';
+      default: 
+        return 'text-gray-700 bg-gray-100';
     }
   };
 

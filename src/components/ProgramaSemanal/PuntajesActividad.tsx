@@ -46,7 +46,7 @@ export default function PuntajesActividad({
     setError('');
     try {
       // Cargar patrullas activas de la rama
-      const patrullasData = await ProgramaSemanalService.obtenerPatrullasActivas(rama);
+      const patrullasData = await ProgramaSemanalService.obtenerPatrullasPorRama(rama);
       setPatrullas(patrullasData);
 
       // Cargar puntajes existentes

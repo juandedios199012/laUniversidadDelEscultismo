@@ -267,7 +267,7 @@ CREATE TABLE inscripciones_actividad (
 CREATE TABLE asistencias (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     scout_id UUID NOT NULL REFERENCES scouts(id) ON DELETE CASCADE,
-    actividad_id UUID REFERENCES actividades_scout(id) ON DELETE SET NULL,
+    actividad_id UUID REFERENCES programa_semanal(id) ON DELETE SET NULL,
     fecha DATE NOT NULL,
     tipo_reunion VARCHAR(100),
     estado_asistencia estado_asistencia_enum NOT NULL,

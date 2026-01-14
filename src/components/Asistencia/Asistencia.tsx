@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
 import ScoutService from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 
 // ==================== INTERFACES ====================
 interface Reunion {
@@ -59,17 +60,36 @@ export default function Asistencia() {
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedRama, setSelectedRama] = useState('');
-	const [vistaActual, setVistaActual] = useState<'reuniones' | 'asistencia' | 'estadisticas' | 'asistencia_masiva'>('reuniones');
+	const [vistaActual, setVistaActual] = useState<'reuniones' | 'asistencia' | 'estadisticas' | 'asistencia_masiva' | 'detalle_programa'>('reuniones');
 	// ============= ASISTENCIA MASIVA =============
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
 	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
 	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'>>({});
+	// ============= DETALLE PROGRAMA =============
+	const [asistenciasPrograma, setAsistenciasPrograma] = useState<any[]>([]);
 
-	const handleOpenAsistenciaMasiva = (programa: Reunion) => {
+	const handleOpenAsistenciaMasiva = async (programa: Reunion) => {
 		setSelectedPrograma(programa);
 		setVistaActual('asistencia_masiva');
 		setSelectedPatrulla('');
-		setAsistenciaMasiva({});
+		
+		// Cargar asistencias ya guardadas para este programa
+		const asistenciasGuardadas = await AsistenciaService.getAsistenciasPorActividad(programa.id);
+		
+		// Mapear estados guardados a formato del componente (MAYÚSCULAS → minúsculas)
+		const estadoMapInverso: Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'> = {
+			'PRESENTE': 'presente',
+			'AUSENTE': 'ausente',
+			'TARDANZA': 'tardanza',
+			'JUSTIFICADO': 'excusado'
+		};
+		
+		const estadosGuardados: Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'> = {};
+		asistenciasGuardadas.forEach(asist => {
+			estadosGuardados[asist.scout_id] = estadoMapInverso[asist.estado_asistencia] || 'presente';
+		});
+		
+		setAsistenciaMasiva(estadosGuardados);
 	};
 
 	const handleSelectPatrulla = (patrulla: string) => {
@@ -86,12 +106,27 @@ export default function Asistencia() {
 	const handleRegistrarAsistenciaMasiva = async () => {
 		setLoading(true);
 		try {
+			// Obtener usuario autenticado
+			const { data: { user } } = await supabase.auth.getUser();
+			if (!user) {
+				alert('❌ Debes estar autenticado para registrar asistencia');
+				return;
+			}
+
 			// Supabase: inserción masiva
+			// Mapear estados a valores del enum en BD (MAYÚSCULAS)
+			const estadoMap: Record<string, string> = {
+				'presente': 'PRESENTE',
+				'ausente': 'AUSENTE',
+				'tardanza': 'TARDANZA',
+				'excusado': 'JUSTIFICADO'
+			};
 			const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
-				reunion_id: selectedPrograma?.id,
+				actividad_id: selectedPrograma?.id,
 				scout_id,
-				estado,
-				registrado_por: 'Sistema'
+				estado_asistencia: estadoMap[estado] || 'PRESENTE',
+				fecha: selectedPrograma?.fecha || new Date().toISOString().split('T')[0],
+				registrado_por: user.id
 			}));
 			const { data, error } = await AsistenciaService.registrarAsistenciaMasiva(registros);
 			if (error) throw error;
@@ -100,8 +135,9 @@ export default function Asistencia() {
 			setSelectedPrograma(null);
 			setSelectedPatrulla('');
 			setAsistenciaMasiva({});
-			alert('✅ Asistencia masiva registrada exitosamente');
+			alert(`✅ Asistencia actualizada exitosamente (${registros.length} scouts)`);
 		} catch (error) {
+			console.error('❌ Error:', error);
 			alert('❌ Error al registrar asistencia masiva');
 		} finally {
 			setLoading(false);
@@ -184,7 +220,11 @@ export default function Asistencia() {
 				AsistenciaService.getReuniones()
 			]);
       
-			setScouts(scoutsData.filter(scout => scout.estado === 'activo') as Scout[]);
+			// Filtrar scouts con estado 'activo' (cualquier variante)
+			const scoutsActivos = scoutsData.filter(scout =>
+				typeof scout.estado === 'string' && scout.estado.trim().toLowerCase() === 'activo'
+			);
+			setScouts(scoutsActivos.length > 0 ? scoutsActivos as Scout[] : scoutsData as Scout[]);
 			setReuniones(reunionesData);
 		} catch (error) {
 			console.error('Error cargando datos:', error);
@@ -356,11 +396,30 @@ export default function Asistencia() {
 
 	const handleViewReunion = async (reunion: Reunion) => {
 		try {
+			setLoading(true);
 			setSelectedReunion(reunion);
-			alert(`Ver detalles de: ${reunion.titulo}`);
+			
+			// Cargar asistencias del programa
+			const asistencias = await AsistenciaService.getAsistenciasPorActividad(reunion.id);
+			
+			// Enriquecer con datos de scouts
+			const asistenciasConScout = asistencias.map(asist => {
+				const scout = scouts.find(s => s.id === asist.scout_id);
+				return {
+					...asist,
+					scout_nombre: scout ? `${scout.nombres} ${scout.apellidos}` : 'Desconocido',
+					scout_codigo: scout?.codigo_scout || 'N/A',
+					scout_rama: scout?.rama_actual || 'N/A'
+				};
+			});
+			
+			setAsistenciasPrograma(asistenciasConScout);
+			setVistaActual('detalle_programa');
 		} catch (error) {
 			console.error('Error cargando detalles de reunión:', error);
-			alert('Error al cargar detalles');
+			alert('❌ Error al cargar detalles');
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -382,13 +441,28 @@ export default function Asistencia() {
 			}
 
 			setLoading(true);
+			// Obtener usuario autenticado
+			const { data: { user } } = await supabase.auth.getUser();
+			if (!user) {
+				alert('❌ Debes estar autenticado para registrar asistencia');
+				return;
+			}
+
+			// Normalizar estado para el enum de la BD
+			const estadoMap: Record<string, string> = {
+				'presente': 'PRESENTE',
+				'ausente': 'AUSENTE',
+				'tardanza': 'TARDANZA',
+				'excusado': 'JUSTIFICADO'
+			};
 			const result = await AsistenciaService.registrarAsistencia({
-				reunion_id: asistenciaFormData.reunion_id,
+				actividad_id: asistenciaFormData.reunion_id, // Usamos el id de la reunión (programa_semanal) como actividad_id
 				scout_id: asistenciaFormData.scout_id,
-				estado: asistenciaFormData.estado,
+				estado_asistencia: (asistenciaFormData.estado === 'excusado' ? 'JUSTIFICADO' : asistenciaFormData.estado?.toUpperCase() || 'PRESENTE'),
 				hora_llegada: asistenciaFormData.hora_llegada || undefined,
 				observaciones: asistenciaFormData.observaciones || undefined,
-				registrado_por: 'Sistema'
+				registrado_por: user.id,
+				fecha: selectedReunion?.fecha || new Date().toISOString().split('T')[0]
 			});
       
 			if (result.success) {
@@ -427,12 +501,420 @@ export default function Asistencia() {
 		);
 	}
 
+	// ============= VISTA DETALLE PROGRAMA =============
+	if (vistaActual === 'detalle_programa' && selectedReunion) {
+		const totalAsistencias = asistenciasPrograma.length;
+		const presentes = asistenciasPrograma.filter(a => a.estado_asistencia === 'PRESENTE').length;
+		const ausentes = asistenciasPrograma.filter(a => a.estado_asistencia === 'AUSENTE').length;
+		const tardanzas = asistenciasPrograma.filter(a => a.estado_asistencia === 'TARDANZA').length;
+		const justificados = asistenciasPrograma.filter(a => a.estado_asistencia === 'JUSTIFICADO').length;
+		const porcentajeAsistencia = totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : 0;
+
+		return (
+			<div className="min-h-screen bg-gray-50 p-4 md:p-6">
+				<div className="max-w-7xl mx-auto">
+					{/* Header */}
+					<div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl shadow-lg p-6 text-white mb-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-2xl font-bold mb-2">Detalle de Asistencia</h1>
+								<p className="text-purple-100 text-lg">{selectedReunion.titulo}</p>
+								<p className="text-sm text-purple-200">{selectedReunion.fecha} • {selectedReunion.rama}</p>
+							</div>
+							<button 
+								onClick={() => {
+									setVistaActual('reuniones');
+									setSelectedReunion(null);
+									setAsistenciasPrograma([]);
+								}}
+								className="px-4 py-2 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+							>
+								← Volver
+							</button>
+						</div>
+					</div>
+
+					{/* KPIs de Asistencia */}
+					<div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+						<div className="bg-white rounded-xl shadow-lg p-4">
+							<div className="text-center">
+								<Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+								<p className="text-sm text-gray-600">Total</p>
+								<p className="text-3xl font-bold text-gray-900">{totalAsistencias}</p>
+							</div>
+						</div>
+						<div className="bg-white rounded-xl shadow-lg p-4">
+							<div className="text-center">
+								<CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+								<p className="text-sm text-gray-600">Presentes</p>
+								<p className="text-3xl font-bold text-green-600">{presentes}</p>
+							</div>
+						</div>
+						<div className="bg-white rounded-xl shadow-lg p-4">
+							<div className="text-center">
+								<AlertTriangle className="w-8 h-8 text-red-600 mx-auto mb-2" />
+								<p className="text-sm text-gray-600">Ausentes</p>
+								<p className="text-3xl font-bold text-red-600">{ausentes}</p>
+							</div>
+						</div>
+						<div className="bg-white rounded-xl shadow-lg p-4">
+							<div className="text-center">
+								<Calendar className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+								<p className="text-sm text-gray-600">Tardanzas</p>
+								<p className="text-3xl font-bold text-yellow-600">{tardanzas}</p>
+							</div>
+						</div>
+						<div className="bg-white rounded-xl shadow-lg p-4">
+							<div className="text-center">
+								<TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+								<p className="text-sm text-gray-600">% Asistencia</p>
+								<p className="text-3xl font-bold text-purple-600">{porcentajeAsistencia}%</p>
+							</div>
+						</div>
+					</div>
+
+					{/* Tabla de Asistencias */}
+					<div className="bg-white rounded-xl shadow-lg overflow-hidden">
+						<div className="p-6 border-b">
+							<h2 className="text-xl font-bold text-gray-900">Registro de Asistencias</h2>
+						</div>
+						{asistenciasPrograma.length > 0 ? (
+							<div className="overflow-x-auto">
+								<table className="w-full">
+									<thead className="bg-gray-50">
+										<tr>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rama</th>
+											<th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hora Llegada</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
+										</tr>
+									</thead>
+									<tbody className="divide-y divide-gray-200">
+										{asistenciasPrograma.map((asist, idx) => {
+											const estadoConfig = {
+												'PRESENTE': { color: 'bg-green-100 text-green-800', label: 'Presente' },
+												'AUSENTE': { color: 'bg-red-100 text-red-800', label: 'Ausente' },
+												'TARDANZA': { color: 'bg-yellow-100 text-yellow-800', label: 'Tardanza' },
+												'JUSTIFICADO': { color: 'bg-blue-100 text-blue-800', label: 'Justificado' }
+											}[asist.estado_asistencia] || { color: 'bg-gray-100 text-gray-800', label: 'Desconocido' };
+
+											return (
+												<tr key={idx} className="hover:bg-gray-50">
+													<td className="px-6 py-4 text-sm text-gray-900">{asist.scout_codigo}</td>
+													<td className="px-6 py-4 text-sm font-medium text-gray-900">{asist.scout_nombre}</td>
+													<td className="px-6 py-4 text-sm text-gray-600">{asist.scout_rama}</td>
+													<td className="px-6 py-4 text-center">
+														<span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${estadoConfig.color}`}>
+															{estadoConfig.label}
+														</span>
+													</td>
+													<td className="px-6 py-4 text-sm text-gray-600">{asist.hora_llegada || '-'}</td>
+													<td className="px-6 py-4 text-sm text-gray-600">{asist.observaciones || '-'}</td>
+												</tr>
+											);
+										})}
+									</tbody>
+								</table>
+							</div>
+						) : (
+							<div className="text-center py-12">
+								<Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+								<h3 className="text-lg font-medium text-gray-900 mb-2">Sin asistencias registradas</h3>
+								<p className="text-gray-500 mb-4">Aún no se ha registrado asistencia para este programa</p>
+								<button 
+									onClick={() => handleOpenAsistenciaMasiva(selectedReunion)}
+									className="btn-primary"
+								>
+									<BarChart3 className="w-4 h-4 inline mr-2" />
+									Registrar Asistencia Masiva
+								</button>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// ============= VISTA ASISTENCIA MASIVA =============
+	if (vistaActual === 'asistencia_masiva' && selectedPrograma) {
+		return (
+			<div className="min-h-screen bg-gray-50 p-4 md:p-6">
+				<div className="max-w-7xl mx-auto">
+					{/* Header */}
+					<div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white mb-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-2xl font-bold mb-2">Asistencia Masiva</h1>
+								<p className="text-blue-100">{selectedPrograma.titulo}</p>
+								<p className="text-sm text-blue-200">{selectedPrograma.fecha} • {selectedPrograma.rama}</p>
+							</div>
+							<button 
+								onClick={() => {
+									setVistaActual('reuniones');
+									setSelectedPrograma(null);
+									setAsistenciaMasiva({});
+								}}
+								className="px-4 py-2 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+							>
+								← Volver
+							</button>
+						</div>
+					</div>
+
+					{/* Acciones Rápidas */}
+					<div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-lg font-bold text-gray-900">Acciones Rápidas</h2>
+							{/* KPI: Scouts con registro */}
+							<div className="flex items-center gap-4">
+								<div className="text-right">
+									<p className="text-xs text-gray-500">Scouts con registro</p>
+									<p className="text-2xl font-bold text-blue-600">
+										{Object.keys(asistenciaMasiva).length} / {scoutsFiltrados.length}
+									</p>
+								</div>
+								<div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+									<Users className="w-6 h-6 text-blue-600" />
+								</div>
+							</div>
+						</div>
+						<div className="flex flex-wrap gap-3">
+							<button
+								onClick={() => {
+									const todos = new Map();
+									scoutsFiltrados.forEach(s => todos.set(s.id, 'presente'));
+									setAsistenciaMasiva(Object.fromEntries(todos));
+								}}
+								className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
+							>
+								<CheckCircle className="w-4 h-4" />
+								Todos Presente
+							</button>
+							<button
+								onClick={() => {
+									const todos = new Map();
+									scoutsFiltrados.forEach(s => todos.set(s.id, 'ausente'));
+									setAsistenciaMasiva(Object.fromEntries(todos));
+								}}
+								className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium"
+							>
+								<AlertTriangle className="w-4 h-4" />
+								Todos Ausente
+							</button>
+							<button
+								onClick={() => setAsistenciaMasiva({})}
+								className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+							>
+								Limpiar Selección
+							</button>
+						</div>
+
+						{/* Botón Guardar */}
+						{Object.keys(asistenciaMasiva).length > 0 && (
+							<div className="mt-4 flex items-center justify-between bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+								<div>
+									<p className="text-sm font-medium text-blue-900">
+										{Object.keys(asistenciaMasiva).length} scout(s) seleccionado(s)
+									</p>
+								</div>
+								<button
+									onClick={handleRegistrarAsistenciaMasiva}
+									disabled={loading}
+									className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+								>
+									{loading ? 'Guardando...' : (
+										<>
+											<CheckCircle className="w-5 h-5" />
+											Guardar Asistencias
+										</>
+									)}
+								</button>
+							</div>
+						)}
+					</div>
+
+					{/* Lista de Scouts */}
+					<div className="bg-white rounded-xl shadow-lg overflow-hidden">
+						<div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+							<h2 className="text-lg font-bold text-gray-900">Scouts ({scoutsFiltrados.length})</h2>
+						</div>
+
+						<div className="overflow-x-auto">
+							<table className="w-full">
+								<thead className="bg-gray-50 border-b">
+									<tr>
+										<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scout</th>
+										<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+										<th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones Rápidas</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y divide-gray-200">
+									{scoutsFiltrados.map(scout => {
+										const estadoActual = asistenciaMasiva[scout.id];
+									const tieneRegistro = estadoActual !== undefined;
+									return (
+										<tr key={scout.id} className={`hover:bg-gray-50 ${tieneRegistro ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
+											<td className="px-6 py-4">
+												<div className="flex items-center">
+													<div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+														<span className="text-blue-600 font-bold text-sm">
+															{scout.nombres.charAt(0)}{scout.apellidos.charAt(0)}
+														</span>
+													</div>
+													<div className="ml-4">
+														<div className="text-sm font-medium text-gray-900">
+															{scout.nombres} {scout.apellidos}
+															{tieneRegistro && (
+																<span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-600 text-white">
+																	✓ Guardado
+																</span>
+															)}
+															</div>
+															<div className="text-sm text-gray-500">{scout.rama_actual}</div>
+														</div>
+													</div>
+												</td>
+												<td className="px-6 py-4 text-sm text-gray-500">{scout.codigo_scout}</td>
+												<td className="px-6 py-4">
+													<div className="flex items-center justify-center gap-2">
+														{estadosAsistencia.map(estado => {
+															const isSelected = estadoActual === estado.value;
+															return (
+																<button
+																	key={estado.value}
+																	onClick={() => handleChangeAsistenciaScout(scout.id, estado.value as any)}
+																	className={`p-2 rounded-lg transition-all ${
+																		isSelected 
+																			? estado.color + ' text-white scale-110 shadow-lg'
+																			: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+																	}`}
+																	title={estado.label}
+																>
+																	<CheckCircle className="w-4 h-4" />
+																</button>
+															);
+														})}
+													</div>
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="min-h-screen bg-gray-50 p-4 md:p-6">
 			<div className="max-w-7xl mx-auto">
-				{/* ...HEADER, KPIs, FILTROS, LISTA, MODALES, ASISTENCIA MASIVA como arriba... */}
-				{/* MODALES y lógica condicional ya están abajo */}
-				{/* ...resto del render... */}
+				{/* KPIs de asistencia */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">Total Reuniones</p>
+								<p className="text-2xl font-bold text-gray-900">{estadisticas.total_reuniones}</p>
+							</div>
+							<Calendar className="w-8 h-8 text-blue-600" />
+						</div>
+					</div>
+					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">Promedio Asistencia</p>
+								<p className="text-2xl font-bold text-green-600">{estadisticas.promedio_asistencia}%</p>
+							</div>
+							<TrendingUp className="w-8 h-8 text-green-600" />
+						</div>
+					</div>
+					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">Scouts Activos</p>
+								<p className="text-2xl font-bold text-purple-600">{estadisticas.scouts_activos}</p>
+							</div>
+							<Users className="w-8 h-8 text-purple-600" />
+						</div>
+					</div>
+					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600">Irregulares</p>
+								<p className="text-2xl font-bold text-red-600">{estadisticas.scouts_irregulares}</p>
+							</div>
+							<AlertTriangle className="w-8 h-8 text-red-600" />
+						</div>
+					</div>
+				</div>
+
+				{/* Filtros y búsqueda */}
+				<div className="bg-white rounded-lg shadow mb-6 p-4 flex gap-4 items-center">
+					<select className="w-32" value={selectedRama} onChange={e => setSelectedRama(e.target.value)}>
+						<option value="">Todas las ramas</option>
+						{ramas.map(rama => (
+							<option key={rama.value} value={rama.value}>{rama.label}</option>
+						))}
+					</select>
+					<input
+						type="search"
+						placeholder="Buscar por título..."
+						value={searchQuery}
+						onChange={e => setSearchQuery(e.target.value)}
+						className="flex-1 px-4 py-2 border rounded-lg"
+					/>
+					<button className="btn-primary" onClick={() => setShowCreateReunionModal(true)}>
+						<Plus className="w-4 h-4" /> Nueva Reunión
+					</button>
+				</div>
+
+				{/* Lista de reuniones y flujo de asistencia */}
+				{filteredReuniones.length > 0 ? (
+					<div className="space-y-4 mt-6">
+						{filteredReuniones.map(reunion => (
+							<div key={reunion.id} className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+								<div>
+									<h3 className="font-bold text-lg">{reunion.titulo}</h3>
+									<p className="text-gray-600">{reunion.descripcion}</p>
+									<div className="text-sm text-gray-500">{reunion.fecha} | {reunion.rama}</div>
+								</div>
+								<div className="flex gap-2 mt-4 md:mt-0">
+									<button className="btn-secondary" onClick={() => handleRegistrarAsistencia(reunion)}>
+										<CheckCircle className="w-4 h-4" /> Registrar Asistencia
+									</button>
+									<button className="btn-secondary" onClick={() => handleOpenAsistenciaMasiva(reunion)}>
+										<BarChart3 className="w-4 h-4" /> Asistencia Masiva
+									</button>
+									<button className="btn-secondary" onClick={() => handleViewReunion(reunion)}>
+										<Eye className="w-4 h-4" /> Ver Detalles
+									</button>
+									<button className="btn-secondary" onClick={() => handleEditReunion(reunion)}>
+										<Edit className="w-4 h-4" /> Editar
+									</button>
+									<button className="btn-danger" onClick={() => handleDeleteReunion(reunion)}>
+										<Trash2 className="w-4 h-4" /> Eliminar
+									</button>
+								</div>
+							</div>
+						))}
+					</div>
+				) : (
+					<div className="text-center py-12">
+						<Calendar className="mx-auto h-24 w-24 text-gray-400 mb-4" />
+						<h3 className="text-lg font-medium mb-2">No hay reuniones registradas</h3>
+						<p className="text-gray-500 mb-4">Comienza creando una reunión para registrar asistencia</p>
+						<button className="btn-primary" onClick={() => setShowCreateReunionModal(true)}>
+							Crear Reunión
+						</button>
+					</div>
+				)}
+
 				{/* MODAL CREAR REUNION */}
 				{showCreateReunionModal && (
 					<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -441,14 +923,75 @@ export default function Asistencia() {
 						</div>
 					</div>
 				)}
-				{/* MODAL REGISTRAR ASISTENCIA */}
-				{showAsistenciaModal && selectedReunion && (
-					<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-						<div className="bg-white rounded-lg max-w-md w-full">
-							{/* ...contenido del modal... */}
-						</div>
-					</div>
-				)}
+				   {/* MODAL REGISTRAR ASISTENCIA */}
+				   {showAsistenciaModal && selectedReunion && (
+					   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+						   <div className="bg-white rounded-lg max-w-md w-full p-6">
+							   <h2 className="text-xl font-bold mb-4">Registrar Asistencia</h2>
+							   <div className="mb-4">
+								   <label className="block text-sm font-medium mb-1">Scout</label>
+								   <select
+									   className="w-full px-4 py-2 border rounded-lg"
+									   value={asistenciaFormData.scout_id}
+									   onChange={e => setAsistenciaFormData({ ...asistenciaFormData, scout_id: e.target.value })}
+								   >
+									   <option value="">Selecciona un scout...</option>
+									   {scouts.map(s => (
+										   <option key={s.id} value={s.id}>{s.nombres} {s.apellidos} ({s.rama_actual})</option>
+									   ))}
+								   </select>
+								   {formErrors.scout_id && <p className="text-red-500 text-xs mt-1">{formErrors.scout_id}</p>}
+							   </div>
+							   <div className="mb-4">
+								   <label className="block text-sm font-medium mb-1">Estado</label>
+								   <select
+									   className="w-full px-4 py-2 border rounded-lg"
+									   value={asistenciaFormData.estado}
+									   onChange={e => setAsistenciaFormData({ ...asistenciaFormData, estado: e.target.value as any })}
+								   >
+									   {estadosAsistencia.map(ea => (
+										   <option key={ea.value} value={ea.value}>{ea.label}</option>
+									   ))}
+								   </select>
+								   {formErrors.estado && <p className="text-red-500 text-xs mt-1">{formErrors.estado}</p>}
+							   </div>
+							   <div className="mb-4">
+								   <label className="block text-sm font-medium mb-1">Hora de llegada</label>
+								   <input
+									   type="time"
+									   className="w-full px-4 py-2 border rounded-lg"
+									   value={asistenciaFormData.hora_llegada}
+									   onChange={e => setAsistenciaFormData({ ...asistenciaFormData, hora_llegada: e.target.value })}
+								   />
+							   </div>
+							   <div className="mb-4">
+								   <label className="block text-sm font-medium mb-1">Observaciones</label>
+								   <textarea
+									   className="w-full px-4 py-2 border rounded-lg"
+									   value={asistenciaFormData.observaciones}
+									   onChange={e => setAsistenciaFormData({ ...asistenciaFormData, observaciones: e.target.value })}
+								   />
+							   </div>
+							   <div className="flex gap-4 justify-end mt-6">
+								   <button
+									   className="btn-secondary"
+									   onClick={() => { setShowAsistenciaModal(false); resetAsistenciaForm(); }}
+									   type="button"
+								   >
+									   Cancelar
+								   </button>
+								   <button
+									   className="btn-primary"
+									   onClick={handleSubmitAsistencia}
+									   disabled={loading}
+									   type="button"
+								   >
+									   <Save className="w-4 h-4 inline mr-2" /> Registrar
+								   </button>
+							   </div>
+						   </div>
+					   </div>
+				   )}
 			</div>
 		</div>
 	);
