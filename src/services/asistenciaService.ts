@@ -67,26 +67,71 @@ export class AsistenciaService {
   }
 
   /**
+   * 📱 Obtener asistencias existentes por fecha y rama (Mobile)
+   */
+  static async obtenerAsistenciasPorFechaYRama(fecha: string, rama: string): Promise<Record<string, string>> {
+    try {
+      console.log('🔍 Buscando asistencias para fecha:', fecha, 'rama:', rama);
+      
+      // Normalizar rama a UPPERCASE para coincidir con BD
+      const ramaNormalizada = rama.toUpperCase();
+      
+      const { data, error } = await supabase
+        .from('asistencias')
+        .select('scout_id, estado_asistencia')
+        .eq('fecha', fecha)
+        .eq('rama', ramaNormalizada)
+        .eq('tipo_evento', 'REUNION_REGULAR'); // Tipo por defecto para mobile
+
+      if (error) {
+        console.error('❌ Error al obtener asistencias:', error);
+        throw error;
+      }
+
+      console.log('📦 Asistencias encontradas:', data?.length || 0);
+      
+      // Convertir a un objeto tipo Record<scout_id, estado>
+      const asistenciasMap: Record<string, string> = {};
+      data?.forEach(a => {
+        // Mapear estados de BD a estados del componente (lowercase)
+        const estadoNormalizado = a.estado_asistencia.toLowerCase();
+        asistenciasMap[a.scout_id] = estadoNormalizado;
+      });
+
+      return asistenciasMap;
+    } catch (error) {
+      console.error('Error al obtener asistencias por fecha y rama:', error);
+      return {};
+    }
+  }
+
+  /**
    * 📱 Registrar asistencia masiva simplificada (Mobile)
    */
   static async registrarAsistenciaMasiva(registros: Array<{
     scout_id: string;
     fecha: string;
     presente: boolean;
+    tardanza?: boolean;
     rama: string;
   }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
     try {
+      // Normalizar rama a UPPERCASE para coincidir con BD
       const registrosFormateados = registros.map(r => ({
         scout_id: r.scout_id,
         fecha: r.fecha,
-        estado_asistencia: r.presente ? 'Presente' : 'Ausente',
-        rama: r.rama,
+        tipo_evento: 'REUNION_REGULAR', // Tipo por defecto para mobile
+        estado_asistencia: r.presente ? 'PRESENTE' : (r.tardanza ? 'TARDANZA' : 'AUSENTE'),
+        rama: r.rama.toUpperCase(), // Normalizar a UPPERCASE
         registrado_por: 'mobile_app'
       }));
 
+      // Usar upsert con el constraint correcto: (scout_id, fecha, tipo_evento)
       const { data, error } = await supabase
         .from('asistencias')
-        .insert(registrosFormateados);
+        .upsert(registrosFormateados, {
+          onConflict: 'scout_id,fecha,tipo_evento'
+        });
 
       if (error) throw error;
       

@@ -26,23 +26,34 @@ export default function AsistenciaScreen() {
     if (rama) {
       cargarScouts();
     }
-  }, [rama]);
+  }, [rama, fecha]); // Agregar fecha como dependencia
 
   const cargarScouts = async () => {
-    console.log('📱 Cargando scouts para rama:', rama);
+    console.log('📱 Cargando scouts para rama:', rama, 'fecha:', fecha);
     setLoading(true);
     try {
       const data = await AsistenciaService.obtenerScoutsPorRama(rama);
       console.log('📦 Scouts recibidos:', data?.length || 0, data);
       setScouts(data || []);
       
-      // Inicializar todas las asistencias como presentes por defecto
+      // Cargar asistencias existentes para esta fecha y rama
+      const asistenciasExistentes = await AsistenciaService.obtenerAsistenciasPorFechaYRama(fecha, rama);
+      console.log('📋 Asistencias existentes:', asistenciasExistentes);
+      
+      // Inicializar asistencias: usar existentes si hay, o 'presente' por defecto
       const asistenciasIniciales: Record<string, EstadoAsistencia> = {};
       data?.forEach(scout => {
-        asistenciasIniciales[scout.id] = 'presente';
+        // Si hay registro existente, usarlo; si no, marcar como 'presente'
+        const estadoExistente = asistenciasExistentes[scout.id];
+        if (estadoExistente && ['presente', 'ausente', 'tardanza'].includes(estadoExistente)) {
+          asistenciasIniciales[scout.id] = estadoExistente as EstadoAsistencia;
+        } else {
+          asistenciasIniciales[scout.id] = 'presente';
+        }
       });
+      
       setAsistencias(asistenciasIniciales);
-      console.log('✅ Asistencias inicializadas para', Object.keys(asistenciasIniciales).length, 'scouts');
+      console.log('✅ Asistencias inicializadas:', asistenciasIniciales);
     } catch (error) {
       console.error('❌ Error al cargar scouts:', error);
     } finally {
