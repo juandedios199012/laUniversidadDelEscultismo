@@ -400,9 +400,8 @@ export default function PuntajesScreen() {
 
                     {/* Tabla de Ranking - COLAPSABLE */}
                     {rankingExpandido && (
-                      <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-slideDow
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                      <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-3 text-white">
+                      <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-slideDown">
+                        <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-3 text-white">
                         <h3 className="font-bold flex items-center">
                           <Trophy className="w-5 h-5 mr-2" />
                           Ranking de Patrullas
