@@ -445,7 +445,6 @@ export default function PuntajesScreen() {
                               </div>
                               
                               {/* Puntaje */}
-                    )}
                               <div className={`text-right ${
                                 isTop3 ? 'text-purple-600 font-bold' : 'text-gray-700 font-semibold'
                               }`}>
@@ -460,7 +459,8 @@ export default function PuntajesScreen() {
                   </div>
                 )}
 
-                <div className="space-y-3">\n                  <h3 className="font-semibold text-gray-700">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-700">
                     Actividades ({programa.actividades.length})
                   </h3>
 
