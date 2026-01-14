@@ -39,6 +39,7 @@ export default function PuntajesScreen() {
   const [puntajes, setPuntajes] = useState<Record<string, number>>({});
   const [ranking, setRanking] = useState<RankingPatrulla[]>([]);
   const [mostrarRanking, setMostrarRanking] = useState(false);
+  const [rankingExpandido, setRankingExpandido] = useState(false); // Controla expansión de tabla
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [paso, setPaso] = useState<1 | 2 | 3>(1); // Flujo de 3 pasos
@@ -165,6 +166,7 @@ export default function PuntajesScreen() {
     setPuntajes({});
     setRanking([]);
     setMostrarRanking(false);
+    setRankingExpandido(false); // Reset expansión
   };
 
   const volverAActividades = () => {
@@ -357,36 +359,47 @@ export default function PuntajesScreen() {
                 )}
 
                 {/* RANKING DE PATRULLAS */}
-                {mostrarRanking && ranking.length > 0 && (
-                  <div className="space-y-4">
-                    {/* KPIs del Ranking */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl p-3 text-white shadow-md">
-                        <Trophy className="w-5 h-5 mb-1 mx-auto" />
+                {mostrarRanking && ranking3">
+                    {/* KPIs del Ranking - SIEMPRE VISIBLES Y COMPACTOS */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg p-2 text-white shadow-sm">
+                        <Trophy className="w-4 h-4 mb-0.5 mx-auto" />
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{ranking[0]?.total_puntaje || 0}</div>
-                          <div className="text-xs opacity-90">1° Lugar</div>
+                          <div className="text-lg font-bold leading-tight">{ranking[0]?.total_puntaje || 0}</div>
+                          <div className="text-[10px] opacity-90">1° Lugar</div>
                         </div>
                       </div>
                       
-                      <div className="bg-gradient-to-br from-gray-300 to-gray-400 rounded-xl p-3 text-white shadow-md">
-                        <Medal className="w-5 h-5 mb-1 mx-auto" />
+                      <div className="bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg p-2 text-white shadow-sm">
+                        <Medal className="w-4 h-4 mb-0.5 mx-auto" />
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{ranking[1]?.total_puntaje || 0}</div>
-                          <div className="text-xs opacity-90">2° Lugar</div>
+                          <div className="text-lg font-bold leading-tight">{ranking[1]?.total_puntaje || 0}</div>
+                          <div className="text-[10px] opacity-90">2° Lugar</div>
                         </div>
                       </div>
                       
-                      <div className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl p-3 text-white shadow-md">
-                        <Medal className="w-5 h-5 mb-1 mx-auto" />
+                      <div className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg p-2 text-white shadow-sm">
+                        <Medal className="w-4 h-4 mb-0.5 mx-auto" />
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{ranking[2]?.total_puntaje || 0}</div>
-                          <div className="text-xs opacity-90">3° Lugar</div>
+                          <div className="text-lg font-bold leading-tight">{ranking[2]?.total_puntaje || 0}</div>
+                          <div className="text-[10px] opacity-90">3° Lugar</div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Tabla de Ranking */}
+                    {/* Botón para expandir/colapsar ranking completo */}
+                    <button
+                      onClick={() => setRankingExpandido(!rankingExpandido)}
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md active:scale-98 transition-all flex items-center justify-center space-x-2"
+                    >
+                      <Trophy className="w-4 h-4" />
+                      <span>{rankingExpandido ? 'Ocultar' : 'Ver'} Ranking Completo</span>
+                      <span className="text-lg">{rankingExpandido ? '▲' : '▼'}</span>
+                    </button>
+
+                    {/* Tabla de Ranking - COLAPSABLE */}
+                    {rankingExpandido && (
+                      <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-slideDow
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                       <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-4 py-3 text-white">
                         <h3 className="font-bold flex items-center">
@@ -432,6 +445,7 @@ export default function PuntajesScreen() {
                               </div>
                               
                               {/* Puntaje */}
+                    )}
                               <div className={`text-right ${
                                 isTop3 ? 'text-purple-600 font-bold' : 'text-gray-700 font-semibold'
                               }`}>
