@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, Medal } from 'lucide-react';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
+import { formatFechaLocal } from '../../utils/dateUtils';
 
 interface Programa {
   id: string;
@@ -299,11 +300,7 @@ export default function PuntajesScreen() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">
-                      📅 {new Date(programa.fecha_inicio).toLocaleDateString('es-PE', { 
-                        day: 'numeric', 
-                        month: 'short',
-                        year: 'numeric'
-                      })}
+                      📅 {formatFechaLocal(programa.fecha_inicio)}
                     </span>
                     <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -346,6 +343,9 @@ export default function PuntajesScreen() {
                 <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
                   <p className="text-sm text-blue-600 font-medium">Programa seleccionado:</p>
                   <p className="text-blue-900 font-semibold">{programa.tema_central}</p>
+                  <p className="text-sm text-blue-600 mt-1">
+                    📅 {formatFechaLocal(programa.fecha_inicio)} • 🏕️ {programa.rama}
+                  </p>
                 </div>
 
                 {/* Estado vacío de ranking */}

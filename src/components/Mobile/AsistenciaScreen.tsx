@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClipboardCheck, Users, CheckCircle, XCircle, Clock, Calendar, ChevronRight } from 'lucide-react';
 import { AsistenciaService } from '../../services/asistenciaService';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
+import { formatFechaLocal } from '../../utils/dateUtils';
 
 interface Programa {
   id: string;
@@ -228,7 +229,7 @@ export default function AsistenciaScreen() {
                       </h4>
                       <div className="flex items-center space-x-3 text-sm text-gray-500">
                         <span className="flex items-center">
-                          📅 {new Date(programa.fecha_inicio).toLocaleDateString('es-PE')}
+                          📅 {formatFechaLocal(programa.fecha_inicio)}
                         </span>
                         <span className="flex items-center">
                           🏕️ {programa.rama}
@@ -257,7 +258,7 @@ export default function AsistenciaScreen() {
                 <p className="text-sm text-blue-600 font-medium">Programa seleccionado:</p>
                 <p className="text-blue-900 font-semibold">{programa.tema_central}</p>
                 <p className="text-sm text-blue-600 mt-1">
-                  📅 {new Date(programa.fecha_inicio).toLocaleDateString('es-PE')} • 🏕️ {programa.rama}
+                  📅 {formatFechaLocal(programa.fecha_inicio)} • 🏕️ {programa.rama}
                 </p>
               </div>
             );

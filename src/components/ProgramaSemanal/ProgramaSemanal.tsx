@@ -4,6 +4,7 @@ import { ProgramaSemanalEntry, ProgramaActividad } from '../../lib/supabase';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 import PuntajesActividad from './PuntajesActividad';
 import RankingPatrullas from './RankingPatrullas';
+import { formatFechaLocal } from '../../utils/dateUtils';
 
 interface ProgramaSemanalProps {}
 
@@ -406,7 +407,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                         <Calendar className="w-4 h-4" />
                         <span>{
                           programa.fecha_inicio && programa.fecha_fin
-                            ? `${programa.fecha_inicio.split('-').reverse().join('/')} - ${programa.fecha_fin.split('-').reverse().join('/')}`
+                            ? `${formatFechaLocal(programa.fecha_inicio)} - ${formatFechaLocal(programa.fecha_fin)}`
                             : ''
                         }</span>
                       </div>
@@ -1071,7 +1072,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Periodo:</span>
-                        <span className="font-medium">{new Date(selectedPrograma.fecha_inicio).toLocaleDateString()} - {new Date(selectedPrograma.fecha_fin).toLocaleDateString()}</span>
+                        <span className="font-medium">{formatFechaLocal(selectedPrograma.fecha_inicio)} - {formatFechaLocal(selectedPrograma.fecha_fin)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Rama:</span>
