@@ -215,8 +215,9 @@ export default function PuntajesScreen() {
           await cargarRankingPrograma(programaSeleccionado);
         }
         
-        // Limpiar formulario
-        setPuntajes({});
+        // NO limpiar puntajes - mantener los valores guardados para que el usuario vea lo que guardó
+        // Los inputs mostrarán los valores guardados (con borde verde)
+        
         setTimeout(() => setMensaje(''), 3000);
       } else {
         setMensaje(`❌ ${result.error}`);
@@ -456,7 +457,8 @@ export default function PuntajesScreen() {
                         })}
                       </div>
                     </div>
-                  </div>
+                  )}
+                </div>
                 )}
 
                 <div className="space-y-3">

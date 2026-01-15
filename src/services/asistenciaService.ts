@@ -67,28 +67,24 @@ export class AsistenciaService {
   }
 
   /**
-   * 📱 Obtener asistencias existentes por fecha y rama (Mobile)
+   * 📱 Obtener asistencias existentes por programa_id (Mobile)
+   * Usa actividad_id para aprovechar relación con programa_semanal
    */
-  static async obtenerAsistenciasPorFechaYRama(fecha: string, rama: string): Promise<Record<string, string>> {
+  static async obtenerAsistenciasPorPrograma(programaId: string): Promise<Record<string, string>> {
     try {
-      console.log('🔍 Buscando asistencias para fecha:', fecha, 'rama:', rama);
-      
-      // Normalizar rama a UPPERCASE para coincidir con BD
-      const ramaNormalizada = rama.toUpperCase();
+      console.log('🔍 Buscando asistencias para programa:', programaId);
       
       const { data, error } = await supabase
         .from('asistencias')
         .select('scout_id, estado_asistencia')
-        .eq('fecha', fecha)
-        .eq('rama', ramaNormalizada)
-        .eq('tipo_evento', 'REUNION_REGULAR'); // Tipo por defecto para mobile
+        .eq('actividad_id', programaId);
 
       if (error) {
         console.error('❌ Error al obtener asistencias:', error);
         throw error;
       }
 
-      console.log('📦 Asistencias encontradas:', data?.length || 0);
+      console.log('📦 Asistencias encontradas:', data?.length || 0, data);
       
       // Convertir a un objeto tipo Record<scout_id, estado>
       const asistenciasMap: Record<string, string> = {};
@@ -98,49 +94,51 @@ export class AsistenciaService {
         asistenciasMap[a.scout_id] = estadoNormalizado;
       });
 
+      console.log('📋 Mapa de asistencias:', asistenciasMap);
       return asistenciasMap;
     } catch (error) {
-      console.error('Error al obtener asistencias por fecha y rama:', error);
+      console.error('Error al obtener asistencias por programa:', error);
       return {};
     }
   }
 
   /**
-   * 📱 Registrar asistencia masiva simplificada (Mobile)
+   * 📱 Registrar asistencia masiva por programa (Mobile)
+   * Usa actividad_id para vincular con programa_semanal
    */
   static async registrarAsistenciaMasiva(registros: Array<{
     scout_id: string;
+    programa_id: string;
     fecha: string;
-    presente: boolean;
-    tardanza?: boolean;
-    rama: string;
+    estado_asistencia: 'presente' | 'ausente' | 'tardanza';
   }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
     try {
-      // Normalizar rama a UPPERCASE para coincidir con BD
       const registrosFormateados = registros.map(r => ({
         scout_id: r.scout_id,
+        actividad_id: r.programa_id, // Usar programa_id como actividad_id
         fecha: r.fecha,
-        tipo_evento: 'REUNION_REGULAR', // Tipo por defecto para mobile
-        estado_asistencia: r.presente ? 'PRESENTE' : (r.tardanza ? 'TARDANZA' : 'AUSENTE'),
-        rama: r.rama.toUpperCase(), // Normalizar a UPPERCASE
-        registrado_por: 'mobile_app'
+        tipo_reunion: 'REUNION_REGULAR',
+        estado_asistencia: r.estado_asistencia.toUpperCase() as 'PRESENTE' | 'AUSENTE' | 'TARDANZA'
       }));
 
-      // Usar upsert con el constraint correcto: (scout_id, fecha, tipo_evento)
+      console.log('💾 Guardando asistencias:', registrosFormateados.length);
+
+      // Usar upsert con constraint (scout_id, actividad_id)
       const { data, error } = await supabase
         .from('asistencias')
         .upsert(registrosFormateados, {
-          onConflict: 'scout_id,fecha,tipo_evento'
+          onConflict: 'scout_id,actividad_id'
         });
 
       if (error) throw error;
       
+      console.log('✅ Asistencias guardadas exitosamente');
       return { 
         success: true, 
         registros_creados: registros.length 
       };
     } catch (error) {
-      console.error('Error al registrar asistencia masiva:', error);
+      console.error('❌ Error al registrar asistencia masiva:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Error desconocido' 
