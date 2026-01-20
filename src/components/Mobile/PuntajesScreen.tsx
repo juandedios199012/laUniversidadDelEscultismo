@@ -53,11 +53,8 @@ export default function PuntajesScreen() {
     console.log('📱 Cargando programas para puntajes...');
     setLoading(true);
     try {
-      // Cargar programas semanales recientes (últimos 30 días)
-      const fechaHace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const programasData = await ProgramaSemanalService.getProgramas({
-        fecha_desde: fechaHace30Dias
-      });
+      // Cargar todos los programas semanales
+      const programasData = await ProgramaSemanalService.getProgramas({});
       
       console.log('📦 Programas recibidos:', programasData?.length || 0);
       
