@@ -427,7 +427,7 @@ class ScoutService {
   }
 
   /**
-   * 🗑️ Eliminar scout (eliminación lógica)
+   * 🗑️ Eliminar scout (eliminación física)
    * Endpoint: DELETE /api/scouts/{id}
    */
   static async deleteScout(id: string): Promise<{ success: boolean; error?: string }> {
@@ -445,6 +445,28 @@ class ScoutService {
       return { success: false, error: data?.message || 'Error desconocido' };
     } catch (error) {
       console.error('❌ Error al eliminar scout:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🔄 Desactivar scout (cambiar estado a INACTIVO)
+   * Endpoint: PUT /api/scouts/{id}/desactivar
+   */
+  static async desactivarScout(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .rpc('api_desactivar_scout', { p_scout_id: id });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        return { success: true };
+      }
+      
+      return { success: false, error: data?.message || 'Error desconocido' };
+    } catch (error) {
+      console.error('❌ Error al desactivar scout:', error);
       throw error;
     }
   }

@@ -98,7 +98,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
   }, []); // Solo al montar el componente
 
   const handleEliminar = async (scout: Scout) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar al scout ${scout.nombres} ${scout.apellidos}?`)) {
+    if (!window.confirm(`⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE al scout ${scout.nombres} ${scout.apellidos} y no se podrá recuperar.\n\n¿Estás COMPLETAMENTE SEGURO?`)) {
       return;
     }
 
@@ -106,13 +106,32 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
       const result = await ScoutService.deleteScout(scout.id);
       if (result.success) {
         await cargarScouts(); // Recargar la lista
-        alert('Scout eliminado exitosamente');
+        alert('✅ Scout eliminado permanentemente');
       } else {
-        alert(`Error al eliminar: ${result.error}`);
+        alert(`❌ Error al eliminar: ${result.error}`);
       }
     } catch (error) {
       console.error('Error al eliminar scout:', error);
-      alert('Error al eliminar el scout');
+      alert('❌ Error al eliminar el scout');
+    }
+  };
+
+  const handleDesactivar = async (scout: Scout) => {
+    if (!window.confirm(`¿Desactivar al scout ${scout.nombres} ${scout.apellidos}?\n\nEl scout pasará a estado INACTIVO pero sus datos se conservarán.`)) {
+      return;
+    }
+
+    try {
+      const result = await ScoutService.desactivarScout(scout.id);
+      if (result.success) {
+        await cargarScouts(); // Recargar la lista
+        alert('✅ Scout desactivado exitosamente');
+      } else {
+        alert(`❌ Error al desactivar: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error al desactivar scout:', error);
+      alert('❌ Error al desactivar el scout');
     }
   };
 
@@ -397,9 +416,16 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                         ✏️
                       </button>
                       <button
+                        onClick={() => handleDesactivar(scout)}
+                        className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded transition-colors"
+                        title="Desactivar (cambiar a INACTIVO)"
+                      >
+                        ⏸️
+                      </button>
+                      <button
                         onClick={() => handleEliminar(scout)}
                         className="text-red-600 hover:text-red-900 px-2 py-1 rounded transition-colors"
-                        title="Eliminar"
+                        title="Eliminar permanentemente"
                       >
                         🗑️
                       </button>
