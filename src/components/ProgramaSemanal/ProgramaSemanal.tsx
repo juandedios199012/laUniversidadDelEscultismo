@@ -697,8 +697,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                           <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
                           <input
                             type="number"
-                            value={actividad.duracion_minutos}
-                            onChange={(e) => updateActividad(index, 'duracion_minutos', parseInt(e.target.value) || 60, setCreateForm)}
+                            value={actividad.duracion_minutos || ''}
+                            onChange={(e) => updateActividad(index, 'duracion_minutos', e.target.value === '' ? null : parseInt(e.target.value), setCreateForm)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
@@ -727,9 +727,9 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                           <label className="block text-xs font-medium text-gray-600 mb-1">Materiales</label>
                           <input
                             type="text"
-                            value={actividad.materiales ? actividad.materiales.join(', ') : ''}
-                            onChange={(e) => updateActividad(index, 'materiales', e.target.value.split(',').map(m => m.trim()), setCreateForm)}
-                            placeholder="Lista de materiales separados por coma"
+                            value={actividad.materiales || ''}
+                            onChange={(e) => updateActividad(index, 'materiales', e.target.value, setCreateForm)}
+                            placeholder="Lista de materiales"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
@@ -964,8 +964,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                             <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
                             <input
                               type="number"
-                              value={actividad.duracion_minutos}
-                              onChange={(e) => updateActividad(index, 'duracion_minutos', parseInt(e.target.value) || 60, setEditForm)}
+                              value={actividad.duracion_minutos || ''}
+                              onChange={(e) => updateActividad(index, 'duracion_minutos', e.target.value === '' ? null : parseInt(e.target.value), setEditForm)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                           </div>
@@ -994,9 +994,9 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                             <label className="block text-xs font-medium text-gray-600 mb-1">Materiales</label>
                             <input
                               type="text"
-                              value={actividad.materiales ? actividad.materiales.join(', ') : ''}
-                              onChange={(e) => updateActividad(index, 'materiales', e.target.value.split(',').map(m => m.trim()), setEditForm)}
-                              placeholder="Lista de materiales separados por coma"
+                              value={actividad.materiales || ''}
+                              onChange={(e) => updateActividad(index, 'materiales', e.target.value, setEditForm)}
+                              placeholder="Lista de materiales"
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                           </div>

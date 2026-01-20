@@ -304,7 +304,7 @@ export class AsistenciaService {
   static async registrarAsistencia(asistencia: {
     actividad_id: string;
     scout_id: string;
-    estado_asistencia: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+    estado_asistencia: 'presente' | 'ausente' | 'tardanza' | 'justificado';
     hora_llegada?: string;
     observaciones?: string;
     registrado_por?: string;
@@ -410,7 +410,7 @@ export class AsistenciaService {
    * Endpoint: PUT /api/asistencia/registros/{id}
    */
   static async updateAsistencia(id: string, updates: {
-    estado?: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+    estado?: 'presente' | 'ausente' | 'tardanza' | 'justificado';
     hora_llegada?: string;
     observaciones?: string;
   }): Promise<{ success: boolean; error?: string }> {
@@ -674,7 +674,7 @@ export class AsistenciaService {
     reuniones: Array<{
       reunion_id: string;
       titulo: string;
-      estado_asistencia?: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+      estado_asistencia?: 'presente' | 'ausente' | 'tardanza' | 'justificado';
       hora_inicio?: string;
       ubicacion?: string;
     }>

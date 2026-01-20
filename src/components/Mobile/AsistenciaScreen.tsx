@@ -19,7 +19,7 @@ interface Scout {
   rama_actual: string;
 }
 
-type EstadoAsistencia = 'presente' | 'ausente' | 'tardanza';
+type EstadoAsistencia = 'presente' | 'ausente' | 'tardanza' | 'justificado';
 
 export default function AsistenciaScreen() {
   const [programas, setProgramas] = useState<Programa[]>([]);
@@ -106,8 +106,10 @@ export default function AsistenciaScreen() {
     const estadoActual = asistencias[scoutId] || 'presente';
     let nuevoEstado: EstadoAsistencia;
     
+    // Ciclo: presente → tardanza → justificado → ausente → presente
     if (estadoActual === 'presente') nuevoEstado = 'tardanza';
-    else if (estadoActual === 'tardanza') nuevoEstado = 'ausente';
+    else if (estadoActual === 'tardanza') nuevoEstado = 'justificado';
+    else if (estadoActual === 'justificado') nuevoEstado = 'ausente';
     else nuevoEstado = 'presente';
     
     setAsistencias({
@@ -151,6 +153,7 @@ export default function AsistenciaScreen() {
 
   const presentes = Object.values(asistencias).filter(a => a === 'presente').length;
   const tardanzas = Object.values(asistencias).filter(a => a === 'tardanza').length;
+  const justificados = Object.values(asistencias).filter(a => a === 'justificado').length;
   const ausentes = Object.values(asistencias).filter(a => a === 'ausente').length;
 
   return (
@@ -279,7 +282,7 @@ export default function AsistenciaScreen() {
 
           {/* Estadísticas */}
           {scouts.length > 0 && (
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               <div className="bg-white rounded-xl p-3 shadow text-center">
                 <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                 <div className="text-xl font-bold">{scouts.length}</div>
@@ -294,6 +297,11 @@ export default function AsistenciaScreen() {
                 <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-yellow-600">{tardanzas}</div>
                 <div className="text-xs text-gray-500">Tardanzas</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 shadow text-center">
+                <CheckCircle className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                <div className="text-xl font-bold text-blue-600">{justificados}</div>
+                <div className="text-xs text-gray-500">Justif.</div>
               </div>
               <div className="bg-white rounded-xl p-3 shadow text-center">
                 <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
@@ -348,6 +356,13 @@ export default function AsistenciaScreen() {
                     icon: Clock,
                     text: 'text-yellow-700',
                     label: 'Tardanza'
+                  },
+                  justificado: {
+                    bg: 'bg-blue-50 border-2 border-blue-500',
+                    iconBg: 'bg-blue-500',
+                    icon: CheckCircle,
+                    text: 'text-blue-700',
+                    label: 'Justificado'
                   },
                   ausente: {
                     bg: 'bg-red-50 border-2 border-red-500',

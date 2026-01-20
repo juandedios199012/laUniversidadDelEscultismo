@@ -64,7 +64,7 @@ export default function AsistenciaNew() {
   // ============= ASISTENCIA MASIVA =============
   const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
   const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
-  const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'>>({});
+  const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
 
   const handleOpenAsistenciaMasiva = (programa: Reunion) => {
     setSelectedPrograma(programa);
@@ -80,19 +80,20 @@ export default function AsistenciaNew() {
 
   const scoutsFiltrados = scouts.filter(s => !selectedPatrulla || s.rama_actual === selectedPatrulla);
 
-  const handleChangeAsistenciaScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'excusado') => {
+  const handleChangeAsistenciaScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'justificado') => {
     setAsistenciaMasiva(prev => ({ ...prev, [scoutId]: estado }));
   };
 
   const handleRegistrarAsistenciaMasiva = async () => {
     setLoading(true);
     try {
-      // Obtener usuario autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Obtener sesión autenticada (más confiable que getUser en Azure)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
         alert('❌ Debes estar autenticado para registrar asistencia');
         return;
       }
+      const user = session.user;
 
       // Supabase: inserción masiva
       // Mapear a valores del enum
@@ -100,7 +101,7 @@ export default function AsistenciaNew() {
         'presente': 'PRESENTE',
         'ausente': 'AUSENTE',
         'tardanza': 'TARDANZA',
-        'excusado': 'JUSTIFICADO'
+        'justificado': 'JUSTIFICADO'
       };
       const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
         actividad_id: selectedPrograma?.id,
@@ -398,12 +399,13 @@ export default function AsistenciaNew() {
       }
 
       setLoading(true);
-      // Obtener usuario autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Obtener sesión autenticada (más confiable que getUser en Azure)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
         alert('❌ Debes estar autenticado para registrar asistencia');
         return;
       }
+      const user = session.user;
 
       const result = await AsistenciaService.registrarAsistencia({
         reunion_id: asistenciaFormData.reunion_id,

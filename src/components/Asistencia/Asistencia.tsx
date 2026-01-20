@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-	Calendar, Users, Save, Plus, Search, Edit, Eye, Trash2, 
-	TrendingUp, BarChart3, AlertTriangle, CheckCircle
+	Calendar, Save, Plus, Search, Edit, Eye, Trash2, 
+	TrendingUp, BarChart3, CheckCircle
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
 import ScoutService from '../../services/scoutService';
@@ -47,7 +47,7 @@ interface ReunionFormData {
 interface AsistenciaFormData {
 	reunion_id: string;
 	scout_id: string;
-	estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+	estado: 'presente' | 'ausente' | 'tardanza' | 'justificado';
 	hora_llegada: string;
 	observaciones: string;
 }
@@ -64,7 +64,7 @@ export default function Asistencia() {
 	// ============= ASISTENCIA MASIVA =============
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
 	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
-	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'>>({});
+	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
 	// ============= DETALLE PROGRAMA =============
 	const [asistenciasPrograma, setAsistenciasPrograma] = useState<any[]>([]);
 
@@ -77,14 +77,14 @@ export default function Asistencia() {
 		const asistenciasGuardadas = await AsistenciaService.getAsistenciasPorActividad(programa.id);
 		
 		// Mapear estados guardados a formato del componente (MAYÚSCULAS → minúsculas)
-		const estadoMapInverso: Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'> = {
+		const estadoMapInverso: Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'> = {
 			'PRESENTE': 'presente',
 			'AUSENTE': 'ausente',
 			'TARDANZA': 'tardanza',
-			'JUSTIFICADO': 'excusado'
+			'JUSTIFICADO': 'justificado'
 		};
 		
-		const estadosGuardados: Record<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'> = {};
+		const estadosGuardados: Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'> = {};
 		asistenciasGuardadas.forEach(asist => {
 			estadosGuardados[asist.scout_id] = estadoMapInverso[asist.estado_asistencia] || 'presente';
 		});
@@ -99,19 +99,20 @@ export default function Asistencia() {
 
 	const scoutsFiltrados = scouts.filter(s => !selectedPatrulla || s.rama_actual === selectedPatrulla);
 
-	const handleChangeAsistenciaScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'excusado') => {
+	const handleChangeAsistenciaScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'justificado') => {
 		setAsistenciaMasiva(prev => ({ ...prev, [scoutId]: estado }));
 	};
 
 	const handleRegistrarAsistenciaMasiva = async () => {
 		setLoading(true);
 		try {
-			// Obtener usuario autenticado
-			const { data: { user } } = await supabase.auth.getUser();
-			if (!user) {
+			// Obtener sesión autenticada (más confiable que getUser en Azure)
+			const { data: { session } } = await supabase.auth.getSession();
+			if (!session?.user) {
 				alert('❌ Debes estar autenticado para registrar asistencia');
 				return;
 			}
+			const user = session.user;
 
 			// Supabase: inserción masiva
 			// Mapear estados a valores del enum en BD (MAYÚSCULAS)
@@ -119,7 +120,7 @@ export default function Asistencia() {
 				'presente': 'PRESENTE',
 				'ausente': 'AUSENTE',
 				'tardanza': 'TARDANZA',
-				'excusado': 'JUSTIFICADO'
+				'justificado': 'JUSTIFICADO'
 			};
 			const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
 				actividad_id: selectedPrograma?.id,
@@ -173,9 +174,7 @@ export default function Asistencia() {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [estadisticas, setEstadisticas] = useState({
 		total_reuniones: 0,
-		promedio_asistencia: 0,
-		scouts_activos: 0,
-		scouts_irregulares: 0
+		promedio_asistencia: 0
 	});
 
 	// ============= CONFIGURACION =============
@@ -199,7 +198,7 @@ export default function Asistencia() {
 		{ value: 'presente', label: 'Presente', color: 'text-green-700 bg-green-100' },
 		{ value: 'ausente', label: 'Ausente', color: 'text-red-700 bg-red-100' },
 		{ value: 'tardanza', label: 'Tardanza', color: 'text-yellow-700 bg-yellow-100' },
-		{ value: 'excusado', label: 'Excusado', color: 'text-blue-700 bg-blue-100' }
+		{ value: 'justificado', label: 'Justificado', color: 'text-blue-700 bg-blue-100' }
 	];
 
 	// ============= EFECTOS =============
@@ -263,9 +262,7 @@ export default function Asistencia() {
 			// Cálculo local si falla el servicio
 			setEstadisticas({
 				total_reuniones: reuniones.length,
-				promedio_asistencia: 85,
-				scouts_activos: scouts.length,
-				scouts_irregulares: 0
+				promedio_asistencia: 85
 			});
 		}
 	};
@@ -441,24 +438,25 @@ export default function Asistencia() {
 			}
 
 			setLoading(true);
-			// Obtener usuario autenticado
-			const { data: { user } } = await supabase.auth.getUser();
-			if (!user) {
+			// Obtener sesión autenticada (más confiable que getUser en Azure)
+			const { data: { session } } = await supabase.auth.getSession();
+			if (!session?.user) {
 				alert('❌ Debes estar autenticado para registrar asistencia');
 				return;
 			}
+			const user = session.user;
 
 			// Normalizar estado para el enum de la BD
 			const estadoMap: Record<string, string> = {
 				'presente': 'PRESENTE',
 				'ausente': 'AUSENTE',
 				'tardanza': 'TARDANZA',
-				'excusado': 'JUSTIFICADO'
+				'justificado': 'JUSTIFICADO'
 			};
 			const result = await AsistenciaService.registrarAsistencia({
 				actividad_id: asistenciaFormData.reunion_id, // Usamos el id de la reunión (programa_semanal) como actividad_id
 				scout_id: asistenciaFormData.scout_id,
-				estado_asistencia: (asistenciaFormData.estado === 'excusado' ? 'JUSTIFICADO' : asistenciaFormData.estado?.toUpperCase() || 'PRESENTE'),
+				estado_asistencia: (asistenciaFormData.estado === 'justificado' ? 'JUSTIFICADO' : asistenciaFormData.estado?.toUpperCase() || 'PRESENTE'),
 				hora_llegada: asistenciaFormData.hora_llegada || undefined,
 				observaciones: asistenciaFormData.observaciones || undefined,
 				registrado_por: user.id,
@@ -815,7 +813,8 @@ export default function Asistencia() {
 		<div className="min-h-screen bg-gray-50 p-4 md:p-6">
 			<div className="max-w-7xl mx-auto">
 				{/* KPIs de asistencia */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				{/* KPIs superiores - Solo métricas relevantes */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
 					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
 						<div className="flex items-center justify-between">
 							<div>
@@ -832,24 +831,6 @@ export default function Asistencia() {
 								<p className="text-2xl font-bold text-green-600">{estadisticas.promedio_asistencia}%</p>
 							</div>
 							<TrendingUp className="w-8 h-8 text-green-600" />
-						</div>
-					</div>
-					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm font-medium text-gray-600">Scouts Activos</p>
-								<p className="text-2xl font-bold text-purple-600">{estadisticas.scouts_activos}</p>
-							</div>
-							<Users className="w-8 h-8 text-purple-600" />
-						</div>
-					</div>
-					<div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm font-medium text-gray-600">Irregulares</p>
-								<p className="text-2xl font-bold text-red-600">{estadisticas.scouts_irregulares}</p>
-							</div>
-							<AlertTriangle className="w-8 h-8 text-red-600" />
 						</div>
 					</div>
 				</div>

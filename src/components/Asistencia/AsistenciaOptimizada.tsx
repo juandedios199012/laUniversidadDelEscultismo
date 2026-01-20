@@ -29,7 +29,7 @@ interface Scout {
 
 interface AsistenciaRegistro {
   scout_id: string;
-  estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+  estado: 'presente' | 'ausente' | 'tardanza' | 'justificado';
 }
 
 // ==================== COMPONENT ====================
@@ -47,7 +47,7 @@ export default function AsistenciaOptimizada() {
   const [busqueda, setBusqueda] = useState('');
   
   // Selección masiva
-  const [seleccionMasiva, setSeleccionMasiva] = useState<Map<string, 'presente' | 'ausente' | 'tardanza' | 'excusado'>>(new Map());
+  const [seleccionMasiva, setSeleccionMasiva] = useState<Map<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>(new Map());
 
   // ============= CONFIGURACIÓN =============
   const ramas = [
@@ -61,7 +61,7 @@ export default function AsistenciaOptimizada() {
     { value: 'presente', label: 'Presente', icon: CheckCircle, color: 'bg-green-500 hover:bg-green-600' },
     { value: 'ausente', label: 'Ausente', icon: AlertCircle, color: 'bg-red-500 hover:bg-red-600' },
     { value: 'tardanza', label: 'Tardanza', icon: Clock, color: 'bg-yellow-500 hover:bg-yellow-600' },
-    { value: 'excusado', label: 'Excusado', icon: CheckCircle, color: 'bg-blue-500 hover:bg-blue-600' }
+    { value: 'justificado', label: 'Justificado', icon: CheckCircle, color: 'bg-blue-500 hover:bg-blue-600' }
   ];
 
   // ============= EFECTOS =============
@@ -124,13 +124,13 @@ export default function AsistenciaOptimizada() {
   };
 
   // ============= FUNCIONES DE SELECCIÓN =============
-  const handleSeleccionScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'excusado') => {
+  const handleSeleccionScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'justificado') => {
     const nuevaSeleccion = new Map(seleccionMasiva);
     nuevaSeleccion.set(scoutId, estado);
     setSeleccionMasiva(nuevaSeleccion);
   };
 
-  const handleSeleccionarTodos = (estado: 'presente' | 'ausente' | 'tardanza' | 'excusado') => {
+  const handleSeleccionarTodos = (estado: 'presente' | 'ausente' | 'tardanza' | 'justificado') => {
     const nuevaSeleccion = new Map<string, typeof estado>();
     scoutsFiltrados.forEach(scout => {
       nuevaSeleccion.set(scout.id, estado);
