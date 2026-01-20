@@ -47,7 +47,7 @@ interface ReunionFormData {
 interface AsistenciaFormData {
   reunion_id: string;
   scout_id: string;
-  estado: 'presente' | 'ausente' | 'tardanza' | 'excusado';
+  estado: 'presente' | 'ausente' | 'tardanza' | 'justificado';
   hora_llegada: string;
   observaciones: string;
 }
@@ -154,9 +154,7 @@ export default function AsistenciaNew() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [estadisticas, setEstadisticas] = useState({
     total_reuniones: 0,
-    promedio_asistencia: 0,
-    scouts_activos: 0,
-    scouts_irregulares: 0
+    promedio_asistencia: 0
   });
 
   // ============= CONFIGURACION =============
@@ -180,7 +178,7 @@ export default function AsistenciaNew() {
     { value: 'presente', label: 'Presente', color: 'text-green-700 bg-green-100' },
     { value: 'ausente', label: 'Ausente', color: 'text-red-700 bg-red-100' },
     { value: 'tardanza', label: 'Tardanza', color: 'text-yellow-700 bg-yellow-100' },
-    { value: 'excusado', label: 'Excusado', color: 'text-blue-700 bg-blue-100' }
+    { value: 'justificado', label: 'Justificado', color: 'text-blue-700 bg-blue-100' }
   ];
 
   // ============= EFECTOS =============
@@ -240,9 +238,7 @@ export default function AsistenciaNew() {
       // Cálculo local si falla el servicio
       setEstadisticas({
         total_reuniones: reuniones.length,
-        promedio_asistencia: 85,
-        scouts_activos: scouts.length,
-        scouts_irregulares: 0
+        promedio_asistencia: 85
       });
     }
   };

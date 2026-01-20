@@ -447,7 +447,7 @@ export class AsistenciaService {
     asistencias: number;
     ausencias: number;
     tardanzas: number;
-    excusados: number;
+    justificados: number;
     porcentaje_asistencia: number;
     racha_asistencia_actual: number;
     racha_ausencia_actual: number;
@@ -517,7 +517,7 @@ export class AsistenciaService {
       presentes: number;
       ausentes: number;
       tardanzas: number;
-      excusados: number;
+      justificados: number;
       porcentaje_asistencia: number;
     };
     detalle_scouts: Array<{
