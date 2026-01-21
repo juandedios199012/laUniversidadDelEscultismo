@@ -348,7 +348,7 @@ export default function RegistroScout() {
     if (!formData.sexo) return 'El sexo es obligatorio';
     // Número de documento es opcional
     // if (!formData.numero_documento.trim()) return 'El número de documento es obligatorio';
-    if (formData.numero_documento.trim() && formData.numero_documento.trim().length < 8) return 'El número de documento debe tener al menos 8 caracteres';
+    if (formData.numero_documento && formData.numero_documento.trim() && formData.numero_documento.trim().length < 8) return 'El número de documento debe tener al menos 8 caracteres';
     if (!formData.rama_actual.trim()) return 'La rama es obligatoria';
     
     // Validar edad mínima (5 años mínimo según backend)
@@ -475,7 +475,7 @@ export default function RegistroScout() {
       apellidos: scout.apellidos,
       fecha_nacimiento: scout.fecha_nacimiento,
       sexo: (scout.sexo as 'MASCULINO' | 'FEMENINO') || '',
-      numero_documento: scout.numero_documento,
+      numero_documento: scout.numero_documento || '',
       tipo_documento: scout.tipo_documento || 'DNI',
       celular: scout.celular || '',
       celular_secundario: scout.celular_secundario || '',

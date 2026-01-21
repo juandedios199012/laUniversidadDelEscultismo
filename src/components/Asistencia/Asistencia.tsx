@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { 
 	Calendar, Save, Plus, Search, Edit, Eye, Trash2, 
-	TrendingUp, BarChart3, CheckCircle
+	TrendingUp, BarChart3, CheckCircle, Users, FileText, AlertTriangle
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
 import ScoutService from '../../services/scoutService';
 import { supabase } from '../../lib/supabase';
+import ReporteAsistenciaScout from './ReporteAsistenciaScout';
 
 // ==================== INTERFACES ====================
 interface Reunion {
@@ -60,7 +61,7 @@ export default function Asistencia() {
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedRama, setSelectedRama] = useState('');
-	const [vistaActual, setVistaActual] = useState<'reuniones' | 'asistencia' | 'estadisticas' | 'asistencia_masiva' | 'detalle_programa'>('reuniones');
+	const [vistaActual, setVistaActual] = useState<'reuniones' | 'asistencia' | 'estadisticas' | 'asistencia_masiva' | 'detalle_programa' | 'reporte_scout'>('reuniones');
 	// ============= ASISTENCIA MASIVA =============
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
 	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
@@ -499,6 +500,15 @@ export default function Asistencia() {
 		);
 	}
 
+	// ============= VISTA REPORTE POR SCOUT =============
+	if (vistaActual === 'reporte_scout') {
+		return (
+			<ReporteAsistenciaScout 
+				onClose={() => setVistaActual('reuniones')}
+			/>
+		);
+	}
+
 	// ============= VISTA DETALLE PROGRAMA =============
 	if (vistaActual === 'detalle_programa' && selectedReunion) {
 		const totalAsistencias = asistenciasPrograma.length;
@@ -836,7 +846,7 @@ export default function Asistencia() {
 				</div>
 
 				{/* Filtros y búsqueda */}
-				<div className="bg-white rounded-lg shadow mb-6 p-4 flex gap-4 items-center">
+				<div className="bg-white rounded-lg shadow mb-6 p-4 flex gap-4 items-center flex-wrap">
 					<select className="w-32" value={selectedRama} onChange={e => setSelectedRama(e.target.value)}>
 						<option value="">Todas las ramas</option>
 						{ramas.map(rama => (
@@ -850,6 +860,12 @@ export default function Asistencia() {
 						onChange={e => setSearchQuery(e.target.value)}
 						className="flex-1 px-4 py-2 border rounded-lg"
 					/>
+					<button 
+						className="px-4 py-2 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
+						onClick={() => setVistaActual('reporte_scout')}
+					>
+						<FileText className="w-4 h-4" /> Reportes por Scout
+					</button>
 					<button className="btn-primary" onClick={() => setShowCreateReunionModal(true)}>
 						<Plus className="w-4 h-4" /> Nueva Reunión
 					</button>

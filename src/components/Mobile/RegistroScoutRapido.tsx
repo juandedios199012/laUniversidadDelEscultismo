@@ -94,7 +94,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
         sexo: formData.sexo,
         fecha_nacimiento: formData.fecha_nacimiento,
         tipo_documento: formData.tipo_documento,
-        numero_documento: formData.numero_documento.trim() || undefined,
+        numero_documento: formData.numero_documento ? formData.numero_documento.trim() || undefined : undefined,
         
         // Datos scout
         rama_actual: formData.rama_actual,
