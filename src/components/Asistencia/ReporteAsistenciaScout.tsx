@@ -12,7 +12,9 @@ interface ScoutAsistencia {
   rama_actual: string;
   total_reuniones: number;
   total_presente: number;
+  total_tardanza: number;
   total_ausente: number;
+  total_justificado: number;
   porcentaje_asistencia: number;
 }
 
@@ -61,9 +63,11 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
 
           const total_reuniones = asistencias?.length || 0;
           const total_presente = asistencias?.filter(a => a.estado_asistencia === 'PRESENTE').length || 0;
+          const total_tardanza = asistencias?.filter(a => a.estado_asistencia === 'TARDANZA').length || 0;
           const total_ausente = asistencias?.filter(a => a.estado_asistencia === 'AUSENTE').length || 0;
+          const total_justificado = asistencias?.filter(a => a.estado_asistencia === 'JUSTIFICADO').length || 0;
           const porcentaje_asistencia = total_reuniones > 0 
-            ? Math.round((total_presente / total_reuniones) * 100) 
+            ? Math.round(((total_presente + total_tardanza) / total_reuniones) * 100) 
             : 0;
 
           return {
@@ -74,7 +78,9 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
             rama_actual: scout.rama_actual,
             total_reuniones,
             total_presente,
+            total_tardanza,
             total_ausente,
+            total_justificado,
             porcentaje_asistencia
           };
         })
@@ -244,7 +250,13 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
                       Presentes
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tardanzas
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Ausentes
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Justificados
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <button
@@ -284,10 +296,16 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className="text-sm text-gray-900">{scout.total_tardanza}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <XCircle className="w-4 h-4 text-red-600" />
                           <span className="text-sm text-gray-900">{scout.total_ausente}</span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className="text-sm text-gray-900">{scout.total_justificado}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getColorPorcentaje(scout.porcentaje_asistencia)}`}>
