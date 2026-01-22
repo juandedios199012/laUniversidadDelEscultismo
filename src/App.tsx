@@ -16,6 +16,7 @@ import Inventario from './components/Inventario/Inventario';
 import Presupuestos from './components/Presupuestos/Presupuestos';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
+import { ProgresionPage } from './components/Progresion';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 import { useMobileDetect } from './hooks/useMobileDetect';
@@ -35,6 +36,8 @@ function App() {
         return <GestionScouts />;
       case 'inscripcion-anual':
         return <InscripcionAnualMejorada />;
+      case 'progresion':
+        return <ProgresionPage />;
       case 'grupo-scout':
         return <GrupoScout />;
       case 'asistencia':
