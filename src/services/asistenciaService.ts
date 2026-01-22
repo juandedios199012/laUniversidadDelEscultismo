@@ -19,7 +19,64 @@ import { supabase } from '../lib/supabase';
  */
 export class AsistenciaService {
   
-  // ============= 📱 FUNCIONES MOBILE =============
+  // ============= � FUNCIONES CON VALIDACIÓN DE FECHA DE INGRESO =============
+  
+  /**
+   * Obtener scouts elegibles para un programa en fecha específica
+   * Solo retorna scouts que ya habían ingresado al grupo en esa fecha
+   */
+  static async getScoutsElegiblesFecha(fecha: string, rama?: string) {
+    try {
+      const { data, error } = await supabase.rpc('obtener_scouts_elegibles_fecha', {
+        p_fecha: fecha,
+        p_rama: rama || null
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('❌ Error obteniendo scouts elegibles:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Obtener estadísticas de asistencia de un scout desde su fecha de ingreso
+   * Solo cuenta programas posteriores a su ingreso
+   */
+  static async getEstadisticasScoutDesdeIngreso(scoutId: string) {
+    try {
+      const { data, error } = await supabase.rpc('obtener_asistencia_scout_desde_ingreso', {
+        p_scout_id: scoutId
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('❌ Error obteniendo estadísticas:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Validar si un scout debe aparecer en asistencia de un programa
+   */
+  static async validarScoutElegiblePrograma(scoutId: string, programaId: string) {
+    try {
+      const { data, error } = await supabase.rpc('validar_scout_elegible_programa', {
+        p_scout_id: scoutId,
+        p_programa_id: programaId
+      });
+
+      if (error) throw error;
+      return { esElegible: data, error: null };
+    } catch (error) {
+      console.error('❌ Error validando elegibilidad:', error);
+      return { esElegible: false, error };
+    }
+  }
+  
+  // ============= �📱 FUNCIONES MOBILE =============
   
   /**
    * 📱 Obtener scouts por rama (Mobile)

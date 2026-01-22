@@ -377,17 +377,36 @@ class ScoutService {
   static async updateScout(id: string, updates: {
     nombres?: string;
     apellidos?: string;
+    fecha_nacimiento?: string;
+    fecha_ingreso?: string;
+    tipo_documento?: string;
+    numero_documento?: string;
     sexo?: 'MASCULINO' | 'FEMENINO';
     celular?: string;
+    celular_secundario?: string;
+    telefono?: string;
     correo?: string;
+    correo_secundario?: string;
+    correo_institucional?: string;
     departamento?: string;
     provincia?: string;
     distrito?: string;
     direccion?: string;
+    codigo_postal?: string;
     centro_estudio?: string;
+    anio_estudios?: string;
     ocupacion?: string;
     centro_laboral?: string;
     rama_actual?: string;
+    codigo_asociado?: string;
+    religion?: string;
+    grupo_sanguineo?: string;
+    factor_sanguineo?: string;
+    seguro_medico?: string;
+    tipo_discapacidad?: string;
+    carnet_conadis?: string;
+    descripcion_discapacidad?: string;
+    es_dirigente?: boolean;
     estado?: string;
   }): Promise<{ success: boolean; error?: string }> {
     try {
@@ -397,17 +416,35 @@ class ScoutService {
           p_data: {
             nombres: updates.nombres,
             apellidos: updates.apellidos,
-            sexo: updates.sexo,
-            telefono: updates.celular,
-            email: updates.correo,
+            fecha_nacimiento: updates.fecha_nacimiento,
+            fecha_ingreso: updates.fecha_ingreso,
+            tipo_documento: updates.tipo_documento,
+            numero_documento: updates.numero_documento,
+            celular: updates.celular,
+            celular_secundario: updates.celular_secundario,
+            telefono: updates.telefono,
+            correo: updates.correo,
+            correo_secundario: updates.correo_secundario,
+            correo_institucional: updates.correo_institucional,
             departamento: updates.departamento,
             provincia: updates.provincia,
             distrito: updates.distrito,
             direccion: updates.direccion,
+            codigo_postal: updates.codigo_postal,
             centro_estudio: updates.centro_estudio,
+            anio_estudios: updates.anio_estudios,
             ocupacion: updates.ocupacion,
             centro_laboral: updates.centro_laboral,
-            rama: updates.rama_actual,
+            rama_actual: updates.rama_actual,
+            codigo_asociado: updates.codigo_asociado,
+            religion: updates.religion,
+            grupo_sanguineo: updates.grupo_sanguineo,
+            factor_sanguineo: updates.factor_sanguineo,
+            seguro_medico: updates.seguro_medico,
+            tipo_discapacidad: updates.tipo_discapacidad,
+            carnet_conadis: updates.carnet_conadis,
+            descripcion_discapacidad: updates.descripcion_discapacidad,
+            es_dirigente: updates.es_dirigente,
             estado: updates.estado
           }
         });

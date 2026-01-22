@@ -5,10 +5,14 @@ import {
   AlertCircle, Search, Edit, Eye, Phone, Mail, Activity, Church
 } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 import type { Scout } from '../../lib/supabase';
 import type { Familiar } from '../../types';
 import FamiliarModal from './FamiliarModal';
 import FamiliarTable from './FamiliarTable';
+import PatrullaSelector from './PatrullaSelector';
+import CargoPatrullaSelector from './CargoPatrullaSelector';
+import type { CargoPatrulla } from '../../types/patrulla';
 
 interface FormularioScout {
   nombres: string;
@@ -44,6 +48,8 @@ interface FormularioScout {
   carnet_conadis: string;
   descripcion_discapacidad: string;
   fecha_ingreso: string;
+  patrulla_id: string | null;  // Nueva propiedad para asociación de patrulla
+  cargo_patrulla: CargoPatrulla;  // Cargo dentro de la patrulla
 }
 
 export default function RegistroScout() {
@@ -95,7 +101,9 @@ export default function RegistroScout() {
     tipo_discapacidad: '',
     carnet_conadis: '',
     descripcion_discapacidad: '',
-    fecha_ingreso: ''
+    fecha_ingreso: new Date().toISOString().split('T')[0],
+    patrulla_id: null,  // Inicializar patrulla
+    cargo_patrulla: 'MIEMBRO'  // Cargo por defecto
   });
 
   const [seccionesAbiertas, setSeccionesAbiertas] = useState({
@@ -115,15 +123,16 @@ export default function RegistroScout() {
     { value: 'PASAPORTE', label: 'Pasaporte' }
   ];
 
-  const parentescoOptions = [
-    { value: 'padre', label: 'Padre' },
-    { value: 'madre', label: 'Madre' },
-    { value: 'tutor', label: 'Tutor/a' },
-    { value: 'hermano', label: 'Hermano/a' },
-    { value: 'abuelo', label: 'Abuelo/a' },
-    { value: 'tio', label: 'Tío/a' },
-    { value: 'otro', label: 'Otro' }
-  ];
+  // parentescoOptions ahora se define en FamiliarModal
+  // const parentescoOptions = [
+  //   { value: 'padre', label: 'Padre' },
+  //   { value: 'madre', label: 'Madre' },
+  //   { value: 'tutor', label: 'Tutor/a' },
+  //   { value: 'hermano', label: 'Hermano/a' },
+  //   { value: 'abuelo', label: 'Abuelo/a' },
+  //   { value: 'tio', label: 'Tío/a' },
+  //   { value: 'otro', label: 'Otro' }
+  // ];
 
   const ramaOptions = [
     { value: 'Manada', label: '🐺 Manada (7-10 años)' },
@@ -292,7 +301,7 @@ export default function RegistroScout() {
     }));
   };
 
-  const handleInputChange = (field: keyof FormularioScout, value: string | boolean) => {
+  const handleInputChange = (field: keyof FormularioScout, value: string | boolean | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -333,7 +342,9 @@ export default function RegistroScout() {
       tipo_discapacidad: '',
       carnet_conadis: '',
       descripcion_discapacidad: '',
-      fecha_ingreso: ''
+      fecha_ingreso: new Date().toISOString().split('T')[0],
+      patrulla_id: null,  // Limpiar patrulla
+      cargo_patrulla: 'MIEMBRO'  // Resetear cargo
     });
     setFamiliares([]);
     setModoEdicion(false);
@@ -363,6 +374,72 @@ export default function RegistroScout() {
     return null;
   };
 
+  /**
+   * 🔄 Gestiona la membresía de patrulla del scout
+   * @description Actualiza o crea la membresía en miembros_patrulla
+   * @principles Data Integrity, Clean Code
+   */
+  const gestionarMembresiPatrulla = async (
+    scoutId: string, 
+    nuevaPatrullaId: string | null,
+    cargo: CargoPatrulla = 'MIEMBRO'
+  ) => {
+    try {
+      // 1. Obtener membresía actual activa
+      const { data: membresiaActual } = await supabase
+        .from('miembros_patrulla')
+        .select('*')
+        .eq('scout_id', scoutId)
+        .eq('estado_miembro', 'ACTIVO')
+        .is('fecha_salida', null)
+        .maybeSingle();
+
+      // 2. Si la patrulla no cambió pero el cargo sí, actualizar solo el cargo
+      if (membresiaActual?.patrulla_id === nuevaPatrullaId) {
+        if (membresiaActual?.cargo_patrulla !== cargo && nuevaPatrullaId) {
+          const { error: updateError } = await supabase
+            .from('miembros_patrulla')
+            .update({ cargo_patrulla: cargo })
+            .eq('id', membresiaActual.id);
+          
+          if (updateError) throw updateError;
+        }
+        return { success: true };
+      }
+
+      // 3. Cerrar membresía anterior si existe
+      if (membresiaActual) {
+        await supabase
+          .from('miembros_patrulla')
+          .update({
+            fecha_salida: new Date().toISOString().split('T')[0],
+            estado_miembro: 'INACTIVO'
+          })
+          .eq('id', membresiaActual.id);
+      }
+
+      // 4. Crear nueva membresía si se seleccionó patrulla
+      if (nuevaPatrullaId) {
+        const { error: insertError } = await supabase
+          .from('miembros_patrulla')
+          .insert({
+            scout_id: scoutId,
+            patrulla_id: nuevaPatrullaId,
+            cargo_patrulla: cargo,
+            fecha_ingreso: new Date().toISOString().split('T')[0],
+            estado_miembro: 'ACTIVO'
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error gestionando membresía de patrulla:', error);
+      return { success: false, error };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -382,10 +459,9 @@ export default function RegistroScout() {
           nombres: formData.nombres,
           apellidos: formData.apellidos,
           fecha_nacimiento: formData.fecha_nacimiento,
+          fecha_ingreso: formData.fecha_ingreso,
           numero_documento: formData.numero_documento,
           tipo_documento: formData.tipo_documento as any,
-          celular: formData.celular,
-          celular_secundario: formData.celular_secundario,
           telefono: formData.telefono,
           correo: formData.correo,
           correo_secundario: formData.correo_secundario,
@@ -410,8 +486,12 @@ export default function RegistroScout() {
           carnet_conadis: formData.carnet_conadis,
           descripcion_discapacidad: formData.descripcion_discapacidad
         });
+
+        // Gestionar cambio de patrulla con cargo
+        await gestionarMembresiPatrulla(scoutSeleccionado.id, formData.patrulla_id, formData.cargo_patrulla);
+        
       } else {
-        // Registrar nuevo scout
+        // Registrar nuevo scout - uso telefono porque celular no está en la signature
         const resultado = await ScoutService.registrarScout({
           nombres: formData.nombres,
           apellidos: formData.apellidos,
@@ -419,37 +499,20 @@ export default function RegistroScout() {
           sexo: formData.sexo as 'MASCULINO' | 'FEMENINO',
           numero_documento: formData.numero_documento,
           tipo_documento: formData.tipo_documento,
-          celular: formData.celular,
-          celular_secundario: formData.celular_secundario,
-          telefono: formData.telefono,
-          correo: formData.correo,
-          correo_secundario: formData.correo_secundario,
-          correo_institucional: formData.correo_institucional,
+          telefono: formData.celular || formData.telefono, // celular prioritario
+          email: formData.correo,
           direccion: formData.direccion,
-          departamento: formData.departamento,
-          provincia: formData.provincia,
           distrito: formData.distrito,
-          codigo_postal: formData.codigo_postal,
-          centro_estudio: formData.centro_estudio,
-          anio_estudios: formData.anio_estudios,
-          ocupacion: formData.ocupacion,
-          centro_laboral: formData.centro_laboral,
-          es_dirigente: formData.es_dirigente,
-          rama: formData.rama || formData.rama_actual,
-          codigo_asociado: formData.codigo_asociado,
-          religion: formData.religion,
-          grupo_sanguineo: formData.grupo_sanguineo,
-          factor_sanguineo: formData.factor_sanguineo,
-          seguro_medico: formData.seguro_medico,
-          tipo_discapacidad: formData.tipo_discapacidad,
-          carnet_conadis: formData.carnet_conadis,
-          descripcion_discapacidad: formData.descripcion_discapacidad,
-          fecha_ingreso: formData.fecha_ingreso,
-          familiares: familiares
+          rama: formData.rama || formData.rama_actual
         });
         
         if (!resultado.success) {
           throw new Error(resultado.error || 'Error al registrar scout');
+        }
+
+        // Si se registró exitosamente y tiene patrulla, asignarla con cargo
+        if (resultado.scout_id && formData.patrulla_id) {
+          await gestionarMembresiPatrulla(resultado.scout_id, formData.patrulla_id, formData.cargo_patrulla);
         }
       }
 
@@ -469,7 +532,7 @@ export default function RegistroScout() {
     }
   };
 
-  const editarScout = (scout: Scout) => {
+  const editarScout = async (scout: Scout) => {
     setFormData({
       nombres: scout.nombres,
       apellidos: scout.apellidos,
@@ -503,8 +566,38 @@ export default function RegistroScout() {
       tipo_discapacidad: scout.tipo_discapacidad || '',
       carnet_conadis: scout.carnet_conadis || '',
       descripcion_discapacidad: scout.descripcion_discapacidad || '',
-      fecha_ingreso: scout.fecha_ingreso || ''
+      fecha_ingreso: scout.fecha_ingreso || new Date().toISOString().split('T')[0],
+      patrulla_id: null,  // Se cargará después
+      cargo_patrulla: 'MIEMBRO'  // Se cargará después
     });
+    
+    // Cargar patrulla y cargo actual del scout (si tiene)
+    try {
+      const { data: membresia, error: membresiaError } = await supabase
+        .from('miembros_patrulla')
+        .select('patrulla_id, cargo_patrulla')
+        .eq('scout_id', scout.id)
+        .eq('estado_miembro', 'ACTIVO')
+        .is('fecha_salida', null)
+        .maybeSingle();
+      
+      if (membresiaError) {
+        console.error('Error cargando patrulla:', membresiaError);
+      }
+      
+      if (membresia) {
+        console.log('Patrulla cargada:', membresia);
+        setFormData(prev => ({ 
+          ...prev, 
+          patrulla_id: membresia.patrulla_id,
+          cargo_patrulla: (membresia.cargo_patrulla || 'MIEMBRO') as CargoPatrulla
+        }));
+      } else {
+        console.log('Scout sin patrulla asignada');
+      }
+    } catch (err) {
+      console.error('Error inesperado cargando patrulla:', err);
+    }
     
     // Cargar familiares si existen
     if (scout.familiares && Array.isArray(scout.familiares)) {
@@ -512,11 +605,11 @@ export default function RegistroScout() {
         id: f.id,
         nombres: f.nombres,
         apellidos: f.apellidos,
-        parentesco: f.parentesco,
-        sexo: f.sexo || '',
+        parentesco: f.parentesco as any, // Type assertion por diferencias en enum
+        sexo: (f.sexo || undefined) as 'MASCULINO' | 'FEMENINO' | undefined,
         tipo_documento: f.tipo_documento || 'DNI',
         numero_documento: f.numero_documento || '',
-        celular: f.celular,
+        celular: f.celular || '',
         celular_secundario: f.celular_secundario || '',
         telefono: f.telefono || '',
         correo: f.correo || '',
@@ -1285,6 +1378,36 @@ export default function RegistroScout() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+
+                    {/* Selector de Patrulla - Componente inteligente */}
+                    <div className="md:col-span-2">
+                      <PatrullaSelector
+                        ramaActual={formData.rama_actual}
+                        scoutId={scoutSeleccionado?.id}
+                        patrullaActualId={formData.patrulla_id}
+                        onChange={(patrullaId) => {
+                          handleInputChange('patrulla_id', patrullaId);
+                          // Resetear cargo a MIEMBRO si se cambia de patrulla
+                          if (patrullaId !== formData.patrulla_id) {
+                            handleInputChange('cargo_patrulla', 'MIEMBRO');
+                          }
+                        }}
+                        disabled={!formData.rama_actual || loading}
+                      />
+                    </div>
+
+                    {/* Selector de Cargo en Patrulla */}
+                    {formData.patrulla_id && (
+                      <div className="md:col-span-2">
+                        <CargoPatrullaSelector
+                          patrullaId={formData.patrulla_id}
+                          cargoActual={formData.cargo_patrulla}
+                          scoutId={scoutSeleccionado?.id}
+                          onChange={(cargo) => handleInputChange('cargo_patrulla', cargo)}
+                          disabled={loading}
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -121,6 +121,13 @@ export const baseStyles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   
+  // Fecha
+  date: {
+    fontSize: fontSizes.small,
+    color: colors.gray,
+    marginTop: spacing.xs,
+  },
+  
   // Metadata
   metadata: {
     flexDirection: 'row',

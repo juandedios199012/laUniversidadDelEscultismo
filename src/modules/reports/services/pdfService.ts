@@ -166,9 +166,20 @@ export function generateReportMetadata() {
 
 /**
  * Formatea fechas para mostrar en reportes
+ * NOTA: Para fechas tipo DATE de PostgreSQL, parseamos como local sin timezone
  */
 export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  let d: Date;
+  
+  if (typeof date === 'string') {
+    // Si es string de fecha tipo "2026-01-17" (DATE de PostgreSQL)
+    // Parseamos como local para evitar timezone offset
+    const [year, month, day] = date.split('T')[0].split('-').map(Number);
+    d = new Date(year, month - 1, day);
+  } else {
+    d = date;
+  }
+  
   return d.toLocaleDateString('es-PE', {
     year: 'numeric',
     month: 'long',

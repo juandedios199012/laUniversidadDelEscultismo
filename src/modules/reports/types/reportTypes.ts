@@ -10,6 +10,11 @@ export enum ReportType {
   GROUP_SUMMARY = 'group_summary',
   ACTIVITY_HISTORY = 'activity_history',
   DNGI03 = 'dngi03',
+  // Nuevos reportes (Opción C)
+  INSCRIPCIONES_ANUALES = 'inscripciones_anuales',
+  RANKING_PATRULLAS = 'ranking_patrullas',
+  CONTACTOS_EMERGENCIA = 'contactos_emergencia',
+  DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
 }
 
 // Formatos de exportación
@@ -99,6 +104,17 @@ export interface ScoutReportData {
   tipoDiscapacidad?: string;
   carnetConadis?: string;
   descripcionDiscapacidad?: string;
+  // Datos adicionales (Opción B - campos disponibles en BD)
+  pais?: string;
+  fotoUrl?: string;
+  codigoPostal?: string;
+  ocupacion?: string;
+  centroLaboral?: string;
+  fechaUltimoPago?: string;
+  codigoAsociado?: string;
+  observacionesScout?: string;
+  estadoScout?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
+  esDirigente?: boolean;
   // Array dinámico de familiares
   familiares?: FamiliarReportData[];
   // Datos del padre/tutor/apoderado (LEGACY - mantener para compatibilidad)
@@ -204,4 +220,79 @@ export interface ReportTemplate {
   type: ReportType;
   supportedFormats: ExportFormat[];
   customizable: boolean;
+}
+
+// Datos de Inscripciones Anuales (Nuevo)
+export interface InscripcionAnualData {
+  id: string;
+  scoutId: string;
+  codigoScout: string;
+  nombreCompleto: string;
+  rama: string;
+  ano: number;
+  fechaInscripcion: string;
+  montoInscripcion: number;
+  fechaPago?: string;
+  estadoPago: string;
+  documentosCompletos: boolean;
+  certificadoMedico: boolean;
+  autorizacionPadres: boolean;
+  activo: boolean;
+}
+
+// Datos de Puntos de Patrulla (Nuevo)
+export interface PuntosPatrullaData {
+  patrullaId: string;
+  patrullaNombre: string;
+  rama: string;
+  puntajes: {
+    concepto: string;
+    puntos: number;
+    fecha: string;
+    actividad?: string;
+    otorgadoPor?: string;
+  }[];
+  totalPuntos: number;
+  posicion: number;
+}
+
+// Datos de Contacto de Emergencia (Nuevo)
+export interface ContactoEmergenciaData {
+  scoutId: string;
+  codigoScout: string;
+  nombreScout: string;
+  apellidoScout: string;
+  rama: string;
+  contactos: {
+    nombre: string;
+    apellido: string;
+    parentesco: string;
+    celular: string;
+    celularSecundario?: string;
+    telefono?: string;
+    correo?: string;
+    esPrincipal: boolean;
+    autorizadoRecoger: boolean;
+  }[];
+  datosMedicos: {
+    grupoSanguineo?: string;
+    factorSanguineo?: string;
+    seguroMedico?: string;
+    tipoDiscapacidad?: string;
+    alergias?: string;
+  };
+}
+
+// Datos de Documentación Pendiente (Nuevo)
+export interface DocumentacionPendienteData {
+  scoutId: string;
+  codigoScout: string;
+  nombreCompleto: string;
+  rama: string;
+  ano: number;
+  documentosFaltantes: string[];
+  certificadoMedico: boolean;
+  autorizacionPadres: boolean;
+  estadoPago: string;
+  fechaLimite?: string;
 }

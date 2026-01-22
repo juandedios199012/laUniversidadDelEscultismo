@@ -18,8 +18,9 @@ interface Patrulla {
   fecha_fundacion?: string;
   historia?: string;
   metas_anuales?: string[];
-  estado?: 'activa' | 'inactiva' | 'en_formacion';
+  estado?: 'activa' | 'inactiva' | 'en_formacion' | 'ACTIVO' | 'INACTIVO';
   miembros_count?: number;
+  total_miembros?: number;
   dirigente_responsable?: string;
   total_puntos?: number;
   posicion_ranking?: number;
@@ -134,7 +135,7 @@ export default function PatrullasNew() {
   const calculateStatistics = () => {
     const total = patrullas.length;
     const activas = patrullas.filter(p => p.estado === 'ACTIVO' || p.estado === 'activa').length;
-    const totalMiembros = patrullas.reduce((sum, p) => sum + (p.miembros_count || 0), 0);
+    const totalMiembros = patrullas.reduce((sum, p) => sum + (p.total_miembros || p.miembros_count || 0), 0);
     const promedio = total > 0 ? totalMiembros / total : 0;
 
     setStatistics({
@@ -459,7 +460,7 @@ export default function PatrullasNew() {
                     )}
                     <div className="flex justify-between">
                       <span className="font-medium">Miembros:</span>
-                      <span>{patrulla.miembros_count || 0}</span>
+                      <span>{patrulla.total_miembros || patrulla.miembros_count || 0}</span>
                     </div>
                     {patrulla.total_puntos && (
                       <div className="flex justify-between">
@@ -879,7 +880,7 @@ export default function PatrullasNew() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Miembros</label>
-                      <p className="text-lg text-gray-900">{selectedPatrulla.miembros_count || 0}</p>
+                      <p className="text-lg text-gray-900">{selectedPatrulla.total_miembros || selectedPatrulla.miembros_count || 0}</p>
                     </div>
                     
                     <div>

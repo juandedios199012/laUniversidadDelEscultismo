@@ -191,48 +191,25 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
 /**
  * Obtiene datos de asistencia
  */
+/**
+ * Obtiene datos de asistencia para reportes
+ */
 export async function getAttendanceData(
   filters: ReportFilters
 ): Promise<AttendanceData[]> {
   try {
-    let query = supabase
-      .from('asistencias')
-      .select(`
-        *,
-        scouts:scout_id (
-          id,
-          nombre,
-          apellido
-        )
-      `)
-      .order('fecha', { ascending: false });
-
-    // Aplicar filtros
-    if (filters.dateFrom) {
-      query = query.gte('fecha', filters.dateFrom);
-    }
-    if (filters.dateTo) {
-      query = query.lte('fecha', filters.dateTo);
-    }
-    if (filters.scoutIds && filters.scoutIds.length > 0) {
-      query = query.in('scout_id', filters.scoutIds);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.rpc('api_obtener_reporte_asistencia', {
+      p_fecha_desde: filters.dateFrom || null,
+      p_fecha_hasta: filters.dateTo || null,
+      p_scout_ids: filters.scoutIds && filters.scoutIds.length > 0 ? filters.scoutIds : null,
+    });
 
     if (error) throw error;
 
-    return data.map((item: any) => ({
-      scoutId: item.scout_id,
-      scoutNombre: `${item.scouts.nombre} ${item.scouts.apellido}`,
-      fecha: item.fecha,
-      presente: item.presente,
-      justificado: item.justificado || false,
-      motivo: item.motivo || '',
-    }));
+    return data || [];
   } catch (error) {
     console.error('Error fetching attendance data:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -243,39 +220,16 @@ export async function getProgressData(
   filters: ReportFilters
 ): Promise<ProgressData[]> {
   try {
-    let query = supabase
-      .from('progreso_especialidades')
-      .select(`
-        *,
-        scouts:scout_id (
-          id,
-          nombre,
-          apellido
-        )
-      `)
-      .order('fecha_inicio', { ascending: false });
-
-    if (filters.scoutIds && filters.scoutIds.length > 0) {
-      query = query.in('scout_id', filters.scoutIds);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.rpc('api_obtener_reporte_progreso', {
+      p_scout_ids: filters.scoutIds && filters.scoutIds.length > 0 ? filters.scoutIds : null,
+    });
 
     if (error) throw error;
 
-    return data.map((item: any) => ({
-      scoutId: item.scout_id,
-      scoutNombre: `${item.scouts.nombre} ${item.scouts.apellido}`,
-      especialidad: item.especialidad,
-      nivel: item.nivel,
-      fechaInicio: item.fecha_inicio,
-      fechaFinalizacion: item.fecha_finalizacion,
-      estado: item.estado,
-      porcentaje: item.porcentaje || 0,
-    }));
+    return data || [];
   } catch (error) {
     console.error('Error fetching progress data:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -432,6 +386,88 @@ export async function getMultipleScoutsData(
   }
 }
 
+/**
+ * Obtiene datos de inscripciones anuales
+ */
+export async function getInscripcionesAnuales(
+  ano?: number,
+  rama?: string
+): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.rpc('api_obtener_reporte_inscripciones_anuales', {
+      p_ano: ano || new Date().getFullYear(),
+      p_rama: rama || null,
+    });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching inscripciones anuales:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene ranking de patrullas con sus puntos
+ */
+export async function getRankingPatrullas(
+  rama?: string,
+  fechaInicio?: string,
+  fechaFin?: string
+): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.rpc('api_obtener_reporte_ranking_patrullas', {
+      p_rama: rama || null,
+      p_fecha_desde: fechaInicio || null,
+      p_fecha_hasta: fechaFin || null,
+    });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching ranking patrullas:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene contactos de emergencia de scouts
+ */
+export async function getContactosEmergencia(rama?: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.rpc('api_obtener_reporte_contactos_emergencia', {
+      p_rama: rama || null,
+    });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching contactos emergencia:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene documentación pendiente de scouts
+ */
+export async function getDocumentacionPendiente(ano?: number): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.rpc('api_obtener_reporte_documentacion_pendiente', {
+      p_ano: ano || new Date().getFullYear(),
+    });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching documentacion pendiente:', error);
+    throw error;
+  }
+}
+
 export default {
   getScoutData,
   getAttendanceData,
@@ -439,4 +475,9 @@ export default {
   getGroupSummary,
   getActivityHistory,
   getMultipleScoutsData,
+  // Nuevos servicios
+  getInscripcionesAnuales,
+  getRankingPatrullas,
+  getContactosEmergencia,
+  getDocumentacionPendiente,
 };

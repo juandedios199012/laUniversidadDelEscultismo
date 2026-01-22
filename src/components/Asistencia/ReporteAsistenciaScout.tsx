@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  ChevronLeft, Users, CheckCircle, XCircle, ArrowUpDown, ArrowUp, ArrowDown
+  ChevronLeft, Users, CheckCircle, XCircle, ArrowUpDown, ArrowUp, ArrowDown, Info
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import AsistenciaService from '../../services/asistenciaService';
 
 interface ScoutAsistencia {
   id: string;
@@ -10,6 +11,7 @@ interface ScoutAsistencia {
   nombres: string;
   apellidos: string;
   rama_actual: string;
+  fecha_ingreso: string | null;
   total_reuniones: number;
   total_presente: number;
   total_tardanza: number;
@@ -39,36 +41,25 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
     try {
       setLoading(true);
       
-      // Obtener scouts activos con sus estadísticas de asistencia
+      // Obtener scouts activos
       const { data: scoutsData, error: scoutsError } = await supabase
         .from('scouts')
         .select(`
           id,
           codigo_asociado,
           rama_actual,
-          personas!inner(nombres, apellidos)
+          personas!inner(nombres, apellidos, fecha_ingreso)
         `)
         .eq('estado', 'ACTIVO')
         .order('personas(apellidos)');
 
       if (scoutsError) throw scoutsError;
 
-      // Para cada scout, calcular sus estadísticas de asistencia
+      // Para cada scout, obtener estadísticas DESDE SU FECHA DE INGRESO
       const scoutsConAsistencia = await Promise.all(
         scoutsData.map(async (scout: any) => {
-          const { data: asistencias } = await supabase
-            .from('asistencias')
-            .select('estado_asistencia, fecha')
-            .eq('scout_id', scout.id);
-
-          const total_reuniones = asistencias?.length || 0;
-          const total_presente = asistencias?.filter(a => a.estado_asistencia === 'PRESENTE').length || 0;
-          const total_tardanza = asistencias?.filter(a => a.estado_asistencia === 'TARDANZA').length || 0;
-          const total_ausente = asistencias?.filter(a => a.estado_asistencia === 'AUSENTE').length || 0;
-          const total_justificado = asistencias?.filter(a => a.estado_asistencia === 'JUSTIFICADO').length || 0;
-          const porcentaje_asistencia = total_reuniones > 0 
-            ? Math.round(((total_presente + total_tardanza) / total_reuniones) * 100) 
-            : 0;
+          // Usar función de BD que calcula desde fecha_ingreso
+          const { data: stats } = await AsistenciaService.getEstadisticasScoutDesdeIngreso(scout.id);
 
           return {
             id: scout.id,
@@ -76,12 +67,13 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
             nombres: scout.personas.nombres,
             apellidos: scout.personas.apellidos,
             rama_actual: scout.rama_actual,
-            total_reuniones,
-            total_presente,
-            total_tardanza,
-            total_ausente,
-            total_justificado,
-            porcentaje_asistencia
+            fecha_ingreso: scout.personas.fecha_ingreso,
+            total_reuniones: stats?.total_programas || 0,
+            total_presente: stats?.total_presente || 0,
+            total_tardanza: stats?.total_tardanza || 0,
+            total_ausente: stats?.total_ausente || 0,
+            total_justificado: stats?.total_justificado || 0,
+            porcentaje_asistencia: stats?.porcentaje_asistencia || 0
           };
         })
       );
@@ -144,6 +136,17 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
     if (porcentaje >= 80) return 'bg-green-100 text-green-800';
     if (porcentaje >= 60) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
+  };
+
+  // Helper para determinar si scout es nuevo (menos de 30 días)
+  const esScoutNuevo = (fechaIngreso: string | null) => {
+    if (!fechaIngreso) return false;
+    const dias = Math.floor((new Date().getTime() - new Date(fechaIngreso).getTime()) / (1000 * 60 * 60 * 24));
+    return dias <= 30;
+  };
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -277,9 +280,22 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
                   {scoutsOrdenados.map((scout) => (
                     <tr key={scout.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {scout.apellidos}, {scout.nombres}
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-gray-900">
+                            {scout.apellidos}, {scout.nombres}
+                          </div>
+                          {esScoutNuevo(scout.fecha_ingreso) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                              <Info className="w-3 h-3" />
+                              Nuevo
+                            </span>
+                          )}
                         </div>
+                        {scout.fecha_ingreso && (
+                          <div className="text-xs text-gray-500">
+                            Ingreso: {formatearFecha(scout.fecha_ingreso)}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
