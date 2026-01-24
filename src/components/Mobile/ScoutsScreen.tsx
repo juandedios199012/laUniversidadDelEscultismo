@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Phone, MapPin, Award, UserPlus } from 'lucide-react';
+import { Users, Search, Phone, MapPin, Award, UserPlus, Edit3 } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import RegistroScoutRapido from './RegistroScoutRapido';
+import EditarScoutMobile from './EditarScoutMobile';
 
 interface Scout {
   id: string;
@@ -25,6 +26,7 @@ export default function ScoutsScreen() {
   const [loading, setLoading] = useState(false);
   const [scoutSeleccionado, setScoutSeleccionado] = useState<Scout | null>(null);
   const [mostrarRegistro, setMostrarRegistro] = useState(false);
+  const [mostrarEditar, setMostrarEditar] = useState(false);
 
   const ramas = ['Todas', 'Manada', 'Tropa', 'Comunidad', 'Clan'];
 
@@ -281,14 +283,38 @@ export default function ScoutsScreen() {
               )}
             </div>
 
-            <button
-              onClick={() => setScoutSeleccionado(null)}
-              className="w-full mt-6 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold"
-            >
-              Cerrar
-            </button>
+            <div className="flex space-x-2 mt-6">
+              <button
+                onClick={() => {
+                  setMostrarEditar(true);
+                }}
+                className="flex-1 flex items-center justify-center space-x-2 bg-amber-500 text-white py-3 rounded-xl font-semibold active:scale-95 transition-transform"
+              >
+                <Edit3 className="w-5 h-5" />
+                <span>Editar</span>
+              </button>
+              <button
+                onClick={() => setScoutSeleccionado(null)}
+                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Edición */}
+      {mostrarEditar && scoutSeleccionado && (
+        <EditarScoutMobile
+          scout={scoutSeleccionado}
+          onClose={() => setMostrarEditar(false)}
+          onSuccess={() => {
+            setMostrarEditar(false);
+            setScoutSeleccionado(null);
+            cargarScouts();
+          }}
+        />
       )}
 
       {/* Modal de Registro Rápido */}

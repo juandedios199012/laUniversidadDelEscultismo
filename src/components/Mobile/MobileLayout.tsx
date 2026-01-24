@@ -1,10 +1,10 @@
 import React from 'react';
-import { Home, Users, ClipboardCheck, Award } from 'lucide-react';
+import { Home, Users, ClipboardCheck, Award, TrendingUp } from 'lucide-react';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
-  currentTab: 'scouts' | 'asistencia' | 'puntajes';
-  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes') => void;
+  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion';
+  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion') => void;
 }
 
 export default function MobileLayout({ children, currentTab, onTabChange }: MobileLayoutProps) {
@@ -50,6 +50,12 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
             label="Puntajes"
             active={currentTab === 'puntajes'}
             onClick={() => onTabChange('puntajes')}
+          />
+          <TabButton
+            icon={TrendingUp}
+            label="Progresión"
+            active={currentTab === 'progresion'}
+            onClick={() => onTabChange('progresion')}
           />
         </div>
       </nav>
