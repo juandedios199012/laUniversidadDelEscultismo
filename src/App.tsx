@@ -8,7 +8,8 @@ import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
 import ComitePadres from './components/ComitePadres/ComitePadres';
-import Dirigentes from './components/Dirigentes/Dirigentes';
+// Módulo de Dirigentes con nuevo diseño Glassmorphism (DNGI-02)
+import DirigentesV2 from './components/DirigentesV2';
 import Patrullas from './components/Patrullas/Patrullas';
 import Asistencia from './components/Asistencia/Asistencia';
 import ActividadesScout from './components/ActividadesScout/ActividadesScout';
@@ -47,7 +48,7 @@ function App() {
       case 'mapas':
         return <Maps />;
       case 'dirigentes':
-        return <Dirigentes />;
+        return <DirigentesV2 />;
       case 'comite-padres':
         return <ComitePadres />;
       case 'patrullas':
