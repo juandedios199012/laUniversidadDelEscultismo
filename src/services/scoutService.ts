@@ -288,6 +288,7 @@ class ScoutService {
     direccion?: string;
     distrito?: string;
     rama: string;
+    fecha_ingreso?: string;
     // Datos del familiar
     familiar_nombres?: string;
     familiar_apellidos?: string;
@@ -325,6 +326,7 @@ class ScoutService {
         departamento: scoutData.direccion,
         provincia: scoutData.direccion,
         rama_actual: ramaDb,
+        fecha_ingreso: scoutData.fecha_ingreso || null,
         pais: 'Perú'
       };
 

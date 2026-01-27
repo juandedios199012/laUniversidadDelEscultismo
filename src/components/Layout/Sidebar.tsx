@@ -15,7 +15,9 @@ import {
   Flag,
   Map,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  Tent,
+  Wallet
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +28,7 @@ interface SidebarProps {
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500' },
   { id: 'registro-scout', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500' },
+  { id: 'registro-scout-v2', label: '📋 Registro v2 (Beta)', icon: UserPlus, gradient: 'from-violet-500 to-purple-500' },
   { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500' },
   { id: 'progresion', label: 'Progresión', icon: TrendingUp, gradient: 'from-amber-500 to-orange-500' },
@@ -36,10 +39,12 @@ const menuItems = [
   { id: 'programa-semanal', label: 'Programa', icon: Calendar, gradient: 'from-indigo-500 to-purple-500' },
   { id: 'asistencia', label: 'Asistencia', icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500' },
   { id: 'actividades', label: 'Actividades', icon: MapPin, gradient: 'from-cyan-500 to-blue-500' },
+  { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent, gradient: 'from-green-600 to-teal-600' },
   { id: 'mapas', label: 'Mapas', icon: Map, gradient: 'from-emerald-500 to-teal-500' },
   { id: 'libro-oro', label: 'Libro de Oro', icon: Book, gradient: 'from-yellow-500 to-orange-500' },
   { id: 'inventario', label: 'Inventario', icon: Package, gradient: 'from-gray-500 to-slate-500' },
   { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign, gradient: 'from-green-600 to-emerald-600' },
+  { id: 'finanzas', label: 'Finanzas', icon: Wallet, gradient: 'from-emerald-500 to-green-600' },
   { id: 'reportes', label: 'Reportes', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' }
 ];
 
@@ -105,7 +110,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-600">Módulos Activos</span>
-              <span className="text-xs font-bold text-blue-600">16/16</span>
+              <span className="text-xs font-bold text-blue-600">18/18</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full w-full"></div>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import RegistroScout from './components/RegistroScout/RegistroScout';
+import { RegistroScoutPage as RegistroScoutV2 } from './components/RegistroScout/v2';
 import GestionScouts from './components/GestionScouts/GestionScouts';
 import InscripcionAnualMejorada from './components/Inscripcion/InscripcionAnualMejorada';
 import LibroOro from './components/LibroOro/LibroOro';
@@ -15,6 +17,8 @@ import Asistencia from './components/Asistencia/Asistencia';
 import ActividadesScout from './components/ActividadesScout/ActividadesScout';
 import Inventario from './components/Inventario/Inventario';
 import Presupuestos from './components/Presupuestos/Presupuestos';
+import { FinanzasDashboard } from './components/Finanzas';
+import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import { ProgresionPage } from './components/Progresion';
@@ -33,6 +37,8 @@ function App() {
         return <Dashboard onNavigate={setActiveModule} />;
       case 'registro-scout':
         return <RegistroScout />;
+      case 'registro-scout-v2':
+        return <RegistroScoutV2 />;
       case 'gestion-scouts':
         return <GestionScouts />;
       case 'inscripcion-anual':
@@ -57,6 +63,10 @@ function App() {
         return <Inventario />;
       case 'presupuestos':
         return <Presupuestos />;
+      case 'finanzas':
+        return <FinanzasDashboard />;
+      case 'actividades-exterior':
+        return <ActividadesExteriorDashboard />;
       case 'libro-oro':
         return <LibroOro />;
       case 'programa-semanal':
@@ -72,6 +82,7 @@ function App() {
   if (isMobile) {
     return (
       <AuthProvider>
+        <Toaster richColors position="top-right" />
         <MobileApp />
       </AuthProvider>
     );
@@ -80,6 +91,7 @@ function App() {
   // Desktop: renderizar interfaz normal
   return (
     <AuthProvider>
+      <Toaster richColors position="top-right" />
       <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
         {renderActiveModule()}
       </ProtectedLayout>

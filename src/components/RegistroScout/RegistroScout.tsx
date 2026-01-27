@@ -254,6 +254,27 @@ export default function RegistroScout() {
       const data = await ScoutService.getEstadisticasGrupo();
       console.log('📊 Estadísticas recibidas:', data);
       
+      // Función helper para calcular nuevos en los últimos 12 meses
+      const calcularNuevosAño = () => {
+        const hace12Meses = new Date();
+        hace12Meses.setFullYear(hace12Meses.getFullYear() - 1);
+        
+        // DEBUG: Ver qué scouts se están contando
+        const nuevos = scouts.filter(s => {
+          if (s.estado !== 'ACTIVO') return false;
+          const fechaIngreso = s.fecha_ingreso || s.created_at;
+          if (!fechaIngreso) return false;
+          const esNuevo = new Date(fechaIngreso) >= hace12Meses;
+          if (!esNuevo) {
+            console.log(`❌ NO cuenta: ${s.nombres} ${s.apellidos} - fecha_ingreso: ${s.fecha_ingreso}, created_at: ${s.created_at}`);
+          }
+          return esNuevo;
+        });
+        
+        console.log(`📊 Nuevos (últimos 12 meses desde ${hace12Meses.toISOString()}): ${nuevos.length}`);
+        return nuevos.length;
+      };
+
       // Si los datos vienen del cache pero parecen desactualizados, usar contador manual
       if (data && data.scouts && scouts.length > 0 && data.scouts.total !== scouts.length) {
         console.log('🔄 Datos del cache desactualizados, usando conteo manual');
@@ -262,7 +283,8 @@ export default function RegistroScout() {
           scouts: {
             ...data.scouts,
             total: scouts.length,
-            activos: scouts.filter(s => s.estado === 'ACTIVO').length
+            activos: scouts.filter(s => s.estado === 'ACTIVO').length,
+            nuevos_año: calcularNuevosAño()
           }
         };
         setEstadisticas(estadisticasActualizadas);
@@ -275,10 +297,23 @@ export default function RegistroScout() {
       // Fallback: calcular estadísticas localmente si hay scouts cargados
       if (scouts.length > 0) {
         console.log('📊 Calculando estadísticas localmente...');
+        
+        // Calcular nuevos en los últimos 12 meses
+        const hace12Meses = new Date();
+        hace12Meses.setFullYear(hace12Meses.getFullYear() - 1);
+        const nuevosEsteAño = scouts.filter(s => {
+          if (s.estado !== 'ACTIVO') return false;
+          const fechaIngreso = s.fecha_ingreso || s.created_at;
+          if (!fechaIngreso) return false;
+          return new Date(fechaIngreso) >= hace12Meses;
+        }).length;
+        
         const estadisticasLocal = {
           scouts: {
             total: scouts.length,
             activos: scouts.filter(s => s.estado === 'ACTIVO').length,
+            nuevos_año: nuevosEsteAño,
+            dirigentes: scouts.filter(s => s.estado === 'ACTIVO' && s.es_dirigente).length,
             por_rama: scouts.reduce((acc, scout) => {
               const rama = scout.rama_actual || 'Sin rama';
               acc[rama] = (acc[rama] || 0) + 1;
@@ -503,7 +538,8 @@ export default function RegistroScout() {
           email: formData.correo,
           direccion: formData.direccion,
           distrito: formData.distrito,
-          rama: formData.rama || formData.rama_actual
+          rama: formData.rama || formData.rama_actual,
+          fecha_ingreso: formData.fecha_ingreso || undefined
         });
         
         if (!resultado.success) {

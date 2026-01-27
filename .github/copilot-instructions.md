@@ -522,3 +522,7 @@ lsof -ti:3000 | xargs kill -9
 # Ejecutar script SQL (ejemplo)
 psql -U postgres -h [host] -p 6543 -d postgres -f database/script.sql
 ```
+
+## Traking de Desarrollo de la web con GitHub Copilot
+----  Se requiere saber el tiempo del desarrollo de la web  ----Ademas, cuantos prompts se enviaron a GitHub Copilot para completar el desarrollo de la web. Hora de inicio de cada prompt y hora de finalizacion de cada prompt.  ----  Se requiere saber el tiempo total que se utilizo GitHub Copilot para completar el desarrollo de la web.  ----  Se requiere saber cuantos archivos se crearon, cuantos archivos se modificaron y cuantos archivos se eliminaron durante el desarrollo de la web.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber
+cuando tiempo demora la web, en horas, minutos y segundos.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber.Incluso los errores que se encontraron y como se solucionaron.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber cuales fueron los archivos creados, modificados y eliminados durante el desarrollo de la web.
