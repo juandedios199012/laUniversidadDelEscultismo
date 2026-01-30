@@ -207,10 +207,6 @@ export const VerScoutModal: React.FC<VerScoutModalProps> = ({
                       <span className="text-sm text-gray-500">Fecha de Ingreso:</span>
                       <p className="font-medium">{formatearFecha(scout.fecha_ingreso)}</p>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Es Dirigente:</span>
-                      <p className="font-medium">{scout.es_dirigente ? 'Sí' : 'No'}</p>
-                    </div>
                   </div>
                 </div>
 

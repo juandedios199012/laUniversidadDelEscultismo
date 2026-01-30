@@ -280,7 +280,6 @@ export default function RegistroScoutPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="todos">Todos</TabsTrigger>
           <TabsTrigger value="activos">Activos</TabsTrigger>
-          <TabsTrigger value="dirigentes">Dirigentes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="todos">
@@ -298,18 +297,6 @@ export default function RegistroScoutPage() {
         <TabsContent value="activos">
           <ScoutList
             scouts={scouts.filter((s) => s.estado === "ACTIVO")}
-            loading={loading}
-            onSelect={handleSelectScout}
-            onEdit={handleEditScout}
-            onNewScout={handleNewScout}
-            onMedicalHistory={handleOpenMedicalHistory}
-            selectedId={selectedScout?.id}
-          />
-        </TabsContent>
-
-        <TabsContent value="dirigentes">
-          <ScoutList
-            scouts={scouts.filter((s) => s.es_dirigente)}
             loading={loading}
             onSelect={handleSelectScout}
             onEdit={handleEditScout}

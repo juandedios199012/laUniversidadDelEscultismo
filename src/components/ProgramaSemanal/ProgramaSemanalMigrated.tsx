@@ -19,6 +19,7 @@ import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import { AREAS_CRECIMIENTO } from '../../data/constants';
 import { ScoutService } from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 import type { Scout } from '../../lib/supabase';
 
 interface FormularioPrograma {
@@ -134,14 +135,27 @@ export default function ProgramaSemanalMigrated() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [programasData, scoutsData, estadisticasData] = await Promise.all([
+      const [programasData, scoutsData, estadisticasData, dirigentesData] = await Promise.all([
         ScoutService.getProgramasSemanales(10), // Últimos 10 programas
         ScoutService.getAllScouts(),
-        ScoutService.getEstadisticasProgramas()
+        ScoutService.getEstadisticasProgramas(),
+        supabase.from('dirigentes').select(`
+          id,
+          persona_id,
+          cargo,
+          personas!inner(nombres, apellidos)
+        `).eq('estado', 'ACTIVO')
       ]);
 
       setProgramas(programasData);
-      setDirigentes(scoutsData.filter(s => s.es_dirigente));
+      // Formatear dirigentes desde tabla dirigentes
+      const dirigentesFormateados = (dirigentesData.data || []).map((d: any) => ({
+        id: d.persona_id,
+        nombres: d.personas.nombres,
+        apellidos: d.personas.apellidos,
+        cargo: d.cargo
+      }));
+      setDirigentes(dirigentesFormateados as any);
       setEstadisticas(estadisticasData);
     } catch (error) {
       console.error('Error al cargar datos:', error);

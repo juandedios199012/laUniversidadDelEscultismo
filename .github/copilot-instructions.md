@@ -61,7 +61,7 @@ Siempre mostrar métricas clave en la parte superior de módulos de gestión:
   />
   <MetricCard 
     title="Recaudado" 
-    value="$18,720" 
+    value="S/ 18,720" 
     icon={DollarSign}
     color="emerald"
   />
@@ -236,7 +236,251 @@ Antes de considerar completa una interfaz, verificar:
 
 ---
 
-## 📋 Procedimiento: Agregar Nuevos Campos al Formulario de Scouts
+## 🧭 Patrón: Formularios Multi-Pasos (Stepper)
+
+### Principio UX: "One Thing at a Time"
+
+Dividir formularios complejos en pasos manejables mejora la tasa de completado y reduce la carga cognitiva.
+
+### Stack Técnico
+- **Gestión de Formulario:** React Hook Form
+- **Validación:** Zod (Esquemas por paso y esquema global)
+- **UI:** Shadcn/ui + Tailwind CSS
+
+### Reglas de Implementación
+
+#### 1. **Diferencia Creación vs Edición**
+
+| Aspecto | Modo Creación | Modo Edición |
+|---------|---------------|--------------|
+| **Navegación** | Secuencial (Siguiente/Anterior) | Libre (clic en stepper) |
+| **Stepper** | No clickeable | ✅ Clickeable |
+| **Botón principal** | "Siguiente" → "Crear" | "Guardar Cambios" siempre visible |
+| **Validación** | Por paso antes de avanzar | Solo campos requeridos al guardar |
+
+#### 2. **Estructura de Componentes**
+
+```tsx
+// Estado centralizado con React Hook Form
+const form = useForm<FormData>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { /* ... */ }
+});
+
+const [paso, setPaso] = useState(1);
+const modoEdicion = !!itemEditar;
+
+// Navegación directa (solo edición)
+const irAPaso = (numeroPaso: number) => {
+  if (modoEdicion && numeroPaso >= 1 && numeroPaso <= TOTAL_PASOS) {
+    setPaso(numeroPaso);
+  }
+};
+
+// Validación inteligente al guardar
+const guardar = async () => {
+  const camposRequeridos = ['campo1', 'campo2', 'campo3'];
+  const isValid = await form.trigger(camposRequeridos);
+  
+  if (!isValid) {
+    // Navegar al paso con el primer error
+    const errors = form.formState.errors;
+    if (errors.campo1) setPaso(1);
+    else if (errors.campo2) setPaso(2);
+    // ...
+    return;
+  }
+  
+  // Proceder con guardado
+  const data = form.getValues();
+  await guardarEnBackend(data);
+};
+```
+
+#### 3. **Stepper Interactivo**
+
+```tsx
+{/* Stepper - clickeable en modo edición */}
+<div className="flex items-center justify-between">
+  {PASOS.map((p, index) => {
+    const isClickable = modoEdicion;
+    
+    return (
+      <div 
+        className={`flex flex-col items-center ${isClickable ? 'cursor-pointer' : ''}`}
+        onClick={() => isClickable && irAPaso(p.id)}
+      >
+        <div className={`w-10 h-10 rounded-full ... ${
+          isClickable ? 'hover:scale-105 hover:shadow-md transition-transform' : ''
+        }`}>
+          {/* Icono del paso */}
+        </div>
+        <span>{p.title}</span>
+      </div>
+    );
+  })}
+</div>
+```
+
+#### 4. **Footer Dinámico**
+
+```tsx
+<DialogFooter>
+  {modoEdicion ? (
+    // Modo edición: Guardar siempre visible
+    <Button onClick={guardar} disabled={guardando}>
+      {guardando ? 'Guardando...' : 'Guardar Cambios'}
+    </Button>
+  ) : (
+    // Modo creación: navegación secuencial
+    paso < TOTAL_PASOS ? (
+      <Button onClick={siguientePaso}>
+        Siguiente <ChevronRight />
+      </Button>
+    ) : (
+      <Button onClick={guardar} disabled={guardando}>
+        {guardando ? 'Creando...' : 'Crear Item'}
+      </Button>
+    )
+  )}
+</DialogFooter>
+```
+
+#### 5. **Prevenir Submit Accidental**
+
+```tsx
+<form 
+  onSubmit={(e) => e.preventDefault()} 
+  onKeyDown={(e) => {
+    if (e.key === 'Enter') e.preventDefault();
+  }}
+>
+  {/* Contenido del formulario */}
+</form>
+
+// Botones siempre type="button", nunca type="submit"
+<Button type="button" onClick={guardar}>Guardar</Button>
+```
+
+### Checklist para Formularios Multi-Pasos
+
+- [ ] ¿El stepper es clickeable en modo edición?
+- [ ] ¿El botón "Guardar" está siempre visible en modo edición?
+- [ ] ¿Se validan solo campos requeridos al guardar?
+- [ ] ¿Se navega automáticamente al paso con error?
+- [ ] ¿Se previene submit con Enter?
+- [ ] ¿Todos los botones son `type="button"`?
+- [ ] ¿El estado del form se mantiene al navegar entre pasos?
+
+### Ejemplo de Implementación
+
+**Archivo:** `src/components/ActividadesExterior/dialogs/NuevaActividadDialog.tsx`
+
+Este componente implementa el patrón completo con:
+- 4 pasos (Básicos, Fechas, Logística, Equipamiento)
+- Stepper clickeable en modo edición
+- Botón "Guardar Cambios" persistente
+- Validación inteligente con navegación a paso con error
+
+---
+
+## � Patrón: Diálogos de Detalle con Modo Edición
+
+### Principio UX: Paridad Creación/Edición
+
+Todas las opciones disponibles al **crear** un registro deben estar disponibles al **editar**.
+
+### Reglas de Implementación
+
+#### 1. **Paridad de Campos**
+
+| Al Crear | Al Editar |
+|----------|-----------|
+| Campos básicos | ✅ Campos básicos |
+| Checkbox de opciones especiales | ✅ Checkbox de opciones especiales |
+| Subida de archivos | ✅ Gestión de archivos (ver + eliminar + agregar) |
+| Campos condicionales | ✅ Campos condicionales |
+
+#### 2. **Gestión de Archivos/Evidencias**
+
+```tsx
+// Estados necesarios
+const [nuevasEvidencias, setNuevasEvidencias] = useState<File[]>([]);
+const [evidenciasAEliminar, setEvidenciasAEliminar] = useState<string[]>([]);
+
+// UI para evidencias existentes
+{detalleCompleto?.evidencias?.map((ev) => (
+  <div className={evidenciasAEliminar.includes(ev.id) ? 'opacity-50 line-through' : ''}>
+    <span>{ev.nombre_archivo}</span>
+    {evidenciasAEliminar.includes(ev.id) ? (
+      <button onClick={() => desmarcarParaEliminar(ev.id)}>Restaurar</button>
+    ) : (
+      <button onClick={() => marcarParaEliminar(ev.id)}><Trash2 /></button>
+    )}
+  </div>
+))}
+
+// UI para subir nuevas
+<input type="file" multiple onChange={handleFileChange} />
+
+// Al guardar
+for (const id of evidenciasAEliminar) {
+  await Service.eliminarEvidencia(id);
+}
+for (const file of nuevasEvidencias) {
+  await Service.subirEvidencia(file, registroId);
+}
+```
+
+#### 3. **Campos Condicionales (ej: Préstamo en Egresos)**
+
+```tsx
+// Mostrar checkbox solo si aplica (ej: solo para EGRESOS)
+{!esIngreso && (
+  <div className="border rounded-lg p-4 bg-yellow-50/50">
+    <div className="flex items-center gap-3">
+      <Checkbox
+        checked={formData.tiene_prestamo}
+        onCheckedChange={(checked) => setFormData({...formData, tiene_prestamo: !!checked})}
+      />
+      <label>Este gasto fue financiado con dinero prestado</label>
+    </div>
+    
+    {formData.tiene_prestamo && (
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        {/* Campos adicionales del préstamo */}
+      </div>
+    )}
+  </div>
+)}
+```
+
+### Checklist para Diálogos de Detalle/Edición
+
+- [ ] ¿Todos los campos de creación están en edición?
+- [ ] ¿Los checkboxes especiales (préstamo, etc.) aparecen en edición?
+- [ ] ¿Se pueden eliminar archivos existentes?
+- [ ] ¿Se pueden agregar nuevos archivos?
+- [ ] ¿Los archivos marcados para eliminar se muestran diferente (tachados)?
+- [ ] ¿Hay opción de "Restaurar" para desmarcar eliminación?
+- [ ] ¿Los campos condicionales funcionan igual que en creación?
+
+### Ejemplo de Implementación
+
+**Archivo:** `src/components/Finanzas/dialogs/DetalleTransaccionDialog.tsx`
+
+Este componente implementa:
+- Modo vista y modo edición toggle
+- Checkbox de préstamo (solo visible para egresos)
+- Gestión completa de evidencias:
+  - Ver existentes con preview
+  - Marcar para eliminar (con opción restaurar)
+  - Agregar nuevas con preview
+- Campos de préstamo condicionales
+
+---
+
+## �📋 Procedimiento: Agregar Nuevos Campos al Formulario de Scouts
 
 Cuando se necesite agregar un nuevo campo al formulario de registro/edición de scouts, seguir estos pasos en orden:
 

@@ -31,7 +31,6 @@ export interface Scout {
   tipo_discapacidad?: string;
   carnet_conadis?: string;
   descripcion_discapacidad?: string;
-  es_dirigente: boolean;
   fecha_ingreso?: string;
   activo: boolean;
   codigo_scout?: string;

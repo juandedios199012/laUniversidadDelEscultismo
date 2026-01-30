@@ -395,7 +395,7 @@ const PrestamosTab: React.FC<PrestamosTabProps> = ({ onRefresh }) => {
                           onClick={() => abrirDevolucion(prestamo)}
                           className="flex-1"
                         >
-                          <DollarSign className="h-4 w-4 mr-2" />
+                          <span className="font-bold mr-1">S/</span>
                           Registrar Pago
                         </Button>
                         <Button 

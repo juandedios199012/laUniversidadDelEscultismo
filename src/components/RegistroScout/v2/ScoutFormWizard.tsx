@@ -64,7 +64,7 @@ const STEP_FIELDS: Record<string, (keyof ScoutFormData)[]> = {
   educacion: ["centro_estudio", "anio_estudios", "ocupacion", "centro_laboral"],
   religion: ["religion"],
   salud: ["grupo_sanguineo", "factor_sanguineo", "seguro_medico", "tipo_discapacidad"],
-  scout: ["rama_actual", "fecha_ingreso", "codigo_asociado", "es_dirigente"],
+  scout: ["rama_actual", "fecha_ingreso", "codigo_asociado"],
 };
 
 // ============================================
@@ -251,7 +251,6 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           carnet_conadis: data.carnet_conadis,
           descripcion_discapacidad: data.descripcion_discapacidad,
           rama_actual: data.rama_actual,
-          es_dirigente: data.es_dirigente,
           codigo_asociado: data.codigo_asociado,
           fecha_ingreso: data.fecha_ingreso,
         });
@@ -474,7 +473,6 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     descripcion_discapacidad: scout.descripcion_discapacidad || "",
     rama_actual: scout.rama_actual || "",
     rama: scout.rama_actual || "",
-    es_dirigente: scout.es_dirigente || false,
     codigo_asociado: scout.codigo_asociado || "",
     fecha_ingreso: scout.fecha_ingreso || new Date().toISOString().split("T")[0],
     patrulla_id: null,

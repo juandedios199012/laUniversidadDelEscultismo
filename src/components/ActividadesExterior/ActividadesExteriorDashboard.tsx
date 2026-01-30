@@ -178,9 +178,9 @@ const ActividadCard: React.FC<{
             </span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <DollarSign className="h-4 w-4" />
+            <span className="text-sm font-medium">S/</span>
             <span>
-              S/ {actividad.costo_por_participante.toFixed(2)} p/persona
+              {actividad.costo_por_participante.toFixed(2)} p/persona
             </span>
           </div>
         </div>

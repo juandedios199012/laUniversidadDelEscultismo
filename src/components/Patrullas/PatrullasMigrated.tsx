@@ -4,6 +4,7 @@ import FormField from '../Forms/FormField';
 import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import { ScoutService } from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 import type { Patrulla, MiembroPatrulla, Scout } from '../../lib/supabase';
 
 interface FormularioPatrulla {
@@ -107,15 +108,28 @@ export default function PatrullasMigrated() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [patrullasData, scoutsData, estadisticasData] = await Promise.all([
+      const [patrullasData, scoutsData, estadisticasData, dirigentesData] = await Promise.all([
         ScoutService.getAllPatrullas(),
         ScoutService.getAllScouts(),
-        ScoutService.getEstadisticasPatrullas()
+        ScoutService.getEstadisticasPatrullas(),
+        supabase.from('dirigentes').select(`
+          id,
+          persona_id,
+          cargo,
+          personas!inner(nombres, apellidos)
+        `).eq('estado', 'ACTIVO')
       ]);
 
       setPatrullas(patrullasData);
       setScouts(scoutsData);
-      setDirigentes(scoutsData.filter(s => s.es_dirigente));
+      // Formatear dirigentes desde tabla dirigentes
+      const dirigentesFormateados = (dirigentesData.data || []).map((d: any) => ({
+        id: d.persona_id,
+        nombres: d.personas.nombres,
+        apellidos: d.personas.apellidos,
+        cargo: d.cargo
+      }));
+      setDirigentes(dirigentesFormateados as any);
       setEstadisticas(estadisticasData);
 
       // Cargar miembros para cada patrulla

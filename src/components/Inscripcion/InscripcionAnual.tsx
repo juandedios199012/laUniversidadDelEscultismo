@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, DollarSign, Calendar } from 'lucide-react';
+import { Search, Calendar } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import type { Scout } from '../../lib/supabase';
 
@@ -128,7 +128,7 @@ const InscripcionAnual: React.FC = () => {
           {/* Formulario de Inscripción */}
           <div className="bg-green-50 rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-6 text-green-800 flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
+              <span className="font-bold mr-2">S/</span>
               Registrar Inscripción Anual
             </h2>
 

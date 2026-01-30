@@ -65,7 +65,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       // Obtener scouts activos
       const { data: scoutsData, error: scoutsError } = await supabase
         .from('scouts')
-        .select('id, created_at, es_dirigente')
+        .select('id, created_at')
         .eq('estado', 'ACTIVO');
 
       if (scoutsError) {
@@ -73,9 +73,18 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         throw scoutsError;
       }
 
-      // Separar scouts y dirigentes
-      const scouts = scoutsData?.filter(s => !s.es_dirigente) || [];
-      const dirigentes = scoutsData?.filter(s => s.es_dirigente) || [];
+      // Obtener dirigentes activos (desde tabla dirigentes)
+      const { data: dirigentesData, error: dirigentesError } = await supabase
+        .from('dirigentes')
+        .select('id, created_at')
+        .eq('estado', 'ACTIVO');
+
+      if (dirigentesError) {
+        console.error('Error obteniendo dirigentes:', dirigentesError);
+      }
+
+      const scouts = scoutsData || [];
+      const dirigentes = dirigentesData || [];
 
       // Calcular tendencias (últimos 30 días)
       const hace30dias = new Date();

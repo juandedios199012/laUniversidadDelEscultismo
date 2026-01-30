@@ -11,9 +11,19 @@ export type TipoActividadExterior = 'CAMPAMENTO' | 'CAMINATA' | 'EXCURSION' | 'T
 
 export type EstadoActividadExterior = 'BORRADOR' | 'PLANIFICACION' | 'ABIERTA_INSCRIPCION' | 'INSCRIPCION_CERRADA' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA' | 'POSTERGADA';
 
-export type TipoProgramaExterior = 'DIA' | 'NOCHE';
+export type TipoProgramaExterior = 'DIURNO' | 'NOCTURNO';
 
-export type EstadoAutorizacionExterior = 'NO_ENVIADA' | 'ENVIADA' | 'RECIBIDA' | 'VENCIDA';
+export type EstadoAutorizacionExterior = 'PENDIENTE' | 'ENVIADA' | 'RECIBIDA' | 'FIRMADA' | 'RECHAZADA' | 'EXONERADA';
+
+// Interface para roles de staff (viene de BD)
+export interface RolStaff {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  requiere_certificacion: boolean;
+}
 
 // ============= INTERFACES =============
 
@@ -39,13 +49,16 @@ export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   descripcion?: string;
   hora_concentracion?: string;
   punto_encuentro?: string;
-  coordenadas_lat?: number;
-  coordenadas_lng?: number;
-  objetivos?: string[];
-  requisitos_participacion?: string[];
-  equipo_necesario?: string[];
-  informacion_padres?: string;
-  contacto_emergencia?: string;
+  coordenadas_gps?: string;
+  cupo_minimo?: number;
+  ramas_participantes?: string[];
+  equipamiento_obligatorio?: string;
+  equipamiento_opcional?: string;
+  recomendaciones?: string;
+  incluye_alimentacion?: boolean;
+  incluye_transporte?: boolean;
+  fecha_limite_inscripcion?: string;
+  fecha_limite_pago?: string;
   notas_internas?: string;
   programas: ProgramaActividad[];
   participantes: ParticipanteActividad[];
@@ -54,6 +67,7 @@ export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   documentos: DocumentoActividad[];
   menu: ItemMenuActividad[];
   puntajes: PuntajeActividad[];
+  compras: CompraActividad[];
 }
 
 export interface NuevaActividadExterior {
@@ -67,50 +81,53 @@ export interface NuevaActividadExterior {
   punto_encuentro?: string;
   ubicacion: string;
   lugar_detalle?: string;
-  coordenadas_lat?: number;
-  coordenadas_lng?: number;
+  coordenadas_gps?: string;
   costo_por_participante?: number;
   max_participantes?: number;
-  objetivos?: string[];
-  requisitos_participacion?: string[];
-  equipo_necesario?: string[];
-  informacion_padres?: string;
-  contacto_emergencia?: string;
-  notas_internas?: string;
+  cupo_minimo?: number;
+  equipamiento_obligatorio?: string;
+  equipamiento_opcional?: string;
+  recomendaciones?: string;
 }
 
 export interface ProgramaActividad {
   id: string;
-  dia_numero: number;
-  fecha: string;
+  nombre: string;
+  descripcion?: string;
   tipo: TipoProgramaExterior;
-  tema_del_dia?: string;
+  fecha: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  orden?: number;
+  responsable_id?: string;
   bloques: BloqueProgramaActividad[];
 }
 
 export interface BloqueProgramaActividad {
   id?: string;
+  nombre: string;
+  descripcion?: string;
+  tipo_bloque?: string;
   hora_inicio: string;
   hora_fin: string;
-  actividad: string;
-  descripcion?: string;
   responsable_id?: string;
-  materiales?: string[];
-  notas?: string;
-  tipo_juego?: string;
-  puntaje_posible?: number;
+  materiales_necesarios?: string;
+  orden?: number;
+  otorga_puntaje?: boolean;
+  puntaje_maximo?: number;
 }
 
 export interface NuevoBloquePrograma {
+  nombre: string;
+  descripcion?: string;
+  tipo_bloque?: string;
   hora_inicio: string;
   hora_fin: string;
-  actividad: string;
-  descripcion?: string;
   responsable_id?: string;
-  materiales?: string[];
-  notas?: string;
-  tipo_juego?: string;
-  puntaje_posible?: number;
+  materiales_necesarios?: string;
+  orden?: number;
+  otorga_puntaje?: boolean;
+  puntaje_maximo?: number;
 }
 
 export interface ParticipanteActividad {
@@ -118,35 +135,39 @@ export interface ParticipanteActividad {
   scout_id: string;
   scout_nombre: string;
   scout_codigo: string;
-  patrulla_id?: string;
-  patrulla_nombre?: string;
+  estado_inscripcion?: string;
   confirmado: boolean;
-  autorizacion_estado: EstadoAutorizacionExterior;
+  estado_autorizacion: EstadoAutorizacionExterior;
+  fecha_autorizacion?: string;
+  monto_a_pagar?: number;
   monto_pagado: number;
   pagado_completo: boolean;
-  notas_medicas?: string;
+  restricciones_alimentarias?: string;
+  observaciones?: string;
 }
 
 export interface StaffActividad {
   id: string;
-  dirigente_id: string;
-  dirigente_nombre: string;
+  persona_id: string;
+  nombre: string;
   rol: string;
-  responsabilidades?: string[];
+  responsabilidades?: string;
   confirmado: boolean;
 }
 
 export interface ItemPresupuestoActividad {
   id: string;
   categoria: string;
+  subcategoria?: string;
   concepto: string;
   descripcion?: string;
   cantidad: number;
+  unidad?: string;
   precio_unitario: number;
   monto_total: number;
+  monto_ejecutado?: number;
   proveedor?: string;
-  pagado: boolean;
-  monto_pagado: number;
+  orden?: number;
 }
 
 export interface NuevoItemPresupuestoActividad {
@@ -160,28 +181,35 @@ export interface NuevoItemPresupuestoActividad {
 
 export interface DocumentoActividad {
   id: string;
-  tipo_documento: string;
+  tipo: string;
   nombre: string;
-  url_archivo?: string;
   descripcion?: string;
-  fecha_vencimiento?: string;
+  url_archivo?: string;
+  nombre_archivo?: string;
+  estado?: string;
+  version?: number;
 }
 
 export interface ItemMenuActividad {
   id: string;
-  dia_numero: number;
-  comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
-  descripcion: string;
-  costo_estimado?: number;
+  dia: number;
+  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
+  nombre_plato: string;
+  descripcion?: string;
   responsable_cocina?: string;
+  patrulla_cocina_id?: string;
+  ingredientes?: object;
+  consideraciones_dieteticas?: string;
 }
 
 export interface NuevoItemMenuActividad {
-  dia_numero: number;
-  comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
-  descripcion: string;
-  costo_estimado?: number;
+  dia: number;
+  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
+  nombre_plato: string;
+  descripcion?: string;
   responsable_cocina?: string;
+  patrulla_cocina_id?: string;
+  ingredientes?: object;
 }
 
 export interface PuntajeActividad {
@@ -189,9 +217,74 @@ export interface PuntajeActividad {
   patrulla_id: string;
   patrulla_nombre: string;
   bloque_id?: string;
+  bloque_nombre?: string;
   puntaje: number;
-  motivo?: string;
-  juego_descripcion?: string;
+  observaciones?: string;
+}
+
+// ============= INTERFACES COMPRAS =============
+
+export interface CompraActividad {
+  id: string;
+  concepto: string;
+  descripcion?: string;
+  categoria?: string;
+  cantidad: number;
+  precio_unitario: number;
+  monto_total: number;
+  proveedor?: string;
+  comprobante_url?: string;
+  comprobante_nombre?: string;
+  tipo_comprobante?: string;
+  numero_comprobante?: string;
+  metodo_pago?: string;
+  fecha_compra: string;
+  notas?: string;
+  presupuesto_item_id?: string;
+  presupuesto_concepto?: string;
+  created_at?: string;
+}
+
+export interface NuevaCompra {
+  concepto: string;
+  descripcion?: string;
+  categoria?: string;
+  cantidad?: number;
+  precio_unitario: number;
+  proveedor?: string;
+  comprobante_url?: string;
+  comprobante_nombre?: string;
+  tipo_comprobante?: string;
+  numero_comprobante?: string;
+  metodo_pago?: string;
+  fecha_compra?: string;
+  notas?: string;
+  presupuesto_item_id?: string;
+}
+
+export interface NuevoStaff {
+  persona_id: string;
+  rol: string;
+  responsabilidades?: string;
+  confirmado?: boolean;
+}
+
+export interface NuevoDocumentoActividad {
+  tipo: string;
+  nombre: string;
+  descripcion?: string;
+  url_archivo?: string;
+  nombre_archivo?: string;
+  mime_type?: string;
+  estado?: string;
+}
+
+export interface DirigentDisponible {
+  id: string;
+  nombre: string;
+  es_dirigente: boolean;
+  cargo?: string;
+  ya_asignado: boolean;
 }
 
 export interface RankingPatrullaActividad {
@@ -256,6 +349,41 @@ export const TIPOS_COMIDA_ACTIVIDAD = [
   { value: 'ALMUERZO', label: 'Almuerzo', emoji: '🍽️' },
   { value: 'CENA', label: 'Cena', emoji: '🍲' },
   { value: 'REFRIGERIO', label: 'Refrigerio', emoji: '🍎' },
+];
+
+// Roles de staff - FALLBACK (preferir obtenerRolesStaff() desde BD)
+export const ROLES_STAFF_ACTIVIDAD = [
+  { value: 'JEFE_CAMPAMENTO', label: 'Jefe de Campamento', emoji: '👑' },
+  { value: 'SUBJEFE_CAMPAMENTO', label: 'Subjefe de Campamento', emoji: '🎖️' },
+  { value: 'DIRIGENTE', label: 'Dirigente', emoji: '⭐' },
+  { value: 'APOYO', label: 'Apoyo', emoji: '🤝' },
+  { value: 'COCINERO', label: 'Cocinero/a', emoji: '👨‍🍳' },
+  { value: 'ENFERMERO', label: 'Enfermero/a', emoji: '🩺' },
+  { value: 'TRANSPORTE', label: 'Transporte', emoji: '🚌' },
+  { value: 'SEGURIDAD', label: 'Seguridad', emoji: '🛡️' },
+  { value: 'TESORERO', label: 'Tesorero/a', emoji: '💰' },
+  { value: 'FOTOGRAFO', label: 'Fotógrafo/a', emoji: '📸' },
+  { value: 'LOGISTICA', label: 'Logística', emoji: '📦' },
+];
+
+export const TIPOS_DOCUMENTO_ACTIVIDAD = [
+  { value: 'AUTORIZACION', label: 'Autorización', emoji: '📋' },
+  { value: 'COMUNICADO', label: 'Comunicado', emoji: '📢' },
+  { value: 'PROGRAMA', label: 'Programa', emoji: '📅' },
+  { value: 'LISTA_EQUIPAJE', label: 'Lista de Equipaje', emoji: '🎒' },
+  { value: 'MENU', label: 'Menú', emoji: '🍽️' },
+  { value: 'PRESUPUESTO', label: 'Presupuesto', emoji: '💰' },
+  { value: 'EVALUACION', label: 'Evaluación', emoji: '📝' },
+  { value: 'FOTO', label: 'Foto', emoji: '📷' },
+  { value: 'OTRO', label: 'Otro', emoji: '📎' },
+];
+
+export const TIPOS_COMPROBANTE = [
+  { value: 'BOLETA', label: 'Boleta' },
+  { value: 'FACTURA', label: 'Factura' },
+  { value: 'RECIBO', label: 'Recibo' },
+  { value: 'TICKET', label: 'Ticket' },
+  { value: 'SIN_COMPROBANTE', label: 'Sin Comprobante' },
 ];
 
 // ============= SERVICE CLASS =============
@@ -329,12 +457,36 @@ export class ActividadesExteriorService {
     actividadId: string, 
     updates: Partial<NuevaActividadExterior>
   ): Promise<void> {
+    // Mapear campos del formulario a la BD
+    const dbUpdates: Record<string, any> = {
+      nombre: updates.nombre,
+      descripcion: updates.descripcion,
+      tipo: updates.tipo,
+      estado: updates.estado,
+      fecha_inicio: updates.fecha_inicio,
+      fecha_fin: updates.fecha_fin,
+      hora_concentracion: updates.hora_concentracion,
+      punto_encuentro: updates.punto_encuentro,
+      lugar: updates.ubicacion, // ubicacion -> lugar
+      direccion: updates.lugar_detalle, // lugar_detalle -> direccion
+      costo_por_participante: updates.costo_por_participante,
+      cupo_maximo: updates.max_participantes, // max_participantes -> cupo_maximo
+      equipamiento_obligatorio: updates.equipamiento_obligatorio,
+      equipamiento_opcional: updates.equipamiento_opcional,
+      recomendaciones: updates.recomendaciones,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Remover campos undefined
+    Object.keys(dbUpdates).forEach(key => {
+      if (dbUpdates[key] === undefined) {
+        delete dbUpdates[key];
+      }
+    });
+
     const { error } = await supabase
       .from('actividades_aire_libre')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(dbUpdates)
       .eq('id', actividadId);
 
     if (error) throw error;
@@ -345,19 +497,26 @@ export class ActividadesExteriorService {
    */
   static async agregarPrograma(
     actividadId: string,
-    diaNumero: number,
-    fecha: string,
-    tipo: TipoProgramaExterior,
-    temaDelDia?: string,
-    bloques: NuevoBloquePrograma[] = []
+    programa: {
+      nombre: string;
+      descripcion?: string;
+      tipo: TipoProgramaExterior;
+      fecha: string;
+      hora_inicio?: string;
+      hora_fin?: string;
+      bloques?: NuevoBloquePrograma[];
+    }
   ): Promise<{ programa_id: string }> {
     const { data, error } = await supabase.rpc('api_agregar_programa', {
       p_actividad_id: actividadId,
-      p_dia_numero: diaNumero,
-      p_fecha: fecha,
-      p_tipo: tipo,
-      p_tema_del_dia: temaDelDia || null,
-      p_bloques: bloques,
+      p_nombre: programa.nombre,
+      p_fecha: programa.fecha,
+      p_tipo: programa.tipo,
+      p_hora_inicio: programa.hora_inicio || null,
+      p_hora_fin: programa.hora_fin || null,
+      p_descripcion: programa.descripcion || null,
+      p_orden: 1,
+      p_bloques: programa.bloques || [],
     });
 
     if (error) throw error;
@@ -391,20 +550,20 @@ export class ActividadesExteriorService {
    * Registra puntaje de patrulla
    */
   static async registrarPuntaje(
-    actividadId: string,
-    patrullaId: string,
-    puntaje: number,
-    motivo?: string,
-    bloqueId?: string,
-    registradoPor?: string
+    params: {
+      bloque_id: string;
+      patrulla_id: string;
+      puntaje: number;
+      observaciones?: string;
+      registrado_por?: string;
+    }
   ): Promise<{ puntaje_id: string }> {
     const { data, error } = await supabase.rpc('api_registrar_puntaje', {
-      p_actividad_id: actividadId,
-      p_patrulla_id: patrullaId,
-      p_bloque_id: bloqueId || null,
-      p_puntaje: puntaje,
-      p_motivo: motivo || null,
-      p_registrado_por: registradoPor || null,
+      p_bloque_id: params.bloque_id,
+      p_patrulla_id: params.patrulla_id,
+      p_puntaje: params.puntaje,
+      p_observaciones: params.observaciones || null,
+      p_registrado_por: params.registrado_por || null,
     });
 
     if (error) throw error;
@@ -456,12 +615,12 @@ export class ActividadesExteriorService {
   static async actualizarAutorizacion(
     participanteId: string,
     estado: EstadoAutorizacionExterior,
-    fechaRecepcion?: string
+    fechaAutorizacion?: string
   ): Promise<void> {
     const { data, error } = await supabase.rpc('api_actualizar_autorizacion', {
       p_participante_id: participanteId,
       p_estado: estado,
-      p_fecha_recepcion: fechaRecepcion || null,
+      p_fecha_autorizacion: fechaAutorizacion || null,
     });
 
     if (error) throw error;
@@ -477,11 +636,13 @@ export class ActividadesExteriorService {
   ): Promise<{ menu_id: string }> {
     const { data, error } = await supabase.rpc('api_agregar_menu', {
       p_actividad_id: actividadId,
-      p_dia_numero: item.dia_numero,
-      p_comida: item.comida,
-      p_descripcion: item.descripcion,
-      p_costo_estimado: item.costo_estimado || null,
+      p_dia: item.dia,
+      p_tipo_comida: item.tipo_comida,
+      p_nombre_plato: item.nombre_plato,
+      p_descripcion: item.descripcion || null,
       p_responsable_cocina: item.responsable_cocina || null,
+      p_patrulla_cocina_id: item.patrulla_cocina_id || null,
+      p_ingredientes: item.ingredientes || null,
     });
 
     if (error) throw error;
@@ -519,14 +680,14 @@ export class ActividadesExteriorService {
     const filePath = `actividades/${actividadId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('documentos')
+      .from('finanzas')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     // Obtener URL
     const { data: urlData } = supabase.storage
-      .from('documentos')
+      .from('finanzas')
       .getPublicUrl(filePath);
 
     // Registrar en BD
@@ -608,28 +769,86 @@ export class ActividadesExteriorService {
   }
 
   /**
-   * Agrega staff a la actividad
+   * Agrega staff a la actividad (usando RPC)
    */
   static async agregarStaff(
     actividadId: string,
-    dirigenteId: string,
-    rol: string,
-    responsabilidades?: string[]
+    datos: NuevoStaff
   ): Promise<{ staff_id: string }> {
-    const { data, error } = await supabase
-      .from('staff_actividad')
-      .insert({
-        actividad_id: actividadId,
-        dirigente_id: dirigenteId,
-        rol,
-        responsabilidades: responsabilidades || null,
-      })
-      .select('id')
-      .single();
+    const { data, error } = await supabase.rpc('api_agregar_staff', {
+      p_actividad_id: actividadId,
+      p_persona_id: datos.persona_id,
+      p_rol: datos.rol,
+      p_responsabilidades: datos.responsabilidades || null,
+    });
 
     if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar staff');
 
     return { staff_id: data.id };
+  }
+
+  /**
+   * Actualiza staff existente
+   */
+  static async actualizarStaff(
+    staffId: string,
+    datos: Partial<NuevoStaff>
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_staff', {
+      p_staff_id: staffId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar staff');
+  }
+
+  /**
+   * Obtiene los roles de staff desde el catálogo en BD
+   * Preferir este método sobre la constante ROLES_STAFF_ACTIVIDAD
+   */
+  static async obtenerRolesStaff(): Promise<RolStaff[]> {
+    const { data, error } = await supabase.rpc('api_obtener_roles_staff');
+
+    if (error) {
+      console.warn('Error obteniendo roles desde BD, usando fallback:', error);
+      // Fallback a constante local
+      return ROLES_STAFF_ACTIVIDAD.map(r => ({
+        id: r.value,
+        codigo: r.value,
+        nombre: r.label,
+        icono: r.emoji,
+        requiere_certificacion: r.value === 'ENFERMERO',
+      }));
+    }
+
+    if (!data?.success || !data.data?.length) {
+      // Fallback a constante local
+      return ROLES_STAFF_ACTIVIDAD.map(r => ({
+        id: r.value,
+        codigo: r.value,
+        nombre: r.label,
+        icono: r.emoji,
+        requiere_certificacion: r.value === 'ENFERMERO',
+      }));
+    }
+
+    return data.data;
+  }
+
+  /**
+   * Lista dirigentes disponibles para agregar al staff
+   */
+  static async listarDirigentesDisponibles(actividadId: string): Promise<DirigentDisponible[]> {
+    const { data, error } = await supabase.rpc('api_listar_dirigentes_disponibles', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar dirigentes');
+
+    return data.data || [];
   }
 
   // ============= MÉTODOS DE ELIMINACIÓN =============
@@ -743,9 +962,9 @@ export class ActividadesExteriorService {
     if (documento?.url_archivo) {
       try {
         const urlPath = new URL(documento.url_archivo).pathname;
-        const storagePath = urlPath.split('/documentos/')[1];
+        const storagePath = urlPath.split('/finanzas/')[1];
         if (storagePath) {
-          await supabase.storage.from('documentos').remove([storagePath]);
+          await supabase.storage.from('finanzas').remove([storagePath]);
         }
       } catch (e) {
         console.warn('Error eliminando archivo de storage:', e);
@@ -806,6 +1025,449 @@ export class ActividadesExteriorService {
 
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al actualizar ítem');
+  }
+
+  // ============= CRUD BLOQUES =============
+
+  /**
+   * Agrega un bloque a un programa existente
+   */
+  static async agregarBloque(
+    programaId: string,
+    bloque: NuevoBloquePrograma
+  ): Promise<string> {
+    const { data, error } = await supabase.rpc('api_agregar_bloque', {
+      p_programa_id: programaId,
+      p_bloque: bloque,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar bloque');
+    return data.bloque_id;
+  }
+
+  /**
+   * Actualiza un bloque existente
+   */
+  static async actualizarBloque(
+    bloqueId: string,
+    datos: Partial<NuevoBloquePrograma>
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_bloque', {
+      p_bloque_id: bloqueId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar bloque');
+  }
+
+  /**
+   * Elimina un bloque
+   */
+  static async eliminarBloque(bloqueId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_bloque', {
+      p_bloque_id: bloqueId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar bloque');
+  }
+
+  /**
+   * Actualiza un programa completo con todos sus bloques
+   * Sincroniza bloques: agrega nuevos, actualiza existentes, elimina los que no vienen
+   */
+  static async actualizarProgramaCompleto(
+    programaId: string,
+    datos: {
+      nombre?: string;
+      tipo?: TipoProgramaExterior;
+      fecha?: string;
+      hora_inicio?: string;
+      hora_fin?: string;
+      descripcion?: string;
+      bloques?: Array<NuevoBloquePrograma & { id?: string }>;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_programa_completo', {
+      p_programa_id: programaId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar programa');
+  }
+
+  // ============= CRUD STAFF (RPC) =============
+
+  /**
+   * Lista staff de una actividad
+   */
+  static async listarStaff(actividadId: string): Promise<StaffActividad[]> {
+    const { data, error } = await supabase.rpc('api_listar_staff', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar staff');
+
+    return data.data || [];
+  }
+
+  // ============= CRUD DOCUMENTOS (RPC) =============
+
+  /**
+   * Agrega un documento a la actividad
+   */
+  static async agregarDocumento(
+    actividadId: string,
+    documento: NuevoDocumentoActividad
+  ): Promise<{ documento_id: string }> {
+    const { data, error } = await supabase.rpc('api_agregar_documento', {
+      p_actividad_id: actividadId,
+      p_datos: documento,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar documento');
+
+    return { documento_id: data.id };
+  }
+
+  /**
+   * Lista documentos de una actividad
+   */
+  static async listarDocumentos(actividadId: string): Promise<DocumentoActividad[]> {
+    const { data, error } = await supabase.rpc('api_listar_documentos', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar documentos');
+
+    return data.data || [];
+  }
+
+  /**
+   * Elimina un documento de la actividad (usando RPC)
+   */
+  static async eliminarDocumentoRPC(documentoId: string): Promise<{ comprobante_url?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_documento', {
+      p_documento_id: documentoId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar documento');
+
+    // Eliminar archivo del storage si existe
+    if (data.url_archivo) {
+      try {
+        const urlPath = new URL(data.url_archivo).pathname;
+        const storagePath = urlPath.split('/finanzas/')[1];
+        if (storagePath) {
+          await supabase.storage.from('finanzas').remove([storagePath]);
+        }
+      } catch (e) {
+        console.warn('Error eliminando archivo de storage:', e);
+      }
+    }
+
+    return { comprobante_url: data.url_archivo };
+  }
+
+  // ============= CRUD COMPRAS =============
+
+  /**
+   * Registra una compra vinculada a la actividad
+   */
+  static async registrarCompra(
+    actividadId: string,
+    compra: NuevaCompra
+  ): Promise<{ compra_id: string; monto: number }> {
+    const { data, error } = await supabase.rpc('api_registrar_compra', {
+      p_actividad_id: actividadId,
+      p_datos: compra,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al registrar compra');
+
+    return { compra_id: data.id, monto: data.monto };
+  }
+
+  /**
+   * Lista compras de una actividad con totales
+   */
+  static async listarCompras(actividadId: string): Promise<{
+    compras: CompraActividad[];
+    totales: { total_compras: number; cantidad_compras: number };
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_compras', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar compras');
+
+    return {
+      compras: data.data || [],
+      totales: data.totales || { total_compras: 0, cantidad_compras: 0 },
+    };
+  }
+
+  /**
+   * Actualiza una compra existente
+   */
+  static async actualizarCompra(
+    compraId: string,
+    datos: Partial<NuevaCompra>
+  ): Promise<{ monto: number }> {
+    const { data, error } = await supabase.rpc('api_actualizar_compra', {
+      p_compra_id: compraId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar compra');
+
+    return { monto: data.monto };
+  }
+
+  /**
+   * Elimina una compra
+   */
+  static async eliminarCompra(compraId: string): Promise<{ comprobante_url?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_compra', {
+      p_compra_id: compraId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar compra');
+
+    // Eliminar comprobante del storage si existe
+    if (data.comprobante_url) {
+      try {
+        const urlPath = new URL(data.comprobante_url).pathname;
+        const storagePath = urlPath.split('/finanzas/')[1];
+        if (storagePath) {
+          await supabase.storage.from('finanzas').remove([storagePath]);
+        }
+      } catch (e) {
+        console.warn('Error eliminando comprobante de storage:', e);
+      }
+    }
+
+    return { comprobante_url: data.comprobante_url };
+  }
+
+  /**
+   * Sube un archivo (documento o comprobante) al storage
+   */
+  static async subirArchivo(
+    actividadId: string,
+    file: File,
+    tipo: 'documento' | 'comprobante' = 'documento'
+  ): Promise<{ url: string; nombre: string }> {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const fileName = `${timestamp}_${safeName}`;
+    const filePath = `actividades/${actividadId}/${tipo}s/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('finanzas')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('finanzas')
+      .getPublicUrl(filePath);
+
+    return {
+      url: urlData.publicUrl,
+      nombre: file.name,
+    };
+  }
+
+  // ============= PAGOS DE PARTICIPANTES =============
+
+  /**
+   * Registra un pago para un participante
+   */
+  static async registrarPagoParticipante(
+    participanteId: string,
+    pago: {
+      monto: number;
+      metodo_pago?: string;
+      fecha_pago?: string;
+      comprobante_pago?: string;
+      comprobante_nombre?: string;
+      notas?: string;
+    }
+  ): Promise<{ monto_pagado: number; pagado_completo: boolean }> {
+    const { data, error } = await supabase.rpc('api_registrar_pago_participante', {
+      p_participante_id: participanteId,
+      p_datos: pago,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al registrar pago');
+
+    return { monto_pagado: data.monto_pagado, pagado_completo: data.pagado_completo };
+  }
+
+  /**
+   * Actualiza datos de pago de un participante
+   */
+  static async actualizarPagoParticipante(
+    participanteId: string,
+    pago: {
+      monto_pagado?: number;
+      pagado_completo?: boolean;
+      metodo_pago?: string;
+      fecha_pago?: string;
+      notas?: string;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_pago_participante', {
+      p_participante_id: participanteId,
+      p_datos: pago,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar pago');
+  }
+
+  // ============= CRUD PRESUPUESTO =============
+
+  /**
+   * Agrega un item al presupuesto
+   */
+  static async agregarPresupuesto(
+    actividadId: string,
+    item: {
+      categoria: string;
+      subcategoria?: string;
+      concepto: string;
+      descripcion?: string;
+      cantidad: number;
+      unidad: string;
+      precio_unitario: number;
+      proveedor?: string;
+    }
+  ): Promise<{ id: string }> {
+    const { data, error } = await supabase.rpc('api_agregar_presupuesto', {
+      p_actividad_id: actividadId,
+      p_datos: item,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar presupuesto');
+
+    return { id: data.id };
+  }
+
+  /**
+   * Actualiza un item del presupuesto
+   */
+  static async actualizarPresupuesto(
+    itemId: string,
+    datos: {
+      categoria?: string;
+      concepto?: string;
+      descripcion?: string;
+      cantidad?: number;
+      unidad?: string;
+      precio_unitario?: number;
+      proveedor?: string;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_presupuesto', {
+      p_item_id: itemId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar presupuesto');
+  }
+
+  /**
+   * Elimina un item del presupuesto
+   */
+  static async eliminarPresupuesto(itemId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_presupuesto', {
+      p_item_id: itemId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar presupuesto');
+  }
+
+  // ============= CRUD MENÚ (actualización) =============
+
+  /**
+   * Actualiza un plato del menú
+   */
+  static async actualizarMenu(
+    menuId: string,
+    datos: {
+      dia?: number;
+      tipo_comida?: string;
+      nombre_plato?: string;
+      descripcion?: string;
+      ingredientes?: string[];
+      responsable_cocina?: string;
+      consideraciones_dieteticas?: string;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_menu', {
+      p_menu_id: menuId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar menú');
+  }
+
+  // ============= CRUD PUNTAJES (actualización) =============
+
+  /**
+   * Actualiza un puntaje existente
+   */
+  static async actualizarPuntaje(
+    puntajeId: string,
+    datos: {
+      puntaje?: number;
+      observaciones?: string;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_puntaje', {
+      p_puntaje_id: puntajeId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar puntaje');
+  }
+
+  /**
+   * Obtiene ranking de puntajes de la actividad
+   */
+  static async obtenerRankingActividad(actividadId: string): Promise<{
+    patrulla_id: string;
+    patrulla_nombre: string;
+    total_puntaje: number;
+    bloques_evaluados: number;
+  }[]> {
+    const { data, error } = await supabase.rpc('api_obtener_ranking_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener ranking');
+
+    return data.data || [];
   }
 }
 

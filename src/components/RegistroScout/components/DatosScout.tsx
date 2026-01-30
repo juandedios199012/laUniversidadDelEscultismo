@@ -103,14 +103,6 @@ export function DatosScout({ form, isOpen, onToggle, errorCount = 0, scoutId }: 
             )}
           </div>
         </div>
-
-        {/* Leader Flag */}
-        <CheckboxField
-          control={form.control}
-          name="es_dirigente"
-          label="Es Dirigente"
-          description="Marque si esta persona es un dirigente del grupo scout"
-        />
       </div>
     </FormSection>
   );

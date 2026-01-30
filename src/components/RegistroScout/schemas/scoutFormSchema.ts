@@ -189,7 +189,6 @@ export const datosSaludSchema = z.object({
 export const datosScoutSchema = z.object({
   rama_actual: z.string().optional(),
   rama: z.string().optional(),
-  es_dirigente: z.boolean().default(false),
   codigo_asociado: z.string().max(50, "Código muy largo").optional(),
   fecha_ingreso: dateSchema,
   patrulla_id: z.string().uuid().nullable().optional(),
@@ -273,7 +272,6 @@ export const defaultScoutFormValues: ScoutFormData = {
   descripcion_discapacidad: "",
   rama_actual: "",
   rama: "",
-  es_dirigente: false,
   codigo_asociado: "",
   fecha_ingreso: new Date().toISOString().split("T")[0],
   patrulla_id: null,

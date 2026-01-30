@@ -36,7 +36,6 @@ interface FormularioScout {
   anio_estudios: string;
   ocupacion: string;
   centro_laboral: string;
-  es_dirigente: boolean;
   rama_actual: string;
   rama: string;
   codigo_asociado: string;
@@ -90,7 +89,6 @@ export default function RegistroScout() {
     anio_estudios: '',
     ocupacion: '',
     centro_laboral: '',
-    es_dirigente: false,
     rama_actual: '',
     rama: '',
     codigo_asociado: '',
@@ -307,13 +305,19 @@ export default function RegistroScout() {
           if (!fechaIngreso) return false;
           return new Date(fechaIngreso) >= hace12Meses;
         }).length;
+
+        // Obtener cantidad de dirigentes desde tabla dirigentes
+        const { count: dirigentesCount } = await supabase
+          .from('dirigentes')
+          .select('id', { count: 'exact', head: true })
+          .eq('estado', 'ACTIVO');
         
         const estadisticasLocal = {
           scouts: {
             total: scouts.length,
             activos: scouts.filter(s => s.estado === 'ACTIVO').length,
             nuevos_año: nuevosEsteAño,
-            dirigentes: scouts.filter(s => s.estado === 'ACTIVO' && s.es_dirigente).length,
+            dirigentes: dirigentesCount || 0,
             por_rama: scouts.reduce((acc, scout) => {
               const rama = scout.rama_actual || 'Sin rama';
               acc[rama] = (acc[rama] || 0) + 1;
@@ -366,7 +370,6 @@ export default function RegistroScout() {
       anio_estudios: '',
       ocupacion: '',
       centro_laboral: '',
-      es_dirigente: false,
       rama_actual: '',
       rama: '',
       codigo_asociado: '',
@@ -510,7 +513,6 @@ export default function RegistroScout() {
           anio_estudios: formData.anio_estudios,
           ocupacion: formData.ocupacion,
           centro_laboral: formData.centro_laboral,
-          es_dirigente: formData.es_dirigente,
           rama_actual: formData.rama_actual as any,
           codigo_asociado: formData.codigo_asociado,
           religion: formData.religion,
@@ -591,7 +593,6 @@ export default function RegistroScout() {
       anio_estudios: scout.anio_estudios || '',
       ocupacion: scout.ocupacion || '',
       centro_laboral: scout.centro_laboral || '',
-      es_dirigente: scout.es_dirigente,
       rama_actual: scout.rama_actual || '',
       rama: scout.rama_actual || '',
       codigo_asociado: scout.codigo_asociado || '',
@@ -1456,21 +1457,6 @@ export default function RegistroScout() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        ¿Es Dirigente?
-                      </label>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.es_dirigente}
-                          onChange={(e) => handleInputChange('es_dirigente', e.target.checked)}
-                          className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-gray-700">Sí, es dirigente</span>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -1544,12 +1530,6 @@ export default function RegistroScout() {
                             <span>Código: {scout.codigo_scout}</span>
                             <span>•</span>
                             <span>Edad: {calcularEdad(scout.fecha_nacimiento)} años</span>
-                            {scout.es_dirigente && (
-                              <>
-                                <span>•</span>
-                                <span className="text-orange-600 font-medium">DIRIGENTE</span>
-                              </>
-                            )}
                           </div>
                         </div>
                       </div>

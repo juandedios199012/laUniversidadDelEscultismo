@@ -5,7 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar,
-  DollarSign,
   Edit2,
   Save,
   X,
@@ -14,7 +13,10 @@ import {
   User,
   CreditCard,
   Tag,
-  Banknote
+  Banknote,
+  Upload,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -29,6 +31,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -46,6 +50,14 @@ import {
   METODOS_PAGO,
 } from '@/services/finanzasService';
 import { toast } from 'sonner';
+
+// Tipos de prestamista
+const TIPOS_PRESTAMISTA = [
+  { value: 'DIRIGENTE', label: 'Dirigente', emoji: '👨‍🏫' },
+  { value: 'PADRE', label: 'Padre de Familia', emoji: '👨‍👩‍👧' },
+  { value: 'SCOUT', label: 'Scout', emoji: '⚜️' },
+  { value: 'EXTERNO', label: 'Persona Externa', emoji: '👤' },
+];
 
 interface DetalleTransaccionDialogProps {
   transaccion: Transaccion | null;
@@ -83,6 +95,10 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
   const [guardando, setGuardando] = useState(false);
   const [detalleCompleto, setDetalleCompleto] = useState<TransaccionCompleta | null>(null);
   
+  // Estado para nuevas evidencias
+  const [nuevasEvidencias, setNuevasEvidencias] = useState<File[]>([]);
+  const [evidenciasAEliminar, setEvidenciasAEliminar] = useState<string[]>([]);
+  
   // Campos editables
   const [formData, setFormData] = useState({
     concepto: '',
@@ -94,11 +110,20 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
     metodo_pago: '',
     numero_operacion: '',
     notas: '',
+    // Campos de préstamo
+    tiene_prestamo: false,
+    monto_cubierto: 0,
+    prestamista_nombre: '',
+    prestamista_tipo: 'DIRIGENTE',
+    fecha_vencimiento: '',
   });
 
   useEffect(() => {
     if (transaccion && open) {
       cargarDetalleCompleto();
+      // Reset estados al abrir
+      setNuevasEvidencias([]);
+      setEvidenciasAEliminar([]);
     }
   }, [transaccion, open]);
 
@@ -121,6 +146,12 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
         metodo_pago: detalle.metodo_pago || 'EFECTIVO',
         numero_operacion: detalle.numero_operacion || '',
         notas: detalle.notas || '',
+        // Campos de préstamo
+        tiene_prestamo: !!detalle.prestamo,
+        monto_cubierto: detalle.prestamo ? detalle.monto - detalle.prestamo.monto_prestado : 0,
+        prestamista_nombre: detalle.prestamo?.prestamista_nombre || '',
+        prestamista_tipo: 'DIRIGENTE',
+        fecha_vencimiento: '',
       });
     } catch (error) {
       console.error('Error cargando detalle:', error);
@@ -130,11 +161,34 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
     }
   };
 
+  // Manejo de evidencias
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setNuevasEvidencias(prev => [...prev, ...files]);
+  };
+
+  const removeNuevaEvidencia = (index: number) => {
+    setNuevasEvidencias(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const marcarEvidenciaParaEliminar = (evidenciaId: string) => {
+    setEvidenciasAEliminar(prev => [...prev, evidenciaId]);
+  };
+
+  const desmarcarEvidenciaParaEliminar = (evidenciaId: string) => {
+    setEvidenciasAEliminar(prev => prev.filter(id => id !== evidenciaId));
+  };
+
+  // Cálculo del monto del préstamo
+  const montoPrestamo = formData.tiene_prestamo ? Math.max(0, formData.monto - formData.monto_cubierto) : 0;
+
   const handleGuardar = async () => {
     if (!transaccion) return;
     
     try {
       setGuardando(true);
+      
+      // Actualizar transacción básica
       await FinanzasService.actualizarTransaccion(transaccion.id, {
         concepto: formData.concepto,
         descripcion: formData.descripcion,
@@ -147,8 +201,55 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
         notas: formData.notas,
       });
       
+      // Eliminar evidencias marcadas
+      for (const evidenciaId of evidenciasAEliminar) {
+        try {
+          await FinanzasService.eliminarEvidencia(evidenciaId);
+        } catch (err) {
+          console.error('Error eliminando evidencia:', err);
+        }
+      }
+      
+      // Subir nuevas evidencias
+      for (const file of nuevasEvidencias) {
+        try {
+          await FinanzasService.subirEvidencia(file, transaccion.id);
+        } catch (err) {
+          console.error('Error subiendo evidencia:', err);
+        }
+      }
+      
+      // Manejar préstamo (solo para egresos)
+      const esEgreso = detalleCompleto?.tipo === 'EGRESO';
+      if (esEgreso && formData.tiene_prestamo && formData.prestamista_nombre) {
+        try {
+          await FinanzasService.agregarPrestamoTransaccion(transaccion.id, {
+            monto_cubierto: formData.monto_cubierto,
+            prestamista_nombre: formData.prestamista_nombre,
+            prestamista_tipo: formData.prestamista_tipo,
+            fecha_vencimiento: formData.fecha_vencimiento || undefined,
+          });
+        } catch (err) {
+          console.error('Error guardando préstamo:', err);
+          toast.error('Error al guardar el préstamo');
+        }
+      } else if (esEgreso && !formData.tiene_prestamo && detalleCompleto?.prestamo) {
+        // Si desactivó el préstamo, eliminarlo poniendo monto_cubierto = monto total
+        try {
+          await FinanzasService.agregarPrestamoTransaccion(transaccion.id, {
+            monto_cubierto: formData.monto, // Monto total = no hay préstamo
+            prestamista_nombre: detalleCompleto.prestamo.prestamista_nombre || '',
+            prestamista_tipo: 'DIRIGENTE',
+          });
+        } catch (err) {
+          console.error('Error eliminando préstamo:', err);
+        }
+      }
+      
       toast.success('Transacción actualizada exitosamente');
       setModoEdicion(false);
+      setNuevasEvidencias([]);
+      setEvidenciasAEliminar([]);
       onSuccess();
       cargarDetalleCompleto(); // Recargar datos
     } catch (error) {
@@ -184,11 +285,11 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
             <DialogTitle className="flex items-center gap-2">
               {esIngreso ? (
                 <div className="p-2 rounded-full bg-green-100">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <span className="text-green-600 font-bold">S/</span>
                 </div>
               ) : (
                 <div className="p-2 rounded-full bg-red-100">
-                  <DollarSign className="h-5 w-5 text-red-600" />
+                  <span className="text-red-600 font-bold">S/</span>
                 </div>
               )}
               {modoEdicion ? 'Editar Transacción' : 'Detalle de Transacción'}
@@ -218,19 +319,20 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
             {/* Vista normal o edición */}
             {modoEdicion ? (
               // MODO EDICIÓN
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Concepto */}
-                <div className="md:col-span-2">
-                  <Label>Concepto</Label>
-                  <Input
-                    value={formData.concepto}
-                    onChange={(e) => setFormData({...formData, concepto: e.target.value})}
-                    placeholder="Concepto de la transacción"
-                  />
-                </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Concepto */}
+                  <div className="md:col-span-2">
+                    <Label>Concepto</Label>
+                    <Input
+                      value={formData.concepto}
+                      onChange={(e) => setFormData({...formData, concepto: e.target.value})}
+                      placeholder="Concepto de la transacción"
+                    />
+                  </div>
 
-                {/* Categoría */}
-                <div>
+                  {/* Categoría */}
+                  <div>
                   <Label>Categoría</Label>
                   <Select 
                     value={formData.categoria} 
@@ -253,7 +355,7 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
                 <div>
                   <Label>Monto (S/)</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground font-medium">S/</span>
                     <Input
                       type="number"
                       step="0.01"
@@ -340,6 +442,211 @@ const DetalleTransaccionDialog: React.FC<DetalleTransaccionDialogProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Sección de Préstamo - Solo para EGRESOS */}
+              {!esIngreso && (
+                <div className="space-y-4 border rounded-lg p-4 bg-yellow-50/50">
+                  <div className="flex flex-row items-start space-x-3">
+                    <Checkbox
+                      checked={formData.tiene_prestamo}
+                      onCheckedChange={(checked) => setFormData({...formData, tiene_prestamo: !!checked})}
+                    />
+                    <div className="space-y-1 leading-none">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                        <Banknote className="h-4 w-4 text-yellow-600" />
+                        Este gasto fue financiado con dinero prestado
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        Marca esta opción si alguien prestó dinero para cubrir total o parcialmente este gasto
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Campos de préstamo condicionales */}
+                  {formData.tiene_prestamo && (
+                    <div className="space-y-4 pt-2">
+                      <Alert className="bg-yellow-100 border-yellow-300">
+                        <AlertTriangle className="h-4 w-4 text-yellow-700" />
+                        <AlertDescription className="text-yellow-800">
+                          Se creará un préstamo por <strong>S/ {montoPrestamo.toFixed(2)}</strong> que quedará pendiente de devolución.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Monto cubierto con fondos propios */}
+                        <div>
+                          <Label>Monto pagado con fondos propios (S/)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground font-medium">S/</span>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="pl-10"
+                              max={formData.monto}
+                              value={formData.monto_cubierto}
+                              onChange={(e) => setFormData({...formData, monto_cubierto: parseFloat(e.target.value) || 0})}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Préstamo: S/ {montoPrestamo.toFixed(2)}
+                          </p>
+                        </div>
+
+                        {/* Nombre del prestamista */}
+                        <div>
+                          <Label>¿Quién prestó el dinero? *</Label>
+                          <Input 
+                            placeholder="Nombre de quien prestó"
+                            value={formData.prestamista_nombre}
+                            onChange={(e) => setFormData({...formData, prestamista_nombre: e.target.value})}
+                          />
+                        </div>
+
+                        {/* Tipo de prestamista */}
+                        <div>
+                          <Label>Tipo de prestamista</Label>
+                          <Select 
+                            value={formData.prestamista_tipo}
+                            onValueChange={(v) => setFormData({...formData, prestamista_tipo: v})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS_PRESTAMISTA.map((tipo) => (
+                                <SelectItem key={tipo.value} value={tipo.value}>
+                                  {tipo.emoji} {tipo.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Fecha límite de devolución */}
+                        <div>
+                          <Label>Fecha límite de devolución</Label>
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="date"
+                              className="pl-10"
+                              value={formData.fecha_vencimiento}
+                              onChange={(e) => setFormData({...formData, fecha_vencimiento: e.target.value})}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Opcional - Para recordatorio de pago
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Gestión de Evidencias */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Evidencias / Vouchers
+                </Label>
+                
+                {/* Evidencias existentes */}
+                {detalleCompleto?.evidencias && detalleCompleto.evidencias.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Evidencias actuales:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {detalleCompleto.evidencias.map((ev) => (
+                        <div 
+                          key={ev.id}
+                          className={`relative bg-muted rounded-lg p-2 flex items-center gap-2 ${
+                            evidenciasAEliminar.includes(ev.id) ? 'opacity-50 line-through' : ''
+                          }`}
+                        >
+                          {ev.mime_type?.startsWith('image/') ? (
+                            <ImageIcon className="h-4 w-4" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                          <span className="text-sm truncate max-w-[120px]">{ev.nombre_archivo}</span>
+                          {evidenciasAEliminar.includes(ev.id) ? (
+                            <button
+                              type="button"
+                              onClick={() => desmarcarEvidenciaParaEliminar(ev.id)}
+                              className="text-blue-600 hover:text-blue-800 text-xs"
+                            >
+                              Restaurar
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => marcarEvidenciaParaEliminar(ev.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subir nuevas evidencias */}
+                <div className="border-2 border-dashed rounded-lg p-4">
+                  <input
+                    type="file"
+                    id="nuevas-evidencias"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="nuevas-evidencias"
+                    className="flex flex-col items-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Arrastra archivos o haz clic para seleccionar
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Imágenes o PDFs (máx 5MB cada uno)
+                    </span>
+                  </label>
+                </div>
+
+                {/* Preview de nuevas evidencias */}
+                {nuevasEvidencias.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Nuevas evidencias a agregar:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {nuevasEvidencias.map((file, index) => (
+                        <div 
+                          key={index}
+                          className="relative bg-green-50 border border-green-200 rounded-lg p-2 flex items-center gap-2"
+                        >
+                          {file.type.startsWith('image/') ? (
+                            <ImageIcon className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-green-600" />
+                          )}
+                          <span className="text-sm truncate max-w-[150px]">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeNuevaEvidencia(index)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              </>
             ) : (
               // MODO VISTA
               <div className="space-y-6">

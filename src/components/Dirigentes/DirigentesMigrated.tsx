@@ -94,19 +94,21 @@ export default function DirigentesMigrated() {
   }, []);
 
   useEffect(() => {
-    // Filtrar scouts no dirigentes para búsqueda
+    // Filtrar scouts para búsqueda (excluir los que ya son dirigentes)
     if (busquedaScout.trim() === '') {
       setScoutsFiltrados([]);
     } else {
+      // Obtener IDs de personas que ya son dirigentes
+      const dirigentesPersonaIds = new Set(dirigentes.map(d => d.persona_id));
       const filtrados = scouts
         .filter(scout => 
-          !scout.es_dirigente && 
+          !dirigentesPersonaIds.has(scout.persona_id) && 
           `${scout.nombres} ${scout.apellidos}`.toLowerCase().includes(busquedaScout.toLowerCase())
         )
         .slice(0, 10); // Limitar a 10 resultados
       setScoutsFiltrados(filtrados);
     }
-  }, [busquedaScout, scouts]);
+  }, [busquedaScout, scouts, dirigentes]);
 
   const cargarDatos = async () => {
     try {

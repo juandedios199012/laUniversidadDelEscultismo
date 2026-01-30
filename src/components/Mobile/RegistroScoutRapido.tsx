@@ -99,7 +99,6 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
         // Datos scout
         rama_actual: formData.rama_actual,
         estado: 'ACTIVO' as const,
-        es_dirigente: false,
         fecha_ingreso: new Date().toISOString().split('T')[0], // Hoy
         
         // Valores por defecto

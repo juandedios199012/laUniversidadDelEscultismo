@@ -148,7 +148,6 @@ export interface Scout {
   tipo_discapacidad?: string;
   carnet_conadis?: string;
   descripcion_discapacidad?: string;
-  es_dirigente: boolean;
   fecha_ingreso?: string;
   rama_actual?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';

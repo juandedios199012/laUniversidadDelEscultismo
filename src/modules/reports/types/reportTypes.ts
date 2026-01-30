@@ -114,7 +114,6 @@ export interface ScoutReportData {
   codigoAsociado?: string;
   observacionesScout?: string;
   estadoScout?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
-  esDirigente?: boolean;
   // Array dinámico de familiares
   familiares?: FamiliarReportData[];
   // Datos del padre/tutor/apoderado (LEGACY - mantener para compatibilidad)

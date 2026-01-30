@@ -248,7 +248,6 @@ class ScoutService {
     provincia?: string;
     rama_actual: string;
     estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
-    es_dirigente?: boolean;
     fecha_ingreso?: string;
     // Datos del familiar (opcionales)
     familiar_nombres?: string;
@@ -408,7 +407,6 @@ class ScoutService {
     tipo_discapacidad?: string;
     carnet_conadis?: string;
     descripcion_discapacidad?: string;
-    es_dirigente?: boolean;
     estado?: string;
   }): Promise<{ success: boolean; error?: string }> {
     try {
@@ -446,7 +444,6 @@ class ScoutService {
             tipo_discapacidad: updates.tipo_discapacidad,
             carnet_conadis: updates.carnet_conadis,
             descripcion_discapacidad: updates.descripcion_discapacidad,
-            es_dirigente: updates.es_dirigente,
             estado: updates.estado
           }
         });

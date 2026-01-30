@@ -351,6 +351,31 @@ export class FinanzasService {
   }
 
   /**
+   * Agrega o actualiza un préstamo asociado a una transacción existente
+   */
+  static async agregarPrestamoTransaccion(
+    transaccionId: string, 
+    datosPrestamo: {
+      monto_cubierto: number;
+      prestamista_nombre: string;
+      prestamista_tipo?: string;
+      fecha_vencimiento?: string;
+      motivo_prestamo?: string;
+    }
+  ): Promise<{ prestamo_id: string | null }> {
+    const { data, error } = await supabase
+      .rpc('api_agregar_prestamo_transaccion', {
+        p_transaccion_id: transaccionId,
+        p_datos: datosPrestamo
+      });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar préstamo');
+
+    return { prestamo_id: data.prestamo_id };
+  }
+
+  /**
    * Elimina una transacción y sus dependencias
    */
   static async eliminarTransaccion(transaccionId: string) {
