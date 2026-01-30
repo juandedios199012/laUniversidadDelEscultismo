@@ -32,6 +32,7 @@ const menuItems = [
   { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500' },
   { id: 'progresion', label: 'Progresión', icon: TrendingUp, gradient: 'from-amber-500 to-orange-500' },
+  { id: 'admin-objetivos', label: '⚙️ Objetivos Educativos', icon: TrendingUp, gradient: 'from-orange-400 to-amber-500' },
   { id: 'grupo-scout', label: 'Grupo Scout', icon: Flag, gradient: 'from-purple-500 to-violet-500' },
   { id: 'comite-padres', label: 'Comité Padres', icon: Users, gradient: 'from-purple-500 to-violet-500' },
   { id: 'dirigentes', label: 'Dirigentes', icon: Shield, gradient: 'from-orange-500 to-red-500' },

@@ -21,7 +21,7 @@ import { FinanzasDashboard } from './components/Finanzas';
 import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
-import { ProgresionPage } from './components/Progresion';
+import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 import { useMobileDetect } from './hooks/useMobileDetect';
@@ -45,6 +45,8 @@ function App() {
         return <InscripcionAnualMejorada />;
       case 'progresion':
         return <ProgresionPage />;
+      case 'admin-objetivos':
+        return <AdminObjetivosPage />;
       case 'grupo-scout':
         return <GrupoScout />;
       case 'asistencia':
