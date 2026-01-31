@@ -14,7 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   Save, X, ArrowLeft, ArrowRight, 
-  User, Phone, GraduationCap, Church, Heart, Flag 
+  User, Phone, GraduationCap, Church, Heart, Flag, Users 
 } from "lucide-react";
 
 import { Form } from "@/components/ui/form";
@@ -35,6 +35,7 @@ import {
   DatosReligiosos,
   DatosSalud,
   DatosScout,
+  DatosFamiliares,
 } from "../components";
 import { VerticalStepper, StepConfig, StepStatus } from "./VerticalStepper";
 
@@ -51,6 +52,7 @@ const DRAFT_KEY = "scout_form_draft_v2";
 const STEPS: StepConfig[] = [
   { id: "personal", title: "Datos Personales", icon: User, description: "Información básica" },
   { id: "contacto", title: "Contacto", icon: Phone, description: "Teléfonos y dirección" },
+  { id: "familiar", title: "Familiar", icon: Users, description: "Padre/Madre/Tutor" },
   { id: "educacion", title: "Educación", icon: GraduationCap, description: "Estudios y trabajo" },
   { id: "religion", title: "Religión", icon: Church, description: "Información religiosa" },
   { id: "salud", title: "Salud", icon: Heart, description: "Datos médicos" },
@@ -58,9 +60,11 @@ const STEPS: StepConfig[] = [
 ];
 
 // Fields per step for validation
+// Note: "familiares" is an array managed by useFieldArray, validation happens at form level
 const STEP_FIELDS: Record<string, (keyof ScoutFormData)[]> = {
   personal: ["nombres", "apellidos", "fecha_nacimiento", "sexo", "tipo_documento", "numero_documento"],
   contacto: ["celular", "correo", "direccion", "departamento", "provincia", "distrito"],
+  familiar: [], // Array field - validated by schema, not individual fields
   educacion: ["centro_estudio", "anio_estudios", "ocupacion", "centro_laboral"],
   religion: ["religion"],
   salud: ["grupo_sanguineo", "factor_sanguineo", "seguro_medico", "tipo_discapacidad"],
@@ -95,6 +99,19 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
     mode: "onBlur" as const,
   });
 
+  // Reset form when scout data changes (important for loading full scout data with location)
+  useEffect(() => {
+    if (scout) {
+      const formData = mapScoutToFormData(scout);
+      console.log('🔄 Resetting form with scout data:', {
+        ubicacion_latitud: formData.ubicacion_latitud,
+        ubicacion_longitud: formData.ubicacion_longitud,
+        direccion_completa: formData.direccion_completa
+      });
+      form.reset(formData);
+    }
+  }, [scout?.id, (scout as any)?.ubicacion_latitud, (scout as any)?.ubicacion_longitud]);
+
   // Auto-save draft
   useEffect(() => {
     if (!isEditing) {
@@ -115,10 +132,13 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
   }, []);
 
   // Cargar patrulla y cargo actual del scout al editar
+  // Se ejecuta cada vez que se abre el formulario de edición (usando scout como dependencia completa)
   useEffect(() => {
     const cargarPatrullaScout = async () => {
       if (!scout?.id) return;
 
+      console.log('🔄 [ScoutFormWizard] Cargando patrulla para scout:', scout.id);
+      
       try {
         const { data: membresia, error: membresiaError } = await supabase
           .from('miembros_patrulla')
@@ -138,7 +158,9 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           form.setValue('patrulla_id', membresia.patrulla_id);
           form.setValue('cargo_patrulla', membresia.cargo_patrulla || 'MIEMBRO');
         } else {
-          console.log('Scout sin patrulla asignada');
+          console.log('Scout sin patrulla asignada, limpiando campos');
+          form.setValue('patrulla_id', null);
+          form.setValue('cargo_patrulla', 'MIEMBRO');
         }
       } catch (err) {
         console.error('Error inesperado cargando patrulla:', err);
@@ -146,6 +168,74 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
     };
 
     cargarPatrullaScout();
+  // Agregar scout completo como dependencia para forzar recarga cuando se abre edición
+  }, [scout, form]);
+
+  // Cargar familiares del scout al editar
+  useEffect(() => {
+    const cargarFamiliaresScout = async () => {
+      if (!scout?.id) return;
+
+      try {
+        console.log('👨‍👩‍👧‍👦 Cargando familiares para scout:', scout.id);
+        const familiares = await ScoutService.getFamiliaresByScout(scout.id);
+        
+        console.log('📦 Familiares recibidos del API:', familiares);
+        
+        // Primero intentar cargar del array familiares (tabla familiares_scout)
+        if (familiares && familiares.length > 0) {
+          // Mapear los familiares al formato del formulario
+          const familiaresMapped = familiares.map((f: any) => ({
+            id: f.id || f.persona_id,
+            nombres: f.nombres || '',
+            apellidos: f.apellidos || '',
+            parentesco: f.parentesco || 'PADRE',
+            celular: f.celular || f.telefono || '',
+            correo: f.correo || '',
+            es_contacto_emergencia: f.es_contacto_emergencia ?? true,
+            es_apoderado: f.es_apoderado ?? false,
+          }));
+          
+          console.log('✅ Familiares mapeados para formulario:', familiaresMapped.length, familiaresMapped);
+          
+          // Usar replace en lugar de setValue para forzar actualización de useFieldArray
+          form.setValue('familiares', familiaresMapped, { 
+            shouldValidate: false,
+            shouldDirty: false,
+            shouldTouch: false 
+          });
+          
+          // Forzar re-render después de un tick
+          setTimeout(() => {
+            form.setValue('familiares', [...familiaresMapped]);
+          }, 100);
+        } 
+        // Si no hay familiares en el array, intentar leer campos familiar_* del scout
+        else {
+          const scoutData = scout as any;
+          if (scoutData.familiar_nombres) {
+            console.log('✅ Familiar principal encontrado en campos familiar_*');
+            const familiarPrincipal = {
+              id: 'principal',
+              nombres: scoutData.familiar_nombres || '',
+              apellidos: scoutData.familiar_apellidos || '',
+              parentesco: scoutData.familiar_parentesco || 'PADRE',
+              celular: scoutData.familiar_telefono || '',
+              correo: scoutData.familiar_correo || '',
+              es_contacto_emergencia: scoutData.familiar_es_contacto_emergencia ?? true,
+              es_apoderado: scoutData.familiar_es_apoderado ?? true,
+            };
+            form.setValue('familiares', [familiarPrincipal]);
+          } else {
+            console.log('Scout sin familiares registrados');
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando familiares:', err);
+      }
+    };
+
+    cargarFamiliaresScout();
   }, [scout?.id, form]);
 
   // Count completed steps
@@ -221,6 +311,9 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
     
     try {
       if (isEditing && scout) {
+        // Extraer el primer familiar para campos legacy (compatible con campos planos)
+        const familiarPrincipal = data.familiares?.[0];
+        
         const result = await ScoutService.updateScout(scout.id, {
           nombres: data.nombres,
           apellidos: data.apellidos,
@@ -238,6 +331,9 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           provincia: data.provincia,
           distrito: data.distrito,
           direccion: data.direccion,
+          direccion_completa: data.direccion_completa,
+          ubicacion_latitud: data.ubicacion_latitud,
+          ubicacion_longitud: data.ubicacion_longitud,
           codigo_postal: data.codigo_postal,
           centro_estudio: data.centro_estudio,
           anio_estudios: data.anio_estudios,
@@ -253,9 +349,81 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           rama_actual: data.rama_actual,
           codigo_asociado: data.codigo_asociado,
           fecha_ingreso: data.fecha_ingreso,
+          // Campos legacy del Familiar/Apoderado principal (primer familiar)
+          familiar_nombres: familiarPrincipal?.nombres,
+          familiar_apellidos: familiarPrincipal?.apellidos,
+          familiar_parentesco: familiarPrincipal?.parentesco,
+          familiar_telefono: familiarPrincipal?.celular,
+          familiar_correo: familiarPrincipal?.correo,
+          familiar_es_contacto_emergencia: familiarPrincipal?.es_contacto_emergencia,
+          familiar_es_apoderado: familiarPrincipal?.es_apoderado,
+          // Array completo de familiares para tabla familiares_scout
+          familiares: data.familiares?.map(f => ({
+            id: f.id,
+            nombres: f.nombres,
+            apellidos: f.apellidos,
+            parentesco: f.parentesco,
+            celular: f.celular,
+            correo: f.correo,
+            es_contacto_emergencia: f.es_contacto_emergencia,
+            es_apoderado: f.es_apoderado,
+          })),
         });
 
         if (result.success) {
+          // ✅ Guardar patrulla en miembros_patrulla (tabla separada)
+          if (data.patrulla_id) {
+            try {
+              const hoy = new Date().toISOString().split('T')[0];
+              console.log('🔄 Guardando patrulla. Scout:', scout.id, 'Patrulla:', data.patrulla_id, 'Cargo:', data.cargo_patrulla, 'Fecha:', hoy);
+              
+              // Paso 1: Marcar TODAS las membresías activas de este scout como inactivas
+              const { error: updateError } = await supabase
+                .from('miembros_patrulla')
+                .update({ 
+                  fecha_salida: hoy, 
+                  estado_miembro: 'INACTIVO' 
+                })
+                .eq('scout_id', scout.id)
+                .eq('estado_miembro', 'ACTIVO');
+              
+              console.log('1️⃣ Update membresías activas:', updateError ? updateError : 'OK');
+              
+              // Paso 2: Eliminar registro conflictivo si existe (para evitar duplicate key)
+              const { error: deleteError, count: deleteCount } = await supabase
+                .from('miembros_patrulla')
+                .delete()
+                .eq('scout_id', scout.id)
+                .eq('patrulla_id', data.patrulla_id)
+                .eq('fecha_ingreso', hoy);
+              
+              console.log('2️⃣ Delete conflictivo:', deleteError ? deleteError : 'OK', 'Count:', deleteCount);
+              
+              // Paso 3: Insertar nueva membresía
+              const { error: insertError } = await supabase
+                .from('miembros_patrulla')
+                .insert({
+                  scout_id: scout.id,
+                  patrulla_id: data.patrulla_id,
+                  cargo_patrulla: data.cargo_patrulla || 'MIEMBRO',
+                  fecha_ingreso: hoy,
+                  estado_miembro: 'ACTIVO',
+                  fecha_salida: null
+                });
+              
+              console.log('3️⃣ Insert nuevo:', insertError ? insertError : 'OK');
+              
+              if (insertError) {
+                console.error('⚠️ Error insertando membresía:', insertError);
+              } else {
+                console.log('✅ Membresía de patrulla guardada correctamente');
+              }
+            } catch (err) {
+              console.error('⚠️ Error guardando patrulla:', err);
+              // No fallar el guardado completo por error de patrulla
+            }
+          }
+          
           clearDraft();
           success(`Scout ${data.nombres} ${data.apellidos} actualizado exitosamente`);
           onSuccess();
@@ -263,19 +431,40 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           error(result.error || "Error al actualizar scout");
         }
       } else {
-        const result = await ScoutService.registrarScout({
+        const result = await ScoutService.registrarScoutConFamiliares({
+          // Datos del scout
           nombres: data.nombres,
           apellidos: data.apellidos,
           fecha_nacimiento: data.fecha_nacimiento,
           sexo: data.sexo as 'MASCULINO' | 'FEMENINO',
           tipo_documento: data.tipo_documento,
           numero_documento: data.numero_documento || '',
-          telefono: data.celular,
-          email: data.correo,
+          celular: data.celular,
+          correo: data.correo,
           direccion: data.direccion,
           distrito: data.distrito,
-          rama: data.rama_actual || 'MANADA',
+          departamento: data.departamento,
+          provincia: data.provincia,
+          direccion_completa: data.direccion_completa,
+          codigo_postal: data.codigo_postal,
+          ubicacion_latitud: data.ubicacion_latitud,
+          ubicacion_longitud: data.ubicacion_longitud,
+          centro_estudio: data.centro_estudio,
+          anio_estudios: data.anio_estudios,
+          ocupacion: data.ocupacion,
+          centro_laboral: data.centro_laboral,
+          religion: data.religion,
+          grupo_sanguineo: data.grupo_sanguineo,
+          factor_sanguineo: data.factor_sanguineo,
+          seguro_medico: data.seguro_medico,
+          tipo_discapacidad: data.tipo_discapacidad,
+          carnet_conadis: data.carnet_conadis,
+          descripcion_discapacidad: data.descripcion_discapacidad,
+          rama_actual: data.rama_actual || 'Manada',
+          codigo_asociado: data.codigo_asociado,
           fecha_ingreso: data.fecha_ingreso,
+          // Array de familiares
+          familiares: data.familiares || [],
         });
 
         if (result.success) {
@@ -312,6 +501,8 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
         return <DatosPersonales form={form as any} isOpen={true} onToggle={() => {}} />;
       case "contacto":
         return <DatosContacto form={form as any} isOpen={true} onToggle={() => {}} />;
+      case "familiar":
+        return <DatosFamiliares />;
       case "educacion":
         return <DatosEducacion form={form as any} isOpen={true} onToggle={() => {}} />;
       case "religion":
@@ -406,7 +597,25 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           <div className="flex items-center gap-2">
             {isLastStep ? (
               <Button
-                onClick={form.handleSubmit(onSubmit as any)}
+                onClick={form.handleSubmit(
+                  onSubmit as any,
+                  (errors) => {
+                    console.error("❌ Errores de validación:", errors);
+                    // Mostrar los campos con error
+                    const errorFields = Object.keys(errors);
+                    if (errorFields.length > 0) {
+                      error(`Revisa los campos: ${errorFields.join(", ")}`);
+                      // Navegar al primer paso con error
+                      for (let i = 0; i < STEPS.length; i++) {
+                        const stepFields = STEP_FIELDS[STEPS[i].id];
+                        if (stepFields.some(f => errorFields.includes(f))) {
+                          setCurrentStep(i);
+                          break;
+                        }
+                      }
+                    }
+                  }
+                )}
                 disabled={loading}
                 className="min-w-[140px]"
               >
@@ -459,7 +668,10 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     provincia: scout.provincia || "",
     distrito: scout.distrito || "",
     direccion: scout.direccion || "",
+    direccion_completa: (scout as any).direccion_completa || "",
     codigo_postal: scout.codigo_postal || "",
+    ubicacion_latitud: (scout as any).ubicacion_latitud != null ? Number((scout as any).ubicacion_latitud) : null,
+    ubicacion_longitud: (scout as any).ubicacion_longitud != null ? Number((scout as any).ubicacion_longitud) : null,
     centro_estudio: scout.centro_estudio || "",
     anio_estudios: scout.anio_estudios?.toString() || "",
     ocupacion: scout.ocupacion || "",
@@ -477,6 +689,8 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     fecha_ingreso: scout.fecha_ingreso || new Date().toISOString().split("T")[0],
     patrulla_id: null,
     cargo_patrulla: "MIEMBRO",
+    // Familiares - array que se carga dinámicamente en useEffect
+    familiares: [],
   };
 }
 

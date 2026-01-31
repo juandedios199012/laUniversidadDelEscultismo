@@ -7,6 +7,8 @@ import { Phone } from "lucide-react";
 import { ScoutFormData } from "../schemas/scoutFormSchema";
 import { TextField, PhoneField } from "./FormFields";
 import { FormSection } from "./FormSection";
+import { LocationPickerWeb } from "./LocationPickerWeb";
+import { UbigeoSelector } from "./UbigeoSelector";
 
 interface DatosContactoProps {
   form: UseFormReturn<ScoutFormData>;
@@ -16,6 +18,43 @@ interface DatosContactoProps {
 }
 
 export function DatosContacto({ form, isOpen, onToggle, errorCount = 0 }: DatosContactoProps) {
+  // Handle location change
+  const handleLocationChange = (location: { latitud: number; longitud: number; direccion: string } | null) => {
+    if (location) {
+      form.setValue('ubicacion_latitud', location.latitud);
+      form.setValue('ubicacion_longitud', location.longitud);
+      form.setValue('direccion_completa', location.direccion);
+    } else {
+      form.setValue('ubicacion_latitud', null);
+      form.setValue('ubicacion_longitud', null);
+      form.setValue('direccion_completa', '');
+    }
+  };
+
+  // Get current location value - ensure proper number conversion
+  const watchedLat = form.watch('ubicacion_latitud');
+  const watchedLng = form.watch('ubicacion_longitud');
+  const watchedDir = form.watch('direccion_completa');
+  
+  // Debug logging
+  console.log('📍 Location values:', { watchedLat, watchedLng, watchedDir, typeofLat: typeof watchedLat, typeofLng: typeof watchedLng });
+  
+  // Convert to numbers explicitly (values might come as strings from DB)
+  const lat = watchedLat != null ? Number(watchedLat) : null;
+  const lng = watchedLng != null ? Number(watchedLng) : null;
+  
+  console.log('📍 Converted values:', { lat, lng, isNanLat: isNaN(lat as number), isNanLng: isNaN(lng as number) });
+  
+  const locationValue = (lat != null && lng != null && !isNaN(lat) && !isNaN(lng))
+    ? {
+        latitud: lat,
+        longitud: lng,
+        direccion: watchedDir || ''
+      }
+    : null;
+    
+  console.log('📍 Final locationValue:', locationValue);
+
   return (
     <FormSection
       title="Datos de Contacto"
@@ -87,32 +126,23 @@ export function DatosContacto({ form, isOpen, onToggle, errorCount = 0 }: DatosC
           </div>
         </div>
 
-        {/* Address - 2 columnas */}
+        {/* Address - Ubigeo Selector */}
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">
             Dirección
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextField
-              control={form.control}
-              name="departamento"
-              label="Departamento"
-              placeholder="Lima"
-            />
-            <TextField
-              control={form.control}
-              name="provincia"
-              label="Provincia"
-              placeholder="Lima"
-            />
-          </div>
+          
+          {/* Selector de Ubigeo (Departamento, Provincia, Distrito) */}
+          <UbigeoSelector
+            departamento={form.watch('departamento') || ''}
+            provincia={form.watch('provincia') || ''}
+            distrito={form.watch('distrito') || ''}
+            onDepartamentoChange={(value) => form.setValue('departamento', value)}
+            onProvinciaChange={(value) => form.setValue('provincia', value)}
+            onDistritoChange={(value) => form.setValue('distrito', value)}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <TextField
-              control={form.control}
-              name="distrito"
-              label="Distrito"
-              placeholder="Miraflores"
-            />
             <TextField
               control={form.control}
               name="codigo_postal"
@@ -125,8 +155,16 @@ export function DatosContacto({ form, isOpen, onToggle, errorCount = 0 }: DatosC
             <TextField
               control={form.control}
               name="direccion"
-              label="Dirección Completa"
+              label="Dirección"
               placeholder="Av. Principal 123, Dpto 456"
+            />
+          </div>
+
+          {/* Location Picker - Map */}
+          <div className="mt-4 pt-4 border-t">
+            <LocationPickerWeb
+              value={locationValue}
+              onChange={handleLocationChange}
             />
           </div>
         </div>

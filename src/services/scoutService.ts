@@ -372,6 +372,131 @@ class ScoutService {
   }
 
   /**
+   * ➕ Registrar scout con múltiples familiares
+   * Usa api_registrar_scout_completo con array de familiares
+   */
+  static async registrarScoutConFamiliares(scoutData: {
+    nombres: string;
+    apellidos: string;
+    fecha_nacimiento: string;
+    sexo: 'MASCULINO' | 'FEMENINO';
+    tipo_documento?: string;
+    numero_documento?: string;
+    celular?: string;
+    correo?: string;
+    direccion?: string;
+    direccion_completa?: string;
+    distrito?: string;
+    provincia?: string;
+    departamento?: string;
+    codigo_postal?: string;
+    ubicacion_latitud?: number | null;
+    ubicacion_longitud?: number | null;
+    centro_estudio?: string;
+    anio_estudios?: string;
+    ocupacion?: string;
+    centro_laboral?: string;
+    religion?: string;
+    grupo_sanguineo?: string;
+    factor_sanguineo?: string;
+    seguro_medico?: string;
+    tipo_discapacidad?: string;
+    carnet_conadis?: string;
+    descripcion_discapacidad?: string;
+    rama_actual?: string;
+    codigo_asociado?: string;
+    fecha_ingreso?: string;
+    // Array de familiares
+    familiares?: Array<{
+      nombres: string;
+      apellidos: string;
+      parentesco: string;
+      celular?: string;
+      correo?: string;
+      es_contacto_emergencia?: boolean;
+      es_apoderado?: boolean;
+    }>;
+  }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
+    try {
+      const ramaDb = ScoutService.mapRamaToDb(scoutData.rama_actual);
+      const tipoDocDb = ScoutService.mapTipoDocumentoToDb(scoutData.tipo_documento);
+
+      // Preparar datos del scout
+      const scoutDataJson = {
+        nombres: scoutData.nombres,
+        apellidos: scoutData.apellidos,
+        fecha_nacimiento: scoutData.fecha_nacimiento,
+        sexo: scoutData.sexo,
+        numero_documento: scoutData.numero_documento || null,
+        tipo_documento: tipoDocDb,
+        celular: scoutData.celular,
+        correo: scoutData.correo,
+        direccion: scoutData.direccion,
+        direccion_completa: scoutData.direccion_completa,
+        distrito: scoutData.distrito,
+        provincia: scoutData.provincia,
+        departamento: scoutData.departamento,
+        codigo_postal: scoutData.codigo_postal,
+        ubicacion_latitud: scoutData.ubicacion_latitud,
+        ubicacion_longitud: scoutData.ubicacion_longitud,
+        centro_estudio: scoutData.centro_estudio,
+        anio_estudios: scoutData.anio_estudios,
+        ocupacion: scoutData.ocupacion,
+        centro_laboral: scoutData.centro_laboral,
+        religion: scoutData.religion,
+        grupo_sanguineo: scoutData.grupo_sanguineo,
+        factor_sanguineo: scoutData.factor_sanguineo,
+        seguro_medico: scoutData.seguro_medico,
+        tipo_discapacidad: scoutData.tipo_discapacidad,
+        carnet_conadis: scoutData.carnet_conadis,
+        descripcion_discapacidad: scoutData.descripcion_discapacidad,
+        rama_actual: ramaDb,
+        codigo_asociado: scoutData.codigo_asociado,
+        fecha_ingreso: scoutData.fecha_ingreso || null,
+        // Array de familiares para insertar en familiares_scout
+        familiares: scoutData.familiares?.map(f => ({
+          nombres: f.nombres,
+          apellidos: f.apellidos,
+          parentesco: ScoutService.mapParentescoToDb(f.parentesco),
+          celular: f.celular,
+          correo: f.correo,
+          es_contacto_emergencia: f.es_contacto_emergencia ?? true,
+          es_autorizado_recoger: f.es_apoderado ?? false,
+          sexo: 'MASCULINO', // Default, se puede mejorar
+          tipo_documento: 'DNI',
+        })) || [],
+      };
+
+      const { data, error } = await supabase
+        .rpc('api_registrar_scout_completo', {
+          p_scout_data: scoutDataJson,
+          p_familiar_data: null // Los familiares van en el array dentro de p_scout_data
+        });
+
+      if (error) {
+        console.error('❌ Error al registrar scout con familiares:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (data?.success) {
+        return {
+          success: true,
+          scout_id: data.data?.scout_id,
+          codigo_scout: data.data?.codigo_scout
+        };
+      }
+
+      return { success: false, error: data?.message || 'Error desconocido' };
+    } catch (error) {
+      console.error('❌ Error al registrar scout con familiares:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      };
+    }
+  }
+
+  /**
    * ✏️ Actualizar scout
    * Endpoint: PUT /api/scouts/{id}
    */
@@ -393,6 +518,9 @@ class ScoutService {
     provincia?: string;
     distrito?: string;
     direccion?: string;
+    direccion_completa?: string;
+    ubicacion_latitud?: number | null;
+    ubicacion_longitud?: number | null;
     codigo_postal?: string;
     centro_estudio?: string;
     anio_estudios?: string;
@@ -408,6 +536,25 @@ class ScoutService {
     carnet_conadis?: string;
     descripcion_discapacidad?: string;
     estado?: string;
+    // Datos del Familiar/Apoderado principal (legacy)
+    familiar_nombres?: string;
+    familiar_apellidos?: string;
+    familiar_parentesco?: string;
+    familiar_telefono?: string;
+    familiar_correo?: string;
+    familiar_es_contacto_emergencia?: boolean;
+    familiar_es_apoderado?: boolean;
+    // Array de familiares (N familiares)
+    familiares?: Array<{
+      id?: string;
+      nombres: string;
+      apellidos: string;
+      parentesco: string;
+      celular?: string;
+      correo?: string;
+      es_contacto_emergencia?: boolean;
+      es_apoderado?: boolean;
+    }>;
   }): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await supabase
@@ -430,6 +577,9 @@ class ScoutService {
             provincia: updates.provincia,
             distrito: updates.distrito,
             direccion: updates.direccion,
+            direccion_completa: updates.direccion_completa,
+            ubicacion_latitud: updates.ubicacion_latitud,
+            ubicacion_longitud: updates.ubicacion_longitud,
             codigo_postal: updates.codigo_postal,
             centro_estudio: updates.centro_estudio,
             anio_estudios: updates.anio_estudios,
@@ -444,7 +594,17 @@ class ScoutService {
             tipo_discapacidad: updates.tipo_discapacidad,
             carnet_conadis: updates.carnet_conadis,
             descripcion_discapacidad: updates.descripcion_discapacidad,
-            estado: updates.estado
+            estado: updates.estado,
+            // Datos del Familiar/Apoderado principal (legacy)
+            familiar_nombres: updates.familiar_nombres,
+            familiar_apellidos: updates.familiar_apellidos,
+            familiar_parentesco: updates.familiar_parentesco,
+            familiar_telefono: updates.familiar_telefono,
+            familiar_correo: updates.familiar_correo,
+            familiar_es_contacto_emergencia: updates.familiar_es_contacto_emergencia,
+            familiar_es_apoderado: updates.familiar_es_apoderado,
+            // Array de familiares (N familiares para tabla familiares_scout)
+            familiares: updates.familiares
           }
         });
 
@@ -578,8 +738,10 @@ class ScoutService {
         return [];
       }
       
-      const familiares = data?.familiares || [];
-      console.log('✅ Familiares obtenidos:', familiares.length);
+      // La respuesta viene envuelta en create_standard_response: { success, message, data }
+      const scoutData = data?.data || data;
+      const familiares = scoutData?.familiares || [];
+      console.log('✅ Familiares obtenidos:', familiares.length, familiares);
       return familiares;
     } catch (error) {
       console.error('❌ Error al obtener familiares del scout:', error);

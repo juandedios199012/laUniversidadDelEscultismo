@@ -10,3 +10,4 @@ export { DatosEducacion } from "./DatosEducacion";
 export { DatosReligiosos } from "./DatosReligiosos";
 export { DatosSalud } from "./DatosSalud";
 export { DatosScout } from "./DatosScout";
+export { DatosFamiliares } from "./DatosFamiliares";

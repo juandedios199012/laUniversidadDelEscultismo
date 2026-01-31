@@ -71,6 +71,26 @@
 }
 
 /* ============================================
+   RADIX/SHADCN PORTAL Z-INDEX FIX
+   Ensure dropdowns appear above Leaflet maps
+   ============================================ */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Lower Leaflet z-index to not interfere with dropdowns */
+.leaflet-pane,
+.leaflet-control,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
+
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+/* ============================================
    GAMING DESIGN SYSTEM - Scout Management
    ============================================ */
 :root {

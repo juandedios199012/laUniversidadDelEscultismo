@@ -148,7 +148,10 @@ export const datosContactoSchema = z.object({
   provincia: z.string().optional(),
   distrito: z.string().optional(),
   direccion: z.string().max(200, "Dirección muy larga").optional(),
+  direccion_completa: z.string().max(500, "Dirección muy larga").optional(),
   codigo_postal: z.string().max(10, "Código postal muy largo").optional(),
+  ubicacion_latitud: z.number().min(-90).max(90).optional().nullable(),
+  ubicacion_longitud: z.number().min(-180).max(180).optional().nullable(),
 });
 
 /**
@@ -209,6 +212,29 @@ export const familiarSchema = z.object({
   es_apoderado: z.boolean().default(false),
 });
 
+/**
+ * Schema individual para un familiar
+ */
+export const familiarItemSchema = z.object({
+  id: z.string().optional(), // Para edición
+  nombres: z.string().min(2, "Nombres requeridos"),
+  apellidos: z.string().min(2, "Apellidos requeridos"),
+  parentesco: ParentescoEnum,
+  celular: celularSchema,
+  correo: emailSchema,
+  es_contacto_emergencia: z.boolean().default(true),
+  es_apoderado: z.boolean().default(false),
+});
+
+export type FamiliarItem = z.infer<typeof familiarItemSchema>;
+
+/**
+ * Schema para array de familiares
+ */
+export const familiaresArraySchema = z.object({
+  familiares: z.array(familiarItemSchema).default([]),
+});
+
 // ============================================
 // Complete Scout Form Schema
 // ============================================
@@ -230,6 +256,8 @@ export const scoutFormSchema = z.object({
   ...datosSaludSchema.shape,
   // Scout Data
   ...datosScoutSchema.shape,
+  // Familiares (array de N familiares)
+  ...familiaresArraySchema.shape,
 });
 
 /**
@@ -258,7 +286,10 @@ export const defaultScoutFormValues: ScoutFormData = {
   provincia: "",
   distrito: "",
   direccion: "",
+  direccion_completa: "",
   codigo_postal: "",
+  ubicacion_latitud: null,
+  ubicacion_longitud: null,
   centro_estudio: "",
   anio_estudios: "",
   ocupacion: "",
@@ -276,6 +307,8 @@ export const defaultScoutFormValues: ScoutFormData = {
   fecha_ingreso: new Date().toISOString().split("T")[0],
   patrulla_id: null,
   cargo_patrulla: "MIEMBRO",
+  // Familiares (array vacío por defecto)
+  familiares: [],
 };
 
 // ============================================

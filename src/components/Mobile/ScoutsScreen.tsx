@@ -307,6 +307,7 @@ export default function ScoutsScreen() {
       {/* Modal de Edición */}
       {mostrarEditar && scoutSeleccionado && (
         <EditarScoutMobile
+          key={scoutSeleccionado.id} 
           scout={scoutSeleccionado}
           onClose={() => setMostrarEditar(false)}
           onSuccess={() => {

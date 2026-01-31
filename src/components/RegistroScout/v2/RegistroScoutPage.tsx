@@ -88,12 +88,15 @@ export default function RegistroScoutPage() {
   const loadStats = useCallback(async () => {
     try {
       const result = await ScoutService.getEstadisticasGrupo();
+      console.log("📊 Dashboard data:", result);
       if (result) {
+        // La API devuelve { scouts: { total, activos, nuevos_año, dirigentes } }
+        const scoutsData = result.scouts || result;
         setStats({
-          total: result.total_scouts || 0,
-          activos: result.scouts_activos || 0,
-          nuevos: result.nuevos_anio || 0,
-          dirigentes: result.dirigentes || 0,
+          total: scoutsData.total || result.total_scouts || 0,
+          activos: scoutsData.activos || result.scouts_activos || 0,
+          nuevos: scoutsData["nuevos_año"] || scoutsData.nuevos_año || result.nuevos_anio || 0,
+          dirigentes: scoutsData.dirigentes || result.dirigentes || 0,
         });
       }
     } catch (err) {
@@ -115,9 +118,22 @@ export default function RegistroScoutPage() {
     setViewMode("view");
   }, []);
 
-  // Handle edit
-  const handleEditScout = useCallback((scout: Scout) => {
-    setSelectedScout(scout);
+  // Handle edit - carga datos completos del scout (incluyendo ubicación)
+  const handleEditScout = useCallback(async (scout: Scout) => {
+    try {
+      // Cargar datos completos del scout para tener ubicación, etc.
+      const fullScout = await ScoutService.getScoutById(scout.id);
+      if (fullScout) {
+        console.log('✅ Scout completo cargado para edición:', fullScout);
+        setSelectedScout(fullScout);
+      } else {
+        // Si falla, usar los datos que tenemos
+        setSelectedScout(scout);
+      }
+    } catch (err) {
+      console.error('Error cargando scout completo:', err);
+      setSelectedScout(scout);
+    }
     setViewMode("edit");
   }, []);
 

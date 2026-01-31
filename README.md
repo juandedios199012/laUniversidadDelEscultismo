@@ -314,4 +314,329 @@ https://salmon-pebble-02073b20f.1.azurestaticapps.net
 | menu_actividad con dia_numero/comida | La tabla usa `dia`, `tipo_comida`, `nombre_plato` | Corregido función api_agregar_menu y query |
 
 ---
+
+## 🗺️ Fix: Mapa de Ubicación en Registro Scout v2 (31 Enero 2026)
+
+### Problema Principal
+Al editar un scout que tenía ubicación guardada, el mapa no mostraba la ubicación existente.
+
+### Investigación y Diagnóstico
+
+Se descubrieron **múltiples problemas en cadena**:
+
+1. **Frontend - Conversión de tipos**: Los valores de lat/lng no se convertían correctamente a números
+2. **Frontend - Sincronización de estado**: El componente `LocationPickerWeb` no sincronizaba cuando recibía nuevos valores
+3. **Frontend - Carga de datos incompleta**: Al editar, no se cargaban los datos completos del scout
+4. **Frontend - Reset del formulario**: El formulario no se reseteaba cuando cambiaba el scout
+5. **Backend - Función incorrecta**: El frontend usaba `api_actualizar_scout`, pero se había actualizado `api_actualizar_scout_completo`
+6. **Backend - Campos no incluidos**: `api_actualizar_scout` no incluía los campos de ubicación
+7. **Backend - Operador JSON incorrecto**: Se usó el operador `?` que solo funciona con JSONB
+8. **Backend - Columna inexistente**: `fecha_registro` no existe en tabla `scouts`
+9. **Backend - Error de tipos**: `create_standard_response` requiere casts explícitos `::TEXT`, `::JSON`
+
+### Archivos Modificados
+
+#### Frontend
+
+**[src/components/RegistroScout/components/DatosContacto.tsx](src/components/RegistroScout/components/DatosContacto.tsx)**
+```typescript
+// Agregado: Conversión explícita a números
+const lat = watchedLat != null ? Number(watchedLat) : null;
+const lng = watchedLng != null ? Number(watchedLng) : null;
+```
+
+**[src/components/RegistroScout/components/LocationPickerWeb.tsx](src/components/RegistroScout/components/LocationPickerWeb.tsx)**
+```typescript
+// Agregado: useEffect para sincronizar cuando value cambia
+useEffect(() => {
+  if (value && (value.latitud !== selectedLocation?.latitud || ...)) {
+    setSelectedLocation(value);
+  }
+}, [value?.latitud, value?.longitud, value?.direccion]);
+
+// Mejorado: SafeInvalidateSize con verificación _loaded
+const safeInvalidateSize = () => {
+  try {
+    if (mapInstanceRef.current && 
+        mapInstanceRef.current.getContainer() && 
+        mapInstanceRef.current._loaded) {
+      mapInstanceRef.current.invalidateSize();
+    }
+  } catch (e) { /* Ignore timing errors */ }
+};
+```
+
+**[src/components/RegistroScout/v2/RegistroScoutPage.tsx](src/components/RegistroScout/v2/RegistroScoutPage.tsx)**
+```typescript
+// Cambiado: handleEditScout ahora es async y carga datos completos
+const handleEditScout = useCallback(async (scout: Scout) => {
+  const fullScout = await ScoutService.getScoutById(scout.id);
+  setSelectedScout(fullScout || scout);
+  setViewMode("edit");
+}, []);
+```
+
+**[src/components/RegistroScout/v2/ScoutFormWizard.tsx](src/components/RegistroScout/v2/ScoutFormWizard.tsx)**
+```typescript
+// Agregado: Reset del formulario cuando cambia el scout
+useEffect(() => {
+  if (scout) {
+    const formData = mapScoutToFormData(scout);
+    form.reset(formData);
+  }
+}, [scout?.id, scout?.ubicacion_latitud, scout?.ubicacion_longitud]);
+```
+
+#### Scripts SQL Creados
+
+| Script | Propósito |
+|--------|-----------|
+| `database/49_fix_dashboard_remove_es_dirigente.sql` | Elimina referencias a `es_dirigente` (columna eliminada), corrige `fecha_registro` → `fecha_ingreso` |
+| `database/50_fix_api_obtener_scout_con_ubicacion.sql` | Agrega campos `ubicacion_latitud`, `ubicacion_longitud`, `direccion_completa` al SELECT |
+| `database/51_fix_api_actualizar_scout_con_ubicacion.sql` | Actualiza `api_actualizar_scout_completo` (no usada por frontend) |
+| `database/52_fix_api_actualizar_scout_ubicacion.sql` | **CRÍTICO**: Actualiza `api_actualizar_scout` con campos de ubicación |
+
+### Errores Encontrados y Soluciones
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| Mapa no muestra ubicación al editar | Frontend no sincronizaba selectedLocation | Agregado useEffect en LocationPickerWeb |
+| `el._leaflet_pos` undefined | invalidateSize() antes de que Leaflet esté listo | Verificación `map._loaded` + try/catch |
+| Ubicación no se guarda | `api_actualizar_scout` no tenía campos de ubicación | Script 52 actualiza la función |
+| `operator does not exist: json ? unknown` | Operador `?` solo funciona con JSONB | Cambiado a `p_data->>'campo' IS NOT NULL` |
+| `column fecha_registro does not exist` | Columna no existe en tabla scouts | Cambiado a `p.fecha_ingreso` de tabla personas |
+| `es_dirigente does not exist` | Columna eliminada de scouts | Usar tabla `dirigentes` con EXISTS |
+| `create_standard_response` type mismatch | Función requiere tipos explícitos | Agregados casts `::TEXT`, `::JSON` |
+| Función duplicada | Múltiples firmas de `api_actualizar_scout` | DROP de todas las firmas antes de CREATE |
+
+### Orden de Ejecución de Scripts
+
+```bash
+# 1. Dashboard y estadísticas
+database/49_fix_dashboard_remove_es_dirigente.sql
+
+# 2. Consultar scout con ubicación
+database/50_fix_api_obtener_scout_con_ubicacion.sql
+
+# 3. Actualizar scout con ubicación (LA QUE USA EL FRONTEND)
+database/52_fix_api_actualizar_scout_ubicacion.sql
+```
+
+### Verificación
+
+```sql
+-- Verificar que hay scouts con ubicación guardada
+SELECT p.nombres, p.apellidos, p.ubicacion_latitud, p.ubicacion_longitud
+FROM personas p
+JOIN scouts s ON s.persona_id = p.id
+WHERE p.ubicacion_latitud IS NOT NULL
+LIMIT 5;
+```
+
+### Lecciones Aprendidas
+
+1. **Verificar qué función usa el frontend**: El servicio usaba `api_actualizar_scout`, no `api_actualizar_scout_completo`
+2. **JSON vs JSONB**: El operador `?` solo funciona con JSONB
+3. **Leaflet timing**: Siempre verificar `map._loaded` antes de `invalidateSize()`
+4. **Carga completa de datos**: Al editar, cargar datos frescos del backend con `getScoutById()`
+5. **React Hook Form**: Usar `form.reset()` cuando cambia la entidad que se edita
+
+---
+
+## 👨‍👩‍👧‍👦 Fix: Soporte para N Familiares en Registro Scout (31 Enero 2026)
+
+### Problema Principal
+El sistema solo soportaba 1 familiar por scout (campos `familiar_*` en tabla `personas`). Se necesitaba soportar **N familiares** usando la tabla `familiares_scout`.
+
+### Síntomas Encontrados
+1. Solo se guardaba 1 familiar aunque se agregaran más en el formulario
+2. Al editar un scout con 2 familiares, solo se mostraba 1 en la UI
+3. Los familiares no se actualizaban correctamente al guardar
+
+### Investigación y Diagnóstico
+
+Se descubrieron **múltiples problemas en cadena**:
+
+| Capa | Problema | Causa |
+|------|----------|-------|
+| SQL | Solo guardaba 1 familiar | `api_actualizar_scout` solo actualizaba campos `familiar_*` en personas |
+| SQL | No leía familiares | `api_obtener_scout` no consultaba tabla `familiares_scout` |
+| Frontend | `getFamiliaresByScout` retornaba vacío | Accedía a `data.familiares` en vez de `data.data.familiares` (response wrapper) |
+| Frontend | UI mostraba 1 de 2 familiares | `useFieldArray` de React Hook Form no se actualizaba correctamente |
+
+### Solución Implementada
+
+#### 1. SQL - CRUD Completo de Familiares
+
+**Script:** `database/53_add_familiar_fields.sql`
+
+**`api_obtener_scout`** - Ahora retorna array `familiares`:
+```sql
+-- Obtener TODOS los familiares de la tabla familiares_scout
+SELECT COALESCE(json_agg(
+    json_build_object(
+        'id', fs.id,
+        'nombres', pf.nombres,
+        'apellidos', pf.apellidos,
+        'parentesco', fs.parentesco,
+        'celular', pf.celular,
+        'correo', pf.correo,
+        'es_contacto_emergencia', fs.es_contacto_emergencia,
+        'es_apoderado', fs.es_autorizado_recoger
+    ) ORDER BY fs.created_at ASC
+), '[]'::json) INTO v_familiares
+FROM familiares_scout fs
+JOIN personas pf ON fs.persona_id = pf.id
+WHERE fs.scout_id = p_scout_id;
+
+-- Agregar al resultado
+v_result := v_result::jsonb || jsonb_build_object('familiares', v_familiares);
+```
+
+**`api_actualizar_scout`** - CRUD completo para familiares:
+```sql
+-- Procesar array de familiares enviado
+FOR v_familiar_item IN SELECT * FROM json_array_elements(p_data->'familiares')
+LOOP
+    -- Si tiene UUID válido → UPDATE existente
+    -- Si no tiene UUID → INSERT nuevo
+    -- IDs no recibidos → DELETE
+END LOOP;
+```
+
+#### 2. Frontend - Extracción Correcta de Datos
+
+**Archivo:** `src/services/scoutService.ts`
+
+```typescript
+static async getFamiliaresByScout(scoutId: string): Promise<any[]> {
+  const { data } = await supabase.rpc('api_obtener_scout', { p_scout_id: scoutId });
+  
+  // Response viene envuelto en create_standard_response
+  // Estructura: { success, message, data: { ...scout, familiares: [...] } }
+  const scoutData = data?.data || data;
+  const familiares = scoutData?.familiares || [];
+  
+  return familiares;
+}
+```
+
+#### 3. Frontend - Fix de useFieldArray
+
+**Archivo:** `src/components/RegistroScout/v2/ScoutFormWizard.tsx`
+
+```typescript
+// Problema: useFieldArray no detectaba cambios con form.setValue()
+// Solución: Forzar re-render con spread operator + setTimeout
+
+form.setValue('familiares', familiaresMapped, { 
+  shouldValidate: false,
+  shouldDirty: false,
+  shouldTouch: false 
+});
+
+// Forzar re-render después de un tick
+setTimeout(() => {
+  form.setValue('familiares', [...familiaresMapped]);
+}, 100);
+```
+
+### Archivos Modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `database/53_add_familiar_fields.sql` | CRUD completo: `api_obtener_scout` retorna array, `api_actualizar_scout` maneja INSERT/UPDATE/DELETE |
+| `src/services/scoutService.ts` | `getFamiliaresByScout` accede a `data.data.familiares`, `updateScout` envía array `familiares` |
+| `src/components/RegistroScout/v2/ScoutFormWizard.tsx` | Logs de debug + setTimeout para forzar re-render de useFieldArray |
+
+### Flujo de Datos Final
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        CREAR SCOUT                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ Frontend                                                             │
+│   ScoutFormWizard.onSubmit()                                        │
+│     ↓ { ...scoutData, familiares: [...] }                          │
+│   ScoutService.createScout()                                        │
+│     ↓ RPC api_registrar_scout_completo                              │
+│ Backend                                                              │
+│   1. INSERT INTO personas (scout)                                   │
+│   2. INSERT INTO scouts                                             │
+│   3. FOR cada familiar:                                             │
+│      - INSERT INTO personas (familiar)                              │
+│      - INSERT INTO familiares_scout                                 │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        EDITAR SCOUT                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│ Frontend (Cargar)                                                    │
+│   ScoutService.getScoutById()                                       │
+│     ↓ RPC api_obtener_scout → { ...scout, familiares: [...] }      │
+│   ScoutFormWizard.cargarFamiliaresScout()                          │
+│     ↓ form.setValue('familiares', familiaresMapped)                │
+│     ↓ setTimeout → form.setValue([...familiaresMapped])  ← FIX!    │
+│   DatosFamiliares.tsx                                               │
+│     ↓ useFieldArray({ name: 'familiares' })                        │
+│     ↓ fields.map() → Renderiza N tarjetas                          │
+├─────────────────────────────────────────────────────────────────────┤
+│ Frontend (Guardar)                                                   │
+│   ScoutFormWizard.onSubmit()                                        │
+│     ↓ { ...scoutData, familiares: [...] }                          │
+│   ScoutService.updateScout()                                        │
+│     ↓ RPC api_actualizar_scout                                      │
+│ Backend                                                              │
+│   1. UPDATE personas SET ... (datos scout)                          │
+│   2. UPDATE scouts SET ... (rama, estado, etc)                      │
+│   3. FOR cada familiar recibido:                                    │
+│      - Si tiene UUID válido y existe → UPDATE                       │
+│      - Si no tiene UUID → INSERT nuevo                              │
+│   4. FOR cada familiar existente no recibido:                       │
+│      - DELETE FROM familiares_scout                                 │
+│      - DELETE FROM personas (si no tiene otros vínculos)            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Lecciones Aprendidas
+
+1. **React Hook Form + useFieldArray**: El `setValue()` no siempre dispara re-render. Usar spread operator `[...array]` + `setTimeout` para forzarlo.
+
+2. **Response Wrapper**: Las funciones SQL usan `create_standard_response()` que envuelve los datos en `{ success, message, data }`. Hay que acceder a `response.data.data` para los datos reales.
+
+3. **CRUD de Arrays en SQL**: Para manejar arrays (familiares) en PostgreSQL:
+   - Guardar IDs existentes antes de procesar
+   - Comparar IDs recibidos vs existentes
+   - UPDATE los que coinciden, INSERT los nuevos, DELETE los que faltan
+
+4. **Compatibilidad Legacy**: Mantener campos `familiar_*` en tabla `personas` para compatibilidad con código antiguo, mientras se usa `familiares_scout` para N familiares.
+
+5. **⚠️ Patrulla en Tabla Separada (miembros_patrulla)**: 
+   - La patrulla del scout **NO se guarda** en las tablas `personas` ni `scouts`
+   - Se guarda en la tabla `miembros_patrulla` como una **relación separada**
+   - `ScoutService.updateScout()` actualiza `personas` y `scouts`, pero **NO toca `miembros_patrulla`**
+   - Para guardar la patrulla después de editar un scout, se debe hacer manualmente:
+     ```typescript
+     // 1. Marcar membresía anterior como inactiva
+     await supabase
+       .from('miembros_patrulla')
+       .update({ fecha_salida: new Date().toISOString().split('T')[0], estado_miembro: 'INACTIVO' })
+       .eq('scout_id', scout.id)
+       .is('fecha_salida', null);
+     
+     // 2. Crear nueva membresía
+     await supabase
+       .from('miembros_patrulla')
+       .insert({
+         scout_id: scout.id,
+         patrulla_id: data.patrulla_id,
+         cargo_patrulla: data.cargo_patrulla || 'MIEMBRO',
+         fecha_ingreso: new Date().toISOString().split('T')[0],
+         estado_miembro: 'ACTIVO'
+       });
+     ```
+   - **Columnas de miembros_patrulla**: `id`, `scout_id`, `patrulla_id`, `cargo_patrulla`, `fecha_ingreso`, `fecha_salida`, `estado_miembro`
+   - **Valores de cargo_patrulla**: `'GUIA'`, `'SUBGUIA'`, `'TESORERO'`, `'SECRETARIO'`, `'MIEMBRO'`
+
+---
 ---
