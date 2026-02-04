@@ -7,6 +7,7 @@
 export { default as ReportManager } from './components/ReportManager';
 export { default as ReportExportButton } from './components/ReportExportButton';
 export { default as ReportPreview } from './components/ReportPreview';
+export { default as ScoutsExcelReport } from './components/ScoutsExcelReport';
 
 // Plantillas PDF
 export { default as ScoutReportTemplate } from './templates/pdf/ScoutReportTemplate';
@@ -18,9 +19,12 @@ export { default as DNGI03Template } from './templates/pdf/DNGI03Template';
 export * from './services/pdfService';
 export * from './services/docxService';
 export * from './services/reportDataService';
+export * from './services/excelService';
+export * from './services/scoutExcelDataService';
 
 // Tipos
 export * from './types/reportTypes';
 
 // Estilos
 export * from './styles/pdfStyles';
+

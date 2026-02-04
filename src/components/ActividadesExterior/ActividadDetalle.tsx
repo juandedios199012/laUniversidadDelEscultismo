@@ -9,7 +9,6 @@ import {
   Calendar,
   MapPin,
   Users,
-  DollarSign,
   FileText,
   ClipboardList,
   Award,
@@ -69,6 +68,13 @@ import RegistrarCompraDialog from './dialogs/RegistrarCompraDialog';
 import RegistrarPagoDialog from './dialogs/RegistrarPagoDialog';
 import GestionarAutorizacionDialog from './dialogs/GestionarAutorizacionDialog';
 import NuevaActividadDialog from './dialogs/NuevaActividadDialog';
+import EditarParticipanteDialog from './dialogs/EditarParticipanteDialog';
+
+// Componentes de gestión
+import LogisticaTab from './components/LogisticaTab';
+import PresupuestoDashboard from './components/PresupuestoDashboard';
+import IngredientesMenu from './components/IngredientesMenu';
+import MaterialesBloque from './components/MaterialesBloque';
 
 interface ActividadDetalleProps {
   actividadId: string;
@@ -106,6 +112,8 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   const [participantePago, setParticipantePago] = useState<any>(null);
   const [showAutorizacionDialog, setShowAutorizacionDialog] = useState(false);
   const [participanteAutorizacion, setParticipanteAutorizacion] = useState<any>(null);
+  const [showEditarParticipanteDialog, setShowEditarParticipanteDialog] = useState(false);
+  const [participanteEditar, setParticipanteEditar] = useState<any>(null);
 
   // Función para abrir el dialog de editar programa
   const handleEditarPrograma = (programa: ProgramaActividad) => {
@@ -199,6 +207,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   const handleGestionarAutorizacion = (participante: any) => {
     setParticipanteAutorizacion(participante);
     setShowAutorizacionDialog(true);
+  };
+
+  // Handler para editar participante (monto, observaciones, etc.)
+  const handleEditarParticipante = (participante: any) => {
+    setParticipanteEditar(participante);
+    setShowEditarParticipanteDialog(true);
   };
 
   // Handler para confirmar/desconfirmar participante
@@ -443,6 +457,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
           <TabsTrigger value="presupuesto">💰 Presupuesto</TabsTrigger>
           <TabsTrigger value="compras">🛒 Compras</TabsTrigger>
           <TabsTrigger value="menu">🍽️ Menú</TabsTrigger>
+          <TabsTrigger value="logistica">📦 Logística</TabsTrigger>
           <TabsTrigger value="puntajes">🏆 Puntajes</TabsTrigger>
         </TabsList>
 
@@ -749,32 +764,53 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                             ) : (
                               <div className="space-y-3">
                                 {programa.bloques.map((bloque, index) => (
-                                  <div 
-                                    key={bloque.id || index} 
-                                    className="flex gap-4 p-3 border rounded-lg hover:bg-muted/30 transition-colors"
-                                  >
-                                    <div className="text-sm font-mono text-muted-foreground whitespace-nowrap">
-                                      {bloque.hora_inicio} - {bloque.hora_fin}
+                                  <Collapsible key={bloque.id || index}>
+                                    <div className="border rounded-lg overflow-hidden">
+                                      <CollapsibleTrigger asChild>
+                                        <div className="flex gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group">
+                                          <div className="text-sm font-mono text-muted-foreground whitespace-nowrap pt-0.5">
+                                            {bloque.hora_inicio} - {bloque.hora_fin}
+                                          </div>
+                                          <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                              <h4 className="font-medium">{bloque.nombre}</h4>
+                                              <ChevronDown className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </div>
+                                            {bloque.descripcion && (
+                                              <p className="text-sm text-muted-foreground">{bloque.descripcion}</p>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-1">
+                                              {bloque.tipo_bloque && (
+                                                <Badge variant="outline" className="text-xs">
+                                                  {bloque.tipo_bloque}
+                                                </Badge>
+                                              )}
+                                              {bloque.otorga_puntaje && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  🏆 {bloque.puntaje_maximo} pts máx
+                                                </Badge>
+                                              )}
+                                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                                🧰 Materiales
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <div className="border-t bg-muted/20 p-3">
+                                          {/* Materiales del bloque */}
+                                          {bloque.id && (
+                                            <MaterialesBloque
+                                              bloqueId={bloque.id}
+                                              bloqueNombre={bloque.nombre}
+                                              readonly={false}
+                                            />
+                                          )}
+                                        </div>
+                                      </CollapsibleContent>
                                     </div>
-                                    <div className="flex-1">
-                                      <h4 className="font-medium">{bloque.nombre}</h4>
-                                      {bloque.descripcion && (
-                                        <p className="text-sm text-muted-foreground">{bloque.descripcion}</p>
-                                      )}
-                                      <div className="flex items-center gap-2 mt-1">
-                                        {bloque.tipo_bloque && (
-                                          <Badge variant="outline" className="text-xs">
-                                            {bloque.tipo_bloque}
-                                          </Badge>
-                                        )}
-                                        {bloque.otorga_puntaje && (
-                                          <Badge variant="secondary" className="text-xs">
-                                            🏆 {bloque.puntaje_maximo} pts máx
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
+                                  </Collapsible>
                                 ))}
                               </div>
                             )}
@@ -871,13 +907,19 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                           </td>
                           <td className="py-3 px-2 text-right">
                             <div>
+                              {/* Mostrar monto a pagar del participante */}
                               <p className={`font-medium ${p.pagado_completo ? 'text-green-600' : ''}`}>
-                                {formatMonto(p.monto_pagado || 0)}
+                                {formatMonto(p.monto_a_pagar ?? actividad.costo_por_participante)}
                               </p>
-                              {!p.pagado_completo && actividad.costo_por_participante > 0 && (
+                              {/* Estado del pago */}
+                              {p.pagado_completo ? (
+                                <p className="text-xs text-green-600">✓ Pagado</p>
+                              ) : (p.monto_pagado || 0) > 0 ? (
                                 <p className="text-xs text-muted-foreground">
-                                  de {formatMonto(actividad.costo_por_participante)}
+                                  Pagado: {formatMonto(p.monto_pagado || 0)}
                                 </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Pendiente</p>
                               )}
                             </div>
                           </td>
@@ -892,6 +934,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                 <span className="font-bold mr-1">S/</span>
                                 {p.pagado_completo ? 'Ver' : 'Pagar'}
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditarParticipante(p)}
+                                title="Editar monto y datos"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -904,115 +954,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
           </Card>
         </TabsContent>
 
-        {/* Tab Presupuesto */}
+        {/* Tab Presupuesto - Dashboard Consolidado */}
         <TabsContent value="presupuesto">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Presupuesto</CardTitle>
-                <CardDescription>
-                  {formatMonto(totalEjecutadoPresupuesto)} ejecutado de {formatMonto(totalPresupuesto)}
-                </CardDescription>
-              </div>
-              <Button onClick={handleNuevoPresupuesto}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Item
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <Progress value={(totalEjecutadoPresupuesto / totalPresupuesto) * 100 || 0} />
-              </div>
-              
-              {actividad.presupuesto.length === 0 ? (
-                <div className="text-center py-12">
-                  <DollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Sin presupuesto</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Agrega los gastos planificados para esta actividad
-                  </p>
-                  <Button onClick={handleNuevoPresupuesto}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar Item
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 font-medium">Concepto</th>
-                        <th className="text-left py-3 px-2 font-medium">Categoría</th>
-                        <th className="text-center py-3 px-2 font-medium">Cantidad</th>
-                        <th className="text-right py-3 px-2 font-medium">P. Unit</th>
-                        <th className="text-right py-3 px-2 font-medium">Total</th>
-                        <th className="text-right py-3 px-2 font-medium">Ejecutado</th>
-                        <th className="py-3 px-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {actividad.presupuesto.map(item => {
-                        const cat = CATEGORIAS_PRESUPUESTO_ACTIVIDAD.find(c => c.value === item.categoria);
-                        return (
-                          <tr key={item.id} className="border-b hover:bg-muted/50 group">
-                            <td className="py-3 px-2">
-                              <p className="font-medium">{item.concepto}</p>
-                              {item.proveedor && (
-                                <p className="text-xs text-muted-foreground">{item.proveedor}</p>
-                              )}
-                            </td>
-                            <td className="py-3 px-2">
-                              <Badge variant="outline">
-                                {cat?.emoji} {cat?.label || item.categoria}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-2 text-center">{item.cantidad}</td>
-                            <td className="py-3 px-2 text-right">{formatMonto(item.precio_unitario)}</td>
-                            <td className="py-3 px-2 text-right font-medium">{formatMonto(item.monto_total)}</td>
-                            <td className="py-3 px-2 text-right">
-                              {(item.monto_ejecutado || 0) > 0 ? (
-                                <span className="text-green-600">{formatMonto(item.monto_ejecutado || 0)}</span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={() => handleEditarPresupuesto(item)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => handleEliminarPresupuesto(item.id, item.concepto)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="font-bold">
-                        <td colSpan={4} className="py-3 px-2 text-right">Total:</td>
-                        <td className="py-3 px-2 text-right">{formatMonto(totalPresupuesto)}</td>
-                        <td className="py-3 px-2 text-right text-green-600">{formatMonto(totalEjecutadoPresupuesto)}</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PresupuestoDashboard
+            actividadId={actividad.id}
+            actividadNombre={actividad.nombre}
+          />
         </TabsContent>
 
         {/* Tab Compras */}
@@ -1202,54 +1149,80 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Agrupar por día */}
                   {Array.from(new Set(actividad.menu.map(m => m.dia))).sort().map(dia => (
                     <div key={dia}>
-                      <h4 className="font-semibold mb-2">Día {dia}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <h4 className="font-semibold mb-3 text-lg border-b pb-2">📅 Día {dia}</h4>
+                      <div className="space-y-3">
                         {actividad.menu
                           .filter(m => m.dia === dia)
                           .map(item => {
                             const comidaInfo = TIPOS_COMIDA_ACTIVIDAD.find(c => c.value === item.tipo_comida);
                             return (
-                              <Card key={item.id} className="group relative">
-                                <CardContent className="pt-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span>{comidaInfo?.emoji}</span>
-                                      <span className="font-medium">{comidaInfo?.label}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-7 w-7"
-                                        onClick={() => handleEditarMenu(item)}
-                                      >
-                                        <Edit className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-7 w-7 text-destructive hover:text-destructive"
-                                        onClick={() => handleEliminarMenu(item.id, item.nombre_plato)}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  <p className="font-medium text-sm">{item.nombre_plato}</p>
-                                  {item.descripcion && (
-                                    <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>
-                                  )}
-                                  {item.responsable_cocina && (
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                      👨‍🍳 {item.responsable_cocina}
-                                    </p>
-                                  )}
-                                </CardContent>
-                              </Card>
+                              <Collapsible key={item.id}>
+                                <Card className="group">
+                                  <CollapsibleTrigger asChild>
+                                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-lg">
+                                            {comidaInfo?.emoji || '🍽️'}
+                                          </div>
+                                          <div>
+                                            <p className="font-semibold">{item.nombre_plato}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                              {comidaInfo?.label}
+                                              {item.responsable_cocina && ` • 👨‍🍳 ${item.responsable_cocina}`}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditarMenu(item);
+                                            }}
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEliminarMenu(item.id, item.nombre_plato);
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                      </div>
+                                    </CardHeader>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent>
+                                    <CardContent className="pt-0">
+                                      {item.descripcion && (
+                                        <p className="text-sm text-muted-foreground mb-4 italic">
+                                          {item.descripcion}
+                                        </p>
+                                      )}
+                                      {/* Ingredientes del plato */}
+                                      <IngredientesMenu
+                                        menuId={item.id}
+                                        menuNombre={item.nombre_plato}
+                                        actividadId={actividad.id}
+                                        readonly={false}
+                                      />
+                                    </CardContent>
+                                  </CollapsibleContent>
+                                </Card>
+                              </Collapsible>
                             );
                           })}
                       </div>
@@ -1259,6 +1232,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab Logística */}
+        <TabsContent value="logistica">
+          <LogisticaTab 
+            actividadId={actividadId}
+            readonly={false}
+          />
         </TabsContent>
 
         {/* Tab Puntajes */}
@@ -1466,6 +1447,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         onOpenChange={setShowAutorizacionDialog}
         participante={participanteAutorizacion}
         actividadId={actividadId}
+        onSuccess={cargarActividad}
+      />
+
+      <EditarParticipanteDialog
+        open={showEditarParticipanteDialog}
+        onOpenChange={setShowEditarParticipanteDialog}
+        participante={participanteEditar}
+        costoDefault={actividad?.costo_por_participante}
         onSuccess={cargarActividad}
       />
 

@@ -176,8 +176,15 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
     const cargarFamiliaresScout = async () => {
       if (!scout?.id) return;
 
+      // Si el scout ya trae familiares, no cargar de nuevo
+      const scoutAny = scout as any;
+      if (scoutAny.familiares && scoutAny.familiares.length > 0) {
+        console.log('👨‍👩‍👧‍👦 Familiares ya incluidos en scout, no es necesario cargar:', scoutAny.familiares.length);
+        return;
+      }
+
       try {
-        console.log('👨‍👩‍👧‍👦 Cargando familiares para scout:', scout.id);
+        console.log('👨‍👩‍👧‍👦 Cargando familiares desde API para scout:', scout.id);
         const familiares = await ScoutService.getFamiliaresByScout(scout.id);
         
         console.log('📦 Familiares recibidos del API:', familiares);
@@ -651,6 +658,19 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
 // ============================================
 
 function mapScoutToFormData(scout: Scout): ScoutFormData {
+  // Mapear familiares si existen en el objeto scout
+  const scoutAny = scout as any;
+  const familiaresFromScout = scoutAny.familiares?.map((f: any) => ({
+    id: f.id || f.persona_id || '',
+    nombres: f.nombres || '',
+    apellidos: f.apellidos || '',
+    parentesco: f.parentesco || 'PADRE',
+    celular: f.celular || f.telefono || '',
+    correo: f.correo || '',
+    es_contacto_emergencia: f.es_contacto_emergencia ?? true,
+    es_apoderado: f.es_apoderado ?? false,
+  })) || [];
+
   return {
     nombres: scout.nombres || "",
     apellidos: scout.apellidos || "",
@@ -689,8 +709,8 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     fecha_ingreso: scout.fecha_ingreso || new Date().toISOString().split("T")[0],
     patrulla_id: null,
     cargo_patrulla: "MIEMBRO",
-    // Familiares - array que se carga dinámicamente en useEffect
-    familiares: [],
+    // Familiares - incluir los que vienen del scout (si API los incluye) o cargar dinámicamente
+    familiares: familiaresFromScout,
   };
 }
 

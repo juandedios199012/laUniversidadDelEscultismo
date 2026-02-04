@@ -15,12 +15,15 @@ export enum ReportType {
   RANKING_PATRULLAS = 'ranking_patrullas',
   CONTACTOS_EMERGENCIA = 'contactos_emergencia',
   DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
+  // Reporte Excel con todos los campos
+  SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
 }
 
 // Formatos de exportación
 export enum ExportFormat {
   PDF = 'pdf',
   DOCX = 'docx',
+  XLSX = 'xlsx',
 }
 
 // Estado del reporte

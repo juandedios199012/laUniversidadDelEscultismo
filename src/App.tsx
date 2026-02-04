@@ -21,15 +21,36 @@ import { FinanzasDashboard } from './components/Finanzas';
 import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
+import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
 import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PermissionsProvider } from './contexts/PermissionsContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
+import LoginScreen from './components/Auth/LoginScreen';
 import { useMobileDetect } from './hooks/useMobileDetect';
 
-function App() {
-  console.log('📱 App renderizando...');
+// Componente interno que usa el contexto de Auth
+function AppContent() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { isMobile } = useMobileDetect();
+  const { user, loading } = useAuth();
+
+  // Mostrar loading mientras verifica sesión
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay usuario, mostrar Login
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -75,6 +96,8 @@ function App() {
         return <ProgramaSemanal />;
       case 'reportes':
         return <Reports />;
+      case 'seguridad':
+        return <SeguridadDashboard />;
       default:
         return <Dashboard onNavigate={setActiveModule} />;
     }
@@ -82,21 +105,26 @@ function App() {
 
   // Si es pantalla mobile (<768px), renderizar interfaz mobile
   if (isMobile) {
-    return (
-      <AuthProvider>
-        <Toaster richColors position="top-right" />
-        <MobileApp />
-      </AuthProvider>
-    );
+    return <MobileApp />;
   }
 
   // Desktop: renderizar interfaz normal
   return (
+    <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
+      {renderActiveModule()}
+    </ProtectedLayout>
+  );
+}
+
+function App() {
+  console.log('📱 App renderizando...');
+
+  return (
     <AuthProvider>
-      <Toaster richColors position="top-right" />
-      <ProtectedLayout activeModule={activeModule} onTabChange={setActiveModule}>
-        {renderActiveModule()}
-      </ProtectedLayout>
+      <PermissionsProvider>
+        <Toaster richColors position="top-right" />
+        <AppContent />
+      </PermissionsProvider>
     </AuthProvider>
   );
 }

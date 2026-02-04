@@ -17,7 +17,8 @@ import {
   DollarSign,
   TrendingUp,
   Tent,
-  Wallet
+  Wallet,
+  Lock
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,7 +47,8 @@ const menuItems = [
   { id: 'inventario', label: 'Inventario', icon: Package, gradient: 'from-gray-500 to-slate-500' },
   { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign, gradient: 'from-green-600 to-emerald-600' },
   { id: 'finanzas', label: 'Finanzas', icon: Wallet, gradient: 'from-emerald-500 to-green-600' },
-  { id: 'reportes', label: 'Reportes', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' }
+  { id: 'reportes', label: 'Reportes', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
+  { id: 'seguridad', label: 'Seguridad', icon: Lock, gradient: 'from-red-600 to-rose-600' }
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {

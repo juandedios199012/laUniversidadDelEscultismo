@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
 
 interface AuthContextType {
@@ -8,6 +8,8 @@ interface AuthContextType {
   signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string; requiresApproval?: boolean }>;
   signInWithPassword: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
+  sendOtpCode: (email: string) => Promise<{ success: boolean; error?: string; requiresApproval?: boolean }>;
+  verifyOtpCode: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -21,10 +23,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
   console.log('🔐 AuthProvider inicializando...');
   
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Sin verificación de autenticación - acceso directo
-  // La autenticación está deshabilitada temporalmente
+  // Verificar sesión al cargar y escuchar cambios de autenticación
+  useEffect(() => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        console.log('🔍 Verificando sesión existente...');
+        
+        // Obtener sesión directamente de Supabase sin consultas adicionales
+        const { data: { session } } = await import('../lib/supabase').then(m => m.supabase.auth.getSession());
+        
+        if (mounted && session?.user) {
+          const authUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || session.user.email,
+            avatar_url: session.user.user_metadata?.avatar_url,
+          };
+          setUser(authUser);
+          console.log('✅ Usuario actual:', authUser.email);
+        } else {
+          console.log('✅ No hay sesión activa');
+        }
+      } catch (error) {
+        console.error('❌ Error verificando sesión:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    // Escuchar cambios de autenticación (login/logout)
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    import('../lib/supabase').then(({ supabase }) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (mounted) {
+          console.log('🔄 Auth state changed:', event, session?.user?.email || 'Logged out');
+          if (session?.user) {
+            const authUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.full_name || session.user.email,
+              avatar_url: session.user.user_metadata?.avatar_url,
+            };
+            setUser(authUser);
+          } else {
+            setUser(null);
+          }
+          setLoading(false);
+        }
+      });
+      subscription = data.subscription;
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const signInWithGoogle = async () => {
     const result = await AuthService.signInWithGoogle();
@@ -50,6 +113,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { success: result.success, error: result.error };
   };
 
+  const sendOtpCode = async (email: string) => {
+    const result = await AuthService.sendOtpCode(email);
+    return { success: result.success, error: result.error, requiresApproval: result.requiresApproval };
+  };
+
+  const verifyOtpCode = async (email: string, token: string) => {
+    const result = await AuthService.verifyOtpCode(email, token);
+    if (result.success && result.user) {
+      setUser(result.user);
+    }
+    return { success: result.success, error: result.error };
+  };
+
   const signOut = async () => {
     const result = await AuthService.signOut();
     if (result.success) {
@@ -66,6 +142,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithMagicLink,
     signInWithPassword,
     signUpWithPassword,
+    sendOtpCode,
+    verifyOtpCode,
     signOut,
   };
 

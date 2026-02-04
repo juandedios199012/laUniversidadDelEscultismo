@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet } from 'lucide-react';
 import {
   ReportType,
   ExportFormat,
@@ -13,6 +13,7 @@ import {
 import { ReportExportButton } from './ReportExportButton';
 import { generateAndDownloadPDF, generateReportMetadata } from '../services/pdfService';
 import { generateAndDownloadDOCX, createScoutReportDOCX, createAttendanceReportDOCX, createProgressReportDOCX } from '../services/docxService';
+import { ScoutsExcelReport } from './ScoutsExcelReport';
 import {
   getScoutData,
   getAttendanceData,
@@ -110,6 +111,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     {
       name: 'Reportes Administrativos',
       reports: [
+        {
+          type: ReportType.SCOUTS_EXCEL_COMPLETO,
+          title: 'Scouts Excel Completo',
+          description: 'Todos los campos + familiares en Excel',
+          icon: <FileSpreadsheet className="w-6 h-6" />,
+          color: 'emerald',
+          badge: '¡Nuevo!'
+        },
         {
           type: 'INSCRIPCIONES_ANUALES' as ReportType,
           title: 'Inscripciones Anuales',
@@ -419,6 +428,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                 </p>
               )}
             </div>
+          )}
+
+          {/* Reporte Excel Completo - Tiene su propio componente */}
+          {selectedReportType === ReportType.SCOUTS_EXCEL_COMPLETO && (
+            <ScoutsExcelReport />
           )}
 
           {(selectedReportType === ReportType.ATTENDANCE ||

@@ -9,7 +9,7 @@ import {
   Footprints, 
   Calendar,
   Users,
-  DollarSign,
+  Banknote,
   ClipboardCheck,
   Plus,
   Filter,
@@ -378,7 +378,7 @@ const ActividadesExteriorDashboard: React.FC = () => {
           title="Presupuesto"
           value={`S/ ${totalPresupuesto.toFixed(0)}`}
           subtitle="Total actividades"
-          icon={DollarSign}
+          icon={Banknote}
           color="red"
         />
       </div>

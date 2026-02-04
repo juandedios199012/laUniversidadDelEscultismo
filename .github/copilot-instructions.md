@@ -724,6 +724,147 @@ pkill -f vite && npm run dev
 
 ---
 
+## 🗄️ Lineamientos para Scripts SQL en Supabase
+
+### Regla Principal: NO usar tipos ENUM de PostgreSQL
+
+Los tipos ENUM de PostgreSQL causan problemas de compatibilidad en Supabase, especialmente:
+- Errores `column "nombre_columna" does not exist` al usar ENUMs en funciones
+- Problemas con `json_agg()`, `json_build_object()` y casting implícito
+- Conflictos al comparar ENUMs con strings en cláusulas WHERE
+
+#### ❌ EVITAR: Tipos ENUM
+
+```sql
+-- NO HACER ESTO
+CREATE TYPE modulo_sistema AS ENUM ('dashboard', 'scouts', 'finanzas');
+CREATE TYPE accion_tipo AS ENUM ('crear', 'leer', 'editar', 'eliminar');
+
+CREATE TABLE permisos (
+    id UUID PRIMARY KEY,
+    modulo modulo_sistema NOT NULL,  -- ❌ Causa errores
+    accion accion_tipo NOT NULL      -- ❌ Causa errores
+);
+
+-- Esto FALLARÁ en funciones:
+SELECT json_agg(json_build_object('modulo', p.modulo)) FROM permisos p;
+-- Error: column "modulo" does not exist
+```
+
+#### ✅ USAR: VARCHAR con CHECK Constraints
+
+```sql
+-- HACER ESTO EN SU LUGAR
+CREATE TABLE permisos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    modulo VARCHAR(50) NOT NULL,
+    accion VARCHAR(20) NOT NULL,
+    CONSTRAINT chk_modulo CHECK (modulo IN (
+        'dashboard', 'scouts', 'dirigentes', 'finanzas', 'reportes'
+    )),
+    CONSTRAINT chk_accion CHECK (accion IN (
+        'crear', 'leer', 'editar', 'eliminar', 'exportar'
+    ))
+);
+
+-- Esto FUNCIONA correctamente:
+SELECT json_agg(json_build_object('modulo', p.modulo)) FROM permisos p;
+```
+
+### Estructura Recomendada de Scripts SQL
+
+```sql
+-- ================================================================
+-- 🔐 NOMBRE DEL MÓDULO
+-- Sistema de Gestión Scout - Grupo Scout Lima 12
+-- Fecha: [fecha actual]
+-- ================================================================
+-- Descripción breve de qué hace este script
+-- ================================================================
+
+-- ================================================================
+-- INSTRUCCIONES DE INSTALACIÓN
+-- ================================================================
+-- 1. Ir a Supabase Dashboard > SQL Editor
+-- 2. Copiar y pegar este script completo
+-- 3. Ejecutar (Ctrl+Enter o Cmd+Enter)
+-- 4. Verificar resultado al final
+-- ================================================================
+
+-- ================================================================
+-- PARTE 1: LIMPIEZA PREVIA (Incluir siempre)
+-- ================================================================
+DROP TABLE IF EXISTS mi_tabla CASCADE;
+DROP TYPE IF EXISTS mi_enum CASCADE;  -- Limpiar ENUMs viejos
+
+-- ================================================================
+-- PARTE 2: CREACIÓN DE TABLAS
+-- ================================================================
+CREATE TABLE IF NOT EXISTS mi_tabla (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    -- Usar VARCHAR en lugar de ENUM
+    estado VARCHAR(20) NOT NULL,
+    CONSTRAINT chk_estado CHECK (estado IN ('activo', 'inactivo', 'pendiente'))
+);
+
+-- ================================================================
+-- PARTE N: FUNCIONES (Evitar ENUMs en parámetros)
+-- ================================================================
+CREATE OR REPLACE FUNCTION mi_funcion(
+    p_estado VARCHAR(20)  -- ✅ VARCHAR, no ENUM
+)
+RETURNS JSON AS $$
+BEGIN
+    -- Lógica aquí
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ================================================================
+-- VERIFICACIÓN FINAL (Incluir siempre)
+-- ================================================================
+SELECT '✅ Script ejecutado correctamente' as resultado;
+SELECT 'Registros creados: ' || COUNT(*)::TEXT FROM mi_tabla;
+```
+
+### Checklist para Scripts SQL
+
+Antes de ejecutar un script en Supabase:
+
+- [ ] ¿Usa VARCHAR con CHECK en lugar de ENUM?
+- [ ] ¿Incluye DROP TABLE/TYPE IF EXISTS para limpieza?
+- [ ] ¿Las funciones usan VARCHAR en parámetros, no ENUMs?
+- [ ] ¿Incluye instrucciones de instalación al inicio?
+- [ ] ¿Tiene verificación al final para confirmar éxito?
+- [ ] ¿Usa `ON CONFLICT DO NOTHING` para INSERTs idempotentes?
+- [ ] ¿Los índices usan `IF NOT EXISTS`?
+
+### Migración de ENUM a VARCHAR
+
+Si ya tienes tablas con ENUMs y necesitas migrar:
+
+```sql
+-- 1. Crear nueva columna VARCHAR
+ALTER TABLE mi_tabla ADD COLUMN estado_nuevo VARCHAR(20);
+
+-- 2. Copiar datos convertidos
+UPDATE mi_tabla SET estado_nuevo = estado::TEXT;
+
+-- 3. Eliminar columna vieja
+ALTER TABLE mi_tabla DROP COLUMN estado;
+
+-- 4. Renombrar nueva columna
+ALTER TABLE mi_tabla RENAME COLUMN estado_nuevo TO estado;
+
+-- 5. Agregar constraint
+ALTER TABLE mi_tabla ADD CONSTRAINT chk_estado 
+    CHECK (estado IN ('activo', 'inactivo', 'pendiente'));
+
+-- 6. Eliminar el ENUM
+DROP TYPE IF EXISTS estado_enum CASCADE;
+```
+
+---
+
 ## ⚠️ Errores Comunes a Evitar
 
 1. **Olvidar incluir campo en `updateScout` del frontend**

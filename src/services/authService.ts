@@ -117,6 +117,94 @@ export class AuthService {
   }
 
   /**
+   * 🔢 Enviar código OTP por correo (6 dígitos)
+   */
+  static async sendOtpCode(email: string): Promise<AuthResponse> {
+    try {
+      console.log('🔢 Enviando código OTP a:', email);
+
+      if (!this.isValidEmail(email)) {
+        return { success: false, error: 'Email no válido' };
+      }
+
+      // Verificar si es dirigente autorizado
+      const isAuthorized = await this.checkAuthorizedDirector(email);
+      if (!isAuthorized.authorized) {
+        if (isAuthorized.requiresApproval) {
+          await this.requestAccess(email);
+          return { 
+            success: false, 
+            error: 'Tu email no está autorizado. Se ha enviado una solicitud de acceso.',
+            requiresApproval: true 
+          };
+        }
+        return { success: false, error: 'Email no autorizado para acceder al sistema' };
+      }
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            grupo_scout_id: isAuthorized.grupo_scout_id
+          }
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error enviando código OTP:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Código OTP enviado exitosamente');
+      return { success: true };
+
+    } catch (error) {
+      console.error('❌ Error inesperado en OTP:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error enviando código OTP' 
+      };
+    }
+  }
+
+  /**
+   * ✅ Verificar código OTP
+   */
+  static async verifyOtpCode(email: string, token: string): Promise<AuthResponse> {
+    try {
+      console.log('✅ Verificando código OTP para:', email);
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email'
+      });
+
+      if (error) {
+        console.error('❌ Error verificando OTP:', error);
+        return { success: false, error: 'Código incorrecto o expirado' };
+      }
+
+      if (!data.user) {
+        return { success: false, error: 'No se pudo verificar el código' };
+      }
+
+      const authUser = await this.buildAuthUser(data.user);
+      console.log('✅ Verificación OTP exitosa:', authUser.email);
+      
+      return { success: true, user: authUser };
+
+    } catch (error) {
+      console.error('❌ Error inesperado verificando OTP:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error verificando código' 
+      };
+    }
+  }
+
+  /**
    * 🔑 Email + Password (FALLBACK para casos especiales)
    */
   static async signInWithPassword(email: string, password: string): Promise<AuthResponse> {
