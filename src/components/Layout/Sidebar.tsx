@@ -29,7 +29,6 @@ interface SidebarProps {
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500' },
   { id: 'registro-scout', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500' },
-  { id: 'registro-scout-v2', label: '📋 Registro v2 (Beta)', icon: UserPlus, gradient: 'from-violet-500 to-purple-500' },
   { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500' },
   { id: 'progresion', label: 'Progresión', icon: TrendingUp, gradient: 'from-amber-500 to-orange-500' },
@@ -45,7 +44,6 @@ const menuItems = [
   { id: 'mapas', label: 'Mapas', icon: Map, gradient: 'from-emerald-500 to-teal-500' },
   { id: 'libro-oro', label: 'Libro de Oro', icon: Book, gradient: 'from-yellow-500 to-orange-500' },
   { id: 'inventario', label: 'Inventario', icon: Package, gradient: 'from-gray-500 to-slate-500' },
-  { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign, gradient: 'from-green-600 to-emerald-600' },
   { id: 'finanzas', label: 'Finanzas', icon: Wallet, gradient: 'from-emerald-500 to-green-600' },
   { id: 'reportes', label: 'Reportes', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
   { id: 'seguridad', label: 'Seguridad', icon: Lock, gradient: 'from-red-600 to-rose-600' }

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
-import RegistroScout from './components/RegistroScout/RegistroScout';
 import { RegistroScoutPage as RegistroScoutV2 } from './components/RegistroScout/v2';
 import GestionScouts from './components/GestionScouts/GestionScouts';
 import InscripcionAnualMejorada from './components/Inscripcion/InscripcionAnualMejorada';
@@ -16,7 +15,6 @@ import Patrullas from './components/Patrullas/Patrullas';
 import Asistencia from './components/Asistencia/Asistencia';
 import ActividadesScout from './components/ActividadesScout/ActividadesScout';
 import Inventario from './components/Inventario/Inventario';
-import Presupuestos from './components/Presupuestos/Presupuestos';
 import { FinanzasDashboard } from './components/Finanzas';
 import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
@@ -57,7 +55,6 @@ function AppContent() {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveModule} />;
       case 'registro-scout':
-        return <RegistroScout />;
       case 'registro-scout-v2':
         return <RegistroScoutV2 />;
       case 'gestion-scouts':
@@ -84,8 +81,6 @@ function AppContent() {
         return <Patrullas />;
       case 'inventario':
         return <Inventario />;
-      case 'presupuestos':
-        return <Presupuestos />;
       case 'finanzas':
         return <FinanzasDashboard />;
       case 'actividades-exterior':

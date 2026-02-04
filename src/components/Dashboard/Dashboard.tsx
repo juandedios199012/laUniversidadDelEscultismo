@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../lib/supabase';
 
 const quickActions = [
-  { title: 'Nuevo Scout', description: 'Registrar un nuevo miembro', icon: Users, action: 'registro-scout' },
+  { title: 'Nuevo Scout', description: 'Registrar un nuevo miembro', icon: Users, action: 'registro-scout' }, // Ahora usa v2
   { title: 'Programa Semanal', description: 'Crear programa de actividades', icon: Calendar, action: 'programa-semanal' },
   { title: 'Tomar Asistencia', description: 'Registrar asistencia del día', icon: Clock, action: 'asistencia' },
   { title: 'Libro de Oro', description: 'Agregar nueva entrada', icon: Book, action: 'libro-oro' }

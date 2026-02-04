@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { 
   Shield, Users, Activity, Settings, UserPlus, 
   Trash2, Edit, ChevronDown, ChevronUp, Search,
-  Download, Filter, RefreshCw, Clock, AlertTriangle
+  Download, Filter, RefreshCw, Clock, AlertTriangle,
+  ToggleLeft, ToggleRight, CheckCircle, XCircle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
 import { PermissionsService, Rol, Modulo } from '../../services/permissionsService';
 import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../services/auditService';
+import { UsuariosAutorizadosService, UsuarioAutorizado, SolicitudAcceso } from '../../services/usuariosAutorizadosService';
 import AsignarRolDialog from './dialogs/AsignarRolDialog';
+import InvitarUsuarioDialog from './dialogs/InvitarUsuarioDialog';
 
 // ================================================================
 // TIPOS LOCALES
@@ -228,38 +231,171 @@ function TabRoles() {
 
 function TabUsuarios() {
   const { user } = useAuth();
-  const { puedeCrear, puedeEliminar } = usePermissions();
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const { puedeCrear, puedeEliminar, esAdmin } = usePermissions();
+  const [usuarios, setUsuarios] = useState<UsuarioAutorizado[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudAcceso[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-  const [showAsignarRol, setShowAsignarRol] = useState(false);
-  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
+  const [showInvitar, setShowInvitar] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
   useEffect(() => {
-    cargarUsuarios();
+    cargarDatos();
   }, []);
 
-  const cargarUsuarios = async () => {
+  const cargarDatos = async () => {
     setLoading(true);
     try {
-      // TODO: Implementar carga de usuarios desde auth.users o tabla personalizada
-      // Por ahora dejamos el array vacío
-      setUsuarios([]);
+      const [usuariosData, solicitudesData] = await Promise.all([
+        UsuariosAutorizadosService.listarUsuarios(),
+        UsuariosAutorizadosService.listarSolicitudesPendientes()
+      ]);
+      setUsuarios(usuariosData);
+      setSolicitudes(solicitudesData);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAsignarRol = (usuario: Usuario) => {
-    setUsuarioSeleccionado(usuario);
-    setShowAsignarRol(true);
+  const handleToggleActivo = async (usuario: UsuarioAutorizado) => {
+    const nuevoEstado = !usuario.activo;
+    const resultado = await UsuariosAutorizadosService.toggleActivo(usuario.id, nuevoEstado);
+    
+    if (resultado.success) {
+      setMensaje({ 
+        tipo: 'exito', 
+        texto: `Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente` 
+      });
+      cargarDatos();
+    } else {
+      setMensaje({ tipo: 'error', texto: resultado.error || 'Error al actualizar' });
+    }
+    
+    setTimeout(() => setMensaje(null), 3000);
   };
+
+  const handleEliminar = async (usuario: UsuarioAutorizado) => {
+    if (!confirm(`¿Eliminar a ${usuario.nombre_completo} de los usuarios autorizados?\n\nEsta persona ya no podrá acceder al sistema.`)) {
+      return;
+    }
+
+    const resultado = await UsuariosAutorizadosService.eliminarUsuario(usuario.id);
+    
+    if (resultado.success) {
+      setMensaje({ tipo: 'exito', texto: 'Usuario eliminado correctamente' });
+      cargarDatos();
+    } else {
+      setMensaje({ tipo: 'error', texto: resultado.error || 'Error al eliminar' });
+    }
+    
+    setTimeout(() => setMensaje(null), 3000);
+  };
+
+  const getRolBadge = (role: string) => {
+    switch (role) {
+      case 'super_admin':
+        return 'bg-red-100 text-red-700';
+      case 'grupo_admin':
+        return 'bg-purple-100 text-purple-700';
+      default:
+        return 'bg-blue-100 text-blue-700';
+    }
+  };
+
+  const getRolLabel = (role: string) => {
+    switch (role) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'grupo_admin':
+        return 'Admin Grupo';
+      default:
+        return 'Dirigente';
+    }
+  };
+
+  const usuariosFiltrados = usuarios.filter(u => 
+    u.email.toLowerCase().includes(busqueda.toLowerCase()) ||
+    u.nombre_completo.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <div className="p-6">
+      {/* Mensaje de feedback */}
+      {mensaje && (
+        <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+          mensaje.tipo === 'exito' 
+            ? 'bg-green-50 border border-green-200 text-green-700' 
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {mensaje.tipo === 'exito' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <XCircle className="w-5 h-5" />
+          )}
+          <span>{mensaje.texto}</span>
+        </div>
+      )}
+
+      {/* Solicitudes pendientes */}
+      {solicitudes.length > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <span className="font-medium text-amber-800">
+              {solicitudes.length} solicitud(es) de acceso pendiente(s)
+            </span>
+          </div>
+          <div className="space-y-2">
+            {solicitudes.map(sol => (
+              <div key={sol.id} className="flex items-center justify-between bg-white p-2 rounded border border-amber-100">
+                <span className="text-sm text-gray-700">{sol.email}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const resultado = await UsuariosAutorizadosService.aprobarSolicitud(
+                        sol.id, 
+                        'dirigente', 
+                        user?.id || ''
+                      );
+                      if (resultado.success) {
+                        setMensaje({ tipo: 'exito', texto: 'Solicitud aprobada' });
+                        cargarDatos();
+                      }
+                    }}
+                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Aprobar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const resultado = await UsuariosAutorizadosService.rechazarSolicitud(
+                        sol.id,
+                        user?.id || ''
+                      );
+                      if (resultado.success) {
+                        setMensaje({ tipo: 'exito', texto: 'Solicitud rechazada' });
+                        cargarDatos();
+                      }
+                    }}
+                    className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Gestión de Usuarios</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Usuarios Autorizados</h2>
+          <p className="text-sm text-gray-500">
+            {usuarios.length} usuario(s) pueden acceder al sistema
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -271,8 +407,18 @@ function TabUsuarios() {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          {puedeCrear('seguridad') && (
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={cargarDatos}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Actualizar"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          {(puedeCrear('seguridad') || esAdmin) && (
+            <button 
+              onClick={() => setShowInvitar(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               <UserPlus className="w-4 h-4" />
               Invitar Usuario
             </button>
@@ -286,72 +432,104 @@ function TabUsuarios() {
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Usuario</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Roles</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Último Acceso</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rol</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Estado</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Autorizado</th>
               <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-gray-500">
+                <td colSpan={5} className="py-8 text-center text-gray-500">
                   <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                   Cargando usuarios...
                 </td>
               </tr>
-            ) : usuarios.length === 0 ? (
+            ) : usuariosFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-8 text-center">
-                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No hay usuarios registrados</p>
+                <td colSpan={5} className="py-12 text-center">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 mb-1">No hay usuarios autorizados</p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Invita dirigentes para que puedan acceder al sistema
+                  </p>
+                  {(puedeCrear('seguridad') || esAdmin) && (
+                    <button
+                      onClick={() => setShowInvitar(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Invitar Primer Usuario
+                    </button>
+                  )}
                 </td>
               </tr>
             ) : (
-              usuarios.filter(u => 
-                u.email.toLowerCase().includes(busqueda.toLowerCase()) ||
-                u.nombre.toLowerCase().includes(busqueda.toLowerCase())
-              ).map(usuario => (
-                <tr key={usuario.id} className="hover:bg-gray-50">
+              usuariosFiltrados.map(usuario => (
+                <tr key={usuario.id} className={`hover:bg-gray-50 ${!usuario.activo ? 'opacity-60' : ''}`}>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-medium">
-                          {usuario.nombre.charAt(0).toUpperCase()}
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        usuario.activo ? 'bg-blue-100' : 'bg-gray-100'
+                      }`}>
+                        <span className={`font-medium ${
+                          usuario.activo ? 'text-blue-600' : 'text-gray-400'
+                        }`}>
+                          {usuario.nombre_completo.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{usuario.nombre}</p>
+                        <p className="font-medium text-gray-900">{usuario.nombre_completo}</p>
                         <p className="text-sm text-gray-500">{usuario.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex flex-wrap gap-1">
-                      {usuario.roles.map(rol => (
-                        <span 
-                          key={rol.id}
-                          className="px-2 py-1 text-xs rounded-full text-white"
-                          style={{ backgroundColor: rol.color }}
-                        >
-                          {rol.nombre}
-                        </span>
-                      ))}
-                    </div>
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRolBadge(usuario.role)}`}>
+                      {getRolLabel(usuario.role)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full ${
+                      usuario.activo 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        usuario.activo ? 'bg-green-500' : 'bg-gray-400'
+                      }`} />
+                      {usuario.activo ? 'Activo' : 'Inactivo'}
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-500">
-                    {usuario.ultimo_acceso || 'Nunca'}
+                    {usuario.fecha_autorizacion 
+                      ? new Date(usuario.fecha_autorizacion).toLocaleDateString('es-PE')
+                      : '-'
+                    }
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* Toggle Activo */}
                       <button 
-                        onClick={() => handleAsignarRol(usuario)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Editar roles"
+                        onClick={() => handleToggleActivo(usuario)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          usuario.activo 
+                            ? 'text-green-600 hover:bg-green-50' 
+                            : 'text-gray-400 hover:bg-gray-100'
+                        }`}
+                        title={usuario.activo ? 'Desactivar' : 'Activar'}
                       >
-                        <Edit className="w-4 h-4" />
+                        {usuario.activo ? (
+                          <ToggleRight className="w-5 h-5" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5" />
+                        )}
                       </button>
-                      {puedeEliminar('seguridad') && usuario.id !== user?.id && (
+                      {/* Eliminar */}
+                      {(puedeEliminar('seguridad') || esAdmin) && usuario.email !== user?.email && (
                         <button 
+                          onClick={() => handleEliminar(usuario)}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Eliminar usuario"
                         >
@@ -367,18 +545,13 @@ function TabUsuarios() {
         </table>
       </div>
 
-      {/* Dialog para asignar roles */}
-      {showAsignarRol && usuarioSeleccionado && (
-        <AsignarRolDialog
-          isOpen={showAsignarRol}
-          onClose={() => {
-            setShowAsignarRol(false);
-            setUsuarioSeleccionado(null);
-          }}
-          usuario={usuarioSeleccionado}
-          onRolesActualizados={cargarUsuarios}
-        />
-      )}
+      {/* Dialog para invitar usuarios */}
+      <InvitarUsuarioDialog
+        isOpen={showInvitar}
+        onClose={() => setShowInvitar(false)}
+        onUsuarioCreado={cargarDatos}
+        autorizadoPor={user?.id || ''}
+      />
     </div>
   );
 }
