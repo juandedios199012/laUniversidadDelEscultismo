@@ -218,7 +218,8 @@ function TabRoles() {
   ];
 
   const ACCIONES: { accion: Accion; label: string; color: string }[] = [
-    { accion: 'leer', label: 'Ver', color: 'bg-blue-100 text-blue-700' },
+    { accion: 'leer', label: 'Ver Módulo', color: 'bg-blue-100 text-blue-700' },
+    { accion: 'ver_detalle', label: 'Ver Detalle', color: 'bg-cyan-100 text-cyan-700' },
     { accion: 'crear', label: 'Crear', color: 'bg-green-100 text-green-700' },
     { accion: 'editar', label: 'Editar', color: 'bg-yellow-100 text-yellow-700' },
     { accion: 'eliminar', label: 'Eliminar', color: 'bg-red-100 text-red-700' },

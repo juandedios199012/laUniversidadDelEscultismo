@@ -15,6 +15,7 @@ interface PermissionsContextType {
   // Verificaciones rápidas
   tienePermiso: (modulo: Modulo, accion: Accion) => boolean;
   puedeAcceder: (modulo: Modulo) => boolean;
+  puedeVerDetalle: (modulo: Modulo) => boolean;
   puedeCrear: (modulo: Modulo) => boolean;
   puedeEditar: (modulo: Modulo) => boolean;
   puedeEliminar: (modulo: Modulo) => boolean;
@@ -97,6 +98,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
 
   // Helpers para acciones comunes
   const puedeAcceder = useCallback((modulo: Modulo) => tienePermiso(modulo, 'leer'), [tienePermiso]);
+  const puedeVerDetalle = useCallback((modulo: Modulo) => tienePermiso(modulo, 'ver_detalle'), [tienePermiso]);
   const puedeCrear = useCallback((modulo: Modulo) => tienePermiso(modulo, 'crear'), [tienePermiso]);
   const puedeEditar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'editar'), [tienePermiso]);
   const puedeEliminar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'eliminar'), [tienePermiso]);
@@ -114,6 +116,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     error,
     tienePermiso,
     puedeAcceder,
+    puedeVerDetalle,
     puedeCrear,
     puedeEditar,
     puedeEliminar,

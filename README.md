@@ -723,4 +723,140 @@ setTimeout(() => {
    - **Valores de cargo_patrulla**: `'GUIA'`, `'SUBGUIA'`, `'TESORERO'`, `'SECRETARIO'`, `'MIEMBRO'`
 
 ---
+
+## 🔮 Mejoras Futuras - Permisos Granulares
+
+### Separación de Permisos de Visualización
+
+Actualmente el sistema maneja permisos a nivel de módulo con acciones (leer, crear, editar, eliminar, exportar). Para el futuro se puede implementar mayor granularidad:
+
+#### Nivel 1: Separar "Ver módulo" de "Ver detalle"
+
+| Permiso | Descripción | Ejemplo |
+|---------|-------------|---------|
+| `leer` | Acceder a la sección/módulo | Ver la lista de scouts |
+| `ver_detalle` | Ver información de un registro específico | Ver ficha completa de un scout |
+
+**Caso de uso:**
+- Un padre de familia podría ver el módulo "Scouts" pero solo los detalles de **SU hijo**
+- Un coordinador de Tropa vería solo scouts de **su rama**
+
+#### Nivel 2: Row Level Security (RLS) Avanzado
+
+Implementar políticas de seguridad a nivel de fila para control granular:
+
+```sql
+-- Ejemplo: Padre solo ve sus hijos
+CREATE POLICY padre_ve_sus_hijos ON scouts
+FOR SELECT
+USING (
+  auth.uid() IN (
+    SELECT familiar_id FROM scout_familiares 
+    WHERE scout_id = scouts.id
+  )
+);
+
+-- Ejemplo: Coordinador ve scouts de su rama
+CREATE POLICY coordinador_ve_su_rama ON scouts
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM usuario_ramas ur
+    WHERE ur.user_id = auth.uid()
+    AND ur.rama = scouts.rama_actual
+  )
+);
+```
+
+#### Nivel 3: Permisos por Rama
+
+| Rol | Dashboard | Scouts | Finanzas | Reportes |
+|-----|-----------|--------|----------|----------|
+| Jefe de Grupo | ✅ Todo | ✅ Todo | ✅ Todo | ✅ Todo |
+| Coordinador Tropa | ✅ | Solo Tropa | Solo Tropa | Solo Tropa |
+| Dirigente Manada | ✅ | Solo Manada | ❌ | Solo Manada |
+| Padre de Familia | ❌ | Solo su hijo | ❌ | ❌ |
+
+#### Implementación Propuesta
+
+**1. Nueva tabla `usuario_ramas`:**
+```sql
+CREATE TABLE usuario_ramas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  rama VARCHAR(20) NOT NULL,
+  es_coordinador BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**2. Modificar función `tiene_permiso`:**
+```sql
+CREATE OR REPLACE FUNCTION tiene_permiso_granular(
+  p_user_id UUID,
+  p_modulo VARCHAR(50),
+  p_accion VARCHAR(20),
+  p_rama VARCHAR(20) DEFAULT NULL,
+  p_registro_id UUID DEFAULT NULL
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Verificar permiso base
+  IF NOT tiene_permiso(p_user_id, p_modulo, p_accion) THEN
+    RETURN FALSE;
+  END IF;
+  
+  -- Si es super_admin o jefe_grupo, acceso total
+  IF es_admin_global(p_user_id) THEN
+    RETURN TRUE;
+  END IF;
+  
+  -- Verificar acceso por rama
+  IF p_rama IS NOT NULL THEN
+    RETURN EXISTS (
+      SELECT 1 FROM usuario_ramas 
+      WHERE user_id = p_user_id AND rama = p_rama
+    );
+  END IF;
+  
+  -- Verificar acceso por registro (para padres)
+  IF p_registro_id IS NOT NULL THEN
+    RETURN es_familiar_de_scout(p_user_id, p_registro_id);
+  END IF;
+  
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+**3. Actualizar contexto en frontend:**
+```typescript
+interface PermissionsContextType {
+  // Existentes
+  puedeAcceder: (modulo: Modulo) => boolean;
+  puedeCrear: (modulo: Modulo) => boolean;
+  // Nuevos
+  puedeVerDetalle: (modulo: Modulo, registroId?: string) => boolean;
+  puedeAccederRama: (modulo: Modulo, rama: string) => boolean;
+  ramasAsignadas: string[];
+}
+```
+
+### Archivos a Modificar
+
+| Archivo | Cambios |
+|---------|---------|
+| `database/permisos_granulares.sql` | Crear tablas y funciones |
+| `src/services/permissionsService.ts` | Agregar métodos granulares |
+| `src/contexts/PermissionsContext.tsx` | Exponer nuevos checks |
+| `src/components/Scouts/ScoutsList.tsx` | Filtrar por rama/registro |
+
+### Prioridad de Implementación
+
+1. 🟡 **Media** - Separar `leer` de `ver_detalle` (2-3 horas)
+2. 🟠 **Alta complejidad** - RLS por rama (4-6 horas)
+3. 🔴 **Alta complejidad** - RLS por registro/familiar (6-8 horas)
+
+> **Nota:** El sistema actual es "todo o nada" por módulo. Implementar estas mejoras cuando haya casos de uso concretos que lo requieran.
+
 ---

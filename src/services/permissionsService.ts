@@ -11,7 +11,7 @@ export type Modulo =
   | 'mapas' | 'libro_oro' | 'programa_semanal' | 'comite_padres'
   | 'actividades_exterior' | 'seguridad' | 'configuracion';
 
-export type Accion = 'crear' | 'leer' | 'editar' | 'eliminar' | 'exportar' | 'aprobar';
+export type Accion = 'crear' | 'leer' | 'ver_detalle' | 'editar' | 'eliminar' | 'exportar' | 'aprobar';
 
 export type Rama = 'MANADA' | 'TROPA' | 'COMUNIDAD' | 'CLAN';
 
@@ -400,6 +400,7 @@ export interface ModuloPermisos {
   modulo: Modulo;
   acciones: {
     leer: PermisoAccion;
+    ver_detalle: PermisoAccion;
     crear: PermisoAccion;
     editar: PermisoAccion;
     eliminar: PermisoAccion;
