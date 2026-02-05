@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -116,6 +117,9 @@ const EstadoVacioFinanzas: React.FC<{ onNuevaTransaccion: () => void }> = ({ onN
 // ============= COMPONENTE PRINCIPAL =============
 
 const FinanzasDashboard: React.FC = () => {
+  // Permisos
+  const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resumen, setResumen] = useState<ResumenFinanciero | null>(null);
@@ -221,14 +225,18 @@ const FinanzasDashboard: React.FC = () => {
           <p className="text-muted-foreground">Gestión de ingresos, egresos y préstamos</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowNuevoPrestamo(true)}>
-            <CreditCard className="h-4 w-4 mr-2" />
-            Registrar Préstamo
-          </Button>
-          <Button onClick={() => setShowNuevaTransaccion(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Transacción
-          </Button>
+          {puedeCrear('finanzas') && (
+            <Button variant="outline" onClick={() => setShowNuevoPrestamo(true)}>
+              <CreditCard className="h-4 w-4 mr-2" />
+              Registrar Préstamo
+            </Button>
+          )}
+          {puedeCrear('finanzas') && (
+            <Button onClick={() => setShowNuevaTransaccion(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Transacción
+            </Button>
+          )}
         </div>
       </div>
 

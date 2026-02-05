@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import {
   GlassCard,
   MetricCard,
@@ -148,6 +149,9 @@ interface FiltrosState {
 // ============================================================================
 
 export const DirigentesV2: React.FC = () => {
+  // Permisos
+  const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+  
   // Estados
   const [vista, setVista] = useState<Vista>('lista');
   const [dirigentes, setDirigentes] = useState<Dirigente[]>([]);
@@ -195,11 +199,19 @@ export const DirigentesV2: React.FC = () => {
   };
 
   const handleNuevoDirigente = () => {
+    if (!puedeCrear('dirigentes')) {
+      alert('No tienes permiso para crear dirigentes');
+      return;
+    }
     setDirigenteSeleccionado(null);
     setVista('formulario');
   };
 
   const handleEditarDirigente = (dirigente: Dirigente) => {
+    if (!puedeEditar('dirigentes')) {
+      alert('No tienes permiso para editar dirigentes');
+      return;
+    }
     setDirigenteSeleccionado(dirigente);
     setVista('formulario');
   };

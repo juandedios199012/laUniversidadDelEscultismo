@@ -4,6 +4,7 @@ import FormField from '../Forms/FormField';
 import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import { ScoutService } from '../../services/scoutService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import type { Patrulla } from '../../lib/supabase';
 
 interface FormularioEntrada {
@@ -30,6 +31,9 @@ interface EntradaLibroOro {
 }
 
 export default function LibroOroMigrated() {
+  // Permisos
+  const { puedeCrear } = usePermissions();
+  
   const [formData, setFormData] = useState<FormularioEntrada>({
     patrulla_id: '',
     fecha: new Date().toISOString().split('T')[0],
@@ -196,6 +200,12 @@ export default function LibroOroMigrated() {
   ];
 
   const handleSave = async () => {
+    // Verificar permiso
+    if (!puedeCrear('libro_oro')) {
+      setError('No tienes permiso para crear entradas en el libro de oro');
+      return;
+    }
+    
     if (!formData.patrulla_id || !formData.fecha || !formData.contenido) {
       setError('Por favor complete todos los campos obligatorios');
       return;

@@ -7,6 +7,7 @@ import AsistenciaService from '../../services/asistenciaService';
 import ScoutService from '../../services/scoutService';
 import { supabase } from '../../lib/supabase';
 import ReporteAsistenciaScout from './ReporteAsistenciaScout';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 // ==================== INTERFACES ====================
 interface Reunion {
@@ -55,6 +56,9 @@ interface AsistenciaFormData {
 
 // ==================== COMPONENT ====================
 export default function Asistencia() {
+	// ============= PERMISOS =============
+	const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+	
 	// ============= ESTADOS =============
 	const [scouts, setScouts] = useState<Scout[]>([]);
 	const [reuniones, setReuniones] = useState<Reunion[]>([]);
@@ -327,6 +331,11 @@ export default function Asistencia() {
 
 	// ============= FUNCIONES CRUD =============
 	const handleCreateReunion = async () => {
+		// Verificar permiso
+		if (!puedeCrear('asistencia')) {
+			alert('No tienes permiso para crear reuniones');
+			return;
+		}
 		try {
 			const errors = validateReunionForm();
 			if (Object.keys(errors).length > 0) {
@@ -354,6 +363,10 @@ export default function Asistencia() {
 	};
 
 	const handleEditReunion = (reunion: Reunion) => {
+		if (!puedeEditar('asistencia')) {
+			alert('No tienes permiso para editar reuniones');
+			return;
+		}
 		setSelectedReunion(reunion);
 		setReunionFormData({
 			fecha: reunion.fecha,
@@ -370,6 +383,10 @@ export default function Asistencia() {
 	};
 
 	const handleDeleteReunion = async (reunion: Reunion) => {
+		if (!puedeEliminar('asistencia')) {
+			alert('No tienes permiso para eliminar reuniones');
+			return;
+		}
 		if (!window.confirm(`¿Estás seguro de eliminar la reunión "${reunion.titulo}"?`)) {
 			return;
 		}

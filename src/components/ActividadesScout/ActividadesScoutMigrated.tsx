@@ -4,6 +4,7 @@ import FormField from '../Forms/FormField';
 import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import ScoutService from '../../services/scoutService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import type { ActividadScout } from '../../lib/supabase';
 
 interface FormularioActividad {
@@ -26,6 +27,9 @@ interface FormularioActividad {
 }
 
 export default function ActividadesScoutNew() {
+  // Permisos
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+  
   const [actividades, setActividades] = useState<ActividadScout[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +169,12 @@ export default function ActividadesScoutNew() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Verificar permiso
+    if (!puedeCrear('actividades')) {
+      setError('No tienes permiso para crear actividades');
+      return;
+    }
+    
     const errorValidacion = validarFormulario();
     if (errorValidacion) {
       setError(errorValidacion);
@@ -205,6 +215,10 @@ export default function ActividadesScoutNew() {
 
   // Funciones CRUD
   const handleEditActividad = (actividad: ActividadScout) => {
+    if (!puedeEditar('actividades')) {
+      alert('No tienes permiso para editar actividades');
+      return;
+    }
     setSelectedActividad(actividad);
     setFormData({
       nombre: actividad.nombre,
@@ -274,6 +288,10 @@ export default function ActividadesScoutNew() {
   };
 
   const handleDeleteActividad = (actividad: ActividadScout) => {
+    if (!puedeEliminar('actividades')) {
+      alert('No tienes permiso para eliminar actividades');
+      return;
+    }
     setSelectedActividad(actividad);
     setShowDeleteModal(true);
   };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ScoutService from '../../services/scoutService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import type { Scout } from '../../lib/supabase';
 
 interface EditarScoutModalProps {
@@ -15,6 +16,7 @@ export const EditarScoutModal: React.FC<EditarScoutModalProps> = ({
   onClose,
   onSaved
 }) => {
+  const { puedeEditar } = usePermissions();
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -85,6 +87,12 @@ export const EditarScoutModal: React.FC<EditarScoutModalProps> = ({
     e.preventDefault();
     
     if (!scout) return;
+
+    // Verificar permiso de edición
+    if (!puedeEditar('scouts')) {
+      setError('No tienes permiso para editar scouts');
+      return;
+    }
 
     const errorValidacion = validarFormulario();
     if (errorValidacion) {

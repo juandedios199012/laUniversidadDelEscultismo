@@ -4,6 +4,7 @@ import FormField from '../Forms/FormField';
 import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import { ScoutService } from '../../services/scoutService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 interface FormularioComite {
   nombre: string;
@@ -38,6 +39,9 @@ interface MiembroComite {
 }
 
 export default function ComitePadresMigrated() {
+  // Permisos
+  const { puedeCrear, puedeEliminar } = usePermissions();
+  
   const [formData, setFormData] = useState<FormularioComite>({
     nombre: '',
     cargo: 'vocal',
@@ -161,6 +165,12 @@ export default function ComitePadresMigrated() {
   };
 
   const handleSave = async () => {
+    // Verificar permiso
+    if (!puedeCrear('comite_padres')) {
+      setError('No tienes permiso para registrar miembros del comité');
+      return;
+    }
+    
     if (!formData.nombre || !formData.cargo || !formData.fecha_eleccion || !formData.fecha_culminacion) {
       setError('Por favor complete todos los campos obligatorios');
       return;
@@ -204,6 +214,12 @@ export default function ComitePadresMigrated() {
   };
 
   const handleRemover = async (id: string) => {
+    // Verificar permiso
+    if (!puedeEliminar('comite_padres')) {
+      alert('No tienes permiso para remover miembros del comité');
+      return;
+    }
+    
     if (!confirm('¿Está seguro de remover este miembro del comité?')) return;
 
     try {

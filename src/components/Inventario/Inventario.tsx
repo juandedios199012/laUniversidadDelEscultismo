@@ -4,10 +4,14 @@ import {
   AlertTriangle, CheckCircle, Clock, Package2, BarChart 
 } from 'lucide-react';
 import { InventarioService } from '../../services/inventarioService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import type { InventarioItem } from '../../lib/supabase';
 
 const Inventario: React.FC = () => {
   console.log('🏗️ Inventario component loading...');
+
+  // ============= PERMISOS =============
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
 
   // ============= ESTADOS =============
   const [items, setItems] = useState<InventarioItem[]>([]);
@@ -136,6 +140,12 @@ const Inventario: React.FC = () => {
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!puedeCrear('inventario')) {
+      alert('No tienes permiso para agregar items al inventario');
+      return;
+    }
+    
     setSaving(true);
     
     try {
@@ -201,6 +211,10 @@ const Inventario: React.FC = () => {
   };
 
   const handleEditItem = (item: InventarioItem) => {
+    if (!puedeEditar('inventario')) {
+      alert('No tienes permiso para editar items del inventario');
+      return;
+    }
     setSelectedItem(item);
     setFormData({
       nombre: item.nombre,
@@ -215,6 +229,10 @@ const Inventario: React.FC = () => {
   };
 
   const handleDeleteItem = async (item: InventarioItem) => {
+    if (!puedeEliminar('inventario')) {
+      alert('No tienes permiso para eliminar items del inventario');
+      return;
+    }
     if (window.confirm(`¿Estás seguro de eliminar "${item.nombre}"? Esta acción no se puede deshacer.`)) {
       try {
         setSaving(true);

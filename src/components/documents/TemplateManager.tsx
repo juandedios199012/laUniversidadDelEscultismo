@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TableDesign } from './TableDesigner';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 // Tipos
 export interface TemplateCategory {
@@ -172,6 +173,9 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   onEdit,
   onDelete
 }) => {
+  // Permisos
+  const { puedeEditar, puedeEliminar, puedeCrear } = usePermissions();
+  
   const [templates, setTemplates] = useState<TableDesign[]>(BUILT_IN_TEMPLATES);
   const [selectedCategory, setSelectedCategory] = useState('builtin');
   const [searchTerm, setSearchTerm] = useState('');
@@ -206,6 +210,12 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   // Guardar template personalizado
   const saveCustomTemplate = (template: TableDesign) => {
+    // Verificar permiso
+    if (!puedeCrear('reportes')) {
+      alert('No tienes permiso para crear plantillas');
+      return;
+    }
+    
     const customTemplates = templates.filter(t => !BUILT_IN_TEMPLATES.some(bt => bt.id === t.id));
     customTemplates.push(template);
     localStorage.setItem('dngi03_custom_templates', JSON.stringify(customTemplates));
@@ -214,6 +224,12 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   // Eliminar template
   const handleDelete = (templateId: string) => {
+    // Verificar permiso
+    if (!puedeEliminar('reportes')) {
+      alert('No tienes permiso para eliminar plantillas');
+      return;
+    }
+    
     if (BUILT_IN_TEMPLATES.some(bt => bt.id === templateId)) {
       alert('No se pueden eliminar plantillas predefinidas');
       return;

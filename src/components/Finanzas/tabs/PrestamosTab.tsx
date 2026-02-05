@@ -60,12 +60,16 @@ import {
   METODOS_PAGO 
 } from '@/services/finanzasService';
 import { toast } from 'sonner';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface PrestamosTabProps {
   onRefresh: () => void;
 }
 
 const PrestamosTab: React.FC<PrestamosTabProps> = ({ onRefresh }) => {
+  // Permisos
+  const { puedeEditar, puedeEliminar } = usePermissions();
+  
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<EstadoPrestamo | 'TODOS'>('TODOS');
@@ -132,6 +136,12 @@ const PrestamosTab: React.FC<PrestamosTabProps> = ({ onRefresh }) => {
   const registrarDevolucion = async () => {
     if (!prestamoActivo) return;
     
+    // Verificar permiso
+    if (!puedeEditar('finanzas')) {
+      toast.error('No tienes permiso para registrar pagos');
+      return;
+    }
+    
     try {
       setRegistrandoDevolucion(true);
       await FinanzasService.registrarDevolucion(
@@ -155,6 +165,12 @@ const PrestamosTab: React.FC<PrestamosTabProps> = ({ onRefresh }) => {
 
   const cancelarPrestamo = async () => {
     if (!prestamoACancelar) return;
+    
+    // Verificar permiso
+    if (!puedeEliminar('finanzas')) {
+      toast.error('No tienes permiso para cancelar préstamos');
+      return;
+    }
     
     try {
       setCancelando(true);

@@ -724,7 +724,189 @@ setTimeout(() => {
 
 ---
 
-## 🔮 Mejoras Futuras - Permisos Granulares
+## � Implementación de Permisos RBAC en Componentes
+
+### Resumen de la Solución
+
+El sistema implementa **Role-Based Access Control (RBAC)** verificando permisos antes de cada operación CRUD. Cada componente importa el hook `usePermissions` y valida los permisos correspondientes antes de permitir acciones.
+
+### Patrón de Implementación
+
+```tsx
+// 1. Importar hook de permisos
+import { usePermissions } from '../../contexts/PermissionsContext';
+
+// 2. Usar hook en el componente
+const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+
+// 3. Verificar en handlers antes de ejecutar
+const handleCreateItem = async () => {
+  if (!puedeCrear('modulo_nombre')) {
+    alert('No tienes permiso para crear registros');
+    return;
+  }
+  // ... lógica de creación
+};
+
+// 4. Ocultar botones condicionalmente
+{puedeEditar('modulo_nombre') && (
+  <button onClick={handleEdit}>✏️ Editar</button>
+)}
+
+{puedeEliminar('modulo_nombre') && (
+  <button onClick={handleDelete}>🗑️ Eliminar</button>
+)}
+```
+
+### Módulos con Permisos Implementados
+
+#### **Scouts**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ListaScouts.tsx` | `puedeEditar`, `puedeEliminar` | Oculta botones de edición/eliminación |
+| `EditarScoutModal.tsx` | `puedeEditar` | Valida antes de guardar cambios |
+| `ScoutFormWizard.tsx` | `puedeCrear`, `puedeEditar` | Valida en onSubmit según modo |
+
+#### **Dirigentes**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `DirigentesV2.tsx` | `puedeCrear`, `puedeEditar` | Valida en nuevo/editar dirigente |
+
+#### **Finanzas**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `FinanzasDashboard.tsx` | `puedeCrear` | Oculta botones de nueva transacción |
+| `TransaccionesTab.tsx` | `puedeEditar`, `puedeEliminar` | Oculta items del dropdown |
+| `PrestamosTab.tsx` | `puedeEditar`, `puedeEliminar` | Valida pagos y cancelaciones |
+
+#### **Patrullas**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `Patrullas.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar` | CRUD completo protegido |
+
+#### **Inventario**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `Inventario.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar` | CRUD completo protegido |
+
+#### **Asistencia**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `Asistencia.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar` | Gestión de reuniones protegida |
+
+#### **Actividades Scout**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ActividadesScoutMigrated.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar` | CRUD de actividades protegido |
+
+#### **Actividades Exterior**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ActividadesExteriorDashboard.tsx` | `puedeCrear` | Botón "Nueva Actividad" |
+| `ActividadDetalle.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar` | Programa, presupuesto, menú, compras, participantes, puntajes |
+
+#### **Progresión**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ScoutProgresionDetail.tsx` | `puedeEditar` | Toggle objetivos y asignar etapa |
+
+#### **Comité de Padres**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ComitePadresMigrated.tsx` | `puedeCrear`, `puedeEliminar` | Registrar y remover miembros |
+
+#### **Libro de Oro**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `LibroOroMigrated.tsx` | `puedeCrear` | Crear nuevas entradas |
+
+#### **Programa Semanal**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `ProgramaSemanalMigrated.tsx` | `puedeCrear` | Guardar programas |
+
+#### **Documentos/Reportes**
+| Archivo | Permisos | Descripción |
+|---------|----------|-------------|
+| `TemplateManager.tsx` | `puedeCrear`, `puedeEliminar` | Gestión de plantillas |
+
+### Nombres de Módulos para Permisos
+
+| Módulo | Nombre para `usePermissions()` |
+|--------|-------------------------------|
+| Scouts | `'scouts'` |
+| Dirigentes | `'dirigentes'` |
+| Finanzas | `'finanzas'` |
+| Patrullas | `'patrullas'` |
+| Inventario | `'inventario'` |
+| Asistencia | `'asistencia'` |
+| Actividades Scout | `'actividades'` |
+| Actividades Exterior | `'actividades_exterior'` |
+| Progresión | `'progresion'` |
+| Comité de Padres | `'comite_padres'` |
+| Libro de Oro | `'libro_oro'` |
+| Programa Semanal | `'programa_semanal'` |
+| Reportes | `'reportes'` |
+
+### Cómo Agregar Permisos a un Nuevo Componente
+
+1. **Importar el hook:**
+   ```tsx
+   import { usePermissions } from '../../contexts/PermissionsContext';
+   ```
+
+2. **Usar en el componente:**
+   ```tsx
+   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+   ```
+
+3. **Validar en handlers:**
+   ```tsx
+   const handleNuevoRegistro = () => {
+     if (!puedeCrear('mi_modulo')) {
+       alert('No tienes permiso para crear registros');
+       return;
+     }
+     // Continuar con la lógica
+   };
+   ```
+
+4. **Ocultar elementos UI:**
+   ```tsx
+   {puedeCrear('mi_modulo') && (
+     <Button onClick={handleNuevoRegistro}>
+       <Plus /> Nuevo
+     </Button>
+   )}
+   ```
+
+### Roles y Niveles de Acceso
+
+| Rol | Nivel | Descripción |
+|-----|-------|-------------|
+| `super_admin` | 100 | Acceso total a todo el sistema |
+| `jefe_grupo` | 90 | Administrador del grupo scout |
+| `coordinador` | 70 | Coordinador de rama/área |
+| `dirigente` | 50 | Dirigente activo |
+| `asistente` | 30 | Asistente de dirigente |
+| `padre_familia` | 20 | Padre de familia de scout |
+| `scout` | 10 | Scout (acceso limitado) |
+
+### Verificación de Permisos en Base de Datos
+
+La función `tiene_permiso()` en PostgreSQL verifica:
+
+```sql
+SELECT tiene_permiso(
+  'user-uuid',      -- ID del usuario
+  'scouts',         -- Módulo
+  'editar'          -- Acción: leer, crear, editar, eliminar, exportar
+);
+```
+
+---
+
+## �🔮 Mejoras Futuras - Permisos Granulares
 
 ### Separación de Permisos de Visualización
 

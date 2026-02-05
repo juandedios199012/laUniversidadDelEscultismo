@@ -55,6 +55,7 @@ import {
   TIPOS_COMIDA_ACTIVIDAD,
 } from '@/services/actividadesExteriorService';
 import { toast } from 'sonner';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 // Diálogos
 import NuevoProgramaDialog from './dialogs/NuevoProgramaDialog';
@@ -87,6 +88,9 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   onBack,
   onRefresh,
 }) => {
+  // Permisos
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+  
   const [loading, setLoading] = useState(true);
   const [actividad, setActividad] = useState<ActividadExteriorCompleta | null>(null);
   const [activeTab, setActiveTab] = useState('resumen');
@@ -117,18 +121,30 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Función para abrir el dialog de editar programa
   const handleEditarPrograma = (programa: ProgramaActividad) => {
+    if (!puedeEditar('actividades_exterior')) {
+      toast.error('No tienes permiso para editar programas');
+      return;
+    }
     setProgramaEditar(programa);
     setShowProgramaDialog(true);
   };
 
   // Función para abrir el dialog de nuevo programa
   const handleNuevoPrograma = () => {
+    if (!puedeCrear('actividades_exterior')) {
+      toast.error('No tienes permiso para crear programas');
+      return;
+    }
     setProgramaEditar(null);
     setShowProgramaDialog(true);
   };
 
   // Handlers para eliminar programa
   const handleEliminarPrograma = async (programaId: string, nombre: string) => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar programas');
+      return;
+    }
     if (confirm(`¿Eliminar programa "${nombre}" y todos sus bloques?`)) {
       try {
         await ActividadesExteriorService.eliminarPrograma(programaId);
@@ -142,16 +158,28 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handlers para presupuesto
   const handleEditarPresupuesto = (item: any) => {
+    if (!puedeEditar('actividades_exterior')) {
+      toast.error('No tienes permiso para editar presupuestos');
+      return;
+    }
     setPresupuestoEditar(item);
     setShowPresupuestoDialog(true);
   };
 
   const handleNuevoPresupuesto = () => {
+    if (!puedeCrear('actividades_exterior')) {
+      toast.error('No tienes permiso para crear items de presupuesto');
+      return;
+    }
     setPresupuestoEditar(null);
     setShowPresupuestoDialog(true);
   };
 
   const handleEliminarPresupuesto = async (itemId: string, concepto: string) => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar presupuestos');
+      return;
+    }
     if (confirm(`¿Eliminar "${concepto}" del presupuesto?`)) {
       try {
         await ActividadesExteriorService.eliminarPresupuesto(itemId);
@@ -165,16 +193,28 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handlers para menú
   const handleEditarMenu = (item: any) => {
+    if (!puedeEditar('actividades_exterior')) {
+      toast.error('No tienes permiso para editar el menú');
+      return;
+    }
     setMenuEditar(item);
     setShowMenuDialog(true);
   };
 
   const handleNuevoMenu = () => {
+    if (!puedeCrear('actividades_exterior')) {
+      toast.error('No tienes permiso para crear items de menú');
+      return;
+    }
     setMenuEditar(null);
     setShowMenuDialog(true);
   };
 
   const handleEliminarMenu = async (menuId: string, nombrePlato: string) => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar items del menú');
+      return;
+    }
     if (confirm(`¿Eliminar "${nombrePlato}" del menú?`)) {
       try {
         await ActividadesExteriorService.eliminarMenu(menuId);
@@ -188,11 +228,19 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handlers para compras
   const handleEditarCompra = (compra: any) => {
+    if (!puedeEditar('actividades_exterior')) {
+      toast.error('No tienes permiso para editar compras');
+      return;
+    }
     setCompraEditar(compra);
     setShowCompraDialog(true);
   };
 
   const handleNuevaCompra = () => {
+    if (!puedeCrear('actividades_exterior')) {
+      toast.error('No tienes permiso para registrar compras');
+      return;
+    }
     setCompraEditar(null);
     setShowCompraDialog(true);
   };
@@ -211,6 +259,10 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handler para editar participante (monto, observaciones, etc.)
   const handleEditarParticipante = (participante: any) => {
+    if (!puedeEditar('actividades_exterior')) {
+      toast.error('No tienes permiso para editar participantes');
+      return;
+    }
     setParticipanteEditar(participante);
     setShowEditarParticipanteDialog(true);
   };
@@ -229,6 +281,10 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handler para eliminar puntaje
   const handleEliminarPuntaje = async (puntajeId: string) => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar puntajes');
+      return;
+    }
     if (confirm('¿Eliminar este puntaje?')) {
       try {
         await ActividadesExteriorService.eliminarPuntaje(puntajeId);

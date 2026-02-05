@@ -4,6 +4,7 @@ import {
   Award, Target, Shield
 } from 'lucide-react';
 import PatrullaService from '../../services/patrullaService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 // ==================== INTERFACES ====================
 interface Patrulla {
@@ -37,6 +38,9 @@ interface PatrullaFormData {
 
 // ==================== COMPONENT ====================
 export default function PatrullasNew() {
+  // ============= PERMISOS =============
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+  
   // ============= ESTADOS =============
   const [patrullas, setPatrullas] = useState<Patrulla[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,6 +152,11 @@ export default function PatrullasNew() {
 
   // ============= FUNCIONES CRUD =============
   const handleCreatePatrulla = async () => {
+    // Verificar permiso
+    if (!puedeCrear('patrullas')) {
+      alert('No tienes permiso para crear patrullas');
+      return;
+    }
     try {
       if (!formData.nombre.trim() || !formData.rama) {
         setFormErrors({ nombre: 'El nombre es obligatorio', rama: 'La rama es obligatoria' });
@@ -172,6 +181,10 @@ export default function PatrullasNew() {
   };
 
   const handleEditPatrulla = (patrulla: Patrulla) => {
+    if (!puedeEditar('patrullas')) {
+      alert('No tienes permiso para editar patrullas');
+      return;
+    }
     setSelectedPatrulla(patrulla);
     setFormData({
       nombre: patrulla.nombre || '',
@@ -222,6 +235,10 @@ export default function PatrullasNew() {
   };
 
   const handleDeletePatrulla = async (patrulla: Patrulla) => {
+    if (!puedeEliminar('patrullas')) {
+      alert('No tienes permiso para eliminar patrullas');
+      return;
+    }
     if (!window.confirm(`¿Estás seguro de eliminar la patrulla "${patrulla.nombre}"?`)) {
       return;
     }

@@ -12,6 +12,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { usePermissions } from "@/contexts/PermissionsContext";
 import { 
   Save, X, ArrowLeft, ArrowRight, 
   User, Phone, GraduationCap, Church, Heart, Flag, Users 
@@ -86,6 +87,9 @@ interface ScoutFormWizardProps {
 // ============================================
 
 export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardProps) {
+  // Permisos
+  const { puedeCrear, puedeEditar } = usePermissions();
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [stepStatuses, setStepStatuses] = useState<Record<string, StepStatus>>({});
   const [loading, setLoading] = useState(false);
@@ -314,6 +318,16 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
 
   // Submit form
   const onSubmit = async (data: ScoutFormData) => {
+    // Verificar permisos
+    if (isEditing && !puedeEditar('scouts')) {
+      error('No tienes permiso para editar scouts');
+      return;
+    }
+    if (!isEditing && !puedeCrear('scouts')) {
+      error('No tienes permiso para crear scouts');
+      return;
+    }
+    
     setLoading(true);
     
     try {

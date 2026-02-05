@@ -3,6 +3,7 @@ import { pdf } from '@react-pdf/renderer';
 import { FileText } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import type { Scout } from '../../lib/supabase';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { getScoutData } from '../../modules/reports/services/reportDataService';
 import { generateReportMetadata } from '../../modules/reports/services/pdfService';
 import DNGI03Template from '../../modules/reports/templates/pdf/DNGI03Template';
@@ -18,6 +19,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
   onEditarScout,
   onEliminarScout
 }) => {
+  const { puedeEditar, puedeEliminar } = usePermissions();
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -408,27 +410,33 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                       >
                         📄
                       </button>
-                      <button
-                        onClick={() => onEditarScout?.(scout)}
-                        className="text-green-600 hover:text-green-900 px-2 py-1 rounded transition-colors"
-                        title="Editar"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDesactivar(scout)}
-                        className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded transition-colors"
-                        title="Desactivar (cambiar a INACTIVO)"
-                      >
-                        ⏸️
-                      </button>
-                      <button
-                        onClick={() => handleEliminar(scout)}
-                        className="text-red-600 hover:text-red-900 px-2 py-1 rounded transition-colors"
-                        title="Eliminar permanentemente"
-                      >
-                        🗑️
-                      </button>
+                      {puedeEditar('scouts') && (
+                        <button
+                          onClick={() => onEditarScout?.(scout)}
+                          className="text-green-600 hover:text-green-900 px-2 py-1 rounded transition-colors"
+                          title="Editar"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                      {puedeEditar('scouts') && (
+                        <button
+                          onClick={() => handleDesactivar(scout)}
+                          className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded transition-colors"
+                          title="Desactivar (cambiar a INACTIVO)"
+                        >
+                          ⏸️
+                        </button>
+                      )}
+                      {puedeEliminar('scouts') && (
+                        <button
+                          onClick={() => handleEliminar(scout)}
+                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded transition-colors"
+                          title="Eliminar permanentemente"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

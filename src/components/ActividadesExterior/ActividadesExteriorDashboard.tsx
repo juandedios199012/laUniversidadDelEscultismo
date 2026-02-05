@@ -39,6 +39,7 @@ import {
 } from '@/services/actividadesExteriorService';
 import NuevaActividadDialog from './dialogs/NuevaActividadDialog';
 import ActividadDetalle from './ActividadDetalle';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 // ============= COMPONENTES AUXILIARES =============
 
@@ -220,6 +221,9 @@ const ActividadCard: React.FC<{
 // ============= COMPONENTE PRINCIPAL =============
 
 const ActividadesExteriorDashboard: React.FC = () => {
+  // Permisos
+  const { puedeCrear } = usePermissions();
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actividades, setActividades] = useState<ActividadExteriorResumen[]>([]);
@@ -316,7 +320,13 @@ const ActividadesExteriorDashboard: React.FC = () => {
         </div>
         
         <Card>
-          <EstadoVacio onNuevaActividad={() => setShowNuevaActividad(true)} />
+          <EstadoVacio onNuevaActividad={() => {
+            if (!puedeCrear('actividades_exterior')) {
+              alert('No tienes permiso para crear actividades');
+              return;
+            }
+            setShowNuevaActividad(true);
+          }} />
         </Card>
         
         <NuevaActividadDialog 
@@ -339,10 +349,12 @@ const ActividadesExteriorDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold">Actividades al Aire Libre</h1>
           <p className="text-muted-foreground">Campamentos, caminatas y excursiones</p>
         </div>
-        <Button onClick={() => setShowNuevaActividad(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Actividad
-        </Button>
+        {puedeCrear('actividades_exterior') && (
+          <Button onClick={() => setShowNuevaActividad(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Actividad
+          </Button>
+        )}
       </div>
 
       {/* KPIs */}

@@ -19,6 +19,7 @@ import Input from '../Forms/Input';
 import Select from '../Forms/Select';
 import { AREAS_CRECIMIENTO } from '../../data/constants';
 import { ScoutService } from '../../services/scoutService';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { supabase } from '../../lib/supabase';
 import type { Scout } from '../../lib/supabase';
 
@@ -62,6 +63,9 @@ interface ProgramaSemanal {
 }
 
 export default function ProgramaSemanalMigrated() {
+  // Permisos
+  const { puedeCrear } = usePermissions();
+  
   const [formData, setFormData] = useState<FormularioPrograma>({
     rama: '',
     semana_inicio: '',
@@ -170,6 +174,12 @@ export default function ProgramaSemanalMigrated() {
   };
 
   const guardarPrograma = async () => {
+    // Verificar permiso
+    if (!puedeCrear('programa_semanal')) {
+      setError('No tienes permiso para crear programas semanales');
+      return;
+    }
+    
     if (!formData.rama || !formData.semana_inicio || !formData.objetivos) {
       setError('Por favor complete los campos obligatorios: Rama, Fecha de inicio y Objetivos');
       return;

@@ -18,6 +18,7 @@ import ProgressRing from './ProgressRing';
 import StageBadge from './StageBadge';
 import { GrowthAreasList } from './GrowthAreasGrid';
 import ObjectivesChecklist from './ObjectivesChecklist';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 interface ScoutProgresionDetailProps {
   scoutId: string;
@@ -30,6 +31,9 @@ const ScoutProgresionDetail: React.FC<ScoutProgresionDetailProps> = ({
   onBack,
   onUpdate
 }) => {
+  // Permisos
+  const { puedeEditar } = usePermissions();
+  
   // Estado
   const [progreso, setProgreso] = useState<ProgresoCompletoScout | null>(null);
   const [objetivos, setObjetivos] = useState<ObjetivoScout[]>([]);
@@ -102,6 +106,11 @@ const ScoutProgresionDetail: React.FC<ScoutProgresionDetailProps> = ({
 
   // Manejar toggle de objetivo
   const handleToggleObjetivo = async (objetivo: ObjetivoScout, completado: boolean) => {
+    if (!puedeEditar('progresion')) {
+      alert('No tienes permiso para modificar la progresión');
+      return;
+    }
+    
     setSavingObjetivo(objetivo.id);
     
     try {
@@ -132,6 +141,11 @@ const ScoutProgresionDetail: React.FC<ScoutProgresionDetailProps> = ({
 
   // Asignar nueva etapa
   const handleAsignarEtapa = async (etapaCodigo: string) => {
+    if (!puedeEditar('progresion')) {
+      alert('No tienes permiso para asignar etapas');
+      return;
+    }
+    
     try {
       await ProgresionService.asignarEtapa(scoutId, etapaCodigo);
       await cargarDatos();

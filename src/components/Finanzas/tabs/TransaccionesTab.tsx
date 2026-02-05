@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { usePermissions } from '../../../contexts/PermissionsContext';
 import { 
   Search, 
   ArrowUpRight, 
@@ -68,6 +69,9 @@ interface TransaccionesTabProps {
 }
 
 const TransaccionesTab: React.FC<TransaccionesTabProps> = ({ onRefresh }) => {
+  // Permisos
+  const { puedeEditar, puedeEliminar } = usePermissions();
+  
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -111,6 +115,13 @@ const TransaccionesTab: React.FC<TransaccionesTabProps> = ({ onRefresh }) => {
 
   const handleEliminar = async () => {
     if (!transaccionAEliminar) return;
+    
+    // Verificar permiso
+    if (!puedeEliminar('finanzas')) {
+      toast.error('No tienes permiso para eliminar transacciones');
+      setTransaccionAEliminar(null);
+      return;
+    }
 
     try {
       setEliminando(true);
@@ -308,15 +319,17 @@ const TransaccionesTab: React.FC<TransaccionesTabProps> = ({ onRefresh }) => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 Ver detalles
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setTransaccionSeleccionada(trans);
-                                  setShowDetalle(true);
-                                }}
-                              >
-                                <Edit2 className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
+                              {puedeEditar('finanzas') && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setTransaccionSeleccionada(trans);
+                                    setShowDetalle(true);
+                                  }}
+                                >
+                                  <Edit2 className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                              )}
                               {trans.evidencias_count && trans.evidencias_count > 0 && (
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -328,14 +341,18 @@ const TransaccionesTab: React.FC<TransaccionesTabProps> = ({ onRefresh }) => {
                                   Ver evidencias ({trans.evidencias_count})
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => setTransaccionAEliminar(trans)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </DropdownMenuItem>
+                              {puedeEliminar('finanzas') && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    className="text-red-600"
+                                    onClick={() => setTransaccionAEliminar(trans)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
