@@ -29,6 +29,90 @@ Sistema web moderno y responsive para la gestión y registro de Boy Scouts del G
 - **Font Awesome** para iconografía
 - **Google Fonts** (Inter) para tipografía moderna
 
+## 🔐 Control de Acceso y Autorización
+
+### Flujo de Acceso al Sistema
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    APP EN AZURE                             │
+│           tuapp.azurestaticapps.net                         │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              PANTALLA DE LOGIN                       │   │
+│  │         (visible para TODOS)                         │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                          │                                  │
+│                          ▼                                  │
+│              ┌──────────────────────┐                       │
+│              │ Usuario ingresa su   │                       │
+│              │ email y da clic      │                       │
+│              └──────────────────────┘                       │
+│                          │                                  │
+│           ┌──────────────┴──────────────┐                   │
+│           ▼                             ▼                   │
+│  ┌─────────────────┐         ┌─────────────────────────┐    │
+│  │ Email EN tabla  │         │ Email NO EN tabla       │    │
+│  │ dirigentes_     │         │ dirigentes_autorizados  │    │
+│  │ autorizados     │         │                         │    │
+│  └────────┬────────┘         └───────────┬─────────────┘    │
+│           ▼                              ▼                  │
+│  ┌─────────────────┐         ┌─────────────────────────┐    │
+│  │ ✅ ACCEDE AL    │         │ ❌ "Tu email no está    │    │
+│  │   DASHBOARD     │         │    autorizado"          │    │
+│  └─────────────────┘         └─────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### ¿Cómo funciona?
+
+| Concepto | Descripción |
+|----------|-------------|
+| **URL pública** | Cualquier persona puede ver la pantalla de login |
+| **Contenido protegido** | Solo usuarios en la lista blanca pueden acceder al sistema |
+| **Lista blanca** | Tabla `dirigentes_autorizados` en la base de datos |
+
+### Paso a paso para dar acceso a un nuevo usuario
+
+| Paso | Acción |
+|------|--------|
+| 1 | Despliegas la app en Azure → `tuapp.azurestaticapps.net` |
+| 2 | Le das la URL a la persona |
+| 3 | La persona entra a la URL → **Ve la pantalla de login** |
+| 4 | La persona ingresa su email y da clic en "Enviar Código" |
+| 5 | El sistema verifica si el email está en `dirigentes_autorizados` |
+| 6 | **Si NO está** → Mensaje "Tu email no está autorizado" |
+| 7 | **Si SÍ está** → Puede entrar al sistema |
+
+### Cómo autorizar nuevos usuarios
+
+**Opción A: Desde la UI (recomendado)**
+1. Ingresas al sistema con tu cuenta autorizada
+2. Vas a **Seguridad → Usuarios → Invitar Usuario**
+3. Agregas el email del nuevo dirigente
+4. Seleccionas su rol (Dirigente, Admin Grupo, Super Admin)
+5. ¡Listo! El nuevo usuario ya puede acceder
+
+**Opción B: Desde SQL (solo casos especiales)**
+```sql
+INSERT INTO dirigentes_autorizados (email, nombre_completo, role, activo, grupo_scout_id)
+VALUES (
+  'nuevo.dirigente@gmail.com', 
+  'Nombre Completo', 
+  'dirigente',  -- o 'grupo_admin' o 'super_admin'
+  true,
+  (SELECT id FROM grupos_scout LIMIT 1)
+);
+```
+
+### Roles disponibles
+
+| Rol | Permisos |
+|-----|----------|
+| `dirigente` | Acceso básico a módulos asignados |
+| `grupo_admin` | Puede gestionar dirigentes y configuración del grupo |
+| `super_admin` | Acceso total al sistema |
+
 ## 📊 Estructura de Ramas Scout
 
 | Rama | Edad | Color | Icono | Características |

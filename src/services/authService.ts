@@ -145,9 +145,7 @@ export class AuthService {
         email,
         options: {
           shouldCreateUser: true,
-          data: {
-            grupo_scout_id: isAuthorized.grupo_scout_id
-          }
+          // NO incluir emailRedirectTo para que envíe código OTP en lugar de magic link
         }
       });
 
