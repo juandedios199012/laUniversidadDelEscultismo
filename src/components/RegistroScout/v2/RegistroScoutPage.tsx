@@ -27,6 +27,7 @@ import { ScoutList } from "../components/ScoutList";
 import { KPIGrid } from "../components/KPICards";
 import { ScoutFormWizard } from "./ScoutFormWizard";
 import { HistoriaMedicaWizard } from "./HistoriaMedicaWizard";
+import { ScoutDetailModal } from "../components/ScoutDetailModal";
 
 import ScoutService from "@/services/scoutService";
 import HistoriaMedicaService from "@/services/historiaMedicaService";
@@ -67,6 +68,10 @@ export default function RegistroScoutPage() {
   const [medicalHistoryOpen, setMedicalHistoryOpen] = useState(false);
   const [medicalHistoryScout, setMedicalHistoryScout] = useState<Scout | null>(null);
   const [medicalHistoryData, setMedicalHistoryData] = useState<HistoriaMedicaData | null>(null);
+  
+  // Scout Detail Modal State
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailScout, setDetailScout] = useState<Scout | null>(null);
   
   const { toasts, removeToast, success, error } = useToast();
 
@@ -118,10 +123,16 @@ export default function RegistroScoutPage() {
     success("Datos actualizados");
   }, [loadScouts, loadStats, success]);
 
-  // Handle scout selection
+  // Handle scout selection - abre modal de detalle
   const handleSelectScout = useCallback((scout: Scout) => {
-    setSelectedScout(scout);
-    setViewMode("view");
+    setDetailScout(scout);
+    setDetailModalOpen(true);
+  }, []);
+
+  // Handle close detail modal
+  const handleCloseDetailModal = useCallback(() => {
+    setDetailModalOpen(false);
+    setDetailScout(null);
   }, []);
 
   // Handle edit - carga datos completos del scout (incluyendo ubicación)
@@ -396,6 +407,17 @@ export default function RegistroScoutPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Scout Detail Modal */}
+      <ScoutDetailModal
+        scout={detailScout}
+        isOpen={detailModalOpen}
+        onClose={handleCloseDetailModal}
+        onEdit={(scout) => {
+          handleCloseDetailModal();
+          handleEditScout(scout);
+        }}
+      />
 
       {/* Medical History Modal */}
       {medicalHistoryScout && (

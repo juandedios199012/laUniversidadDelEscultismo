@@ -12,7 +12,6 @@ import ComitePadres from './components/ComitePadres/ComitePadres';
 import DirigentesV2 from './components/DirigentesV2';
 import Patrullas from './components/Patrullas/Patrullas';
 import Asistencia from './components/Asistencia/Asistencia';
-import ActividadesScout from './components/ActividadesScout/ActividadesScout';
 import Inventario from './components/Inventario/Inventario';
 import { FinanzasDashboard } from './components/Finanzas';
 import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
@@ -67,8 +66,6 @@ function AppContent() {
         return <GrupoScout />;
       case 'asistencia':
         return <Asistencia />;
-      case 'actividades':
-        return <ActividadesScout />;
       case 'mapas':
         return <Maps />;
       case 'dirigentes':

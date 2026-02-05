@@ -3,20 +3,19 @@ import {
   Shield, 
   Calendar, 
   ClipboardCheck,
-  MapPin,
   Book,
   Package,
   BarChart,
   Home,
   Award,
   Star,
-  Trophy,
   Flag,
   Map,
   TrendingUp,
   Tent,
   Wallet,
-  Lock
+  Lock,
+  Trophy
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -45,7 +44,6 @@ const menuItems: {
   { id: 'patrullas', label: 'Patrullas', icon: Award, gradient: 'from-red-500 to-pink-500', modulo: 'patrullas' },
   { id: 'programa-semanal', label: 'Programa', icon: Calendar, gradient: 'from-indigo-500 to-purple-500', modulo: 'programa_semanal' },
   { id: 'asistencia', label: 'Asistencia', icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500', modulo: 'asistencia' },
-  { id: 'actividades', label: 'Actividades', icon: MapPin, gradient: 'from-cyan-500 to-blue-500', modulo: 'actividades' },
   { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent, gradient: 'from-green-600 to-teal-600', modulo: 'actividades_exterior' },
   { id: 'mapas', label: 'Mapas', icon: Map, gradient: 'from-emerald-500 to-teal-500', modulo: 'mapas' },
   { id: 'libro-oro', label: 'Libro de Oro', icon: Book, gradient: 'from-yellow-500 to-orange-500', modulo: 'libro_oro' },
