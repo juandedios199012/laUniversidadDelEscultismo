@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { X, UserPlus, Mail, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, UserPlus, Mail, User, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { UsuariosAutorizadosService, InvitarUsuarioData } from '../../../services/usuariosAutorizadosService';
+import { PermissionsService, Rol } from '../../../services/permissionsService';
 
 interface Props {
   isOpen: boolean;
@@ -9,28 +10,18 @@ interface Props {
   autorizadoPor: string;
 }
 
-const ROLES = [
-  { 
-    value: 'dirigente', 
-    label: 'Dirigente', 
-    descripcion: 'Acceso básico a módulos asignados',
-    color: 'bg-blue-100 text-blue-700'
-  },
-  { 
-    value: 'grupo_admin', 
-    label: 'Administrador de Grupo', 
-    descripcion: 'Puede gestionar dirigentes y configuración del grupo',
-    color: 'bg-purple-100 text-purple-700'
-  },
-  { 
-    value: 'super_admin', 
-    label: 'Super Administrador', 
-    descripcion: 'Acceso total al sistema',
-    color: 'bg-red-100 text-red-700'
-  }
-];
+// Colores y etiquetas por nivel de jerarquía
+const getNivelInfo = (nivel: number) => {
+  if (nivel >= 90) return { badge: 'Crítico', color: 'bg-red-100 text-red-700' };
+  if (nivel >= 70) return { badge: 'Elevado', color: 'bg-purple-100 text-purple-700' };
+  if (nivel >= 50) return { badge: 'Medio', color: 'bg-blue-100 text-blue-700' };
+  if (nivel >= 30) return { badge: 'Básico', color: 'bg-green-100 text-green-700' };
+  return { badge: 'Limitado', color: 'bg-gray-100 text-gray-700' };
+};
 
 export default function InvitarUsuarioDialog({ isOpen, onClose, onUsuarioCreado, autorizadoPor }: Props) {
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
   const [formData, setFormData] = useState<InvitarUsuarioData>({
     email: '',
     nombre_completo: '',
@@ -39,6 +30,20 @@ export default function InvitarUsuarioDialog({ isOpen, onClose, onUsuarioCreado,
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState(false);
+
+  // Cargar roles al abrir el diálogo
+  useEffect(() => {
+    if (isOpen) {
+      cargarRoles();
+    }
+  }, [isOpen]);
+
+  const cargarRoles = async () => {
+    setLoadingRoles(true);
+    const data = await PermissionsService.listarRoles();
+    setRoles(data);
+    setLoadingRoles(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,37 +168,59 @@ export default function InvitarUsuarioDialog({ isOpen, onClose, onUsuarioCreado,
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Rol <span className="text-red-500">*</span>
             </label>
-            <div className="space-y-2">
-              {ROLES.map(rol => (
-                <label
-                  key={rol.value}
-                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.role === rol.value
-                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  } ${(guardando || exito) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={rol.value}
-                    checked={formData.role === rol.value}
-                    onChange={e => setFormData({ ...formData, role: e.target.value as any })}
-                    className="mt-0.5"
-                    disabled={guardando || exito}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{rol.label}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${rol.color}`}>
-                        {rol.value === 'super_admin' ? 'Crítico' : rol.value === 'grupo_admin' ? 'Elevado' : 'Básico'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-0.5">{rol.descripcion}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
+            {loadingRoles ? (
+              <div className="flex items-center justify-center py-8 text-gray-500">
+                <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                Cargando roles...
+              </div>
+            ) : roles.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
+                <p>No hay roles disponibles.</p>
+                <p className="text-xs mt-1">Ejecuta el script 60_security_rbac_audit_v2.sql</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {roles.map(rol => {
+                  const nivelInfo = getNivelInfo(rol.nivel_jerarquia);
+                  return (
+                    <label
+                      key={rol.id}
+                      className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                        formData.role === rol.nombre
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      } ${(guardando || exito) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={rol.nombre}
+                        checked={formData.role === rol.nombre}
+                        onChange={e => setFormData({ ...formData, role: e.target.value as any })}
+                        className="mt-0.5"
+                        disabled={guardando || exito}
+                      />
+                      <div 
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
+                        style={{ backgroundColor: rol.color }}
+                      >
+                        {rol.nombre.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-gray-900">{rol.nombre.replace('_', ' ')}</span>
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${nivelInfo.color}`}>
+                            {nivelInfo.badge}
+                          </span>
+                          <span className="text-xs text-gray-400">Nivel {rol.nivel_jerarquia}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5 truncate">{rol.descripcion}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Mensaje de error */}

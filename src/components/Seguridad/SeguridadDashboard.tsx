@@ -7,7 +7,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
-import { PermissionsService, Rol, Modulo } from '../../services/permissionsService';
+import { 
+  PermissionsService, 
+  Rol, 
+  Modulo, 
+  Accion,
+  MatrizPermisoRol 
+} from '../../services/permissionsService';
 import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../services/auditService';
 import { UsuariosAutorizadosService, UsuarioAutorizado, SolicitudAcceso } from '../../services/usuariosAutorizadosService';
 import AsignarRolDialog from './dialogs/AsignarRolDialog';
@@ -98,9 +104,16 @@ export default function SeguridadDashboard() {
 // ================================================================
 
 function TabRoles() {
+  const { user } = useAuth();
+  const { esSuperAdmin } = usePermissions();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
+  const [matrizPermisos, setMatrizPermisos] = useState<MatrizPermisoRol | null>(null);
+  const [loadingPermisos, setLoadingPermisos] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  const [cambiosPendientes, setCambiosPendientes] = useState<Map<string, { modulo: Modulo; accion: Accion; tiene: boolean }>>(new Map());
 
   useEffect(() => {
     cargarRoles();
@@ -113,7 +126,81 @@ function TabRoles() {
     setLoading(false);
   };
 
-  const MODULOS: { modulo: Modulo; label: string; icon: string }[] = [
+  const cargarPermisosRol = async (rolId: string) => {
+    setLoadingPermisos(true);
+    setCambiosPendientes(new Map());
+    const matriz = await PermissionsService.obtenerMatrizPermisosRol(rolId);
+    setMatrizPermisos(matriz);
+    setLoadingPermisos(false);
+  };
+
+  const handleExpandRole = async (rolId: string) => {
+    if (expandedRole === rolId) {
+      setExpandedRole(null);
+      setMatrizPermisos(null);
+      setCambiosPendientes(new Map());
+    } else {
+      setExpandedRole(rolId);
+      await cargarPermisosRol(rolId);
+    }
+  };
+
+  const handleTogglePermiso = (modulo: Modulo, accion: Accion, tieneActual: boolean) => {
+    const key = `${modulo}-${accion}`;
+    const nuevosCambios = new Map(cambiosPendientes);
+    
+    // Si ya hay un cambio pendiente para este permiso, verificar si vuelve al estado original
+    const cambioExistente = nuevosCambios.get(key);
+    if (cambioExistente && cambioExistente.tiene === tieneActual) {
+      // Volver al estado original, eliminar el cambio
+      nuevosCambios.delete(key);
+    } else {
+      // Agregar o actualizar el cambio
+      nuevosCambios.set(key, { modulo, accion, tiene: !tieneActual });
+    }
+    
+    setCambiosPendientes(nuevosCambios);
+  };
+
+  const getEstadoPermiso = (modulo: Modulo, accion: Accion, tieneOriginal: boolean): boolean => {
+    const key = `${modulo}-${accion}`;
+    const cambio = cambiosPendientes.get(key);
+    return cambio ? cambio.tiene : tieneOriginal;
+  };
+
+  const hayCambio = (modulo: Modulo, accion: Accion): boolean => {
+    const key = `${modulo}-${accion}`;
+    return cambiosPendientes.has(key);
+  };
+
+  const guardarCambios = async () => {
+    if (!user?.id || !expandedRole || cambiosPendientes.size === 0) return;
+
+    setGuardando(true);
+    const permisos = Array.from(cambiosPendientes.values());
+    
+    const resultado = await PermissionsService.actualizarPermisosRol(
+      user.id,
+      expandedRole,
+      permisos
+    );
+
+    if (resultado.success) {
+      setMensaje({ 
+        tipo: 'exito', 
+        texto: `Permisos actualizados: ${resultado.agregados || 0} agregados, ${resultado.eliminados || 0} eliminados` 
+      });
+      setCambiosPendientes(new Map());
+      await cargarPermisosRol(expandedRole);
+    } else {
+      setMensaje({ tipo: 'error', texto: resultado.error || 'Error al guardar permisos' });
+    }
+
+    setGuardando(false);
+    setTimeout(() => setMensaje(null), 4000);
+  };
+
+  const MODULOS_CONFIG: { modulo: Modulo; label: string; icon: string }[] = [
     { modulo: 'dashboard', label: 'Dashboard', icon: '📊' },
     { modulo: 'scouts', label: 'Scouts', icon: '⚜️' },
     { modulo: 'dirigentes', label: 'Dirigentes', icon: '👥' },
@@ -124,8 +211,18 @@ function TabRoles() {
     { modulo: 'inscripciones', label: 'Inscripciones', icon: '📝' },
     { modulo: 'finanzas', label: 'Finanzas', icon: '💰' },
     { modulo: 'inventario', label: 'Inventario', icon: '📦' },
+    { modulo: 'actividades_exterior', label: 'Actividades Exterior', icon: '🏔️' },
     { modulo: 'reportes', label: 'Reportes', icon: '📋' },
     { modulo: 'seguridad', label: 'Seguridad', icon: '🔐' },
+    { modulo: 'configuracion', label: 'Configuración', icon: '⚙️' },
+  ];
+
+  const ACCIONES: { accion: Accion; label: string; color: string }[] = [
+    { accion: 'leer', label: 'Ver', color: 'bg-blue-100 text-blue-700' },
+    { accion: 'crear', label: 'Crear', color: 'bg-green-100 text-green-700' },
+    { accion: 'editar', label: 'Editar', color: 'bg-yellow-100 text-yellow-700' },
+    { accion: 'eliminar', label: 'Eliminar', color: 'bg-red-100 text-red-700' },
+    { accion: 'exportar', label: 'Exportar', color: 'bg-purple-100 text-purple-700' },
   ];
 
   if (loading) {
@@ -139,9 +236,24 @@ function TabRoles() {
 
   return (
     <div className="p-6">
+      {/* Mensaje de feedback */}
+      {mensaje && (
+        <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
+          mensaje.tipo === 'exito' 
+            ? 'bg-green-50 border border-green-200 text-green-800' 
+            : 'bg-red-50 border border-red-200 text-red-800'
+        }`}>
+          {mensaje.tipo === 'exito' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          {mensaje.texto}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Roles del Sistema</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Roles del Sistema</h2>
+          <p className="text-sm text-gray-500">Haz clic en un rol para ver y editar sus permisos CRUD por módulo</p>
+        </div>
         <button 
           onClick={cargarRoles}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
@@ -161,7 +273,7 @@ function TabRoles() {
             {/* Header del Rol */}
             <div 
               className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => setExpandedRole(expandedRole === rol.id ? null : rol.id)}
+              onClick={() => handleExpandRole(rol.id)}
             >
               <div className="flex items-center gap-3">
                 <div 
@@ -195,26 +307,147 @@ function TabRoles() {
               </div>
             </div>
 
-            {/* Permisos del Rol (Expandible) */}
+            {/* Matriz de Permisos del Rol (Expandible) */}
             {expandedRole === rol.id && (
-              <div className="p-4 border-t border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Permisos por Módulo</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {MODULOS.map(({ modulo, label, icon }) => (
-                    <div 
-                      key={modulo}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                    >
-                      <span>{icon}</span>
-                      <span className="text-sm text-gray-700">{label}</span>
+              <div className="p-4 border-t border-gray-200 bg-white">
+                {loadingPermisos ? (
+                  <div className="text-center py-8">
+                    <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Cargando permisos...</p>
+                  </div>
+                ) : matrizPermisos ? (
+                  <>
+                    {/* Header de acciones */}
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-medium text-gray-700">
+                        Permisos CRUD por Módulo
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        {cambiosPendientes.size > 0 && (
+                          <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                            {cambiosPendientes.size} cambios pendientes
+                          </span>
+                        )}
+                        {esSuperAdmin && cambiosPendientes.size > 0 && (
+                          <button
+                            onClick={guardarCambios}
+                            disabled={guardando}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                          >
+                            {guardando ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                Guardando...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Guardar Cambios
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {rol.es_sistema && (
-                  <p className="text-xs text-gray-400 mt-4 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    Este es un rol del sistema y no puede ser eliminado
-                  </p>
+
+                    {/* Leyenda de acciones */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {ACCIONES.map(({ accion, label, color }) => (
+                        <span key={accion} className={`px-2 py-1 text-xs rounded-full ${color}`}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Tabla de permisos */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-2 font-medium text-gray-700">Módulo</th>
+                            {ACCIONES.map(({ accion, label }) => (
+                              <th key={accion} className="text-center py-3 px-2 font-medium text-gray-700 w-20">
+                                {label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {MODULOS_CONFIG.map(({ modulo, label, icon }) => {
+                            const moduloPermisos = matrizPermisos.matriz.find(m => m.modulo === modulo);
+                            
+                            return (
+                              <tr key={modulo} className="border-b border-gray-100 hover:bg-gray-50">
+                                <td className="py-3 px-2">
+                                  <div className="flex items-center gap-2">
+                                    <span>{icon}</span>
+                                    <span className="text-gray-800">{label}</span>
+                                  </div>
+                                </td>
+                                {ACCIONES.map(({ accion }) => {
+                                  const tieneOriginal = moduloPermisos?.acciones?.[accion as keyof typeof moduloPermisos.acciones]?.tiene || false;
+                                  const tieneActual = getEstadoPermiso(modulo, accion, tieneOriginal);
+                                  const modificado = hayCambio(modulo, accion);
+                                  
+                                  return (
+                                    <td key={accion} className="text-center py-3 px-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (esSuperAdmin) {
+                                            handleTogglePermiso(modulo, accion, tieneOriginal);
+                                          }
+                                        }}
+                                        disabled={!esSuperAdmin}
+                                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                                          tieneActual 
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                        } ${modificado ? 'ring-2 ring-amber-400' : ''} ${
+                                          !esSuperAdmin ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                                        }`}
+                                        title={
+                                          !esSuperAdmin 
+                                            ? 'Solo super_admin puede modificar permisos' 
+                                            : tieneActual ? 'Quitar permiso' : 'Agregar permiso'
+                                        }
+                                      >
+                                        {tieneActual ? (
+                                          <CheckCircle className="w-5 h-5" />
+                                        ) : (
+                                          <XCircle className="w-5 h-5" />
+                                        )}
+                                      </button>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Notas */}
+                    {rol.es_sistema && (
+                      <p className="text-xs text-gray-400 mt-4 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Este es un rol del sistema. Solo super_admin puede modificar sus permisos.
+                      </p>
+                    )}
+                    {!esSuperAdmin && (
+                      <p className="text-xs text-amber-600 mt-4 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Necesitas rol super_admin para modificar permisos.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
+                    <p>No se pudieron cargar los permisos del rol.</p>
+                    <p className="text-xs mt-1">Verifica que las tablas de seguridad estén instaladas.</p>
+                  </div>
                 )}
               </div>
             )}

@@ -263,6 +263,154 @@ export class PermissionsService {
       return {} as Record<Modulo, Accion[]>;
     }
   }
+
+  // ================================================================
+  // GESTIÓN DE PERMISOS POR ROL
+  // ================================================================
+
+  /**
+   * Obtener matriz de permisos de un rol
+   */
+  static async obtenerMatrizPermisosRol(rolId: string): Promise<MatrizPermisoRol | null> {
+    try {
+      const { data, error } = await supabase.rpc('api_obtener_matriz_permisos_rol', {
+        p_rol_id: rolId
+      });
+
+      if (error) {
+        console.error('❌ Error obteniendo matriz de permisos:', error);
+        return null;
+      }
+
+      if (data?.success && data?.data) {
+        return data.data as MatrizPermisoRol;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Error en obtenerMatrizPermisosRol:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Agregar un permiso a un rol
+   */
+  static async agregarPermisoRol(
+    adminId: string,
+    rolId: string,
+    modulo: Modulo,
+    accion: Accion
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_agregar_permiso_rol', {
+        p_admin_id: adminId,
+        p_rol_id: rolId,
+        p_modulo: modulo,
+        p_accion: accion
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Limpiar cache de todos los usuarios (los permisos cambiaron)
+      this.limpiarCache();
+
+      return { success: data?.success || false, error: data?.error };
+    } catch (error) {
+      return { success: false, error: 'Error al agregar permiso' };
+    }
+  }
+
+  /**
+   * Quitar un permiso de un rol
+   */
+  static async quitarPermisoRol(
+    adminId: string,
+    rolId: string,
+    modulo: Modulo,
+    accion: Accion
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_quitar_permiso_rol', {
+        p_admin_id: adminId,
+        p_rol_id: rolId,
+        p_modulo: modulo,
+        p_accion: accion
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Limpiar cache de todos los usuarios
+      this.limpiarCache();
+
+      return { success: data?.success || false, error: data?.error };
+    } catch (error) {
+      return { success: false, error: 'Error al quitar permiso' };
+    }
+  }
+
+  /**
+   * Actualizar múltiples permisos de un rol
+   */
+  static async actualizarPermisosRol(
+    adminId: string,
+    rolId: string,
+    permisos: { modulo: Modulo; accion: Accion; tiene: boolean }[]
+  ): Promise<{ success: boolean; error?: string; agregados?: number; eliminados?: number }> {
+    try {
+      const { data, error } = await supabase.rpc('api_actualizar_permisos_rol', {
+        p_admin_id: adminId,
+        p_rol_id: rolId,
+        p_permisos: permisos
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Limpiar cache de todos los usuarios
+      this.limpiarCache();
+
+      return { 
+        success: data?.success || false, 
+        error: data?.error,
+        agregados: data?.data?.agregados,
+        eliminados: data?.data?.eliminados
+      };
+    } catch (error) {
+      return { success: false, error: 'Error al actualizar permisos' };
+    }
+  }
+}
+
+// ================================================================
+// TIPOS ADICIONALES
+// ================================================================
+
+export interface PermisoAccion {
+  tiene: boolean;
+  permiso_id: string | null;
+}
+
+export interface ModuloPermisos {
+  modulo: Modulo;
+  acciones: {
+    leer: PermisoAccion;
+    crear: PermisoAccion;
+    editar: PermisoAccion;
+    eliminar: PermisoAccion;
+    exportar: PermisoAccion;
+  };
+}
+
+export interface MatrizPermisoRol {
+  rol_id: string;
+  rol_nombre: string;
+  matriz: ModuloPermisos[];
 }
 
 export default PermissionsService;
