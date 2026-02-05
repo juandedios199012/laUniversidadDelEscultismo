@@ -9,8 +9,7 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Obtener nombre del usuario
-  const nombreUsuario = user?.user_metadata?.full_name || 
-                        user?.user_metadata?.name || 
+  const nombreUsuario = user?.name || 
                         user?.email?.split('@')[0] || 
                         'Usuario';
   

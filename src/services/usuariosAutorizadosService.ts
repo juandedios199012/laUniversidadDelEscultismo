@@ -4,12 +4,19 @@ import { supabase } from '../lib/supabase';
 // TIPOS
 // ================================================================
 
+// Roles disponibles en el sistema (deben coincidir con tabla 'roles')
+export type RolSistema = 
+  | 'super_admin' | 'jefe_grupo' | 'coordinador' 
+  | 'dirigente' | 'asistente' | 'padre_familia' | 'scout'
+  // Alias legacy (para compatibilidad)
+  | 'grupo_admin';
+
 export interface UsuarioAutorizado {
   id: string;
   email: string;
   nombre_completo: string;
   grupo_scout_id: string;
-  role: 'dirigente' | 'grupo_admin' | 'super_admin';
+  role: RolSistema;
   activo: boolean;
   autorizado_por?: string;
   fecha_autorizacion: string;
@@ -37,7 +44,7 @@ export interface SolicitudAcceso {
 export interface InvitarUsuarioData {
   email: string;
   nombre_completo: string;
-  role: 'dirigente' | 'grupo_admin' | 'super_admin';
+  role: RolSistema;
   grupo_scout_id?: string;
 }
 

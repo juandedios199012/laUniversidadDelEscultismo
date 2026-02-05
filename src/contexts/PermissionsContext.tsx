@@ -50,7 +50,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   // Cargar permisos cuando cambia el usuario
   useEffect(() => {
     const cargarPermisos = async () => {
-      if (!user?.id) {
+      if (!user?.id || !user?.email) {
         setSeguridad(null);
         setLoading(false);
         return;
@@ -59,7 +59,25 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       try {
         setLoading(true);
         setError(null);
-        const datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
+        
+        // Obtener datos de seguridad
+        let datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
+        
+        // Si no tiene roles asignados, intentar sincronizar desde dirigentes_autorizados
+        if (!datos || !datos.roles || datos.roles.length === 0) {
+          console.log('🔄 Usuario sin roles, intentando sincronizar...');
+          const resultado = await PermissionsService.sincronizarRolDesdeAutorizado(user.id, user.email);
+          
+          if (resultado.success) {
+            console.log('✅ Rol sincronizado:', resultado.rolAsignado);
+            // Limpiar cache y recargar
+            PermissionsService.limpiarCache(user.id);
+            datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
+          } else {
+            console.warn('⚠️ No se pudo sincronizar rol:', resultado.error);
+          }
+        }
+        
         setSeguridad(datos);
       } catch (err) {
         console.error('Error cargando permisos:', err);
@@ -70,7 +88,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     };
 
     cargarPermisos();
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   // Recargar permisos manualmente
   const recargarPermisos = useCallback(async () => {
