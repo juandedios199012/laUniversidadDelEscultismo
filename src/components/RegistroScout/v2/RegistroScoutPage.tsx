@@ -1,11 +1,13 @@
 /**
- * Scout Registration Page Component (Refactored)
+ * Scouts Page Component (Unified)
  * 
- * Main page that integrates:
+ * Main page that integrates all scout management:
  * - KPI Dashboard
  * - Scout List with search
  * - Scout Form (create/edit)
  * - Medical History Modal
+ * - Deactivate/Delete actions
+ * - PDF Generation
  * 
  * Architecture follows:
  * - Container/Presenter pattern
@@ -28,6 +30,7 @@ import { HistoriaMedicaWizard } from "./HistoriaMedicaWizard";
 
 import ScoutService from "@/services/scoutService";
 import HistoriaMedicaService from "@/services/historiaMedicaService";
+import { usePermissions } from "@/contexts/PermissionsContext";
 import type { Scout } from "@/lib/supabase";
 import type { HistoriaMedicaData } from "../schemas/historiaMedicaSchema";
 
@@ -49,6 +52,9 @@ interface ScoutStats {
 // ============================================
 
 export default function RegistroScoutPage() {
+  // Permisos
+  const { puedeCrear } = usePermissions();
+  
   // State
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [selectedScout, setSelectedScout] = useState<Scout | null>(null);
@@ -156,6 +162,48 @@ export default function RegistroScoutPage() {
     setViewMode("list");
     setSelectedScout(null);
   }, []);
+
+  // Handle deactivate scout
+  const handleDeactivateScout = useCallback(async (scout: Scout) => {
+    if (!window.confirm(`¿Desactivar al scout ${scout.nombres} ${scout.apellidos}?\n\nEl scout pasará a estado INACTIVO pero sus datos se conservarán.`)) {
+      return;
+    }
+
+    try {
+      const result = await ScoutService.desactivarScout(scout.id);
+      if (result.success) {
+        await loadScouts();
+        await loadStats();
+        success('Scout desactivado exitosamente');
+      } else {
+        error(`Error al desactivar: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Error al desactivar scout:', err);
+      error('Error al desactivar el scout');
+    }
+  }, [loadScouts, loadStats, success, error]);
+
+  // Handle delete scout
+  const handleDeleteScout = useCallback(async (scout: Scout) => {
+    if (!window.confirm(`⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE al scout ${scout.nombres} ${scout.apellidos} y no se podrá recuperar.\n\n¿Estás COMPLETAMENTE SEGURO?`)) {
+      return;
+    }
+
+    try {
+      const result = await ScoutService.deleteScout(scout.id);
+      if (result.success) {
+        await loadScouts();
+        await loadStats();
+        success('Scout eliminado permanentemente');
+      } else {
+        error(`Error al eliminar: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Error al eliminar scout:', err);
+      error('Error al eliminar el scout');
+    }
+  }, [loadScouts, loadStats, success, error]);
 
   // Handle medical history
   const handleOpenMedicalHistory = useCallback(async (scout: Scout) => {
@@ -265,10 +313,10 @@ export default function RegistroScoutPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-7 w-7 text-primary" />
-            Registro de Scouts
+            Scouts
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona el registro de scouts del grupo
+            Gestión integral de scouts del grupo
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -281,10 +329,12 @@ export default function RegistroScoutPage() {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Actualizar
           </Button>
-          <Button onClick={handleNewScout}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Nuevo Scout
-          </Button>
+          {puedeCrear('scouts') && (
+            <Button onClick={handleNewScout}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Nuevo Scout
+            </Button>
+          )}
         </div>
       </div>
 
@@ -294,8 +344,9 @@ export default function RegistroScoutPage() {
       {/* Main Content */}
       <Tabs defaultValue="todos" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="todos">Todos</TabsTrigger>
-          <TabsTrigger value="activos">Activos</TabsTrigger>
+          <TabsTrigger value="todos">Todos ({scouts.length})</TabsTrigger>
+          <TabsTrigger value="activos">Activos ({scouts.filter(s => s.estado === "ACTIVO").length})</TabsTrigger>
+          <TabsTrigger value="inactivos">Inactivos ({scouts.filter(s => s.estado !== "ACTIVO").length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="todos">
@@ -306,7 +357,11 @@ export default function RegistroScoutPage() {
             onEdit={handleEditScout}
             onNewScout={handleNewScout}
             onMedicalHistory={handleOpenMedicalHistory}
+            onDeactivate={handleDeactivateScout}
+            onDelete={handleDeleteScout}
+            onRefresh={handleRefresh}
             selectedId={selectedScout?.id}
+            showTitle={false}
           />
         </TabsContent>
 
@@ -318,7 +373,26 @@ export default function RegistroScoutPage() {
             onEdit={handleEditScout}
             onNewScout={handleNewScout}
             onMedicalHistory={handleOpenMedicalHistory}
+            onDeactivate={handleDeactivateScout}
+            onDelete={handleDeleteScout}
+            onRefresh={handleRefresh}
             selectedId={selectedScout?.id}
+            showTitle={false}
+          />
+        </TabsContent>
+
+        <TabsContent value="inactivos">
+          <ScoutList
+            scouts={scouts.filter((s) => s.estado !== "ACTIVO")}
+            loading={loading}
+            onSelect={handleSelectScout}
+            onEdit={handleEditScout}
+            onNewScout={handleNewScout}
+            onMedicalHistory={handleOpenMedicalHistory}
+            onDelete={handleDeleteScout}
+            onRefresh={handleRefresh}
+            selectedId={selectedScout?.id}
+            showTitle={false}
           />
         </TabsContent>
       </Tabs>

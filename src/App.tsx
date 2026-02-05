@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
-import { RegistroScoutPage as RegistroScoutV2 } from './components/RegistroScout/v2';
-import GestionScouts from './components/GestionScouts/GestionScouts';
+import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
 import InscripcionAnualMejorada from './components/Inscripcion/InscripcionAnualMejorada';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
@@ -54,11 +53,10 @@ function AppContent() {
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveModule} />;
+      case 'scouts':
       case 'registro-scout':
       case 'registro-scout-v2':
-        return <RegistroScoutV2 />;
-      case 'gestion-scouts':
-        return <GestionScouts />;
+        return <ScoutsPage />;
       case 'inscripcion-anual':
         return <InscripcionAnualMejorada />;
       case 'progresion':

@@ -1,6 +1,5 @@
 import { 
   Users, 
-  UserPlus, 
   Shield, 
   Calendar, 
   ClipboardCheck,
@@ -36,8 +35,7 @@ const menuItems: {
   modulo?: Modulo; // Módulo de permisos asociado
 }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', modulo: 'dashboard' },
-  { id: 'registro-scout', label: 'Registro Scout', icon: UserPlus, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts' },
-  { id: 'gestion-scouts', label: 'Gestión Scouts', icon: Users, gradient: 'from-blue-500 to-indigo-500', modulo: 'scouts' },
+  { id: 'scouts', label: 'Scouts', icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500', modulo: 'inscripciones' },
   { id: 'progresion', label: 'Progresión', icon: TrendingUp, gradient: 'from-amber-500 to-orange-500', modulo: 'progresion' },
   { id: 'admin-objetivos', label: '⚙️ Objetivos Educativos', icon: TrendingUp, gradient: 'from-orange-400 to-amber-500', modulo: 'progresion' },

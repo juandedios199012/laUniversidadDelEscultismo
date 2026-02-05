@@ -1,9 +1,11 @@
 /**
- * Scout Search and List Component
+ * Scout Search and List Component (Unified)
+ * Integra funcionalidades de Registro y Gestión de Scouts
  */
 
 import { useState, useMemo } from "react";
-import { Search, Edit, Eye, Plus, Users, Heart } from "lucide-react";
+import { Search, Edit, Eye, Plus, Users, Heart, FileText, UserMinus, Trash2 } from "lucide-react";
+import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "./EmptyState";
+import { usePermissions } from "@/contexts/PermissionsContext";
+import { getScoutData } from "@/modules/reports/services/reportDataService";
+import { generateReportMetadata } from "@/modules/reports/services/pdfService";
+import DNGI03Template from "@/modules/reports/templates/pdf/DNGI03Template";
 import type { Scout } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +27,11 @@ interface ScoutListProps {
   onEdit: (scout: Scout) => void;
   onNewScout: () => void;
   onMedicalHistory?: (scout: Scout) => void;
+  onDeactivate?: (scout: Scout) => void;
+  onDelete?: (scout: Scout) => void;
+  onRefresh?: () => void;
   selectedId?: string;
+  showTitle?: boolean;
 }
 
 const ramaBadgeVariant: Record<string, "manada" | "tropa" | "comunidad" | "clan" | "default"> = {
@@ -43,9 +53,50 @@ export function ScoutList({
   onEdit,
   onNewScout,
   onMedicalHistory,
+  onDeactivate,
+  onDelete,
+  onRefresh,
   selectedId,
+  showTitle = true,
 }: ScoutListProps) {
+  const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+
+  // Handler para generar PDF
+  const handleGenerarPDF = async (scout: Scout, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setGeneratingPdf(scout.id);
+      console.log('📄 Generando PDF para scout:', scout.id);
+      
+      const scoutData = await getScoutData(scout.id);
+      if (!scoutData) {
+        alert('No se pudieron obtener los datos del scout');
+        return;
+      }
+
+      const metadata = generateReportMetadata();
+      const doc = <DNGI03Template scout={scoutData} metadata={metadata} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `DNGI03_${scout.codigo_scout}_${scout.nombres}_${scout.apellidos}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log('✅ PDF generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error generando PDF:', error);
+      alert('Error al generar el PDF');
+    } finally {
+      setGeneratingPdf(null);
+    }
+  };
 
   const filteredScouts = useMemo(() => {
     if (!searchTerm.trim()) return scouts;
@@ -82,10 +133,15 @@ export function ScoutList({
             <Users className="h-5 w-5" />
             Scouts ({filteredScouts.length})
           </CardTitle>
-          <Button size="sm" onClick={onNewScout}>
-            <Plus className="h-4 w-4 mr-1" />
-            Nuevo
-          </Button>
+          {puedeCrear('scouts') && (
+            <Button 
+              size="sm" 
+              onClick={onNewScout}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nuevo
+            </Button>
+          )}
         </div>
         <div className="relative mt-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -109,7 +165,7 @@ export function ScoutList({
                 : "Comienza registrando al primer scout del grupo"
             }
             action={
-              !searchTerm
+              !searchTerm && puedeCrear('scouts')
                 ? { label: "Registrar Scout", onClick: onNewScout }
                 : undefined
             }
@@ -168,18 +224,20 @@ export function ScoutList({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(scout);
-                      }}
-                      title="Editar"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {onMedicalHistory && (
+                    {puedeEditar('scouts') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(scout);
+                        }}
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onMedicalHistory && puedeEditar('scouts') && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -191,6 +249,46 @@ export function ScoutList({
                         className="text-red-500 hover:text-red-600 hover:bg-red-50"
                       >
                         <Heart className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {puedeExportar('scouts') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleGenerarPDF(scout, e)}
+                        disabled={generatingPdf === scout.id}
+                        title="Generar PDF DNGI-03"
+                        className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                      >
+                        <FileText className={`h-4 w-4 ${generatingPdf === scout.id ? 'animate-pulse' : ''}`} />
+                      </Button>
+                    )}
+                    {onDeactivate && puedeEditar('scouts') && scout.estado === "ACTIVO" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeactivate(scout);
+                        }}
+                        title="Desactivar scout"
+                        className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && puedeEliminar('scouts') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(scout);
+                        }}
+                        title="Eliminar permanentemente"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>

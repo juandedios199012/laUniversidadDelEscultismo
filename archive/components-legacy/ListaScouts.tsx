@@ -19,7 +19,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
   onEditarScout,
   onEliminarScout
 }) => {
-  const { puedeEditar, puedeEliminar } = usePermissions();
+  const { puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -189,6 +189,10 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
   const totalPaginas = Math.ceil(scoutsFiltrados.length / paginacion.elementosPorPagina);
   const indiceInicio = (paginacion.paginaActual - 1) * paginacion.elementosPorPagina;
   const scoutsPaginados = scoutsFiltrados.slice(indiceInicio, indiceInicio + paginacion.elementosPorPagina);
+
+  const handleEditar = (scout: Scout) => {
+    onEditarScout?.(scout);
+  };
 
   const calcularEdad = (fechaNacimiento: string) => {
     const hoy = new Date();
@@ -403,16 +407,18 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                       >
                         👁️
                       </button>
-                      <button
-                        onClick={() => handleGenerarPDF(scout)}
-                        className="text-purple-600 hover:text-purple-900 px-2 py-1 rounded transition-colors"
-                        title="Generar PDF DNGI-03"
-                      >
-                        📄
-                      </button>
+                      {puedeExportar('scouts') && (
+                        <button
+                          onClick={() => handleGenerarPDF(scout)}
+                          className="text-purple-600 hover:text-purple-900 px-2 py-1 rounded transition-colors"
+                          title="Generar PDF DNGI-03"
+                        >
+                          📄
+                        </button>
+                      )}
                       {puedeEditar('scouts') && (
                         <button
-                          onClick={() => onEditarScout?.(scout)}
+                          onClick={() => handleEditar(scout)}
                           className="text-green-600 hover:text-green-900 px-2 py-1 rounded transition-colors"
                           title="Editar"
                         >

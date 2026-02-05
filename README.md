@@ -732,40 +732,66 @@ El sistema implementa **Role-Based Access Control (RBAC)** verificando permisos 
 
 ### Patrón de Implementación
 
+El enfoque **oculta los botones** si el usuario no tiene el permiso correspondiente:
+
 ```tsx
 // 1. Importar hook de permisos
 import { usePermissions } from '../../contexts/PermissionsContext';
 
 // 2. Usar hook en el componente
-const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
 
-// 3. Verificar en handlers antes de ejecutar
-const handleCreateItem = async () => {
-  if (!puedeCrear('modulo_nombre')) {
-    alert('No tienes permiso para crear registros');
-    return;
-  }
-  // ... lógica de creación
-};
-
-// 4. Ocultar botones condicionalmente
-{puedeEditar('modulo_nombre') && (
-  <button onClick={handleEdit}>✏️ Editar</button>
+// 3. Renderizado condicional de botones
+{puedeCrear('scouts') && (
+  <Button onClick={handleNuevoScout}>
+    <Plus /> Nuevo Scout
+  </Button>
 )}
 
-{puedeEliminar('modulo_nombre') && (
-  <button onClick={handleDelete}>🗑️ Eliminar</button>
+{puedeEditar('scouts') && (
+  <button onClick={() => onEditar(item)} title="Editar">
+    ✏️
+  </button>
+)}
+
+{puedeEliminar('scouts') && (
+  <button onClick={() => onEliminar(item)} title="Eliminar">
+    🗑️
+  </button>
+)}
+
+{puedeExportar('scouts') && (
+  <button onClick={() => generarPDF(item)} title="Generar PDF">
+    📄
+  </button>
 )}
 ```
 
+### Ventajas del Patrón
+
+- **Interfaz limpia**: Solo se muestran las opciones que el usuario puede usar
+- **Sin confusión**: El usuario no ve botones que no puede usar
+- **Consistente**: Mismo patrón en todos los módulos
+
 ### Módulos con Permisos Implementados
 
-#### **Scouts**
+#### **Scouts** (módulo unificado: 'scouts')
+
+> **Nota**: Los módulos "Registro Scout" y "Gestión Scout" fueron unificados en un solo módulo "Scouts" (5 Feb 2026).
+
 | Archivo | Permisos | Descripción |
 |---------|----------|-------------|
-| `ListaScouts.tsx` | `puedeEditar`, `puedeEliminar` | Oculta botones de edición/eliminación |
-| `EditarScoutModal.tsx` | `puedeEditar` | Valida antes de guardar cambios |
+| `RegistroScoutPage.tsx` | `puedeCrear` | Oculta botón "Nuevo Scout" |
+| `ScoutList.tsx` | `puedeCrear`, `puedeEditar`, `puedeEliminar`, `puedeExportar` | Lista unificada con todas las acciones |
 | `ScoutFormWizard.tsx` | `puedeCrear`, `puedeEditar` | Valida en onSubmit según modo |
+
+**Acciones disponibles en ScoutList:**
+- 👁️ Ver detalles (siempre visible)
+- ✏️ Editar (requiere `puedeEditar`)
+- ❤️ Historia Médica (requiere `puedeEditar`)
+- 📄 Generar PDF (requiere `puedeExportar`)
+- ⏸️ Desactivar (requiere `puedeEditar`, solo para activos)
+- 🗑️ Eliminar (requiere `puedeEliminar`)
 
 #### **Dirigentes**
 | Archivo | Permisos | Descripción |
