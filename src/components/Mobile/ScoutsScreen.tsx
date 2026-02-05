@@ -64,9 +64,9 @@ export default function ScoutsScreen() {
     if (busqueda.trim()) {
       const termino = busqueda.toLowerCase();
       resultado = resultado.filter(s => 
-        s.nombres.toLowerCase().includes(termino) ||
-        s.apellidos.toLowerCase().includes(termino) ||
-        s.codigo_asociado.toLowerCase().includes(termino)
+        (s.nombres || '').toLowerCase().includes(termino) ||
+        (s.apellidos || '').toLowerCase().includes(termino) ||
+        (s.codigo_asociado || '').toLowerCase().includes(termino)
       );
     }
 
