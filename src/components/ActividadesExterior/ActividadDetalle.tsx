@@ -49,9 +49,9 @@ import {
   ActividadExteriorCompleta,
   BloqueProgramaActividad,
   ProgramaActividad,
+  DashboardPresupuesto,
   TIPOS_ACTIVIDAD_EXTERIOR,
   ESTADOS_ACTIVIDAD_EXTERIOR,
-  CATEGORIAS_PRESUPUESTO_ACTIVIDAD,
   TIPOS_COMIDA_ACTIVIDAD,
 } from '@/services/actividadesExteriorService';
 import { toast } from 'sonner';
@@ -60,7 +60,6 @@ import { usePermissions } from '@/contexts/PermissionsContext';
 // Diálogos
 import NuevoProgramaDialog from './dialogs/NuevoProgramaDialog';
 import InscribirParticipantesDialog from './dialogs/InscribirParticipantesDialog';
-import NuevoPresupuestoDialog from './dialogs/NuevoPresupuestoDialog';
 import NuevoMenuDialog from './dialogs/NuevoMenuDialog';
 import RegistrarPuntajeDialog from './dialogs/RegistrarPuntajeDialog';
 import AgregarStaffDialog from './dialogs/AgregarStaffDialog';
@@ -103,9 +102,8 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   const [showProgramaDialog, setShowProgramaDialog] = useState(false);
   const [programaEditar, setProgramaEditar] = useState<ProgramaActividad | null>(null);
   const [showParticipantesDialog, setShowParticipantesDialog] = useState(false);
-  const [showPresupuestoDialog, setShowPresupuestoDialog] = useState(false);
-  const [presupuestoEditar, setPresupuestoEditar] = useState<any>(null);
   const [showMenuDialog, setShowMenuDialog] = useState(false);
+  const [dashboardPresupuesto, setDashboardPresupuesto] = useState<DashboardPresupuesto | null>(null);
   const [menuEditar, setMenuEditar] = useState<any>(null);
   const [showPuntajeDialog, setShowPuntajeDialog] = useState(false);
   const [showStaffDialog, setShowStaffDialog] = useState(false);
@@ -149,41 +147,6 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
       try {
         await ActividadesExteriorService.eliminarPrograma(programaId);
         toast.success('Programa eliminado');
-        cargarActividad();
-      } catch (error: any) {
-        toast.error(error.message || 'Error al eliminar');
-      }
-    }
-  };
-
-  // Handlers para presupuesto
-  const handleEditarPresupuesto = (item: any) => {
-    if (!puedeEditar('actividades_exterior')) {
-      toast.error('No tienes permiso para editar presupuestos');
-      return;
-    }
-    setPresupuestoEditar(item);
-    setShowPresupuestoDialog(true);
-  };
-
-  const handleNuevoPresupuesto = () => {
-    if (!puedeCrear('actividades_exterior')) {
-      toast.error('No tienes permiso para crear items de presupuesto');
-      return;
-    }
-    setPresupuestoEditar(null);
-    setShowPresupuestoDialog(true);
-  };
-
-  const handleEliminarPresupuesto = async (itemId: string, concepto: string) => {
-    if (!puedeEliminar('actividades_exterior')) {
-      toast.error('No tienes permiso para eliminar presupuestos');
-      return;
-    }
-    if (confirm(`¿Eliminar "${concepto}" del presupuesto?`)) {
-      try {
-        await ActividadesExteriorService.eliminarPresupuesto(itemId);
-        toast.success('Item de presupuesto eliminado');
         cargarActividad();
       } catch (error: any) {
         toast.error(error.message || 'Error al eliminar');
@@ -306,6 +269,15 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
       const data = await ActividadesExteriorService.obtenerActividad(actividadId);
       setActividad(data);
       
+      // Cargar dashboard de presupuesto calculado
+      try {
+        const dashboardData = await ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId);
+        setDashboardPresupuesto(dashboardData);
+      } catch (e) {
+        console.log('Dashboard presupuesto no disponible:', e);
+        setDashboardPresupuesto(null);
+      }
+      
       // Expandir primer programa por defecto
       if (data.programas.length > 0) {
         setProgramasExpandidos(new Set([data.programas[0].id]));
@@ -375,8 +347,8 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
     p.estado_autorizacion === 'FIRMADA' || p.estado_autorizacion === 'RECIBIDA' || p.estado_autorizacion === 'EXONERADA'
   ).length;
   const totalRecaudado = actividad.participantes.reduce((sum, p) => sum + (p.monto_pagado || 0), 0);
-  const totalPresupuesto = actividad.presupuesto.reduce((sum, p) => sum + (p.monto_total || 0), 0);
-  const totalEjecutadoPresupuesto = actividad.presupuesto.reduce((sum, p) => sum + (p.monto_ejecutado || 0), 0);
+  // Presupuesto calculado desde ingredientes + materiales + logística
+  const totalPresupuesto = dashboardPresupuesto?.total_estimado || 0;
 
   // Calcular días de actividad
   const diasActividad = (() => {
@@ -1440,13 +1412,6 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         onOpenChange={setShowParticipantesDialog}
         actividadId={actividadId}
         participantesActuales={actividad.participantes.map(p => p.scout_id)}
-        onSuccess={cargarActividad}
-      />
-
-      <NuevoPresupuestoDialog
-        open={showPresupuestoDialog}
-        onOpenChange={setShowPresupuestoDialog}
-        actividadId={actividadId}
         onSuccess={cargarActividad}
       />
 

@@ -45,7 +45,7 @@ import { toast } from 'sonner';
 // Schema de validación
 const menuSchema = z.object({
   dia: z.number().min(1, 'Selecciona un día'),
-  tipo_comida: z.enum(['DESAYUNO', 'ALMUERZO', 'CENA', 'REFRIGERIO']),
+  tipo_comida: z.enum(['DESAYUNO', 'ALMUERZO', 'CENA', 'ADICIONALES']),
   nombre_plato: z.string().min(2, 'Mínimo 2 caracteres'),
   descripcion: z.string().optional(),
   responsable_cocina: z.string().optional(),

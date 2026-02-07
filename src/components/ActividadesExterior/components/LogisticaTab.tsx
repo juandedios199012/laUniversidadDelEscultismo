@@ -11,6 +11,7 @@ import { z } from 'zod';
 import {
   Plus,
   Trash2,
+  Edit,
   Package,
   Truck,
   Tent,
@@ -115,6 +116,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [itemEditar, setItemEditar] = useState<ItemLogistica | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form
@@ -165,11 +167,35 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
     cargarItems();
   }, [cargarItems]);
 
-  // Agregar item
-  const handleAgregar = async (data: LogisticaFormData) => {
+  // Abrir dialog para editar
+  const handleEditar = (item: ItemLogistica) => {
+    setItemEditar(item);
+    form.reset({
+      nombre: item.nombre,
+      categoria: item.categoria,
+      unidad: item.unidad,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio_unitario,
+      tipo_costo: item.tipo_costo,
+      dias_alquiler: item.dias_alquiler || 1,
+      descripcion: item.descripcion || '',
+      fuente: item.fuente || 'COMPRA',
+      proveedor_nombre: item.proveedor_nombre || '',
+      proveedor_contacto: item.proveedor_contacto || '',
+      fecha_necesaria: item.fecha_necesaria || '',
+      fecha_devolucion: item.fecha_devolucion || '',
+      es_critico: item.es_critico || false,
+      notas: item.notas || '',
+    });
+    setShowAddDialog(true);
+  };
+
+  // Agregar o actualizar item
+  const handleSubmit = async (data: LogisticaFormData) => {
     try {
       setSaving(true);
-      await ActividadesExteriorService.agregarLogistica(actividadId, {
+      
+      const itemData = {
         nombre: data.nombre,
         categoria: data.categoria as any,
         unidad: data.unidad,
@@ -185,13 +211,24 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
         fecha_devolucion: data.fecha_devolucion || undefined,
         es_critico: data.es_critico,
         notas: data.notas,
-      });
-      toast.success('Item de logística agregado');
+      };
+      
+      if (itemEditar) {
+        // Actualizar
+        await ActividadesExteriorService.actualizarLogistica(itemEditar.id, itemData);
+        toast.success('Item actualizado');
+      } else {
+        // Crear nuevo
+        await ActividadesExteriorService.agregarLogistica(actividadId, itemData);
+        toast.success('Item de logística agregado');
+      }
+      
       form.reset();
+      setItemEditar(null);
       setShowAddDialog(false);
       cargarItems();
     } catch (error: any) {
-      toast.error(error.message || 'Error al agregar');
+      toast.error(error.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
@@ -452,14 +489,24 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                               </TableCell>
                               {!readonly && (
                                 <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-destructive"
-                                    onClick={() => handleEliminar(item.id)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => handleEditar(item)}
+                                    >
+                                      <Edit className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive"
+                                      onClick={() => handleEliminar(item.id)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               )}
                             </TableRow>
@@ -485,13 +532,19 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
         )}
       </CardContent>
 
-      {/* Dialog agregar */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+      {/* Dialog agregar/editar */}
+      <Dialog open={showAddDialog} onOpenChange={(open) => {
+        if (!open) {
+          form.reset();
+          setItemEditar(null);
+        }
+        setShowAddDialog(open);
+      }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Agregar Item de Logística
+              {itemEditar ? 'Editar Item de Logística' : 'Agregar Item de Logística'}
             </DialogTitle>
             <DialogDescription>
               Equipamiento transversal para la actividad
@@ -499,7 +552,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAgregar)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               {/* Nombre */}
               <FormField
                 control={form.control}
@@ -789,6 +842,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                   variant="outline"
                   onClick={() => {
                     form.reset();
+                    setItemEditar(null);
                     setShowAddDialog(false);
                   }}
                 >
@@ -799,6 +853,11 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Guardando...
+                    </>
+                  ) : itemEditar ? (
+                    <>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Guardar Cambios
                     </>
                   ) : (
                     <>

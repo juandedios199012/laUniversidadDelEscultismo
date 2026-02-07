@@ -193,7 +193,7 @@ export interface DocumentoActividad {
 export interface ItemMenuActividad {
   id: string;
   dia: number;
-  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
+  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'ADICIONALES';
   nombre_plato: string;
   descripcion?: string;
   responsable_cocina?: string;
@@ -204,7 +204,7 @@ export interface ItemMenuActividad {
 
 export interface NuevoItemMenuActividad {
   dia: number;
-  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'REFRIGERIO';
+  tipo_comida: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | 'ADICIONALES';
   nombre_plato: string;
   descripcion?: string;
   responsable_cocina?: string;
@@ -631,7 +631,7 @@ export const TIPOS_COMIDA_ACTIVIDAD = [
   { value: 'DESAYUNO', label: 'Desayuno', emoji: '🍳' },
   { value: 'ALMUERZO', label: 'Almuerzo', emoji: '🍽️' },
   { value: 'CENA', label: 'Cena', emoji: '🍲' },
-  { value: 'REFRIGERIO', label: 'Refrigerio', emoji: '🍎' },
+  { value: 'ADICIONALES', label: 'Adicionales', emoji: '🍎' },
 ];
 
 // Roles de staff - FALLBACK (preferir obtenerRolesStaff() desde BD)
