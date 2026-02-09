@@ -60,6 +60,7 @@ export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   fecha_limite_inscripcion?: string;
   fecha_limite_pago?: string;
   notas_internas?: string;
+  patrullas_actividad: PatrullaActividad[];
   programas: ProgramaActividad[];
   participantes: ParticipanteActividad[];
   staff: StaffActividad[];
@@ -101,6 +102,7 @@ export interface ProgramaActividad {
   orden?: number;
   responsable_id?: string;
   bloques: BloqueProgramaActividad[];
+  subcampos?: SubCampo[];
 }
 
 export interface BloqueProgramaActividad {
@@ -144,6 +146,9 @@ export interface ParticipanteActividad {
   pagado_completo: boolean;
   restricciones_alimentarias?: string;
   observaciones?: string;
+  patrulla_actividad_id?: string;
+  patrulla_nombre?: string;
+  patrulla_color?: string;
 }
 
 export interface StaffActividad {
@@ -216,10 +221,55 @@ export interface PuntajeActividad {
   id: string;
   patrulla_id: string;
   patrulla_nombre: string;
+  patrulla_actividad_id?: string;
+  subcampo_id?: string;
   bloque_id?: string;
   bloque_nombre?: string;
   puntaje: number;
   observaciones?: string;
+}
+
+// ============= INTERFACES PATRULLAS DE ACTIVIDAD =============
+
+export interface PatrullaActividad {
+  id: string;
+  actividad_id?: string;
+  nombre: string;
+  color: string;
+  icono: string;
+  orden: number;
+  cantidad_participantes?: number;
+  puntaje_total?: number;
+}
+
+export interface NuevaPatrullaActividad {
+  nombre: string;
+  color?: string;
+  icono?: string;
+}
+
+// ============= INTERFACES SUB CAMPOS =============
+
+export interface SubCampo {
+  id: string;
+  actividad_id?: string;
+  nombre: string;
+  responsable_id?: string;
+  responsable_nombre?: string;
+  color?: string;
+  icono?: string;
+  orden: number;
+  patrullas: PatrullaActividad[];
+  cantidad_patrullas?: number;
+  puntaje_total?: number;
+}
+
+export interface NuevoSubCampo {
+  nombre: string;
+  responsable_id?: string;
+  color?: string;
+  icono?: string;
+  patrullas_ids?: string[];
 }
 
 // ============= INTERFACES INGREDIENTES MENÚ =============
@@ -917,7 +967,7 @@ export class ActividadesExteriorService {
   }
 
   /**
-   * Registra puntaje de patrulla
+   * Registra puntaje de patrulla de actividad (flujo limpio - solo patrullas_actividad)
    */
   static async registrarPuntaje(
     params: {
@@ -928,18 +978,19 @@ export class ActividadesExteriorService {
       registrado_por?: string;
     }
   ): Promise<{ puntaje_id: string }> {
-    const { data, error } = await supabase.rpc('api_registrar_puntaje', {
+    const { data, error } = await supabase.rpc('api_registrar_puntaje_patrulla_actividad', {
       p_bloque_id: params.bloque_id,
-      p_patrulla_id: params.patrulla_id,
+      p_patrulla_actividad_id: params.patrulla_id,
       p_puntaje: params.puntaje,
       p_observaciones: params.observaciones || null,
+      p_subcampo_id: null,
       p_registrado_por: params.registrado_por || null,
     });
 
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al registrar puntaje');
 
-    return { puntaje_id: data.puntaje_id };
+    return { puntaje_id: data.id };
   }
 
   /**
@@ -2496,6 +2547,210 @@ export class ActividadesExteriorService {
     if (!data?.success) throw new Error(data?.error || 'Error al obtener dashboard');
 
     return data.data;
+  }
+
+  // ============= PATRULLAS POR ACTIVIDAD =============
+
+  /**
+   * Listar patrullas de una actividad
+   */
+  static async listarPatrullasActividad(
+    actividadId: string
+  ): Promise<PatrullaActividad[]> {
+    const { data, error } = await supabase.rpc('api_listar_patrullas_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar patrullas');
+
+    return data.patrullas || [];
+  }
+
+  /**
+   * Crear nueva patrulla para la actividad
+   */
+  static async crearPatrullaActividad(
+    actividadId: string,
+    patrulla: NuevaPatrullaActividad
+  ): Promise<{ id: string }> {
+    const { data, error } = await supabase.rpc('api_crear_patrulla_actividad', {
+      p_actividad_id: actividadId,
+      p_nombre: patrulla.nombre,
+      p_color: patrulla.color || '#3B82F6',
+      p_icono: patrulla.icono || '🏕️',
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al crear patrulla');
+
+    return { id: data.patrulla_id };
+  }
+
+  /**
+   * Actualizar patrulla de actividad
+   */
+  static async actualizarPatrullaActividad(
+    patrullaId: string,
+    updates: Partial<NuevaPatrullaActividad>
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_patrulla_actividad', {
+      p_patrulla_id: patrullaId,
+      p_nombre: updates.nombre,
+      p_color: updates.color,
+      p_icono: updates.icono,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar patrulla');
+  }
+
+  /**
+   * Eliminar patrulla de actividad
+   */
+  static async eliminarPatrullaActividad(patrullaId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_patrulla_actividad', {
+      p_patrulla_id: patrullaId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar patrulla');
+  }
+
+  /**
+   * Importar patrullas del sistema a la actividad
+   */
+  static async importarPatrullasSistema(actividadId: string): Promise<{ cantidad: number }> {
+    const { data, error } = await supabase.rpc('api_importar_patrullas_sistema', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al importar patrullas');
+
+    return { cantidad: data.cantidad_importadas || 0 };
+  }
+
+  /**
+   * Asignar participante a una patrulla
+   */
+  static async asignarParticipantePatrulla(
+    participanteId: string,
+    patrullaId: string | null
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_asignar_participante_patrulla', {
+      p_participante_id: participanteId,
+      p_patrulla_id: patrullaId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al asignar patrulla');
+  }
+
+  /**
+   * Obtener ranking de patrullas (con filtro opcional por subcampo)
+   */
+  static async rankingPatrullasActividad(
+    actividadId: string,
+    subcampoId?: string
+  ): Promise<PatrullaActividad[]> {
+    const { data, error } = await supabase.rpc('api_ranking_patrullas_actividad', {
+      p_actividad_id: actividadId,
+      p_subcampo_id: subcampoId || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener ranking');
+
+    return data.ranking || [];
+  }
+
+  // ============= SUB CAMPOS =============
+
+  /**
+   * Listar subcampos de una actividad
+   */
+  static async listarSubcampos(actividadId: string): Promise<SubCampo[]> {
+    const { data, error } = await supabase.rpc('api_listar_subcampos_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar subcampos');
+
+    return data.data || [];
+  }
+
+  /**
+   * Crear nuevo subcampo en una actividad
+   */
+  static async crearSubcampo(
+    actividadId: string,
+    subcampo: NuevoSubCampo
+  ): Promise<{ id: string }> {
+    const { data, error } = await supabase.rpc('api_crear_subcampo_actividad', {
+      p_actividad_id: actividadId,
+      p_nombre: subcampo.nombre,
+      p_responsable_id: subcampo.responsable_id || null,
+      p_color: subcampo.color || '#3B82F6',
+      p_icono: subcampo.icono || '🚩',
+      p_patrullas_ids: subcampo.patrullas_ids || [],
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al crear subcampo');
+
+    return { id: data.id };
+  }
+
+  /**
+   * Actualizar subcampo
+   */
+  static async actualizarSubcampo(
+    subcampoId: string,
+    updates: Partial<NuevoSubCampo>
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_subcampo_actividad', {
+      p_subcampo_id: subcampoId,
+      p_nombre: updates.nombre,
+      p_responsable_id: updates.responsable_id,
+      p_color: updates.color,
+      p_icono: updates.icono,
+      p_patrullas_ids: updates.patrullas_ids,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar subcampo');
+  }
+
+  /**
+   * Eliminar subcampo
+   */
+  static async eliminarSubcampo(subcampoId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_subcampo_actividad', {
+      p_subcampo_id: subcampoId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar subcampo');
+  }
+
+  /**
+   * Obtener ranking por sub campo
+   */
+  static async rankingPorSubcampo(
+    actividadId: string,
+    subcampoId?: string
+  ): Promise<any[]> {
+    const { data, error } = await supabase.rpc('api_ranking_por_subcampo', {
+      p_actividad_id: actividadId,
+      p_subcampo_id: subcampoId || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener ranking');
+
+    return data.data || [];
   }
 }
 

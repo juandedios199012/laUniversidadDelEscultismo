@@ -75,6 +75,8 @@ import LogisticaTab from './components/LogisticaTab';
 import PresupuestoDashboard from './components/PresupuestoDashboard';
 import IngredientesMenu from './components/IngredientesMenu';
 import MaterialesBloque from './components/MaterialesBloque';
+import PatrullasTab from './components/PatrullasTab';
+import SubCamposTab from './components/SubCamposTab';
 
 interface ActividadDetalleProps {
   actividadId: string;
@@ -482,6 +484,8 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
           <TabsTrigger value="resumen">📋 Resumen</TabsTrigger>
           <TabsTrigger value="programa">📅 Programa</TabsTrigger>
           <TabsTrigger value="participantes">👥 Participantes</TabsTrigger>
+          <TabsTrigger value="patrullas">🏕️ Patrullas</TabsTrigger>
+          <TabsTrigger value="subcampos">🚩 Sub Campos</TabsTrigger>
           <TabsTrigger value="presupuesto">💰 Presupuesto</TabsTrigger>
           <TabsTrigger value="compras">🛒 Compras</TabsTrigger>
           <TabsTrigger value="menu">🍽️ Menú</TabsTrigger>
@@ -980,6 +984,24 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab Patrullas */}
+        <TabsContent value="patrullas">
+          <PatrullasTab
+            actividadId={actividad.id}
+            patrullas={actividad.patrullas_actividad || []}
+            onRefresh={cargarActividad}
+          />
+        </TabsContent>
+
+        {/* Tab Sub Campos */}
+        <TabsContent value="subcampos">
+          <SubCamposTab
+            actividadId={actividad.id}
+            patrullas={actividad.patrullas_actividad || []}
+            onRefresh={cargarActividad}
+          />
         </TabsContent>
 
         {/* Tab Presupuesto - Dashboard Consolidado */}

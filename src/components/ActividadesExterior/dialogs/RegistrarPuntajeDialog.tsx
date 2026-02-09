@@ -103,6 +103,27 @@ const EstadoVacioBloques: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   </div>
 );
 
+// Estado vacío cuando no hay patrullas creadas
+const EstadoVacioPatrullas: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <div className="text-center py-8 px-4">
+    <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+      <Flag className="h-8 w-8 text-blue-600" />
+    </div>
+    <h3 className="text-lg font-medium text-gray-900 mb-2">
+      No hay patrullas en esta actividad
+    </h3>
+    <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+      Para registrar puntajes, primero crea patrullas en la pestaña 
+      <strong> "Patrullas"</strong>. Puedes importar las del sistema o crear nuevas.
+    </p>
+    <div className="flex justify-center gap-3">
+      <Button variant="outline" onClick={onClose}>
+        Cerrar
+      </Button>
+    </div>
+  </div>
+);
+
 // Card de selección de bloque
 const BloqueCard: React.FC<{
   bloque: BloqueConPuntaje;
@@ -285,25 +306,32 @@ const RegistrarPuntajeDialog: React.FC<RegistrarPuntajeDialogProps> = ({
     [patrullas, patrullaId]
   );
 
-  // Cargar patrullas
+  // Cargar patrullas de la actividad (flujo limpio - solo patrullas_actividad)
   const cargarPatrullas = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('patrullas')
-        .select('id, nombre, color_patrulla')
-        .eq('estado', 'ACTIVO')
-        .order('nombre');
-
+      
+      // Solo cargar patrullas específicas de la actividad
+      const { data: patrullasActividad, error } = await supabase
+        .from('patrullas_actividad')
+        .select('id, nombre, color')
+        .eq('actividad_id', actividadId)
+        .order('orden, nombre');
+      
       if (error) throw error;
-      setPatrullas(data || []);
+      
+      setPatrullas((patrullasActividad || []).map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        color_patrulla: p.color
+      })));
     } catch (error) {
       console.error('Error cargando patrullas:', error);
       toast.error('Error al cargar patrullas');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [actividadId]);
 
   // Efecto para cargar datos al abrir
   useEffect(() => {
@@ -398,6 +426,8 @@ const RegistrarPuntajeDialog: React.FC<RegistrarPuntajeDialogProps> = ({
         {/* Si no hay bloques con puntaje, mostrar estado vacío */}
         {bloquesConPuntaje.length === 0 ? (
           <EstadoVacioBloques onClose={handleClose} />
+        ) : patrullas.length === 0 && !loading ? (
+          <EstadoVacioPatrullas onClose={handleClose} />
         ) : (
           <>
             {/* Indicador de pasos */}
