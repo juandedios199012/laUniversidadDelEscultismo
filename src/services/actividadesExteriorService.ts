@@ -1000,6 +1000,31 @@ export class ActividadesExteriorService {
   }
 
   /**
+   * Obtiene los puntajes registrados para un bloque específico
+   * Útil para cargar los puntajes existentes al editar
+   */
+  static async obtenerPuntajesBloque(
+    bloqueId: string
+  ): Promise<Record<string, number>> {
+    const { data, error } = await supabase.rpc('api_obtener_puntajes_bloque', {
+      p_bloque_id: bloqueId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener puntajes');
+
+    // Convertir array a objeto { patrulla_actividad_id: puntaje }
+    const puntajes = data.puntajes || [];
+    const resultado: Record<string, number> = {};
+    for (const p of puntajes) {
+      if (p.patrulla_actividad_id) {
+        resultado[p.patrulla_actividad_id] = p.puntaje;
+      }
+    }
+    return resultado;
+  }
+
+  /**
    * Obtiene ranking de patrullas
    */
   static async obtenerRanking(actividadId: string): Promise<RankingPatrullaActividad[]> {

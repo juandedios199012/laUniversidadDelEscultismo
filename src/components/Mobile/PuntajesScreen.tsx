@@ -335,10 +335,21 @@ export default function PuntajesScreen() {
     setPasoAL(3);
   };
 
-  const seleccionarBloqueAL = (bloque: BloquePrograma) => {
+  const seleccionarBloqueAL = async (bloque: BloquePrograma) => {
     setBloqueSeleccionado(bloque);
     setPuntajesAL({});
     setPasoAL(4);
+    
+    // Cargar puntajes existentes para este bloque
+    try {
+      const puntajesExistentes = await ActividadesExteriorService.obtenerPuntajesBloque(bloque.id);
+      if (Object.keys(puntajesExistentes).length > 0) {
+        setPuntajesAL(puntajesExistentes);
+      }
+    } catch (error) {
+      console.warn('Error cargando puntajes existentes:', error);
+      // No es crítico, continuamos con puntajes vacíos
+    }
   };
 
   const handlePuntajeALChange = (patrullaId: string, valor: string) => {
