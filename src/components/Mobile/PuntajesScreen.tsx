@@ -348,7 +348,6 @@ export default function PuntajesScreen() {
       }
     } catch (error) {
       console.warn('Error cargando puntajes existentes:', error);
-      // No es crítico, continuamos con puntajes vacíos
     }
   };
 

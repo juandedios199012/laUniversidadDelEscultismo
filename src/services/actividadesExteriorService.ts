@@ -1001,7 +1001,6 @@ export class ActividadesExteriorService {
 
   /**
    * Obtiene los puntajes registrados para un bloque específico
-   * Útil para cargar los puntajes existentes al editar
    */
   static async obtenerPuntajesBloque(
     bloqueId: string
