@@ -120,13 +120,13 @@ const ActividadCard: React.FC<{
 
   const getEstadoBadgeVariant = (estado: EstadoActividadExterior) => {
     switch (estado) {
-      case 'ABIERTA_INSCRIPCION':
+      case 'aprobado':
         return 'default';
-      case 'EN_CURSO':
+      case 'en_curso':
         return 'default';
-      case 'COMPLETADA':
+      case 'finalizado':
         return 'secondary';
-      case 'CANCELADA':
+      case 'cancelado':
         return 'destructive';
       default:
         return 'outline';
@@ -268,11 +268,11 @@ const ActividadesExteriorDashboard: React.FC = () => {
   const actividadesProximas = actividades.filter(a => {
     const fecha = new Date(a.fecha_inicio);
     const hoy = new Date();
-    return fecha > hoy && a.estado !== 'CANCELADA';
+    return fecha > hoy && a.estado !== 'cancelado';
   });
   
-  const actividadesEnCurso = actividades.filter(a => a.estado === 'EN_CURSO');
-  const actividadesCompletadas = actividades.filter(a => a.estado === 'COMPLETADA');
+  const actividadesEnCurso = actividades.filter(a => a.estado === 'en_curso');
+  const actividadesCompletadas = actividades.filter(a => a.estado === 'finalizado');
   const totalParticipantes = actividades.reduce((sum, a) => sum + a.participantes_count, 0);
   const totalPresupuesto = actividades.reduce((sum, a) => sum + a.presupuesto_total, 0);
 

@@ -52,12 +52,12 @@ import {
   ESTADOS_ACTIVIDAD_EXTERIOR,
 } from '@/services/actividadesExteriorService';
 
-// Schema de validación
+// Schema de validación - valores alineados con CHECK constraints de BD
 const actividadSchema = z.object({
   // Paso 1: Info básica
   nombre: z.string().min(3, 'Mínimo 3 caracteres').max(255),
-  tipo: z.enum(['CAMPAMENTO', 'CAMINATA', 'EXCURSION', 'TALLER_EXTERIOR', 'VISITA', 'SERVICIO_COMUNITARIO']),
-  estado: z.enum(['BORRADOR', 'PLANIFICACION', 'ABIERTA_INSCRIPCION', 'INSCRIPCION_CERRADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA', 'POSTERGADA']).optional(),
+  tipo: z.enum(['paseo', 'campamento', 'excursion', 'expedicion', 'acantonamiento']),
+  estado: z.enum(['borrador', 'planificacion', 'aprobado', 'en_curso', 'finalizado', 'cancelado']).optional(),
   descripcion: z.string().optional(),
   
   // Paso 2: Fechas y lugar
@@ -127,7 +127,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
     resolver: zodResolver(actividadSchema),
     defaultValues: {
       nombre: '',
-      tipo: 'CAMPAMENTO',
+      tipo: 'campamento',
       descripcion: '',
       fecha_inicio: '',
       fecha_fin: '',
@@ -149,8 +149,8 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
     if (open && actividadEditar) {
       form.reset({
         nombre: actividadEditar.nombre,
-        tipo: actividadEditar.tipo as any,
-        estado: actividadEditar.estado as any,
+        tipo: actividadEditar.tipo,
+        estado: actividadEditar.estado,
         descripcion: actividadEditar.descripcion || '',
         fecha_inicio: actividadEditar.fecha_inicio,
         fecha_fin: actividadEditar.fecha_fin,
@@ -167,7 +167,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
     } else if (open && !actividadEditar) {
       form.reset({
         nombre: '',
-        tipo: 'CAMPAMENTO',
+        tipo: 'campamento',
         estado: undefined,
         descripcion: '',
         fecha_inicio: '',

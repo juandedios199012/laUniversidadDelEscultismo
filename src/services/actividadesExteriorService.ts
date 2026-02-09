@@ -6,10 +6,11 @@
 import { supabase } from '@/lib/supabase';
 
 // ============= TIPOS =============
+// Valores definidos por CHECK constraints en BD (tabla actividades_aire_libre)
 
-export type TipoActividadExterior = 'CAMPAMENTO' | 'CAMINATA' | 'EXCURSION' | 'TALLER_EXTERIOR' | 'VISITA' | 'SERVICIO_COMUNITARIO';
+export type TipoActividadExterior = 'paseo' | 'campamento' | 'excursion' | 'expedicion' | 'acantonamiento';
 
-export type EstadoActividadExterior = 'BORRADOR' | 'PLANIFICACION' | 'ABIERTA_INSCRIPCION' | 'INSCRIPCION_CERRADA' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA' | 'POSTERGADA';
+export type EstadoActividadExterior = 'borrador' | 'planificacion' | 'aprobado' | 'en_curso' | 'finalizado' | 'cancelado';
 
 export type TipoProgramaExterior = 'DIURNO' | 'NOCTURNO';
 
@@ -648,23 +649,20 @@ export interface ResumenActividadExterior {
 // ============= CONSTANTES =============
 
 export const TIPOS_ACTIVIDAD_EXTERIOR: { value: TipoActividadExterior; label: string; emoji: string }[] = [
-  { value: 'CAMPAMENTO', label: 'Campamento', emoji: '🏕️' },
-  { value: 'CAMINATA', label: 'Caminata', emoji: '🥾' },
-  { value: 'EXCURSION', label: 'Excursión', emoji: '🌄' },
-  { value: 'TALLER_EXTERIOR', label: 'Taller al Aire Libre', emoji: '🌳' },
-  { value: 'VISITA', label: 'Visita', emoji: '🏛️' },
-  { value: 'SERVICIO_COMUNITARIO', label: 'Servicio Comunitario', emoji: '🤝' },
+  { value: 'campamento', label: 'Campamento', emoji: '🏕️' },
+  { value: 'paseo', label: 'Paseo', emoji: '🥾' },
+  { value: 'excursion', label: 'Excursión', emoji: '🌄' },
+  { value: 'expedicion', label: 'Expedición', emoji: '🏔️' },
+  { value: 'acantonamiento', label: 'Acantonamiento', emoji: '🏠' },
 ];
 
 export const ESTADOS_ACTIVIDAD_EXTERIOR: { value: EstadoActividadExterior; label: string; color: string }[] = [
-  { value: 'BORRADOR', label: 'Borrador', color: 'gray' },
-  { value: 'PLANIFICACION', label: 'En Planificación', color: 'blue' },
-  { value: 'ABIERTA_INSCRIPCION', label: 'Inscripciones Abiertas', color: 'green' },
-  { value: 'INSCRIPCION_CERRADA', label: 'Inscripciones Cerradas', color: 'yellow' },
-  { value: 'EN_CURSO', label: 'En Curso', color: 'purple' },
-  { value: 'COMPLETADA', label: 'Completada', color: 'emerald' },
-  { value: 'CANCELADA', label: 'Cancelada', color: 'red' },
-  { value: 'POSTERGADA', label: 'Postergada', color: 'orange' },
+  { value: 'borrador', label: 'Borrador', color: 'gray' },
+  { value: 'planificacion', label: 'En Planificación', color: 'blue' },
+  { value: 'aprobado', label: 'Aprobado', color: 'green' },
+  { value: 'en_curso', label: 'En Curso', color: 'purple' },
+  { value: 'finalizado', label: 'Finalizado', color: 'emerald' },
+  { value: 'cancelado', label: 'Cancelado', color: 'red' },
 ];
 
 export const CATEGORIAS_PRESUPUESTO_ACTIVIDAD = [
@@ -847,7 +845,15 @@ export class ActividadesExteriorService {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al obtener actividad');
 
-    return data.data;
+    // Mapear campos de BD a campos del frontend
+    const rawData = data.data;
+    return {
+      ...rawData,
+      // Mapeo BD -> Frontend
+      ubicacion: rawData.lugar || rawData.ubicacion || '',
+      lugar_detalle: rawData.direccion || rawData.lugar_detalle || '',
+      max_participantes: rawData.cupo_maximo || rawData.max_participantes,
+    };
   }
 
   /**

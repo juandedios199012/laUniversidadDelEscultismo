@@ -281,7 +281,7 @@ export default function PuntajesScreen() {
     setLoading(true);
     try {
       const { actividades } = await ActividadesExteriorService.listarActividades({
-        estado: 'EN_PROGRESO',
+        estado: 'en_curso',
         limite: 50
       });
       
