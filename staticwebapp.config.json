@@ -9,6 +9,10 @@
   },
   "routes": [
     {
+      "route": "/auth/callback",
+      "rewrite": "/index.html"
+    },
+    {
       "route": "/sw.js",
       "headers": {
         "Service-Worker-Allowed": "/",

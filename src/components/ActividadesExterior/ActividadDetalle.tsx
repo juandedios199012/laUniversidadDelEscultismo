@@ -77,6 +77,8 @@ import IngredientesMenu from './components/IngredientesMenu';
 import MaterialesBloque from './components/MaterialesBloque';
 import PatrullasTab from './components/PatrullasTab';
 import SubCamposTab from './components/SubCamposTab';
+import InventarioTab from './components/InventarioTab';
+import ReportesTab from './components/ReportesTab';
 
 interface ActividadDetalleProps {
   actividadId: string;
@@ -90,7 +92,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   onRefresh,
 }) => {
   // Permisos
-  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+  const { puedeCrear, puedeEditar, puedeEliminar, tienePermisoAireLibre } = usePermissions();
   
   const [loading, setLoading] = useState(true);
   const [actividad, setActividad] = useState<ActividadExteriorCompleta | null>(null);
@@ -202,7 +204,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   };
 
   const handleNuevaCompra = () => {
-    if (!puedeCrear('actividades_exterior')) {
+    if (!tienePermisoAireLibre('registrar_compras')) {
       toast.error('No tienes permiso para registrar compras');
       return;
     }
@@ -212,6 +214,10 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
 
   // Handler para pagos
   const handleRegistrarPago = (participante: any) => {
+    if (!tienePermisoAireLibre('gestionar_pagos')) {
+      toast.error('No tienes permiso para gestionar pagos');
+      return;
+    }
     setParticipantePago(participante);
     setShowPagoDialog(true);
   };
@@ -230,6 +236,53 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
     }
     setParticipanteEditar(participante);
     setShowEditarParticipanteDialog(true);
+  };
+
+  // Handler para eliminar participante
+  const handleEliminarParticipante = async (participante: any) => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar participantes');
+      return;
+    }
+    if (confirm(`¿Eliminar a ${participante.scout_nombre} de la actividad?`)) {
+      try {
+        await ActividadesExteriorService.eliminarParticipante(participante.id);
+        toast.success('Participante eliminado');
+        cargarActividad();
+      } catch (error: any) {
+        toast.error(error.message || 'Error al eliminar participante');
+      }
+    }
+  };
+
+  // Handler para eliminar participantes sin pago
+  const handleEliminarNoPagados = async () => {
+    if (!puedeEliminar('actividades_exterior')) {
+      toast.error('No tienes permiso para eliminar participantes');
+      return;
+    }
+    const noPagados = actividad?.participantes.filter(p => !p.monto_pagado || p.monto_pagado === 0) || [];
+    if (noPagados.length === 0) {
+      toast.info('No hay participantes sin pago');
+      return;
+    }
+    if (confirm(`¿Eliminar ${noPagados.length} participante(s) que no han pagado?`)) {
+      try {
+        let eliminados = 0;
+        for (const p of noPagados) {
+          try {
+            await ActividadesExteriorService.eliminarParticipante(p.id);
+            eliminados++;
+          } catch (e) {
+            console.error('Error eliminando:', p.scout_nombre);
+          }
+        }
+        toast.success(`${eliminados} participante(s) eliminado(s)`);
+        cargarActividad();
+      } catch (error: any) {
+        toast.error(error.message || 'Error al eliminar');
+      }
+    }
   };
 
   // Handler para confirmar/desconfirmar participante
@@ -481,16 +534,42 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
       {/* Tabs de contenido */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4 flex-wrap">
-          <TabsTrigger value="resumen">📋 Resumen</TabsTrigger>
-          <TabsTrigger value="programa">📅 Programa</TabsTrigger>
-          <TabsTrigger value="participantes">👥 Participantes</TabsTrigger>
-          <TabsTrigger value="patrullas">🏕️ Patrullas</TabsTrigger>
-          <TabsTrigger value="subcampos">🚩 Sub Campos</TabsTrigger>
-          <TabsTrigger value="presupuesto">💰 Presupuesto</TabsTrigger>
-          <TabsTrigger value="compras">🛒 Compras</TabsTrigger>
-          <TabsTrigger value="menu">🍽️ Menú</TabsTrigger>
-          <TabsTrigger value="logistica">📦 Logística</TabsTrigger>
-          <TabsTrigger value="puntajes">🏆 Puntajes</TabsTrigger>
+          {tienePermisoAireLibre('tab_resumen') && (
+            <TabsTrigger value="resumen">📋 Resumen</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_programa') && (
+            <TabsTrigger value="programa">📅 Programa</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_participantes') && (
+            <TabsTrigger value="participantes">👥 Participantes</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_patrullas') && (
+            <TabsTrigger value="patrullas">🏕️ Patrullas</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_subcampos') && (
+            <TabsTrigger value="subcampos">🚩 Sub Campos</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_presupuesto') && (
+            <TabsTrigger value="presupuesto">💰 Presupuesto</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_compras') && (
+            <TabsTrigger value="compras">🛒 Compras</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_menu') && (
+            <TabsTrigger value="menu">🍽️ Menú</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_logistica') && (
+            <TabsTrigger value="logistica">📦 Logística</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_inventario') && (
+            <TabsTrigger value="inventario">🎒 Inventario</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_puntajes') && (
+            <TabsTrigger value="puntajes">🏆 Puntajes</TabsTrigger>
+          )}
+          {tienePermisoAireLibre('tab_reportes') && (
+            <TabsTrigger value="reportes">📊 Reportes</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Tab Resumen */}
@@ -867,10 +946,25 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                   {actividad.participantes.length} inscritos • {participantesConfirmados} confirmados
                 </CardDescription>
               </div>
-              <Button onClick={() => setShowParticipantesDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Inscribir Scouts
-              </Button>
+              <div className="flex gap-2">
+                {actividad.participantes.some(p => !p.monto_pagado || p.monto_pagado === 0) && 
+                  puedeEliminar('actividades_exterior') && (
+                  <Button 
+                    variant="outline" 
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={handleEliminarNoPagados}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar No Pagados ({actividad.participantes.filter(p => !p.monto_pagado || p.monto_pagado === 0).length})
+                  </Button>
+                )}
+                {tienePermisoAireLibre('inscribir_participantes') && (
+                  <Button onClick={() => setShowParticipantesDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Inscribir Scouts
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {actividad.participantes.length === 0 ? (
@@ -880,10 +974,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                   <p className="text-muted-foreground mb-4">
                     Inscribe a los scouts que participarán en esta actividad
                   </p>
-                  <Button onClick={() => setShowParticipantesDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Inscribir Scouts
-                  </Button>
+                  {tienePermisoAireLibre('inscribir_participantes') && (
+                    <Button onClick={() => setShowParticipantesDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Inscribir Scouts
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -926,8 +1022,10 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                 p.estado_autorizacion === 'RECHAZADA' ? 'destructive' :
                                 'outline'
                               }
-                              className="cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => handleGestionarAutorizacion(p)}
+                              className={tienePermisoAireLibre('gestionar_autorizaciones') 
+                                ? "cursor-pointer hover:opacity-80 transition-opacity" 
+                                : ""}
+                              onClick={() => tienePermisoAireLibre('gestionar_autorizaciones') && handleGestionarAutorizacion(p)}
                             >
                               {p.estado_autorizacion === 'FIRMADA' ? '✅' : 
                                p.estado_autorizacion === 'RECIBIDA' ? '📥' :
@@ -957,15 +1055,17 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                           </td>
                           <td className="py-3 px-2">
                             <div className="flex items-center gap-1">
-                              <Button 
-                                size="sm" 
-                                variant={p.pagado_completo ? "outline" : "default"}
-                                className={p.pagado_completo ? "" : "bg-green-600 hover:bg-green-700"}
-                                onClick={() => handleRegistrarPago(p)}
-                              >
-                                <span className="font-bold mr-1">S/</span>
-                                {p.pagado_completo ? 'Ver' : 'Pagar'}
-                              </Button>
+                              {tienePermisoAireLibre('gestionar_pagos') && (
+                                <Button 
+                                  size="sm" 
+                                  variant={p.pagado_completo ? "outline" : "default"}
+                                  className={p.pagado_completo ? "" : "bg-green-600 hover:bg-green-700"}
+                                  onClick={() => handleRegistrarPago(p)}
+                                >
+                                  <span className="font-bold mr-1">S/</span>
+                                  {p.pagado_completo ? 'Ver' : 'Pagar'}
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -974,6 +1074,17 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              {puedeEliminar('actividades_exterior') && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleEliminarParticipante(p)}
+                                  title="Eliminar participante"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1025,10 +1136,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                   Registro de gastos ejecutados de la actividad
                 </CardDescription>
               </div>
-              <Button onClick={handleNuevaCompra}>
-                <Plus className="h-4 w-4 mr-2" />
-                Registrar Compra
-              </Button>
+              {tienePermisoAireLibre('registrar_compras') && (
+                <Button onClick={handleNuevaCompra}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar Compra
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {/* KPIs de compras */}
@@ -1065,10 +1178,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                   <p className="text-muted-foreground mb-4">
                     Registra las compras realizadas para llevar control del presupuesto ejecutado
                   </p>
-                  <Button onClick={handleNuevaCompra}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Registrar Primera Compra
-                  </Button>
+                  {tienePermisoAireLibre('registrar_compras') && (
+                    <Button onClick={handleNuevaCompra}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Registrar Primera Compra
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1292,6 +1407,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
           />
         </TabsContent>
 
+        {/* Tab Inventario */}
+        <TabsContent value="inventario">
+          <InventarioTab
+            actividadId={actividadId}
+            onRefresh={cargarActividad}
+          />
+        </TabsContent>
+
         {/* Tab Puntajes */}
         <TabsContent value="puntajes">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1303,10 +1426,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                     Ranking de Patrullas
                   </CardTitle>
                 </div>
-                <Button onClick={() => setShowPuntajeDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Puntaje
-                </Button>
+                {tienePermisoAireLibre('registrar_puntajes') && (
+                  <Button onClick={() => setShowPuntajeDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar Puntaje
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {rankingSorted.length === 0 ? (
@@ -1375,6 +1500,13 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Tab Reportes */}
+        <TabsContent value="reportes">
+          <ReportesTab
+            actividad={actividad}
+          />
         </TabsContent>
       </Tabs>
 

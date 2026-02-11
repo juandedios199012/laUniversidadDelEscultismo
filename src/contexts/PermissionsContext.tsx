@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { PermissionsService, Modulo, Accion, Rol, UsuarioSeguridad } from '../services/permissionsService';
+import { PermissionsService, Modulo, Accion, Rol, UsuarioSeguridad, SubAccionAireLibre } from '../services/permissionsService';
 import { useAuth } from './AuthContext';
 
 // ================================================================
@@ -20,6 +20,10 @@ interface PermissionsContextType {
   puedeEditar: (modulo: Modulo) => boolean;
   puedeEliminar: (modulo: Modulo) => boolean;
   puedeExportar: (modulo: Modulo) => boolean;
+  
+  // Permisos granulares de Aire Libre
+  tienePermisoAireLibre: (subAccion: SubAccionAireLibre) => boolean;
+  permisosAireLibre: SubAccionAireLibre[];
   
   // Datos
   rolPrincipal: Rol | null;
@@ -122,11 +126,71 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   const puedeEliminar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'eliminar'), [tienePermiso]);
   const puedeExportar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'exportar'), [tienePermiso]);
 
-  // Datos derivados
+  // Datos derivados (DEBEN estar antes de usarlos en permisos de Aire Libre)
   const rolPrincipal = seguridad?.rol_principal || null;
   const modulosAccesibles = seguridad?.modulos_accesibles || [];
   const esAdmin = rolPrincipal?.nivel_jerarquia ? rolPrincipal.nivel_jerarquia >= 70 : false;
   const esSuperAdmin = rolPrincipal?.nombre === 'super_admin';
+
+  // ================================================================
+  // PERMISOS GRANULARES DE AIRE LIBRE (DESDE BD)
+  // ================================================================
+  
+  const [permisosAireLibre, setPermisosAireLibre] = React.useState<SubAccionAireLibre[]>([]);
+  const [loadingPermisosAL, setLoadingPermisosAL] = React.useState(false);
+
+  // Cargar permisos de Aire Libre desde la BD cuando el usuario cambia
+  React.useEffect(() => {
+    const cargarPermisosAireLibre = async () => {
+      if (!user?.id) {
+        setPermisosAireLibre([]);
+        return;
+      }
+
+      // Si es super_admin, tiene todos los permisos
+      if (esSuperAdmin) {
+        setPermisosAireLibre([
+          'tab_resumen', 'tab_programa', 'tab_participantes', 'tab_patrullas',
+          'tab_subcampos', 'tab_presupuesto', 'tab_compras', 'tab_menu',
+          'tab_logistica', 'tab_inventario', 'tab_puntajes', 'tab_reportes',
+          'inscribir_participantes', 'gestionar_pagos', 'gestionar_autorizaciones',
+          'registrar_compras', 'aprobar_gastos', 'registrar_puntajes',
+          'transferir_inventario', 'devolver_inventario', 'registrar_incidentes'
+        ]);
+        return;
+      }
+
+      setLoadingPermisosAL(true);
+      try {
+        const resultado = await PermissionsService.obtenerPermisosAireLibreUsuario(user.id);
+        if (resultado.success && resultado.permisos) {
+          setPermisosAireLibre(resultado.permisos);
+        } else {
+          // Fallback: solo resumen
+          setPermisosAireLibre(['tab_resumen']);
+        }
+      } catch (error) {
+        console.error('Error cargando permisos AL:', error);
+        setPermisosAireLibre(['tab_resumen']);
+      } finally {
+        setLoadingPermisosAL(false);
+      }
+    };
+
+    // Solo cargar si ya tenemos la seguridad del usuario
+    if (seguridad && !loading) {
+      cargarPermisosAireLibre();
+    }
+  }, [user?.id, seguridad, loading, esSuperAdmin]);
+
+  // Verificar si tiene permiso específico de Aire Libre
+  const tienePermisoAireLibre = useCallback((subAccion: SubAccionAireLibre): boolean => {
+    // Super admin siempre tiene acceso
+    if (esSuperAdmin) return true;
+    
+    // Verificar en los permisos cargados desde BD
+    return permisosAireLibre.includes(subAccion);
+  }, [permisosAireLibre, esSuperAdmin]);
 
   const value: PermissionsContextType = {
     seguridad,
@@ -139,6 +203,8 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     puedeEditar,
     puedeEliminar,
     puedeExportar,
+    tienePermisoAireLibre,
+    permisosAireLibre,
     rolPrincipal,
     modulosAccesibles,
     esAdmin,

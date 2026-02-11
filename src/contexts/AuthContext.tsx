@@ -33,8 +33,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         console.log('🔍 Verificando sesión existente...');
         
-        // Obtener sesión directamente de Supabase sin consultas adicionales
-        const { data: { session } } = await import('../lib/supabase').then(m => m.supabase.auth.getSession());
+        const { supabase } = await import('../lib/supabase');
+        
+        // Detectar si venimos de un magic link o OAuth callback
+        // El hash contiene el token cuando se redirige desde email/OAuth
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        // También verificar query params (algunos proveedores usan esto)
+        const queryParams = new URLSearchParams(window.location.search);
+        const code = queryParams.get('code');
+        
+        if (accessToken && refreshToken) {
+          console.log('🔑 Detectado token de magic link en URL, estableciendo sesión...');
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) {
+            console.error('❌ Error estableciendo sesión desde magic link:', error);
+          } else if (data.session?.user) {
+            console.log('✅ Sesión establecida desde magic link');
+            // Limpiar el hash del URL sin recargar la página
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } else if (code) {
+          console.log('🔑 Detectado código OAuth en URL, intercambiando...');
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('❌ Error intercambiando código OAuth:', error);
+          } else {
+            console.log('✅ Sesión establecida desde código OAuth');
+            // Limpiar el query param del URL sin recargar la página
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }
+        
+        // Obtener sesión directamente de Supabase
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (mounted && session?.user) {
           const authUser = {

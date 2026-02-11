@@ -273,6 +273,78 @@ export interface NuevoSubCampo {
   patrullas_ids?: string[];
 }
 
+// ============= INTERFACES INVENTARIO =============
+
+export type TipoPropiedadInventario = 'PROPIO' | 'PRESTADO';
+export type EstadoInventario = 'DISPONIBLE' | 'EN_USO' | 'DAÑADO' | 'BAJA' | 'DEVUELTO';
+export type CondicionInventario = 'NUEVO' | 'BUENO' | 'REGULAR' | 'MALO' | 'BAJA';
+export type CategoriaInventario = 'GENERAL' | 'ELECTRICO' | 'CAMPING' | 'COCINA' | 'PRIMEROS_AUXILIOS' | 'HERRAMIENTAS' | 'DECORACION' | 'OTRO';
+export type TipoAsignacionInventario = 'SUBCAMPO' | 'PATRULLA' | 'DIRIGENTE' | 'EQUIPO' | 'SIN_ASIGNAR';
+
+export interface ItemInventario {
+  id: string;
+  codigo_item?: string;
+  grupo?: string;
+  nombre: string;
+  descripcion?: string;
+  categoria: CategoriaInventario;
+  cantidad: number;
+  tipo_propiedad: TipoPropiedadInventario;
+  prestado_por?: string;
+  contacto_prestador?: string;
+  asignado_a?: string;
+  tipo_asignacion?: TipoAsignacionInventario;
+  fecha_asignacion?: string;
+  estado: EstadoInventario;
+  condicion: CondicionInventario;
+  fecha_devolucion?: string;
+  devuelto: boolean;
+  notas_devolucion?: string;
+  observaciones?: string;
+  tenedor_actual?: string;            // Quién tiene el item ahora (puede ser diferente del asignado)
+  historial_tenedores?: any[];         // Historial de transferencias
+  created_at: string;
+}
+
+export interface NuevoItemInventario {
+  nombre: string;
+  descripcion?: string;
+  categoria?: CategoriaInventario;
+  cantidad?: number;
+  tipo_propiedad?: TipoPropiedadInventario;
+  prestado_por?: string;
+  contacto_prestador?: string;
+  asignado_a?: string;
+  tipo_asignacion?: TipoAsignacionInventario;
+  observaciones?: string;
+  grupo?: string;
+  prefijo_codigo?: string;
+}
+
+export interface MovimientoInventario {
+  id: string;
+  tipo_movimiento: string;
+  descripcion?: string;
+  estado_anterior?: string;
+  estado_nuevo?: string;
+  condicion_anterior?: string;
+  condicion_nueva?: string;
+  registrado_por?: string;
+  created_at: string;
+}
+
+export interface DashboardInventario {
+  total_items: number;
+  prestados: number;
+  devueltos: number;
+  pendientes_devolucion: number;
+  dañados: number;
+  por_categoria: { categoria: string; cantidad: number }[];
+  por_estado: { estado: string; cantidad: number }[];
+  por_grupo: { grupo: string; cantidad: number; pendientes: number }[];
+  por_prestador: { prestador: string; total_prestados: number; devueltos: number; pendientes: number }[];
+}
+
 // ============= INTERFACES INGREDIENTES MENÚ =============
 
 export type EstadoCompraIngrediente = 'PENDIENTE' | 'COTIZADO' | 'COMPRADO' | 'RECIBIDO';
@@ -2781,6 +2853,307 @@ export class ActividadesExteriorService {
     if (!data?.success) throw new Error(data?.error || 'Error al obtener ranking');
 
     return data.data || [];
+  }
+
+  // ============= INVENTARIO =============
+
+  /**
+   * Listar inventario de una actividad
+   */
+  static async listarInventario(actividadId: string): Promise<ItemInventario[]> {
+    const { data, error } = await supabase.rpc('api_listar_inventario_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar inventario');
+
+    return data.items || [];
+  }
+
+  /**
+   * Agregar item(s) al inventario
+   * Si crearIndividuales=true y cantidad > 1, crea múltiples items individuales
+   * Si crearIndividuales=false, crea 1 solo registro con la cantidad indicada
+   */
+  static async agregarItemInventario(
+    actividadId: string,
+    item: NuevoItemInventario,
+    crearIndividuales: boolean = true
+  ): Promise<{ item_id: string; item_ids?: string[]; cantidad_creada?: number }> {
+    // Si NO quiere items individuales, crear 1 solo con cantidad
+    const cantidadACrear = crearIndividuales ? (item.cantidad || 1) : 1;
+    const cantidadDelItem = crearIndividuales ? 1 : (item.cantidad || 1);
+    
+    const { data, error } = await supabase.rpc('api_agregar_item_inventario', {
+      p_actividad_id: actividadId,
+      p_nombre: item.nombre,
+      p_descripcion: item.descripcion || null,
+      p_categoria: item.categoria || 'GENERAL',
+      p_cantidad: cantidadACrear,
+      p_cantidad_item: cantidadDelItem, // Nueva: cantidad real del item
+      p_tipo_propiedad: item.tipo_propiedad || 'PROPIO',
+      p_prestado_por: item.prestado_por || null,
+      p_contacto_prestador: item.contacto_prestador || null,
+      p_asignado_a: item.asignado_a || null,
+      p_tipo_asignacion: item.tipo_asignacion || null,
+      p_observaciones: item.observaciones || null,
+      p_grupo: item.grupo || null,
+      p_prefijo_codigo: crearIndividuales ? (item.prefijo_codigo || null) : null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al agregar item');
+
+    return { 
+      item_id: data.item_id,
+      item_ids: data.item_ids,
+      cantidad_creada: data.cantidad_creada
+    };
+  }
+
+  /**
+   * Actualizar item del inventario
+   */
+  static async actualizarItemInventario(
+    itemId: string,
+    updates: Partial<NuevoItemInventario> & { 
+      estado?: string; 
+      condicion?: string;
+      codigo_item?: string;
+      fecha_asignacion?: string;
+    }
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_actualizar_item_inventario', {
+      p_item_id: itemId,
+      p_codigo_item: updates.codigo_item,
+      p_grupo: updates.grupo,
+      p_nombre: updates.nombre,
+      p_descripcion: updates.descripcion,
+      p_categoria: updates.categoria,
+      p_cantidad: updates.cantidad,
+      p_tipo_propiedad: updates.tipo_propiedad,
+      p_prestado_por: updates.prestado_por,
+      p_contacto_prestador: updates.contacto_prestador,
+      p_asignado_a: updates.asignado_a,
+      p_tipo_asignacion: updates.tipo_asignacion,
+      p_fecha_asignacion: updates.fecha_asignacion,
+      p_estado: updates.estado,
+      p_condicion: updates.condicion,
+      p_observaciones: updates.observaciones,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar item');
+  }
+
+  /**
+   * Registrar daño o baja de item
+   */
+  static async registrarIncidenteInventario(
+    itemId: string,
+    tipo: 'DAÑO' | 'BAJA',
+    descripcion: string,
+    nuevaCondicion?: string
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_registrar_incidente_inventario', {
+      p_item_id: itemId,
+      p_tipo: tipo,
+      p_descripcion: descripcion,
+      p_nueva_condicion: nuevaCondicion || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al registrar incidente');
+  }
+
+  /**
+   * Marcar item como devuelto al propietario
+   */
+  static async marcarDevueltoInventario(
+    itemId: string,
+    fechaDevolucion?: string,
+    notasDevolucion?: string,
+    condicionDevolucion?: string
+  ): Promise<void> {
+    const { data, error } = await supabase.rpc('api_marcar_devuelto_inventario', {
+      p_item_id: itemId,
+      p_notas_devolucion: notasDevolucion || null,
+      p_condicion_devolucion: condicionDevolucion || null,
+      p_fecha_devolucion: fechaDevolucion || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al marcar como devuelto');
+  }
+
+  /**
+   * Transferir item a otro tenedor (préstamo en cadena: A→B→C)
+   * El dueño original (prestado_por) no cambia, solo cambia quién lo tiene ahora
+   */
+  static async transferirItemInventario(
+    itemId: string,
+    nuevoTenedor: string,
+    notas?: string
+  ): Promise<{ tenedor_anterior: string; tenedor_nuevo: string; historial: any[] }> {
+    const { data, error } = await supabase.rpc('api_transferir_item_inventario', {
+      p_item_id: itemId,
+      p_nuevo_tenedor: nuevoTenedor,
+      p_notas: notas || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al transferir item');
+    
+    return {
+      tenedor_anterior: data.tenedor_anterior,
+      tenedor_nuevo: data.tenedor_nuevo,
+      historial: data.historial || [],
+    };
+  }
+
+  /**
+   * Eliminar item del inventario
+   */
+  static async eliminarItemInventario(itemId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_item_inventario', {
+      p_item_id: itemId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar item');
+  }
+
+  /**
+   * Obtener historial de movimientos de un item
+   */
+  static async historialItemInventario(itemId: string): Promise<MovimientoInventario[]> {
+    const { data, error } = await supabase.rpc('api_historial_item_inventario', {
+      p_item_id: itemId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener historial');
+
+    return data.movimientos || [];
+  }
+
+  /**
+   * Dashboard de inventario
+   */
+  static async dashboardInventario(actividadId: string): Promise<DashboardInventario> {
+    const { data, error } = await supabase.rpc('api_dashboard_inventario_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener dashboard');
+
+    return {
+      total_items: data.total_items,
+      prestados: data.prestados,
+      devueltos: data.devueltos || 0,
+      pendientes_devolucion: data.pendientes_devolucion,
+      dañados: data.dañados,
+      por_categoria: data.por_categoria || [],
+      por_estado: data.por_estado || [],
+      por_grupo: data.por_grupo || [],
+      por_prestador: data.por_prestador || [],
+    };
+  }
+
+  /**
+   * Reporte consolidado de INGRESOS (agrupado por producto)
+   */
+  static async reporteInventarioIngresos(actividadId: string): Promise<{
+    data: {
+      producto: string;
+      categoria: string;
+      tipo_propiedad: string;
+      prestado_por: string | null;
+      contacto: string | null;
+      cantidad_ingresada: number;
+      cantidad_devuelta: number;
+      cantidad_pendiente: number;
+      cantidad_dañada: number;
+    }[];
+    resumen: {
+      total_productos: number;
+      total_items: number;
+      total_prestados: number;
+      total_propios: number;
+      pendientes_devolucion: number;
+    };
+  }> {
+    const { data, error } = await supabase.rpc('api_reporte_inventario_ingresos', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener reporte');
+
+    return {
+      data: data.data || [],
+      resumen: data.resumen || {},
+    };
+  }
+
+  /**
+   * Reporte consolidado de SALIDAS/DEVOLUCIONES (agrupado por producto y prestador)
+   */
+  static async reporteInventarioSalidas(actividadId: string): Promise<{
+    data: {
+      producto: string;
+      prestado_por: string;
+      contacto: string | null;
+      cantidad_prestada: number;
+      cantidad_devuelta: number;
+      cantidad_pendiente: number;
+      en_buen_estado: number;
+      dañados: number;
+      estado_general: string;
+    }[];
+    resumen: {
+      total_prestadores: number;
+      total_items_prestados: number;
+      total_devueltos: number;
+      total_pendientes: number;
+      porcentaje_devuelto: number;
+    };
+  }> {
+    const { data, error } = await supabase.rpc('api_reporte_inventario_salidas', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener reporte');
+
+    return {
+      data: data.data || [],
+      resumen: data.resumen || {},
+    };
+  }
+
+  /**
+   * Reporte por PRESTADOR (qué devolverle a cada persona)
+   */
+  static async reportePorPrestador(actividadId: string): Promise<{
+    prestador: string;
+    contacto: string | null;
+    items: { producto: string; cantidad: number; devueltos: number; condicion: string }[];
+    total_items: number;
+    devueltos: number;
+    pendientes: number;
+    estado: string;
+  }[]> {
+    const { data, error } = await supabase.rpc('api_reporte_por_prestador', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener reporte');
+
+    return data.prestadores || [];
   }
 }
 

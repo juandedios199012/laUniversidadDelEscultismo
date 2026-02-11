@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Shield, Users, Activity, Settings, UserPlus, 
   Trash2, Edit, ChevronDown, ChevronUp, Search,
   Download, Filter, RefreshCw, Clock, AlertTriangle,
-  ToggleLeft, ToggleRight, CheckCircle, XCircle
+  ToggleLeft, ToggleRight, CheckCircle, XCircle, Save
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
@@ -12,7 +12,10 @@ import {
   Rol, 
   Modulo, 
   Accion,
-  MatrizPermisoRol 
+  MatrizPermisoRol,
+  SubAccionAireLibre,
+  AIRE_LIBRE_TABS_CONFIG,
+  AIRE_LIBRE_ACCIONES_CONFIG
 } from '../../services/permissionsService';
 import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../services/auditService';
 import { UsuariosAutorizadosService, UsuarioAutorizado, SolicitudAcceso } from '../../services/usuariosAutorizadosService';
@@ -1013,16 +1016,274 @@ function TabAuditoria() {
 
 function TabConfiguracion() {
   const { esSuperAdmin } = usePermissions();
+  const { user } = useAuth();
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+  const [rolSeleccionadoId, setRolSeleccionadoId] = useState<string>('');
+  const [permisosAL, setPermisosAL] = useState<SubAccionAireLibre[]>([]);
+  const [loadingPermisos, setLoadingPermisos] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  const [permisosOriginales, setPermisosOriginales] = useState<SubAccionAireLibre[]>([]);
+
+  // Cargar roles desde la BD
+  useEffect(() => {
+    const cargarRoles = async () => {
+      setLoadingRoles(true);
+      const data = await PermissionsService.listarRoles();
+      setRoles(data);
+      // Seleccionar el primer rol por defecto
+      if (data.length > 0 && !rolSeleccionadoId) {
+        setRolSeleccionadoId(data[0].id);
+      }
+      setLoadingRoles(false);
+    };
+    cargarRoles();
+  }, []);
+
+  // Cargar permisos del rol seleccionado desde la BD
+  useEffect(() => {
+    const cargarPermisosRol = async () => {
+      if (!rolSeleccionadoId) return;
+      
+      setLoadingPermisos(true);
+      setMensaje(null);
+      
+      try {
+        const resultado = await PermissionsService.obtenerPermisosAireLibreRol(rolSeleccionadoId);
+        if (resultado.success && resultado.permisos) {
+          setPermisosAL(resultado.permisos);
+          setPermisosOriginales(resultado.permisos);
+        } else {
+          setPermisosAL([]);
+          setPermisosOriginales([]);
+          if (resultado.error) {
+            setMensaje({ tipo: 'error', texto: resultado.error });
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando permisos:', error);
+        setMensaje({ tipo: 'error', texto: 'Error al cargar permisos del rol' });
+        setPermisosAL([]);
+        setPermisosOriginales([]);
+      } finally {
+        setLoadingPermisos(false);
+      }
+    };
+    
+    cargarPermisosRol();
+  }, [rolSeleccionadoId]);
+
+  // Detectar cambios sin guardar
+  const hayCambios = useMemo(() => {
+    if (permisosAL.length !== permisosOriginales.length) return true;
+    const sortedActual = [...permisosAL].sort();
+    const sortedOriginal = [...permisosOriginales].sort();
+    return sortedActual.some((p, i) => p !== sortedOriginal[i]);
+  }, [permisosAL, permisosOriginales]);
+
+  // Guardar permisos en la BD
+  const guardarPermisos = async () => {
+    if (!rolSeleccionadoId || !user?.id) return;
+    
+    setGuardando(true);
+    setMensaje(null);
+    
+    try {
+      const resultado = await PermissionsService.guardarPermisosAireLibreRol(user.id, rolSeleccionadoId, permisosAL);
+      
+      if (resultado.success) {
+        setPermisosOriginales([...permisosAL]);
+        setMensaje({ tipo: 'success', texto: '✅ Permisos guardados correctamente' });
+        
+        // Limpiar mensaje después de 3 segundos
+        setTimeout(() => setMensaje(null), 3000);
+      } else {
+        setMensaje({ tipo: 'error', texto: resultado.error || 'Error al guardar permisos' });
+      }
+    } catch (error) {
+      console.error('Error guardando permisos:', error);
+      setMensaje({ tipo: 'error', texto: 'Error al guardar permisos. Verifica tu conexión.' });
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   if (!esSuperAdmin) {
     return <AccesoDenegado mensaje="Solo el Super Administrador puede acceder a la configuración avanzada" />;
   }
+
+  const tienePermiso = useCallback((permiso: SubAccionAireLibre): boolean => {
+    return permisosAL.includes(permiso);
+  }, [permisosAL]);
+
+  const togglePermisoAL = useCallback((e: React.MouseEvent, permiso: SubAccionAireLibre) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setPermisosAL(prev => {
+      if (prev.includes(permiso)) {
+        return prev.filter(p => p !== permiso);
+      } else {
+        return [...prev, permiso];
+      }
+    });
+  }, []);
+
+  // Obtener el rol seleccionado para mostrar su info
+  const rolActual = roles.find(r => r.id === rolSeleccionadoId);
 
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Configuración de Seguridad</h2>
       
       <div className="space-y-6">
+        {/* Permisos Granulares de Aire Libre */}
+        <div className="p-4 border border-blue-200 rounded-lg bg-blue-50/30">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-medium text-gray-900 flex items-center gap-2">
+              🏔️ Permisos Granulares - Actividades al Aire Libre
+            </h3>
+            {hayCambios && (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                ⚠️ Cambios sin guardar
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Configura qué pestañas y acciones puede realizar cada rol dentro del módulo de Actividades Exterior.
+          </p>
+
+          {/* Mensaje de feedback */}
+          {mensaje && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              mensaje.tipo === 'success' 
+                ? 'bg-green-50 text-green-800 border border-green-200' 
+                : 'bg-red-50 text-red-800 border border-red-200'
+            }`}>
+              {mensaje.texto}
+            </div>
+          )}
+          
+          {/* Selector de rol - Cargado desde BD */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rol a configurar:
+            </label>
+            {loadingRoles ? (
+              <div className="flex items-center gap-2 text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Cargando roles...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <select 
+                  value={rolSeleccionadoId}
+                  onChange={(e) => setRolSeleccionadoId(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64"
+                  disabled={loadingPermisos}
+                >
+                  {roles.map(rol => (
+                    <option key={rol.id} value={rol.id}>
+                      {rol.nombre.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
+                </select>
+                {rolActual && (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: rolActual.color }}
+                    />
+                    <span className="text-xs text-gray-500">
+                      Nivel {rolActual.nivel_jerarquia} • {rolActual.usuarios_count || 0} usuarios
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Pestañas accesibles */}
+          <div className="mb-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">📑 Pestañas Accesibles:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {AIRE_LIBRE_TABS_CONFIG.map(tabConfig => (
+                <div 
+                  key={tabConfig.tab} 
+                  className={`flex items-center gap-2 p-2 bg-white rounded border hover:bg-gray-50 cursor-pointer ${loadingPermisos ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={(e) => togglePermisoAL(e, tabConfig.tab)}
+                >
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-blue-600 rounded pointer-events-none"
+                    checked={tienePermiso(tabConfig.tab)}
+                    readOnly
+                  />
+                  <span className="text-sm">{tabConfig.icon} {tabConfig.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Acciones específicas */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">⚡ Acciones Específicas:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {AIRE_LIBRE_ACCIONES_CONFIG.map(accionConfig => (
+                <div 
+                  key={accionConfig.accion} 
+                  className={`flex items-center gap-2 p-2 bg-white rounded border hover:bg-gray-50 cursor-pointer ${loadingPermisos ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={(e) => togglePermisoAL(e, accionConfig.accion)}
+                >
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-blue-600 rounded pointer-events-none"
+                    checked={tienePermiso(accionConfig.accion)}
+                    readOnly
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{accionConfig.label}</span>
+                    <p className="text-xs text-gray-400">{accionConfig.descripcion}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Resumen y botón guardar */}
+          <div className="mt-4 flex items-center justify-between p-3 bg-gray-100 rounded">
+            <div className="text-sm">
+              <strong>Permisos activos:</strong> {permisosAL.length} de {AIRE_LIBRE_TABS_CONFIG.length + AIRE_LIBRE_ACCIONES_CONFIG.length}
+              {loadingPermisos && (
+                <span className="ml-2 text-gray-500">
+                  <RefreshCw className="w-3 h-3 inline animate-spin" /> Cargando...
+                </span>
+              )}
+            </div>
+            <button
+              onClick={guardarPermisos}
+              disabled={guardando || !hayCambios || loadingPermisos}
+              className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                hayCambios && !guardando && !loadingPermisos
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {guardando ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Guardar Configuración
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Políticas de Contraseña */}
         <div className="p-4 border border-gray-200 rounded-lg">
           <h3 className="font-medium text-gray-900 mb-3">Políticas de Contraseña</h3>
