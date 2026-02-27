@@ -70,6 +70,7 @@ export default function Asistencia() {
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
 	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
 	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
+	const [scoutsProgramaActual, setScoutsProgramaActual] = useState<Scout[]>([]);
 	// ============= DETALLE PROGRAMA =============
 	const [asistenciasPrograma, setAsistenciasPrograma] = useState<any[]>([]);
 
@@ -77,6 +78,20 @@ export default function Asistencia() {
 		setSelectedPrograma(programa);
 		setVistaActual('asistencia_masiva');
 		setSelectedPatrulla('');
+		
+		try {
+			// Cargar scouts filtrados por la rama del programa
+			if (programa.rama) {
+				const scoutsPorRama = await AsistenciaService.obtenerScoutsPorRama(programa.rama);
+				setScoutsProgramaActual(scoutsPorRama || []);
+			} else {
+				// Si no hay rama, usar todos los scouts activos
+				setScoutsProgramaActual(scouts);
+			}
+		} catch (error) {
+			console.error('Error cargando scouts por rama:', error);
+			setScoutsProgramaActual(scouts);
+		}
 		
 		// Cargar asistencias ya guardadas para este programa
 		const asistenciasGuardadas = await AsistenciaService.getAsistenciasPorActividad(programa.id);
@@ -102,7 +117,10 @@ export default function Asistencia() {
 		setAsistenciaMasiva({});
 	};
 
-	const scoutsFiltrados = scouts.filter(s => !selectedPatrulla || s.rama_actual === selectedPatrulla);
+	// Filtrar scouts: en asistencia masiva usa los scouts del programa (ya filtrados por rama)
+	const scoutsFiltrados = vistaActual === 'asistencia_masiva' 
+		? scoutsProgramaActual 
+		: scouts.filter(s => !selectedRama || s.rama_actual === selectedRama);
 
 	const handleChangeAsistenciaScout = (scoutId: string, estado: 'presente' | 'ausente' | 'tardanza' | 'justificado') => {
 		setAsistenciaMasiva(prev => ({ ...prev, [scoutId]: estado }));
@@ -141,6 +159,7 @@ export default function Asistencia() {
 			setSelectedPrograma(null);
 			setSelectedPatrulla('');
 			setAsistenciaMasiva({});
+			setScoutsProgramaActual([]);
 			alert(`✅ Asistencia actualizada exitosamente (${registros.length} scouts)`);
 		} catch (error) {
 			console.error('❌ Error:', error);
@@ -681,6 +700,7 @@ export default function Asistencia() {
 									setVistaActual('reuniones');
 									setSelectedPrograma(null);
 									setAsistenciaMasiva({});
+									setScoutsProgramaActual([]);
 								}}
 								className="px-4 py-2 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
 							>
