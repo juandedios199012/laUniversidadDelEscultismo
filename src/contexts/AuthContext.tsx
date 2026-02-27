@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -32,8 +33,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initAuth = async () => {
       try {
         console.log('🔍 Verificando sesión existente...');
-        
-        const { supabase } = await import('../lib/supabase');
         
         // Detectar si venimos de un magic link o OAuth callback
         // El hash contiene el token cuando se redirige desde email/OAuth
@@ -98,32 +97,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initAuth();
 
     // Escuchar cambios de autenticación (login/logout)
-    let subscription: { unsubscribe: () => void } | null = null;
-    
-    import('../lib/supabase').then(({ supabase }) => {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (mounted) {
-          console.log('🔄 Auth state changed:', event, session?.user?.email || 'Logged out');
-          if (session?.user) {
-            const authUser = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.user_metadata?.full_name || session.user.email,
-              avatar_url: session.user.user_metadata?.avatar_url,
-            };
-            setUser(authUser);
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (mounted) {
+        console.log('🔄 Auth state changed:', event, session?.user?.email || 'Logged out');
+        if (session?.user) {
+          const authUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || session.user.email,
+            avatar_url: session.user.user_metadata?.avatar_url,
+          };
+          setUser(authUser);
+        } else {
+          setUser(null);
         }
-      });
-      subscription = data.subscription;
+        setLoading(false);
+      }
     });
 
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
+      data.subscription.unsubscribe();
     };
   }, []);
 
