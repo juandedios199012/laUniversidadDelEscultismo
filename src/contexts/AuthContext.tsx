@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
 import { supabase } from '../lib/supabase';
+import { shouldSkipAuth, DEV_USER } from '../config/dev';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -23,11 +24,21 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   console.log('🔐 AuthProvider inicializando...');
   
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Si estamos en modo dev sin auth, usar usuario mock inmediatamente
+  const skipAuth = shouldSkipAuth();
+  const [user, setUser] = useState<AuthUser | null>(skipAuth ? DEV_USER : null);
+  const [loading, setLoading] = useState(!skipAuth);
+
+  // Log de modo desarrollo
+  if (skipAuth) {
+    console.log('🔓 DEV: Autenticación saltada en localhost, usando usuario mock');
+  }
 
   // Verificar sesión al cargar y escuchar cambios de autenticación
   useEffect(() => {
+    // Si saltamos auth, no hacer nada
+    if (skipAuth) return;
+    
     let mounted = true;
 
     const initAuth = async () => {

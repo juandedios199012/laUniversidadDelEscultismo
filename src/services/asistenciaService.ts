@@ -160,33 +160,28 @@ export class AsistenciaService {
   }
 
   /**
-   * 📱 Registrar asistencia masiva por programa (Mobile)
-   * Usa actividad_id para vincular con programa_semanal
+   * � Registrar asistencia masiva
+   * Usa UPSERT para actualizar registros existentes o crear nuevos
+   * @param registros - Array de registros con actividad_id, scout_id, estado_asistencia
    */
   static async registrarAsistenciaMasiva(registros: Array<{
+    actividad_id: string;
     scout_id: string;
-    programa_id: string;
-    fecha: string;
-    estado_asistencia: 'presente' | 'ausente' | 'tardanza';
+    estado_asistencia: string;
+    hora_llegada?: string;
+    observaciones?: string;
+    registrado_por?: string;
+    fecha?: string;
   }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
     try {
-      const registrosFormateados = registros.map(r => ({
-        scout_id: r.scout_id,
-        actividad_id: r.programa_id, // Usar programa_id como actividad_id
-        fecha: r.fecha,
-        tipo_reunion: 'REUNION_REGULAR',
-        estado_asistencia: r.estado_asistencia.toUpperCase() as 'PRESENTE' | 'AUSENTE' | 'TARDANZA'
-      }));
-
-      console.log('💾 Guardando asistencias:', registrosFormateados.length);
-
-      // Usar upsert con constraint (scout_id, actividad_id)
-      const { data, error } = await supabase
+      console.log('💾 Guardando asistencias:', registros.length);
+      
+      const { error } = await supabase
         .from('asistencias')
-        .upsert(registrosFormateados, {
-          onConflict: 'scout_id,actividad_id'
+        .upsert(registros, {
+          onConflict: 'actividad_id,scout_id'
         });
-
+        
       if (error) throw error;
       
       console.log('✅ Asistencias guardadas exitosamente');
@@ -203,38 +198,26 @@ export class AsistenciaService {
     }
   }
 
-  // ============= 📊 FUNCIONES ORIGINALES =============
-  
   /**
-   * 📊 Registrar asistencia masiva
-   * Endpoint: POST /api/asistencia/masiva
-   * Usa UPSERT para actualizar registros existentes
+   * 📱 Registrar asistencia masiva por programa (Mobile)
+   * Wrapper que convierte programa_id a actividad_id
    */
-  static async registrarAsistenciaMasivaOriginal(registros: Array<{
-    actividad_id: string;
+  static async registrarAsistenciaMasivaPorPrograma(registros: Array<{
     scout_id: string;
-    estado_asistencia: string;
-    hora_llegada?: string;
-    observaciones?: string;
-    registrado_por?: string;
-    fecha?: string;
-  }>): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Usar upsert para actualizar si existe o insertar si es nuevo
-      // La constraint debe ser única en (actividad_id, scout_id)
-      const { error } = await supabase
-        .from('asistencias')
-        .upsert(registros, {
-          onConflict: 'actividad_id,scout_id'
-        });
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error al registrar asistencia masiva:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
-    }
+    programa_id: string;
+    fecha: string;
+    estado_asistencia: 'presente' | 'ausente' | 'tardanza';
+  }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
+    const registrosFormateados = registros.map(r => ({
+      scout_id: r.scout_id,
+      actividad_id: r.programa_id,
+      fecha: r.fecha,
+      tipo_reunion: 'REUNION_REGULAR',
+      estado_asistencia: r.estado_asistencia.toUpperCase()
+    }));
+    
+    return this.registrarAsistenciaMasiva(registrosFormateados);
   }
-  // ...otros métodos de la clase...
 
   /**
    * 📋 Obtener todas las reuniones

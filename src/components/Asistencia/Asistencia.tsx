@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-	Calendar, Save, Plus, Search, Edit, Eye, Trash2, 
+	Calendar, Save, Plus, Search, Eye, Trash2, 
 	TrendingUp, BarChart3, CheckCircle, Users, FileText, AlertTriangle
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
@@ -57,7 +57,7 @@ interface AsistenciaFormData {
 // ==================== COMPONENT ====================
 export default function Asistencia() {
 	// ============= PERMISOS =============
-	const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+	const { puedeCrear, puedeEliminar } = usePermissions();
 	
 	// ============= ESTADOS =============
 	const [scouts, setScouts] = useState<Scout[]>([]);
@@ -94,7 +94,9 @@ export default function Asistencia() {
 		}
 		
 		// Cargar asistencias ya guardadas para este programa
+		console.log('📋 Cargando asistencias para programa:', programa.id);
 		const asistenciasGuardadas = await AsistenciaService.getAsistenciasPorActividad(programa.id);
+		console.log('📋 Asistencias encontradas:', asistenciasGuardadas);
 		
 		// Mapear estados guardados a formato del componente (MAYÚSCULAS → minúsculas)
 		const estadoMapInverso: Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'> = {
@@ -146,14 +148,16 @@ export default function Asistencia() {
 				'justificado': 'JUSTIFICADO'
 			};
 			const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
-				actividad_id: selectedPrograma?.id,
+				actividad_id: selectedPrograma?.id || '',
 				scout_id,
 				estado_asistencia: estadoMap[estado] || 'PRESENTE',
 				fecha: selectedPrograma?.fecha || new Date().toISOString().split('T')[0],
 				registrado_por: user.id
 			}));
-			const { data, error } = await AsistenciaService.registrarAsistenciaMasiva(registros);
-			if (error) throw error;
+			console.log('💾 Guardando asistencia masiva:', registros);
+			const result = await AsistenciaService.registrarAsistenciaMasiva(registros);
+			console.log('💾 Resultado del guardado:', result);
+			if (!result.success) throw new Error(result.error || 'Error desconocido');
 			await loadInitialData();
 			setVistaActual('reuniones');
 			setSelectedPrograma(null);
@@ -381,26 +385,6 @@ export default function Asistencia() {
 		}
 	};
 
-	const handleEditReunion = (reunion: Reunion) => {
-		if (!puedeEditar('asistencia')) {
-			alert('No tienes permiso para editar reuniones');
-			return;
-		}
-		setSelectedReunion(reunion);
-		setReunionFormData({
-			fecha: reunion.fecha,
-			titulo: reunion.titulo,
-			descripcion: reunion.descripcion || '',
-			rama: reunion.rama || '',
-			tipo_actividad: reunion.tipo_actividad || 'reunion_semanal',
-			ubicacion: reunion.ubicacion || '',
-			hora_inicio: reunion.hora_inicio || '15:00',
-			hora_fin: reunion.hora_fin || '17:00',
-			responsable: reunion.responsable || ''
-		});
-		alert('Modal de edición - Implementar en siguiente iteración');
-	};
-
 	const handleDeleteReunion = async (reunion: Reunion) => {
 		if (!puedeEliminar('asistencia')) {
 			alert('No tienes permiso para eliminar reuniones');
@@ -434,11 +418,15 @@ export default function Asistencia() {
 			setSelectedReunion(reunion);
 			
 			// Cargar asistencias del programa
+			console.log('👁️ Ver Detalles - Cargando asistencias para reunión:', reunion.id);
 			const asistencias = await AsistenciaService.getAsistenciasPorActividad(reunion.id);
+			console.log('👁️ Asistencias encontradas:', asistencias);
+			console.log('👁️ Scouts disponibles para mapeo:', scouts.length);
 			
 			// Enriquecer con datos de scouts
 			const asistenciasConScout = asistencias.map(asist => {
 				const scout = scouts.find(s => s.id === asist.scout_id);
+				console.log('👁️ Mapeando scout:', asist.scout_id, '→', scout?.nombres || 'NO ENCONTRADO');
 				return {
 					...asist,
 					scout_nombre: scout ? `${scout.nombres} ${scout.apellidos}` : 'Desconocido',
@@ -447,6 +435,7 @@ export default function Asistencia() {
 				};
 			});
 			
+			console.log('👁️ Asistencias con scout:', asistenciasConScout);
 			setAsistenciasPrograma(asistenciasConScout);
 			setVistaActual('detalle_programa');
 		} catch (error) {
@@ -927,9 +916,6 @@ export default function Asistencia() {
 									</button>
 									<button className="btn-secondary" onClick={() => handleViewReunion(reunion)}>
 										<Eye className="w-4 h-4" /> Ver Detalles
-									</button>
-									<button className="btn-secondary" onClick={() => handleEditReunion(reunion)}>
-										<Edit className="w-4 h-4" /> Editar
 									</button>
 									<button className="btn-danger" onClick={() => handleDeleteReunion(reunion)}>
 										<Trash2 className="w-4 h-4" /> Eliminar

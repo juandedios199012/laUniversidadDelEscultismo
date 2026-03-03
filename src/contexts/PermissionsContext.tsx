@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { PermissionsService, Modulo, Accion, Rol, UsuarioSeguridad, SubAccionAireLibre } from '../services/permissionsService';
 import { useAuth } from './AuthContext';
+import { shouldSkipAuth } from '../config/dev';
 
 // ================================================================
 // TIPOS
@@ -50,9 +51,47 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   const [seguridad, setSeguridad] = useState<UsuarioSeguridad | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modo desarrollo: permisos completos sin BD
+  const skipAuth = shouldSkipAuth();
 
   // Cargar permisos cuando cambia el usuario
   useEffect(() => {
+    // Si estamos en modo dev, dar permisos completos inmediatamente
+    if (skipAuth) {
+      console.log('🔓 DEV: Permisos completos otorgados en localhost');
+      setSeguridad({
+        usuario: {
+          id: 'dev-user-001',
+          email: 'dev@localhost',
+          nombre: 'Usuario Desarrollo'
+        },
+        roles: [{
+          id: 'dev-role',
+          nombre: 'super_admin',
+          descripcion: 'Super Administrador (DEV)',
+          nivel_jerarquia: 100,
+          activo: true
+        }],
+        rol_principal: {
+          id: 'dev-role',
+          nombre: 'super_admin',
+          descripcion: 'Super Administrador (DEV)',
+          nivel_jerarquia: 100,
+          activo: true
+        },
+        permisos: [], // Se usará esSuperAdmin para bypass
+        modulos_accesibles: [
+          'dashboard', 'scouts', 'dirigentes', 'patrullas', 'progresion',
+          'programa_semanal', 'asistencia', 'actividades_exterior', 'finanzas',
+          'inventario', 'reportes', 'configuracion', 'seguridad', 'comite_padres',
+          'libro_oro', 'mapas', 'inscripciones'
+        ] as Modulo[]
+      });
+      setLoading(false);
+      return;
+    }
+    
     const cargarPermisos = async () => {
       if (!user?.id || !user?.email) {
         setSeguridad(null);
@@ -112,25 +151,27 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     }
   }, [user?.id]);
 
-  // Verificar si tiene un permiso específico
-  const tienePermiso = useCallback((modulo: Modulo, accion: Accion): boolean => {
-    if (!seguridad?.permisos) return false;
-    return seguridad.permisos.some(p => p.modulo === modulo && p.accion === accion);
-  }, [seguridad?.permisos]);
-
-  // Helpers para acciones comunes
-  const puedeAcceder = useCallback((modulo: Modulo) => tienePermiso(modulo, 'leer'), [tienePermiso]);
-  const puedeVerDetalle = useCallback((modulo: Modulo) => tienePermiso(modulo, 'ver_detalle'), [tienePermiso]);
-  const puedeCrear = useCallback((modulo: Modulo) => tienePermiso(modulo, 'crear'), [tienePermiso]);
-  const puedeEditar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'editar'), [tienePermiso]);
-  const puedeEliminar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'eliminar'), [tienePermiso]);
-  const puedeExportar = useCallback((modulo: Modulo) => tienePermiso(modulo, 'exportar'), [tienePermiso]);
-
-  // Datos derivados (DEBEN estar antes de usarlos en permisos de Aire Libre)
+  // Datos derivados (DEBEN estar antes de usarlos en permisos)
   const rolPrincipal = seguridad?.rol_principal || null;
   const modulosAccesibles = seguridad?.modulos_accesibles || [];
   const esAdmin = rolPrincipal?.nivel_jerarquia ? rolPrincipal.nivel_jerarquia >= 70 : false;
   const esSuperAdmin = rolPrincipal?.nombre === 'super_admin';
+
+  // Verificar si tiene un permiso específico
+  const tienePermiso = useCallback((modulo: Modulo, accion: Accion): boolean => {
+    // Super admin tiene todos los permisos
+    if (esSuperAdmin) return true;
+    if (!seguridad?.permisos) return false;
+    return seguridad.permisos.some(p => p.modulo === modulo && p.accion === accion);
+  }, [seguridad?.permisos, esSuperAdmin]);
+
+  // Helpers para acciones comunes
+  const puedeAcceder = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'leer'), [tienePermiso, esSuperAdmin]);
+  const puedeVerDetalle = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'ver_detalle'), [tienePermiso, esSuperAdmin]);
+  const puedeCrear = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'crear'), [tienePermiso, esSuperAdmin]);
+  const puedeEditar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'editar'), [tienePermiso, esSuperAdmin]);
+  const puedeEliminar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'eliminar'), [tienePermiso, esSuperAdmin]);
+  const puedeExportar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'exportar'), [tienePermiso, esSuperAdmin]);
 
   // ================================================================
   // PERMISOS GRANULARES DE AIRE LIBRE (DESDE BD)

@@ -15,7 +15,8 @@ import {
   Tent,
   Wallet,
   Lock,
-  Trophy
+  Trophy,
+  Medal
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -37,6 +38,7 @@ const menuItems: {
   { id: 'scouts', label: 'Scouts', icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts' },
   { id: 'inscripcion-anual', label: 'Inscripción Anual', icon: Star, gradient: 'from-teal-500 to-cyan-500', modulo: 'inscripciones' },
   { id: 'progresion', label: 'Progresión', icon: TrendingUp, gradient: 'from-amber-500 to-orange-500', modulo: 'progresion' },
+  { id: 'especialidades', label: 'Especialidades', icon: Medal, gradient: 'from-yellow-500 to-amber-500', modulo: 'progresion' },
   { id: 'admin-objetivos', label: '⚙️ Objetivos Educativos', icon: TrendingUp, gradient: 'from-orange-400 to-amber-500', modulo: 'progresion' },
   { id: 'grupo-scout', label: 'Grupo Scout', icon: Flag, gradient: 'from-purple-500 to-violet-500', modulo: 'configuracion' },
   { id: 'comite-padres', label: 'Comité Padres', icon: Users, gradient: 'from-purple-500 to-violet-500', modulo: 'comite_padres' },

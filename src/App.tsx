@@ -19,11 +19,15 @@ import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
 import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
+// Módulo de Especialidades Scout
+import { EspecialidadesModule } from './components/Especialidades';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 import LoginScreen from './components/Auth/LoginScreen';
 import { useMobileDetect } from './hooks/useMobileDetect';
+// Configuración de desarrollo
+import { shouldSkipAuth, DEV_USER } from './config/dev';
 
 // Componente interno que usa el contexto de Auth
 function AppContent() {
@@ -31,8 +35,12 @@ function AppContent() {
   const { isMobile } = useMobileDetect();
   const { user, loading } = useAuth();
 
-  // Mostrar loading mientras verifica sesión
-  if (loading) {
+  // En desarrollo local, permitir acceso sin login
+  const skipAuth = shouldSkipAuth();
+  const effectiveUser = skipAuth ? DEV_USER : user;
+
+  // Mostrar loading mientras verifica sesión (solo si no estamos saltando auth)
+  if (loading && !skipAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
         <div className="text-center">
@@ -43,9 +51,14 @@ function AppContent() {
     );
   }
 
-  // Si no hay usuario, mostrar Login
-  if (!user) {
+  // Si no hay usuario y no estamos saltando auth, mostrar Login
+  if (!effectiveUser) {
     return <LoginScreen />;
+  }
+
+  // Log para desarrollo
+  if (skipAuth) {
+    console.log('🔓 DEV: Auth saltado en localhost');
   }
 
   const renderActiveModule = () => {
@@ -88,6 +101,8 @@ function AppContent() {
         return <Reports />;
       case 'seguridad':
         return <SeguridadDashboard />;
+      case 'especialidades':
+        return <EspecialidadesModule />;
       default:
         return <Dashboard onNavigate={setActiveModule} />;
     }

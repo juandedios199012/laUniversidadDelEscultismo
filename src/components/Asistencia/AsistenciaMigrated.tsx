@@ -104,14 +104,14 @@ export default function AsistenciaNew() {
         'justificado': 'JUSTIFICADO'
       };
       const registros = Object.entries(asistenciaMasiva).map(([scout_id, estado]) => ({
-        actividad_id: selectedPrograma?.id,
+        actividad_id: selectedPrograma?.id || '',
         scout_id,
         estado_asistencia: estadoMap[estado] || 'PRESENTE',
         fecha: selectedPrograma?.fecha || new Date().toISOString().split('T')[0],
         registrado_por: user.id
       }));
-      const { data, error } = await AsistenciaService.registrarAsistenciaMasiva(registros);
-      if (error) throw error;
+      const result = await AsistenciaService.registrarAsistenciaMasiva(registros);
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
       await loadInitialData();
       setVistaActual('reuniones');
       setSelectedPrograma(null);

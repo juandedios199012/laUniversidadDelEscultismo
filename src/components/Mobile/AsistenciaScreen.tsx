@@ -133,7 +133,7 @@ export default function AsistenciaScreen() {
         estado_asistencia: asistencias[scout.id] || 'presente'
       }));
 
-      const result = await AsistenciaService.registrarAsistenciaMasiva(registros);
+      const result = await AsistenciaService.registrarAsistenciaMasivaPorPrograma(registros);
 
       if (result.success) {
         setMensaje(`✅ ${result.registros_creados} asistencias guardadas`);
