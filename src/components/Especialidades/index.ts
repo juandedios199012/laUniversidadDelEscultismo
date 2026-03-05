@@ -11,7 +11,6 @@ export { default as EspecialidadesModule } from './EspecialidadesModule';
 export { default as EspecialidadesDashboard } from './EspecialidadesDashboard';
 export { default as CatalogoEspecialidades } from './CatalogoEspecialidades';
 export { default as SeguimientoEspecialidades } from './SeguimientoEspecialidades';
-export { default as ReportesEspecialidades } from './ReportesEspecialidades';
 
 // Dialogs
 export { default as AsignarEspecialidadDialog } from './dialogs/AsignarEspecialidadDialog';

@@ -17,6 +17,8 @@ export enum ReportType {
   DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
   // Reporte Excel con todos los campos
   SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
+  // Reporte de Especialidades (migrado desde módulo)
+  ESPECIALIDADES = 'especialidades',
 }
 
 // Formatos de exportación

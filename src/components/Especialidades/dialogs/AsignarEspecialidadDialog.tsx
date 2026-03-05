@@ -194,6 +194,10 @@ export default function AsignarEspecialidadDialog({
     onOpenChange(false);
   };
 
+  // Determinar si un paso está completo (para saltar pasos preseleccionados)
+  const pasoScoutCompleto = !!scoutId || !!scoutPreseleccionado;
+  const pasoEspecialidadCompleto = !!especialidadId || !!especialidadPreseleccionada;
+
   const siguientePaso = async () => {
     // Validar paso actual
     if (paso === 1 && !scoutId) {
@@ -205,12 +209,34 @@ export default function AsignarEspecialidadDialog({
       return;
     }
     
+    // Saltar paso 2 si la especialidad ya está preseleccionada
+    if (paso === 1 && especialidadPreseleccionada) {
+      setPaso(3);
+      return;
+    }
+    
+    // Saltar paso 1 si el scout ya está preseleccionado
+    if (paso === 2 && scoutPreseleccionado) {
+      setPaso(3);
+      return;
+    }
+    
     if (paso < 3) {
       setPaso(paso + 1);
     }
   };
 
   const anteriorPaso = () => {
+    // Saltar paso 2 si la especialidad está preseleccionada
+    if (paso === 3 && especialidadPreseleccionada) {
+      setPaso(1);
+      return;
+    }
+    // Saltar paso 1 si el scout está preseleccionado
+    if (paso === 3 && scoutPreseleccionado) {
+      setPaso(2);
+      return;
+    }
     if (paso > 1) {
       setPaso(paso - 1);
     }
@@ -249,7 +275,11 @@ export default function AsignarEspecialidadDialog({
           {PASOS.map((p, index) => {
             const Icon = p.icono;
             const isActive = paso === p.id;
-            const isCompleted = paso > p.id;
+            // Un paso está completo si ya pasamos por él O si está preseleccionado
+            const isCompleted = 
+              paso > p.id || 
+              (p.id === 1 && pasoScoutCompleto && paso !== 1) ||
+              (p.id === 2 && pasoEspecialidadCompleto && paso !== 2);
             
             return (
               <div key={p.id} className="flex items-center">
@@ -290,6 +320,28 @@ export default function AsignarEspecialidadDialog({
               {/* PASO 1: Selección de Scout */}
               {paso === 1 && (
                 <div className="space-y-4 animate-fade-in">
+                  {/* Banner de especialidad preseleccionada */}
+                  {especialidadPreseleccionada && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-gradient-to-br ${AREA_GRADIENTS[especialidadPreseleccionada.area.codigo as AreaId]}`}>
+                          {especialidadPreseleccionada.area.icono}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600 font-medium uppercase tracking-wide">Especialidad seleccionada</p>
+                          <p className="font-semibold text-gray-800">{especialidadPreseleccionada.nombre}</p>
+                        </div>
+                        <Check className="w-5 h-5 text-green-500" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-sm text-gray-600">
+                    {especialidadPreseleccionada 
+                      ? 'Selecciona el scout que trabajará en esta especialidad:'
+                      : 'Busca y selecciona el scout:'}
+                  </p>
+                  
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -344,6 +396,28 @@ export default function AsignarEspecialidadDialog({
               {/* PASO 2: Selección de Especialidad */}
               {paso === 2 && (
                 <div className="space-y-4 animate-fade-in">
+                  {/* Banner de scout preseleccionado */}
+                  {scoutPreseleccionado && scoutSeleccionado && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold bg-blue-500 text-white">
+                          {scoutSeleccionado.nombres[0]}{scoutSeleccionado.apellidos[0]}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Scout seleccionado</p>
+                          <p className="font-semibold text-gray-800">{scoutSeleccionado.nombres} {scoutSeleccionado.apellidos}</p>
+                        </div>
+                        <Check className="w-5 h-5 text-blue-500" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-sm text-gray-600">
+                    {scoutPreseleccionado 
+                      ? 'Selecciona la especialidad a asignar:'
+                      : 'Filtra y busca la especialidad:'}
+                  </p>
+                  
                   {/* Filtro por área */}
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -485,14 +559,15 @@ export default function AsignarEspecialidadDialog({
 
         {/* Footer con navegación */}
         <div className="flex justify-between items-center pt-4 border-t">
-          {paso > 1 ? (
+          {/* Botón Anterior - Solo si no estamos en paso 1 y el paso anterior no está preseleccionado */}
+          {(paso > 1 && !(paso === 2 && scoutPreseleccionado) && !(paso === 3 && especialidadPreseleccionada && !scoutPreseleccionado)) ? (
             <button
               type="button"
               onClick={anteriorPaso}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <ChevronLeft className="w-4 h-4" />
-              Anterior
+              {paso === 3 && especialidadPreseleccionada ? 'Cambiar Scout' : 'Anterior'}
             </button>
           ) : (
             <div />
@@ -504,7 +579,12 @@ export default function AsignarEspecialidadDialog({
               onClick={siguientePaso}
               className="flex items-center gap-2 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
             >
-              Siguiente
+              {/* Texto contextual según preselección */}
+              {paso === 1 && especialidadPreseleccionada
+                ? 'Continuar a Detalles'
+                : paso === 2 && scoutPreseleccionado
+                ? 'Continuar a Detalles'
+                : 'Siguiente'}
               <ChevronRight className="w-4 h-4" />
             </button>
           ) : (

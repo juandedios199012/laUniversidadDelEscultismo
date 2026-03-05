@@ -9,10 +9,9 @@ import EspecialidadesDashboard from './EspecialidadesDashboard';
 import CatalogoEspecialidades from './CatalogoEspecialidades';
 import SeguimientoEspecialidades from './SeguimientoEspecialidades';
 import AsignarEspecialidadDialog from './dialogs/AsignarEspecialidadDialog';
-import ReportesEspecialidades from './ReportesEspecialidades';
 import type { Especialidad, AreaId } from '../../types/especialidades';
 
-type ViewType = 'dashboard' | 'catalogo' | 'seguimiento' | 'reportes';
+type ViewType = 'dashboard' | 'catalogo' | 'seguimiento';
 
 interface ViewParams {
   area?: AreaId;
@@ -20,7 +19,11 @@ interface ViewParams {
   scoutId?: string;
 }
 
-export default function EspecialidadesModule() {
+interface EspecialidadesModuleProps {
+  onNavigateGlobal?: (module: string) => void;
+}
+
+export default function EspecialidadesModule({ onNavigateGlobal }: EspecialidadesModuleProps) {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [viewParams, setViewParams] = useState<ViewParams>({});
   const [dialogAsignar, setDialogAsignar] = useState(false);
@@ -51,6 +54,7 @@ export default function EspecialidadesModule() {
         return (
           <EspecialidadesDashboard
             onNavigate={handleNavigate}
+            onNavigateGlobal={onNavigateGlobal}
           />
         );
 
@@ -68,13 +72,6 @@ export default function EspecialidadesModule() {
           <SeguimientoEspecialidades
             onBack={() => setCurrentView('dashboard')}
             onAsignarClick={() => setDialogAsignar(true)}
-          />
-        );
-
-      case 'reportes':
-        return (
-          <ReportesEspecialidades
-            onBack={() => setCurrentView('dashboard')}
           />
         );
 

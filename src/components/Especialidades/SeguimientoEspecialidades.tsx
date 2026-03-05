@@ -4,7 +4,7 @@
 // Sistema de Gestión Scout - Grupo Scout Lima 12
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft,
   Plus,
@@ -13,7 +13,10 @@ import {
   Upload,
   Trash2,
   Video,
-  X
+  X,
+  Search,
+  User,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import EspecialidadesService from '../../services/especialidadesService';
@@ -29,6 +32,14 @@ import {
   AREA_GRADIENTS,
   AreaId
 } from '../../types/especialidades';
+
+// Colores por rama para badges
+const RAMA_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  'MANADA': { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  'TROPA': { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  'COMUNIDAD': { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
+  'CLAN': { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+};
 
 interface SeguimientoEspecialidadesProps {
   onBack?: () => void;
@@ -55,6 +66,22 @@ export default function SeguimientoEspecialidades({
   const [loading, setLoading] = useState(false);
   const [loadingScouts, setLoadingScouts] = useState(true);
   const [stats, setStats] = useState({ total: 0, completadas: 0, en_progreso: 0 });
+  
+  // Estado para el selector mejorado
+  const [scoutSearchOpen, setScoutSearchOpen] = useState(false);
+  const [scoutSearchQuery, setScoutSearchQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setScoutSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     cargarScouts();
@@ -142,6 +169,28 @@ export default function SeguimientoEspecialidades({
   };
 
   const scoutSeleccionado = scouts.find(s => s.id === selectedScout);
+  
+  // Filtrar scouts por búsqueda
+  const scoutsFiltrados = scouts.filter(s => {
+    if (!scoutSearchQuery) return true;
+    const query = scoutSearchQuery.toLowerCase();
+    return (
+      s.nombres.toLowerCase().includes(query) ||
+      s.apellidos.toLowerCase().includes(query) ||
+      (s.codigo_scout?.toLowerCase().includes(query) ?? false) ||
+      (s.rama_actual?.toLowerCase().includes(query) ?? false)
+    );
+  });
+  
+  // Obtener iniciales para avatar
+  const getInitials = (nombres: string, apellidos: string) => {
+    return `${nombres.charAt(0)}${apellidos.charAt(0)}`.toUpperCase();
+  };
+  
+  // Obtener color de rama
+  const getRamaColor = (rama?: string) => {
+    return RAMA_COLORS[rama || ''] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' };
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -177,26 +226,149 @@ export default function SeguimientoEspecialidades({
         )}
       </div>
 
-      {/* Selector de Scout */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      {/* Selector de Scout Mejorado */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
           Seleccionar Scout
         </label>
-        <select
-          value={selectedScout}
-          onChange={(e) => setSelectedScout(e.target.value)}
-          className="w-full md:w-96 px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-          disabled={loadingScouts}
-        >
-          <option value="">
-            {loadingScouts ? 'Cargando scouts...' : '-- Seleccionar un scout --'}
-          </option>
-          {scouts.map((scout) => (
-            <option key={scout.id} value={scout.id}>
-              {scout.nombres} {scout.apellidos} - {scout.rama_actual}
-            </option>
-          ))}
-        </select>
+        
+        <div className="relative" ref={dropdownRef}>
+          {/* Botón del selector */}
+          <button
+            type="button"
+            onClick={() => setScoutSearchOpen(!scoutSearchOpen)}
+            disabled={loadingScouts}
+            className={`w-full flex items-center justify-between gap-3 px-4 py-3 border rounded-xl transition-all ${
+              scoutSearchOpen 
+                ? 'border-blue-500 ring-2 ring-blue-200 bg-white' 
+                : 'border-gray-200 bg-gray-50 hover:bg-white hover:border-gray-300'
+            } ${loadingScouts ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
+          >
+            {loadingScouts ? (
+              <span className="text-gray-500 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                Cargando scouts...
+              </span>
+            ) : scoutSeleccionado ? (
+              <div className="flex items-center gap-3">
+                {/* Avatar con iniciales */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                  getRamaColor(scoutSeleccionado.rama_actual).bg
+                } ${getRamaColor(scoutSeleccionado.rama_actual).text}`}>
+                  {getInitials(scoutSeleccionado.nombres, scoutSeleccionado.apellidos)}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">
+                    {scoutSeleccionado.nombres} {scoutSeleccionado.apellidos}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {scoutSeleccionado.codigo_scout && (
+                      <span className="text-xs text-gray-500">{scoutSeleccionado.codigo_scout}</span>
+                    )}
+                    {scoutSeleccionado.rama_actual && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        getRamaColor(scoutSeleccionado.rama_actual).bg
+                      } ${getRamaColor(scoutSeleccionado.rama_actual).text}`}>
+                        {scoutSeleccionado.rama_actual}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <span className="text-gray-500 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Seleccionar un scout...
+              </span>
+            )}
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${scoutSearchOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {/* Dropdown */}
+          {scoutSearchOpen && (
+            <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Campo de búsqueda */}
+              <div className="p-3 border-b border-gray-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre, código o rama..."
+                    value={scoutSearchQuery}
+                    onChange={(e) => setScoutSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              
+              {/* Lista de scouts */}
+              <div className="max-h-72 overflow-y-auto">
+                {scoutsFiltrados.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500">
+                    <User className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No se encontraron scouts</p>
+                  </div>
+                ) : (
+                  scoutsFiltrados.map((scout) => {
+                    const isSelected = scout.id === selectedScout;
+                    const ramaColor = getRamaColor(scout.rama_actual);
+                    
+                    return (
+                      <button
+                        key={scout.id}
+                        onClick={() => {
+                          setSelectedScout(scout.id);
+                          setScoutSearchOpen(false);
+                          setScoutSearchQuery('');
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors ${
+                          isSelected ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        {/* Avatar */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                          ramaColor.bg
+                        } ${ramaColor.text}`}>
+                          {getInitials(scout.nombres, scout.apellidos)}
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 text-left min-w-0">
+                          <p className={`font-medium truncate ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>
+                            {scout.nombres} {scout.apellidos}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {scout.codigo_scout && (
+                              <span className="text-xs text-gray-500">{scout.codigo_scout}</span>
+                            )}
+                            {scout.rama_actual && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${ramaColor.bg} ${ramaColor.text}`}>
+                                {scout.rama_actual}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Check si está seleccionado */}
+                        {isSelected && (
+                          <Check className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              
+              {/* Footer con conteo */}
+              <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+                <p className="text-xs text-gray-500">
+                  {scoutsFiltrados.length} de {scouts.length} scouts
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats del scout seleccionado */}

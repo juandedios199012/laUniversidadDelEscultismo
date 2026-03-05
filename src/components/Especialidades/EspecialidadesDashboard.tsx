@@ -24,9 +24,10 @@ import { AREA_GRADIENTS, AreaId } from '../../types/especialidades';
 
 interface EspecialidadesDashboardProps {
   onNavigate?: (view: string, params?: Record<string, unknown>) => void;
+  onNavigateGlobal?: (module: string) => void;
 }
 
-export default function EspecialidadesDashboard({ onNavigate }: EspecialidadesDashboardProps) {
+export default function EspecialidadesDashboard({ onNavigate, onNavigateGlobal }: EspecialidadesDashboardProps) {
   const [dashboard, setDashboard] = useState<DashboardEspecialidades | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,10 +141,12 @@ export default function EspecialidadesDashboard({ onNavigate }: EspecialidadesDa
           Seguimiento
         </button>
         <button
-          onClick={() => onNavigate?.('reportes')}
-          className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-gray-300 hover:bg-gray-50 transition-all"
+          onClick={() => onNavigateGlobal?.('reportes')}
+          className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-all group"
         >
-          📊 Ver Reportes
+          <span className="group-hover:scale-110 transition-transform">📊</span>
+          Ir a Reportes
+          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
         </button>
       </div>
 

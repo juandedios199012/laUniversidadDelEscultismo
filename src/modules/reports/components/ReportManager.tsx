@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award } from 'lucide-react';
 import {
   ReportType,
   ExportFormat,
@@ -14,6 +14,7 @@ import { ReportExportButton } from './ReportExportButton';
 import { generateAndDownloadPDF, generateReportMetadata } from '../services/pdfService';
 import { generateAndDownloadDOCX, createScoutReportDOCX, createAttendanceReportDOCX, createProgressReportDOCX } from '../services/docxService';
 import { ScoutsExcelReport } from './ScoutsExcelReport';
+import { EspecialidadesExcelReport } from './EspecialidadesExcelReport';
 import {
   getScoutData,
   getAttendanceData,
@@ -105,6 +106,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'Avance en especialidades y etapas',
           icon: <TrendingUp className="w-6 h-6" />,
           color: 'purple',
+        },
+        {
+          type: ReportType.ESPECIALIDADES,
+          title: 'Especialidades Scout',
+          description: 'Progreso y estadísticas de especialidades por rama',
+          icon: <Award className="w-6 h-6" />,
+          color: 'amber',
+          badge: '¡Nuevo!'
         },
       ]
     },
@@ -435,6 +444,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             <ScoutsExcelReport />
           )}
 
+          {/* Reporte de Especialidades - Su propio componente con Excel */}
+          {selectedReportType === ReportType.ESPECIALIDADES && (
+            <EspecialidadesExcelReport filterRama={filters.rama} />
+          )}
+
           {(selectedReportType === ReportType.ATTENDANCE ||
             selectedReportType === ReportType.PROGRESS) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -598,6 +612,34 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               <p className="text-sm text-blue-800">
                 📊 Este reporte mostrará KPIs generales del grupo (scouts activos, asistencia promedio, tendencias) sin filtros adicionales.
               </p>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.ESPECIALIDADES && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rama (opcional)
+                </label>
+                <select
+                  value={filters.rama || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, rama: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Todas las ramas</option>
+                  <option value="MANADA">Manada</option>
+                  <option value="TROPA">Tropa</option>
+                  <option value="COMUNIDAD">Comunidad</option>
+                  <option value="CLAN">Clan</option>
+                </select>
+              </div>
+              <div className="bg-amber-50 p-3 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  🎖️ Este reporte incluirá estadísticas de especialidades asignadas, en progreso y completadas por scout.
+                </p>
+              </div>
             </div>
           )}
 

@@ -102,7 +102,7 @@ function AppContent() {
       case 'seguridad':
         return <SeguridadDashboard />;
       case 'especialidades':
-        return <EspecialidadesModule />;
+        return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
       default:
         return <Dashboard onNavigate={setActiveModule} />;
     }
