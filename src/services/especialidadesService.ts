@@ -243,10 +243,11 @@ export async function subirArchivoEvidencia(
 ): Promise<string> {
   const fileExt = file.name.split('.').pop();
   const fileName = `${progresoId}/${crypto.randomUUID()}.${fileExt}`;
-  const filePath = `especialidades/${fileName}`;
+  const filePath = `especialidades/evidencias/${fileName}`;
 
+  // Usar bucket 'finanzas' que ya existe en el proyecto
   const { data, error } = await supabase.storage
-    .from('evidencias')
+    .from('finanzas')
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: false
@@ -259,7 +260,7 @@ export async function subirArchivoEvidencia(
 
   // Obtener URL pública
   const { data: urlData } = supabase.storage
-    .from('evidencias')
+    .from('finanzas')
     .getPublicUrl(data.path);
 
   return urlData.publicUrl;
