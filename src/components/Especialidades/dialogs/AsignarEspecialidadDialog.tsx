@@ -41,6 +41,7 @@ import { AREA_GRADIENTS } from '../../../types/especialidades';
 const asignarEspecialidadSchema = z.object({
   scout_id: z.string().min(1, 'Selecciona un scout'),
   especialidad_id: z.string().min(1, 'Selecciona una especialidad'),
+  fecha_inicio: z.string().optional(),
   asesor_nombre: z.string().optional(),
   notas: z.string().optional()
 });
@@ -170,6 +171,7 @@ export default function AsignarEspecialidadDialog({
       await EspecialidadesService.asignarEspecialidadScout({
         scout_id: data.scout_id,
         especialidad_id: data.especialidad_id,
+        fecha_inicio: data.fecha_inicio || undefined,
         asesor_nombre: data.asesor_nombre || undefined,
         notas: data.notas || undefined
       });
@@ -527,6 +529,21 @@ export default function AsignarEspecialidadDialog({
 
                   {/* Campos adicionales */}
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha de Inicio <span className="text-gray-400 font-normal">(por defecto: hoy)</span>
+                      </label>
+                      <input
+                        type="date"
+                        {...form.register('fecha_inicio')}
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Puedes ajustar la fecha si estás registrando especialidades anteriores
+                      </p>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Asesor (Opcional)

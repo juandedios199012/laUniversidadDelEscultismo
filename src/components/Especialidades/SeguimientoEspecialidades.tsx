@@ -16,7 +16,8 @@ import {
   X,
   Search,
   User,
-  Check
+  Check,
+  Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import EspecialidadesService from '../../services/especialidadesService';
@@ -486,12 +487,57 @@ function ProgresoCard({
   onEliminar,
   onRecargar
 }: ProgresoCardProps) {
+  // Estado para edición de fechas
+  const [editandoFechas, setEditandoFechas] = useState(false);
+  const [fechasEdit, setFechasEdit] = useState({ fecha_inicio: '', fecha_fin: '' });
+  const [guardandoFechas, setGuardandoFechas] = useState(false);
+
   const areaGradient = AREA_GRADIENTS[progreso.area.codigo as AreaId] || 'from-gray-500 to-gray-600';
   const porcentaje = EspecialidadesService.calcularPorcentajeProgreso({
     exploracion: progreso.fase_exploracion,
     taller: progreso.fase_taller,
     desafio: progreso.fase_desafio
   });
+
+  // Iniciar edición de fechas
+  const iniciarEdicionFechas = () => {
+    setEditandoFechas(true);
+    setFechasEdit({
+      fecha_inicio: progreso.fecha_inicio || '',
+      fecha_fin: progreso.fecha_fin || ''
+    });
+  };
+
+  // Cancelar edición
+  const cancelarEdicionFechas = () => {
+    setEditandoFechas(false);
+    setFechasEdit({ fecha_inicio: '', fecha_fin: '' });
+  };
+
+  // Guardar fechas editadas
+  const guardarFechas = async () => {
+    if (!fechasEdit.fecha_inicio) {
+      toast.error('La fecha de inicio es requerida');
+      return;
+    }
+
+    try {
+      setGuardandoFechas(true);
+      await EspecialidadesService.actualizarProgresoEspecialidad({
+        progreso_id: progreso.progreso_id,
+        fecha_inicio: fechasEdit.fecha_inicio,
+        fecha_fin: fechasEdit.fecha_fin || undefined
+      });
+      toast.success('Fechas actualizadas');
+      setEditandoFechas(false);
+      onRecargar();
+    } catch (error) {
+      console.error('Error guardando fechas:', error);
+      toast.error('Error al guardar fechas');
+    } finally {
+      setGuardandoFechas(false);
+    }
+  };
 
   const handleSubirEvidencia = async () => {
     const input = document.createElement('input');
@@ -637,16 +683,69 @@ function ProgresoCard({
               <span className="text-gray-500">Asesor:</span>
               <p className="font-medium text-gray-800">{progreso.asesor_nombre || 'No asignado'}</p>
             </div>
-            <div>
-              <span className="text-gray-500">Inicio:</span>
-              <p className="font-medium text-gray-800">{progreso.fecha_inicio}</p>
-            </div>
-            {progreso.fecha_fin && (
-              <div>
-                <span className="text-gray-500">Completada:</span>
-                <p className="font-medium text-green-600">{progreso.fecha_fin}</p>
-              </div>
+            
+            {/* Fechas - con edición inline */}
+            {editandoFechas ? (
+              <>
+                <div>
+                  <span className="text-gray-500">Inicio:</span>
+                  <input
+                    type="date"
+                    value={fechasEdit.fecha_inicio}
+                    onChange={(e) => setFechasEdit(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+                    className="w-full mt-1 px-2 py-1 border border-blue-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <span className="text-gray-500">Completada:</span>
+                  <input
+                    type="date"
+                    value={fechasEdit.fecha_fin}
+                    onChange={(e) => setFechasEdit(prev => ({ ...prev, fecha_fin: e.target.value }))}
+                    className="w-full mt-1 px-2 py-1 border border-blue-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button
+                    onClick={guardarFechas}
+                    disabled={guardandoFechas}
+                    className="flex items-center gap-1 px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50"
+                  >
+                    <Check className="w-3 h-3" />
+                    {guardandoFechas ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button
+                    onClick={cancelarEdicionFechas}
+                    className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="group/fecha">
+                  <span className="text-gray-500">Inicio:</span>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-800">{progreso.fecha_inicio}</p>
+                    <button
+                      onClick={iniciarEdicionFechas}
+                      className="opacity-0 group-hover/fecha:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+                      title="Editar fechas"
+                    >
+                      <Pencil className="w-3 h-3 text-gray-400 hover:text-blue-500" />
+                    </button>
+                  </div>
+                </div>
+                {progreso.fecha_fin && (
+                  <div>
+                    <span className="text-gray-500">Completada:</span>
+                    <p className="font-medium text-green-600">{progreso.fecha_fin}</p>
+                  </div>
+                )}
+              </>
             )}
+            
             {progreso.notas && (
               <div className="col-span-2">
                 <span className="text-gray-500">Notas:</span>

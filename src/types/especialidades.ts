@@ -144,6 +144,16 @@ export interface AsignarEspecialidadInput {
   asesor_id?: string;
   asesor_nombre?: string;
   notas?: string;
+  fecha_inicio?: string; // Formato YYYY-MM-DD, si no se envía usa fecha actual
+}
+
+export interface ActualizarProgresoInput {
+  progreso_id: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  asesor_id?: string;
+  asesor_nombre?: string;
+  notas?: string;
 }
 
 export interface ActualizarFaseInput {

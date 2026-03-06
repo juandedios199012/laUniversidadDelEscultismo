@@ -15,6 +15,7 @@ import type {
   ActualizarFaseInput,
   AgregarEvidenciaInput,
   EspecialidadesScoutResponse,
+  ActualizarProgresoInput,
   FaseEstado,
   AreaId
 } from '../types/especialidades';
@@ -106,7 +107,8 @@ export async function asignarEspecialidadScout(
     p_especialidad_id: input.especialidad_id,
     p_asesor_id: input.asesor_id || null,
     p_asesor_nombre: input.asesor_nombre || null,
-    p_notas: input.notas || null
+    p_notas: input.notas || null,
+    p_fecha_inicio: input.fecha_inicio || null
   });
 
   if (error) {
@@ -182,6 +184,31 @@ export async function eliminarEspecialidadScout(progresoId: string): Promise<voi
 
   if (!data.success) {
     throw new Error(data.error || 'Error al eliminar especialidad');
+  }
+}
+
+/**
+ * Actualiza un progreso de especialidad (fechas, asesor, notas)
+ */
+export async function actualizarProgresoEspecialidad(
+  input: ActualizarProgresoInput
+): Promise<void> {
+  const { data, error } = await supabase.rpc('api_actualizar_progreso_especialidad', {
+    p_progreso_id: input.progreso_id,
+    p_fecha_inicio: input.fecha_inicio || null,
+    p_fecha_fin: input.fecha_fin || null,
+    p_asesor_id: input.asesor_id || null,
+    p_asesor_nombre: input.asesor_nombre || null,
+    p_notas: input.notas || null
+  });
+
+  if (error) {
+    console.error('Error actualizando progreso:', error);
+    throw new Error('Error al actualizar progreso');
+  }
+
+  if (!data.success) {
+    throw new Error(data.error || 'Error al actualizar progreso');
   }
 }
 
@@ -369,6 +396,7 @@ const EspecialidadesService = {
   actualizarFaseEspecialidad,
   obtenerEspecialidadesScout,
   eliminarEspecialidadScout,
+  actualizarProgresoEspecialidad,
   // Evidencias
   agregarEvidencia,
   eliminarEvidencia,
