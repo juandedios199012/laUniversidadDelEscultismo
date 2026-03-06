@@ -300,3 +300,84 @@ export interface DocumentacionPendienteData {
   estadoPago: string;
   fechaLimite?: string;
 }
+
+// Datos de Especialidades (Dashboard para Dirigentes y Padres)
+export interface EspecialidadProgresoData {
+  id: string;
+  scoutId: string;
+  especialidadId: string;
+  especialidadNombre: string;
+  especialidadArea: string;
+  areaColor: string;
+  estado: 'exploracion' | 'taller' | 'desafio' | 'completada';
+  fechaInicio: string;
+  fechaCompletado?: string;
+  porcentajeAvance: number;
+  fasesCompletadas: {
+    exploracion: boolean;
+    taller: boolean;
+    desafio: boolean;
+  };
+}
+
+export interface EspecialidadesScoutData {
+  scoutId: string;
+  codigoScout: string;
+  nombreCompleto: string;
+  rama: string;
+  patrulla?: string;
+  fotoUrl?: string;
+  especialidades: EspecialidadProgresoData[];
+  resumen: {
+    total: number;
+    completadas: number;
+    enProgreso: number;
+    porcentajeGeneral: number;
+  };
+}
+
+export interface EspecialidadesReportData {
+  filtroRama?: string;
+  fechaGeneracion: Date;
+  periodo?: { inicio: string; fin: string };
+  // Dashboard global
+  dashboard: {
+    totalScouts: number;
+    totalAsignaciones: number;
+    especialidadesCompletadas: number;
+    especialidadesEnProgreso: number;
+    promedioEspecialidadesPorScout: number;
+    tasaCompletado: number;
+    // Por rama
+    porRama: {
+      rama: string;
+      scouts: number;
+      especialidades: number;
+      completadas: number;
+      porcentaje: number;
+    }[];
+    // Por área
+    porArea: {
+      area: string;
+      color: string;
+      total: number;
+      completadas: number;
+      porcentaje: number;
+    }[];
+    // Top especialidades más populares
+    topEspecialidades: {
+      nombre: string;
+      area: string;
+      asignaciones: number;
+      completadas: number;
+    }[];
+    // Scouts destacados
+    scoutsDestacados: {
+      nombre: string;
+      rama: string;
+      especialidadesCompletadas: number;
+    }[];
+  };
+  // Detalle por scout
+  scouts: EspecialidadesScoutData[];
+}

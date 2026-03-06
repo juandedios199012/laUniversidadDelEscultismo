@@ -23,6 +23,8 @@ import {
 import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
 import AttendanceReportTemplate from '../templates/pdf/AttendanceReportTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
+import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
+import { getEspecialidadesReportData } from '../services/especialidadesDataService';
 import { supabase } from '../../../lib/supabase';
 
 interface Scout {
@@ -48,6 +50,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   });
   const [scoutId, setScoutId] = useState<string>('');
   const [scouts, setScouts] = useState<Scout[]>([]);
+  const [especialidadesRama, setEspecialidadesRama] = useState<string>('');
   const [loadingScouts, setLoadingScouts] = useState(false);
 
   // Cargar lista de scouts al montar el componente
@@ -226,6 +229,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.PROGRESS:
           return await exportProgressReport(format, metadata);
 
+        case ReportType.ESPECIALIDADES:
+          return await exportEspecialidadesReport(format, metadata);
+
         default:
           return {
             status: 'error' as any,
@@ -340,6 +346,193 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
   };
 
+  // Exportar reporte de especialidades (Dashboard para dirigentes y padres)
+  const exportEspecialidadesReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    try {
+      const especialidadesData = await getEspecialidadesReportData(especialidadesRama || undefined);
+      
+      if (especialidadesData.scouts.length === 0) {
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: 'No se encontraron datos de especialidades',
+        };
+      }
+
+      const ramaSlug = especialidadesRama ? `_${especialidadesRama.toLowerCase()}` : '';
+      const fileName = `reporte_especialidades${ramaSlug}`;
+
+      if (format === ExportFormat.PDF) {
+        return await generateAndDownloadPDF(
+          <EspecialidadesReportTemplate data={especialidadesData} metadata={metadata} />,
+          fileName
+        );
+      } else {
+        // Para DOCX, crear un documento estructurado
+        const { Document, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle, Packer } = await import('docx');
+        
+        const { dashboard, scouts } = especialidadesData;
+        
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              // Título principal
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: '📚 Reporte de Especialidades Scout',
+                    bold: true,
+                    size: 48,
+                    color: '1E3A5F',
+                  }),
+                ],
+                heading: HeadingLevel.TITLE,
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `${especialidadesRama || 'Todas las Ramas'} • ${metadata.organizacion}`,
+                    size: 24,
+                    color: '64748B',
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 },
+              }),
+
+              // Sección de KPIs
+              new Paragraph({
+                children: [new TextRun({ text: '📊 Resumen General', bold: true, size: 32, color: '1E3A5F' })],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              // Tabla de KPIs
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [
+                          new Paragraph({ children: [new TextRun({ text: String(dashboard.totalScouts), bold: true, size: 36 })] }),
+                          new Paragraph({ children: [new TextRun({ text: 'Scouts con Especialidades', size: 20, color: '64748B' })] }),
+                        ],
+                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({ children: [new TextRun({ text: String(dashboard.especialidadesCompletadas), bold: true, size: 36, color: '10B981' })] }),
+                          new Paragraph({ children: [new TextRun({ text: 'Completadas', size: 20, color: '64748B' })] }),
+                        ],
+                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({ children: [new TextRun({ text: String(dashboard.especialidadesEnProgreso), bold: true, size: 36, color: 'F59E0B' })] }),
+                          new Paragraph({ children: [new TextRun({ text: 'En Progreso', size: 20, color: '64748B' })] }),
+                        ],
+                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({ children: [new TextRun({ text: `${dashboard.tasaCompletado.toFixed(1)}%`, bold: true, size: 36, color: '8B5CF6' })] }),
+                          new Paragraph({ children: [new TextRun({ text: 'Tasa de Éxito', size: 20, color: '64748B' })] }),
+                        ],
+                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+
+              // Avance por rama
+              new Paragraph({
+                children: [new TextRun({ text: '🏕️ Avance por Rama', bold: true, size: 32, color: '1E3A5F' })],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              ...dashboard.porRama.map(rama => 
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${rama.rama}: `, bold: true }),
+                    new TextRun({ text: `${rama.scouts} scouts, ${rama.especialidades} asignadas, ${rama.completadas} completadas (${rama.porcentaje.toFixed(0)}%)` }),
+                  ],
+                  spacing: { after: 100 },
+                })
+              ),
+
+              // Scouts destacados
+              new Paragraph({
+                children: [new TextRun({ text: '🌟 Scouts Destacados', bold: true, size: 32, color: '1E3A5F' })],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              ...dashboard.scoutsDestacados.slice(0, 5).map((scout, i) =>
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${i + 1}. ${scout.nombre}`, bold: true }),
+                    new TextRun({ text: ` (${scout.rama}) - ${scout.especialidadesCompletadas} especialidades completadas` }),
+                  ],
+                  spacing: { after: 100 },
+                })
+              ),
+
+              // Mensaje para padres
+              new Paragraph({
+                children: [new TextRun({ text: '💬 Mensaje para Padres de Familia', bold: true, size: 32, color: '1E3A5F' })],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { before: 600, after: 200 },
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: 'Las especialidades son áreas de conocimiento que los scouts desarrollan según sus intereses. ',
+                  }),
+                  new TextRun({
+                    text: 'Cada una tiene tres fases: Exploración (investigación), Taller (práctica) y Desafío (aplicación real). ',
+                  }),
+                  new TextRun({
+                    text: '¡Motiven a sus hijos a elegir especialidades según sus intereses genuinos!',
+                  }),
+                ],
+                spacing: { after: 200 },
+              }),
+            ],
+          }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        return {
+          status: 'success' as any,
+          fileName: `${fileName}.docx`,
+        };
+      }
+    } catch (error) {
+      console.error('Error exportando especialidades:', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
   return (
     <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
       <div className="flex items-center gap-3 mb-6">
@@ -444,9 +637,32 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             <ScoutsExcelReport />
           )}
 
-          {/* Reporte de Especialidades - Su propio componente con Excel */}
+          {/* Reporte de Especialidades - Dashboard con filtro y exportación */}
           {selectedReportType === ReportType.ESPECIALIDADES && (
-            <EspecialidadesExcelReport filterRama={filters.rama} />
+            <div className="space-y-4">
+              {/* Selector de rama para PDF/DOCX */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-amber-800 mb-2">
+                  Filtrar por Rama (para PDF/Word)
+                </label>
+                <select
+                  value={especialidadesRama}
+                  onChange={(e) => setEspecialidadesRama(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="">Todas las ramas</option>
+                  <option value="Manada">Manada</option>
+                  <option value="Tropa">Tropa</option>
+                  <option value="Comunidad">Comunidad</option>
+                  <option value="Clan">Clan</option>
+                </select>
+                <p className="text-xs text-amber-600 mt-2">
+                  Este filtro aplica a los reportes PDF y Word. El Excel tiene su propio filtro.
+                </p>
+              </div>
+              {/* Componente de Excel con su propio filtro */}
+              <EspecialidadesExcelReport filterRama={especialidadesRama} />
+            </div>
           )}
 
           {(selectedReportType === ReportType.ATTENDANCE ||
@@ -749,9 +965,8 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
       {/* Botones de exportación - Solo para reportes que soportan PDF/DOCX */}
       {selectedReportType && 
-       selectedReportType !== ReportType.SCOUTS_EXCEL_COMPLETO &&
-       selectedReportType !== ReportType.ESPECIALIDADES && (
-        <div className="flex justify-end">
+       selectedReportType !== ReportType.SCOUTS_EXCEL_COMPLETO && (
+        <div className="flex justify-end gap-3">
           <ReportExportButton
             onExport={handleExportReport}
             formats={[ExportFormat.PDF, ExportFormat.DOCX]}
