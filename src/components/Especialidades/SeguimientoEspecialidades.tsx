@@ -17,9 +17,11 @@ import {
   Search,
   User,
   Check,
-  Pencil
+  Pencil,
+  CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '../../lib/supabase';
 import EspecialidadesService from '../../services/especialidadesService';
 import ScoutService from '../../services/scoutService';
 import type { 
@@ -491,6 +493,10 @@ function ProgresoCard({
   const [editandoFechas, setEditandoFechas] = useState(false);
   const [fechasEdit, setFechasEdit] = useState({ fecha_inicio: '', fecha_fin: '' });
   const [guardandoFechas, setGuardandoFechas] = useState(false);
+  
+  // Estado para menú de fase
+  const [faseMenuAbierto, setFaseMenuAbierto] = useState<string | null>(null);
+  const [completandoTodo, setCompletandoTodo] = useState(false);
 
   const areaGradient = AREA_GRADIENTS[progreso.area.codigo as AreaId] || 'from-gray-500 to-gray-600';
   const porcentaje = EspecialidadesService.calcularPorcentajeProgreso({
@@ -498,6 +504,62 @@ function ProgresoCard({
     taller: progreso.fase_taller,
     desafio: progreso.fase_desafio
   });
+  
+  // Completar todas las fases de una vez
+  const completarTodo = async () => {
+    try {
+      setCompletandoTodo(true);
+      const fases: FaseId[] = ['exploracion', 'taller', 'desafio'];
+      
+      for (const fase of fases) {
+        const estadoActual = progreso[`fase_${fase}`] as FaseEstado;
+        if (estadoActual !== 'completada') {
+          // Llamar hasta que esté completada
+          if (estadoActual === 'pendiente') {
+            await onToggleFaseDirecto(progreso.progreso_id, fase, 'en_progreso');
+          }
+          await onToggleFaseDirecto(progreso.progreso_id, fase, 'completada');
+        }
+      }
+      
+      toast.success('🎉 ¡Especialidad completada!');
+      onRecargar();
+    } catch (error) {
+      console.error('Error completando fases:', error);
+      toast.error('Error al completar fases');
+    } finally {
+      setCompletandoTodo(false);
+    }
+  };
+  
+  // Cambiar fase a un estado específico
+  const onToggleFaseDirecto = async (progresoId: string, fase: FaseId, nuevoEstado: FaseEstado) => {
+    const { data, error } = await supabase.rpc('api_actualizar_fase_especialidad', {
+      p_progreso_id: progresoId,
+      p_fase: fase,
+      p_nuevo_estado: nuevoEstado
+    });
+    
+    if (error) throw error;
+    return data;
+  };
+  
+  // Manejar cambio de estado desde el menú
+  const handleCambiarEstado = async (fase: FaseId, nuevoEstado: FaseEstado) => {
+    try {
+      const result = await onToggleFaseDirecto(progreso.progreso_id, fase, nuevoEstado);
+      
+      if (result?.especialidad_completada) {
+        toast.success('🎉 ¡Especialidad completada!');
+      }
+      
+      setFaseMenuAbierto(null);
+      onRecargar();
+    } catch (error) {
+      console.error('Error cambiando estado:', error);
+      toast.error('Error al cambiar estado');
+    }
+  };
 
   // Iniciar edición de fechas
   const iniciarEdicionFechas = () => {
@@ -656,25 +718,70 @@ function ProgresoCard({
           </div>
 
           {/* Fases */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {(['exploracion', 'taller', 'desafio'] as const).map((fase) => {
-              const estado = progreso[`fase_${fase}`] as FaseEstado;
-              return (
+          <div className="space-y-3">
+            {/* Header con botón Completar Todo */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Fases de la Especialidad</span>
+              {porcentaje < 100 && (
                 <button
-                  key={fase}
-                  onClick={() => onToggleFase(progreso.progreso_id, fase, estado)}
-                  className={`p-4 rounded-xl text-center transition-all hover:scale-[1.02] ${ESTADO_COLORS[estado]}`}
+                  onClick={completarTodo}
+                  disabled={completandoTodo}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
                 >
-                  <div className="font-medium">{FASE_LABELS[fase]}</div>
-                  <div className="text-xs mt-1 capitalize">
-                    {estado.replace('_', ' ')}
-                  </div>
-                  <div className="text-xs mt-2 opacity-70">
-                    Click para cambiar estado
-                  </div>
+                  <CheckCircle2 className="w-4 h-4" />
+                  {completandoTodo ? 'Completando...' : 'Completar Todo'}
                 </button>
-              );
-            })}
+              )}
+            </div>
+            
+            {/* Grid de fases con selector */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {(['exploracion', 'taller', 'desafio'] as const).map((fase) => {
+                const estado = progreso[`fase_${fase}`] as FaseEstado;
+                const menuAbierto = faseMenuAbierto === fase;
+                
+                return (
+                  <div key={fase} className="relative">
+                    <button
+                      onClick={() => setFaseMenuAbierto(menuAbierto ? null : fase)}
+                      className={`w-full p-4 rounded-xl text-center transition-all hover:scale-[1.02] ${ESTADO_COLORS[estado]}`}
+                    >
+                      <div className="font-medium">{FASE_LABELS[fase]}</div>
+                      <div className="text-xs mt-1 capitalize flex items-center justify-center gap-1">
+                        {estado === 'completada' && <Check className="w-3 h-3" />}
+                        {estado.replace('_', ' ')}
+                      </div>
+                      <div className="text-xs mt-2 opacity-70 flex items-center justify-center gap-1">
+                        <ChevronDown className="w-3 h-3" />
+                        Click para cambiar
+                      </div>
+                    </button>
+                    
+                    {/* Menú desplegable */}
+                    {menuAbierto && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                        {(['pendiente', 'en_progreso', 'completada'] as const).map((opcion) => (
+                          <button
+                            key={opcion}
+                            onClick={() => handleCambiarEstado(fase, opcion)}
+                            className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 ${
+                              estado === opcion ? 'bg-gray-100 font-medium' : ''
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${
+                              opcion === 'completada' ? 'bg-green-500' :
+                              opcion === 'en_progreso' ? 'bg-amber-500' : 'bg-gray-300'
+                            }`} />
+                            <span className="capitalize">{opcion.replace('_', ' ')}</span>
+                            {estado === opcion && <Check className="w-3 h-3 ml-auto text-green-500" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Info adicional */}

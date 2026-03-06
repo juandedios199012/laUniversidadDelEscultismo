@@ -209,7 +209,7 @@ export const EspecialidadesExcelReport: React.FC<EspecialidadesExcelReportProps>
       {/* Filtro de rama */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Filtrar por Rama
+          Filtrar por Rama (opcional)
         </label>
         <select
           value={filterRama}
@@ -217,10 +217,10 @@ export const EspecialidadesExcelReport: React.FC<EspecialidadesExcelReportProps>
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         >
           <option value="">Todas las ramas</option>
-          <option value="MANADA">Manada</option>
-          <option value="TROPA">Tropa</option>
-          <option value="COMUNIDAD">Comunidad</option>
-          <option value="CLAN">Clan</option>
+          <option value="Manada">Manada</option>
+          <option value="Tropa">Tropa</option>
+          <option value="Comunidad">Comunidad</option>
+          <option value="Clan">Clan</option>
         </select>
       </div>
 
@@ -257,10 +257,12 @@ export const EspecialidadesExcelReport: React.FC<EspecialidadesExcelReportProps>
           <p className="text-gray-500 text-sm">Cargando datos...</p>
         </div>
       ) : reporte.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 rounded-lg">
-          <Award className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500">No hay datos de especialidades</p>
-          <p className="text-gray-400 text-sm">Intenta con otra rama o verifica las asignaciones</p>
+        <div className="text-center py-6 bg-amber-50 rounded-lg border border-amber-200">
+          <Award className="w-10 h-10 text-amber-400 mx-auto mb-2" />
+          <p className="text-amber-700 font-medium">No hay asignaciones de especialidades</p>
+          <p className="text-amber-600 text-sm mt-1">
+            Primero debes asignar especialidades a los scouts desde el módulo de Especialidades
+          </p>
         </div>
       ) : (
         <div className="bg-gray-50 rounded-lg p-3">
@@ -301,24 +303,26 @@ export const EspecialidadesExcelReport: React.FC<EspecialidadesExcelReportProps>
       <button
         onClick={exportarExcel}
         disabled={loading || loadingData || reporte.length === 0}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             Generando...
           </>
         ) : (
           <>
-            <FileSpreadsheet className="w-5 h-5" />
+            <FileSpreadsheet className="w-4 h-4" />
             Exportar a Excel
           </>
         )}
       </button>
 
-      <p className="text-xs text-gray-500 text-center">
-        El archivo incluirá todos los scouts con sus especialidades asignadas, completadas y en progreso.
-      </p>
+      {reporte.length > 0 && (
+        <p className="text-xs text-gray-500">
+          El archivo incluirá {reporte.length} scouts con sus especialidades asignadas.
+        </p>
+      )}
     </div>
   );
 };

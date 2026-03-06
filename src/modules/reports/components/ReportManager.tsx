@@ -615,34 +615,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === ReportType.ESPECIALIDADES && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rama (opcional)
-                </label>
-                <select
-                  value={filters.rama || ''}
-                  onChange={(e) =>
-                    setFilters({ ...filters, rama: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todas las ramas</option>
-                  <option value="MANADA">Manada</option>
-                  <option value="TROPA">Tropa</option>
-                  <option value="COMUNIDAD">Comunidad</option>
-                  <option value="CLAN">Clan</option>
-                </select>
-              </div>
-              <div className="bg-amber-50 p-3 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  🎖️ Este reporte incluirá estadísticas de especialidades asignadas, en progreso y completadas por scout.
-                </p>
-              </div>
-            </div>
-          )}
-
           {selectedReportType === 'REPORTE_FINANCIERO' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -775,8 +747,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         </div>
       )}
 
-      {/* Botones de exportación */}
-      {selectedReportType && (
+      {/* Botones de exportación - Solo para reportes que soportan PDF/DOCX */}
+      {selectedReportType && 
+       selectedReportType !== ReportType.SCOUTS_EXCEL_COMPLETO &&
+       selectedReportType !== ReportType.ESPECIALIDADES && (
         <div className="flex justify-end">
           <ReportExportButton
             onExport={handleExportReport}
