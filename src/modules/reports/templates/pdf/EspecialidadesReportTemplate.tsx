@@ -434,7 +434,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>📚 Reporte de Especialidades Scout</Text>
+          <Text style={styles.headerTitle}>REPORTE DE ESPECIALIDADES SCOUT</Text>
           <Text style={styles.headerSubtitle}>
             {data.filtroRama ? `Rama: ${data.filtroRama}` : 'Todas las Ramas'} • {metadata.organizacion}
           </Text>
@@ -447,7 +447,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
 
         {/* KPIs Principales */}
         <View style={styles.dashboardContainer}>
-          <Text style={styles.sectionTitle}>📊 Resumen General</Text>
+          <Text style={styles.sectionTitle}>RESUMEN GENERAL</Text>
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { borderLeftColor: '#3B82F6' }]}>
               <Text style={styles.kpiValue}>{dashboard.totalScouts}</Text>
@@ -456,7 +456,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
             <View style={[styles.kpiCard, { borderLeftColor: '#10B981' }]}>
               <Text style={styles.kpiValue}>{dashboard.especialidadesCompletadas}</Text>
               <Text style={styles.kpiLabel}>Especialidades Completadas</Text>
-              <Text style={styles.kpiPercent}>✓ {dashboard.tasaCompletado.toFixed(1)}% tasa de éxito</Text>
+              <Text style={styles.kpiPercent}>{dashboard.tasaCompletado.toFixed(1)}% tasa de exito</Text>
             </View>
             <View style={[styles.kpiCard, { borderLeftColor: '#F59E0B' }]}>
               <Text style={styles.kpiValue}>{dashboard.especialidadesEnProgreso}</Text>
@@ -471,7 +471,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
 
         {/* Distribución por Área */}
         <View style={styles.chartContainer}>
-          <Text style={styles.sectionTitle}>🎯 Distribución por Área de Conocimiento</Text>
+          <Text style={styles.sectionTitle}>DISTRIBUCION POR AREA DE CONOCIMIENTO</Text>
           {dashboard.porArea.map((area, index) => (
             <View key={index} style={styles.barRow}>
               <Text style={styles.barLabel}>{area.area}</Text>
@@ -495,15 +495,11 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
 
         {/* Estadísticas por Rama */}
         <View>
-          <Text style={styles.sectionTitle}>🏕️ Avance por Rama</Text>
+          <Text style={styles.sectionTitle}>AVANCE POR RAMA</Text>
           <View style={styles.ramaContainer}>
             {dashboard.porRama.map((rama, index) => (
               <View key={index} style={[styles.ramaCard, { borderColor: getRamaColor(rama.rama) }]}>
                 <Text style={[styles.ramaTitle, { color: getRamaColor(rama.rama) }]}>
-                  {rama.rama === 'Manada' && '🐺 '}
-                  {rama.rama === 'Tropa' && '⚜️ '}
-                  {rama.rama === 'Comunidad' && '🏔️ '}
-                  {rama.rama === 'Clan' && '🔥 '}
                   {rama.rama}
                 </Text>
                 <View style={styles.ramaStats}>
@@ -541,7 +537,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
       {/* Página 2: Top Especialidades y Scouts Destacados */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>🏆 Logros y Destacados</Text>
+          <Text style={styles.headerTitle}>LOGROS Y DESTACADOS</Text>
           <Text style={styles.headerSubtitle}>
             Especialidades más populares y scouts con mejor desempeño
           </Text>
@@ -549,7 +545,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
 
         {/* Top Especialidades */}
         <View style={styles.topList}>
-          <Text style={styles.sectionTitle}>⭐ Top 10 Especialidades Más Populares</Text>
+          <Text style={styles.sectionTitle}>TOP 10 ESPECIALIDADES MAS POPULARES</Text>
           {dashboard.topEspecialidades.slice(0, 10).map((esp, index) => (
             <View key={index} style={styles.topItem}>
               <View style={[styles.topRank, { backgroundColor: index < 3 ? '#F59E0B' : '#94A3B8' }]}>
@@ -569,12 +565,12 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
 
         {/* Scouts Destacados */}
         <View>
-          <Text style={styles.sectionTitle}>🌟 Scouts Destacados</Text>
+          <Text style={styles.sectionTitle}>SCOUTS DESTACADOS</Text>
           <View style={styles.scoutsGrid}>
             {dashboard.scoutsDestacados.slice(0, 9).map((scout, index) => (
               <View key={index} style={styles.scoutCard}>
                 <Text style={styles.scoutMedal}>
-                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}
+                  {index === 0 ? '1ro' : index === 1 ? '2do' : index === 2 ? '3ro' : `${index + 1}to`}
                 </Text>
                 <Text style={styles.scoutName}>{scout.nombre}</Text>
                 <Text style={styles.scoutRama}>{scout.rama}</Text>
@@ -597,7 +593,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
       {/* Página 3+: Detalle por Scout */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>📋 Detalle por Scout</Text>
+          <Text style={styles.headerTitle}>DETALLE POR SCOUT</Text>
           <Text style={styles.headerSubtitle}>
             Progreso individual de cada scout en sus especialidades
           </Text>
@@ -663,7 +659,7 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
       {/* Página Final: Mensaje para Padres */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>💬 Mensaje para Padres de Familia</Text>
+          <Text style={styles.headerTitle}>MENSAJE PARA PADRES DE FAMILIA</Text>
         </View>
 
         <View style={{ padding: 20, backgroundColor: '#FEF3C7', borderRadius: 12, marginBottom: 20 }}>
@@ -676,13 +672,13 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
           </Text>
           <View style={{ marginLeft: 10, marginBottom: 15 }}>
             <Text style={[styles.tableCell, { marginBottom: 5 }]}>
-              🔍 <Text style={styles.textBold}>Exploración:</Text> Investigación y aprendizaje teórico
+              1. <Text style={styles.textBold}>Exploracion:</Text> Investigacion y aprendizaje teorico
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 5 }]}>
-              🛠️ <Text style={styles.textBold}>Taller:</Text> Práctica y desarrollo de habilidades
+              2. <Text style={styles.textBold}>Taller:</Text> Practica y desarrollo de habilidades
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 5 }]}>
-              🎯 <Text style={styles.textBold}>Desafío:</Text> Aplicación real y demostración de competencia
+              3. <Text style={styles.textBold}>Desafio:</Text> Aplicacion real y demostracion de competencia
             </Text>
           </View>
         </View>
@@ -693,19 +689,19 @@ export const EspecialidadesReportTemplate: React.FC<EspecialidadesReportTemplate
           </Text>
           <View style={{ marginLeft: 10 }}>
             <Text style={[styles.tableCell, { marginBottom: 8 }]}>
-              ✅ Pregunten sobre las especialidades que están trabajando
+              - Pregunten sobre las especialidades que estan trabajando
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 8 }]}>
-              ✅ Ayuden a investigar y conseguir materiales si los necesitan
+              - Ayuden a investigar y conseguir materiales si los necesitan
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 8 }]}>
-              ✅ Celebren sus logros cuando completen una fase
+              - Celebren sus logros cuando completen una fase
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 8 }]}>
-              ✅ Motívenlos a elegir especialidades según sus intereses genuinos
+              - Motivenlos a elegir especialidades segun sus intereses genuinos
             </Text>
             <Text style={[styles.tableCell, { marginBottom: 8 }]}>
-              ✅ Conecten las especialidades con actividades familiares
+              - Conecten las especialidades con actividades familiares
             </Text>
           </View>
         </View>
