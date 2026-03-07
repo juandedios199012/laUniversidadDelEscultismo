@@ -157,9 +157,11 @@ export interface AttendanceData {
 export interface ProgressData {
   scoutId: string;
   scoutNombre: string;
+  edad: number;  // Edad del scout
   etapa: string;  // Nombre de la etapa actual
   etapaCodigo: string;  // PISTA, SENDA, RUMBO, TRAVESIA
   etapaIcono?: string;
+  etapaColor?: string;
   fechaInicio: string;
   fechaFinalizacion?: string;
   estado: 'en_progreso' | 'completado' | 'pendiente';

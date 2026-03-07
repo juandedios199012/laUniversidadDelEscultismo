@@ -87,6 +87,71 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
           </View>
         </View>
 
+        {/* Lista resumida: Nombre, Edad, Etapa */}
+        <View style={baseStyles.section}>
+          <Text style={baseStyles.heading}>Lista de Scouts - Resumen</Text>
+          
+          {/* Header de tabla */}
+          <View style={[baseStyles.tableRow, { backgroundColor: colors.primary, borderRadius: 4 }]}>
+            <View style={{ flex: 2, padding: 6 }}>
+              <Text style={[baseStyles.textSmall, baseStyles.textBold, { color: '#FFFFFF' }]}>
+                NOMBRE
+              </Text>
+            </View>
+            <View style={{ flex: 1, padding: 6 }}>
+              <Text style={[baseStyles.textSmall, baseStyles.textBold, { color: '#FFFFFF' }]}>
+                EDAD
+              </Text>
+            </View>
+            <View style={{ flex: 1, padding: 6 }}>
+              <Text style={[baseStyles.textSmall, baseStyles.textBold, { color: '#FFFFFF' }]}>
+                ETAPA
+              </Text>
+            </View>
+            <View style={{ flex: 1, padding: 6 }}>
+              <Text style={[baseStyles.textSmall, baseStyles.textBold, { color: '#FFFFFF' }]}>
+                PROGRESO
+              </Text>
+            </View>
+          </View>
+
+          {/* Filas de datos */}
+          {data.map((item, index) => (
+            <View 
+              key={`summary-${item.scoutId}-${index}`} 
+              style={[
+                baseStyles.tableRow, 
+                { 
+                  backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#E5E7EB'
+                }
+              ]}
+            >
+              <View style={{ flex: 2, padding: 6 }}>
+                <Text style={baseStyles.textSmall}>
+                  {item.scoutNombre}
+                </Text>
+              </View>
+              <View style={{ flex: 1, padding: 6 }}>
+                <Text style={baseStyles.textSmall}>
+                  {item.edad || 'N/A'} años
+                </Text>
+              </View>
+              <View style={{ flex: 1, padding: 6 }}>
+                <Text style={[baseStyles.textSmall, baseStyles.textBold]}>
+                  {item.etapa || 'Sin asignar'}
+                </Text>
+              </View>
+              <View style={{ flex: 1, padding: 6 }}>
+                <Text style={baseStyles.textSmall}>
+                  {item.porcentaje || 0}%
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* Resumen estadístico */}
         <View style={baseStyles.section}>
           <Text style={baseStyles.heading}>Resumen General</Text>
