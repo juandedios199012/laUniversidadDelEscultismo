@@ -100,6 +100,18 @@ export interface CatalogoVacuna {
   nombre: string;
 }
 
+export interface DocumentoMedico {
+  id: string;
+  persona_id: string;
+  nombre_archivo: string;
+  url_archivo: string;
+  mime_type: string;
+  tamanio_bytes: number;
+  descripcion?: string;
+  tipo_documento?: 'RECETA' | 'EXAMEN' | 'CERTIFICADO' | 'INFORME' | 'OTRO';
+  created_at: string;
+}
+
 // ============= Service =============
 
 export class HistoriaMedicaService {
@@ -414,6 +426,160 @@ export class HistoriaMedicaService {
         proximaDosis: v.proxima_dosis || ''
       }))
     };
+  }
+
+  // ============= DOCUMENTOS MÉDICOS =============
+
+  /**
+   * Sube un documento médico (PDF, imagen, Word, etc.)
+   */
+  static async subirDocumento(
+    personaId: string,
+    file: File,
+    descripcion?: string,
+    tipoDocumento: 'RECETA' | 'EXAMEN' | 'CERTIFICADO' | 'INFORME' | 'OTRO' = 'OTRO'
+  ): Promise<DocumentoMedico> {
+    try {
+      // Sanitizar nombre de archivo
+      const timestamp = Date.now();
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const fileName = `${timestamp}_${sanitizedName}`;
+      const filePath = `historia_medica/${personaId}/${fileName}`;
+
+      // Subir archivo a Storage (bucket finanzas)
+      const { error: uploadError } = await supabase.storage
+        .from('finanzas')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Error subiendo archivo:', uploadError);
+        throw new Error(`Error al subir archivo: ${uploadError.message}`);
+      }
+
+      // Obtener URL pública
+      const { data: urlData } = supabase.storage
+        .from('finanzas')
+        .getPublicUrl(filePath);
+
+      // Registrar en base de datos
+      const { data, error } = await supabase
+        .from('documentos_medicos')
+        .insert({
+          persona_id: personaId,
+          nombre_archivo: file.name,
+          url_archivo: urlData.publicUrl,
+          mime_type: file.type,
+          tamanio_bytes: file.size,
+          descripcion: descripcion || null,
+          tipo_documento: tipoDocumento
+        })
+        .select()
+        .single();
+
+      if (error) {
+        // Si falla el insert, eliminar archivo del storage
+        await supabase.storage.from('finanzas').remove([filePath]);
+        throw new Error(`Error registrando documento: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('HistoriaMedicaService.subirDocumento error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene todos los documentos médicos de una persona
+   */
+  static async obtenerDocumentos(personaId: string): Promise<DocumentoMedico[]> {
+    try {
+      const { data, error } = await supabase
+        .from('documentos_medicos')
+        .select('*')
+        .eq('persona_id', personaId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error obteniendo documentos:', error);
+        throw new Error(error.message);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('HistoriaMedicaService.obtenerDocumentos error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina un documento médico (DB + Storage)
+   */
+  static async eliminarDocumento(documentoId: string): Promise<void> {
+    try {
+      // Primero obtener el documento para tener la URL
+      const { data: doc, error: fetchError } = await supabase
+        .from('documentos_medicos')
+        .select('url_archivo')
+        .eq('id', documentoId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Error al obtener documento: ${fetchError.message}`);
+      }
+
+      // Eliminar de la base de datos
+      const { error: deleteError } = await supabase
+        .from('documentos_medicos')
+        .delete()
+        .eq('id', documentoId);
+
+      if (deleteError) {
+        throw new Error(`Error al eliminar documento: ${deleteError.message}`);
+      }
+
+      // Eliminar del storage
+      if (doc?.url_archivo) {
+        try {
+          const urlPath = new URL(doc.url_archivo).pathname;
+          const storagePath = urlPath.split('/finanzas/')[1];
+          if (storagePath) {
+            await supabase.storage.from('finanzas').remove([decodeURIComponent(storagePath)]);
+          }
+        } catch (e) {
+          console.warn('Error eliminando archivo de storage:', e);
+        }
+      }
+    } catch (error) {
+      console.error('HistoriaMedicaService.eliminarDocumento error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Descarga un documento médico
+   */
+  static async descargarDocumento(urlArchivo: string, nombreArchivo: string): Promise<void> {
+    try {
+      const response = await fetch(urlArchivo);
+      if (!response.ok) throw new Error('Error al descargar archivo');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nombreArchivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('HistoriaMedicaService.descargarDocumento error:', error);
+      throw error;
+    }
   }
 }
 

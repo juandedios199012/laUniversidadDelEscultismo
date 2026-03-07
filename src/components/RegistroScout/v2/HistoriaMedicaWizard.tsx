@@ -20,6 +20,12 @@ import {
   Syringe,
   Plus,
   Trash2,
+  Upload,
+  Download,
+  File,
+  FileImage,
+  Loader2,
+  Eye,
 } from "lucide-react";
 
 import { Form } from "@/components/ui/form";
@@ -55,7 +61,7 @@ import {
   defaultVacuna,
 } from "../schemas/historiaMedicaSchema";
 
-import HistoriaMedicaService, { type CatalogoCondicion, type CatalogoAlergia, type CatalogoVacuna } from "@/services/historiaMedicaService";
+import HistoriaMedicaService, { type CatalogoCondicion, type CatalogoAlergia, type CatalogoVacuna, type DocumentoMedico } from "@/services/historiaMedicaService";
 
 // ============================================
 // Types
@@ -100,7 +106,23 @@ const WIZARD_STEPS: Step[] = [
     title: "Vacunas",
     description: "Registro de vacunación",
   },
+  {
+    id: "documentos",
+    title: "Documentos",
+    description: "Archivos médicos",
+  },
 ];
+
+// Tipos de archivo permitidos
+const TIPOS_DOCUMENTO = [
+  { value: 'RECETA', label: 'Receta Médica' },
+  { value: 'EXAMEN', label: 'Resultado de Examen' },
+  { value: 'CERTIFICADO', label: 'Certificado Médico' },
+  { value: 'INFORME', label: 'Informe Médico' },
+  { value: 'OTRO', label: 'Otro Documento' },
+];
+
+const FORMATOS_PERMITIDOS = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx';
 
 // ============================================
 // Auto-save Hook
@@ -158,9 +180,15 @@ export function HistoriaMedicaWizard({
   const [catalogoCondiciones, setCatalogoCondiciones] = useState<CatalogoCondicion[]>([]);
   const [catalogoAlergias, setCatalogoAlergias] = useState<CatalogoAlergia[]>([]);
   const [catalogoVacunas, setCatalogoVacunas] = useState<CatalogoVacuna[]>([]);
+  const [documentos, setDocumentos] = useState<DocumentoMedico[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+  const [nuevoDocTipo, setNuevoDocTipo] = useState<string>('OTRO');
+  const [nuevoDocDescripcion, setNuevoDocDescripcion] = useState<string>('');
   const { toasts, removeToast, success, error } = useToast();
 
-  // Load catalogs on mount
+  // Load catalogs and documents on mount
   useEffect(() => {
     if (isOpen) {
       Promise.all([
@@ -174,8 +202,13 @@ export function HistoriaMedicaWizard({
           setCatalogoVacunas(vacunas);
         })
         .catch(err => console.error("Error loading catalogs:", err));
+      
+      // Cargar documentos existentes
+      HistoriaMedicaService.obtenerDocumentos(scoutId)
+        .then(setDocumentos)
+        .catch(err => console.error("Error loading documents:", err));
     }
-  }, [isOpen]);
+  }, [isOpen, scoutId]);
 
   // Initialize form - using type assertion for resolver compatibility
   const form = useForm<HistoriaMedicaData>({
@@ -200,13 +233,25 @@ export function HistoriaMedicaWizard({
     formState.isDirty
   );
 
-  // Load draft on mount
+  // Reset form when initialData changes (for edit mode)
+  useEffect(() => {
+    if (isOpen && initialData) {
+      reset(initialData);
+      setCurrentStep(0); // Reset to first step
+    }
+  }, [isOpen, initialData, reset]);
+
+  // Load draft on mount (only if no initialData)
   useEffect(() => {
     if (isOpen && !initialData) {
       const draft = loadDraft();
       if (draft) {
         reset(draft);
+      } else {
+        // Reset to defaults if no draft and no initialData
+        reset(defaultHistoriaMedicaValues);
       }
+      setCurrentStep(0);
     }
   }, [isOpen, initialData, loadDraft, reset]);
 
@@ -221,6 +266,78 @@ export function HistoriaMedicaWizard({
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1);
     }
+  };
+
+  // Document handlers
+  const handleSubirDocumento = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamaño (máx 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      error('El archivo no puede superar los 10MB');
+      return;
+    }
+
+    setUploadingDoc(true);
+    try {
+      const nuevoDoc = await HistoriaMedicaService.subirDocumento(
+        scoutId,
+        file,
+        nuevoDocDescripcion || undefined,
+        nuevoDocTipo as 'RECETA' | 'EXAMEN' | 'CERTIFICADO' | 'INFORME' | 'OTRO'
+      );
+      setDocumentos(prev => [nuevoDoc, ...prev]);
+      setNuevoDocDescripcion('');
+      setNuevoDocTipo('OTRO');
+      success('Documento subido exitosamente');
+    } catch (err) {
+      console.error('Error subiendo documento:', err);
+      error('Error al subir el documento');
+    } finally {
+      setUploadingDoc(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleEliminarDocumento = async (docId: string) => {
+    if (!confirm('¿Está seguro de eliminar este documento?')) return;
+
+    setDeletingDocId(docId);
+    try {
+      await HistoriaMedicaService.eliminarDocumento(docId);
+      setDocumentos(prev => prev.filter(d => d.id !== docId));
+      success('Documento eliminado');
+    } catch (err) {
+      console.error('Error eliminando documento:', err);
+      error('Error al eliminar el documento');
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  const handleDescargarDocumento = async (doc: DocumentoMedico) => {
+    setDownloadingDocId(doc.id);
+    try {
+      await HistoriaMedicaService.descargarDocumento(doc.url_archivo, doc.nombre_archivo);
+    } catch (err) {
+      console.error('Error descargando documento:', err);
+      error('Error al descargar el documento');
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType?.startsWith('image/')) return FileImage;
+    return File;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleStepClick = (stepIndex: number) => {
@@ -738,6 +855,159 @@ export function HistoriaMedicaWizard({
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </StepContent>
+
+            {/* Step 6: Documentos */}
+            <StepContent step={5} currentStep={currentStep}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-blue-500" />
+                    Documentos Médicos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Formulario para subir nuevo documento */}
+                  <div className="p-4 border-2 border-dashed rounded-lg bg-muted/30">
+                    <h4 className="font-medium mb-4">Subir nuevo documento</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="text-sm font-medium">Tipo de documento</label>
+                        <select 
+                          className="mt-1 w-full p-2 border rounded-md"
+                          value={nuevoDocTipo}
+                          onChange={(e) => setNuevoDocTipo(e.target.value)}
+                        >
+                          {TIPOS_DOCUMENTO.map(tipo => (
+                            <option key={tipo.value} value={tipo.value}>
+                              {tipo.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Descripción (opcional)</label>
+                        <input 
+                          type="text"
+                          className="mt-1 w-full p-2 border rounded-md"
+                          placeholder="Ej: Certificado vacuna COVID"
+                          value={nuevoDocDescripcion}
+                          onChange={(e) => setNuevoDocDescripcion(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="flex-1">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept={FORMATOS_PERMITIDOS}
+                          onChange={handleSubirDocumento}
+                          disabled={uploadingDoc}
+                        />
+                        <div className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${uploadingDoc ? 'opacity-50' : ''}`}>
+                          {uploadingDoc ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Upload className="h-5 w-5" />
+                          )}
+                          <span className="font-medium">
+                            {uploadingDoc ? 'Subiendo...' : 'Seleccionar archivo'}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Formatos: PDF, imágenes (JPG, PNG), Word, Excel. Máximo 10MB
+                    </p>
+                  </div>
+
+                  {/* Lista de documentos existentes */}
+                  <div>
+                    <h4 className="font-medium mb-3">Documentos guardados ({documentos.length})</h4>
+                    {documentos.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>No hay documentos guardados</p>
+                        <p className="text-sm">Suba certificados, recetas o resultados de exámenes</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {documentos.map((doc) => {
+                          const IconComponent = getFileIcon(doc.mime_type);
+                          const isDeleting = deletingDocId === doc.id;
+                          const isDownloading = downloadingDocId === doc.id;
+                          
+                          return (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <IconComponent className="h-8 w-8 text-muted-foreground shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">{doc.nombre_archivo}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>{TIPOS_DOCUMENTO.find(t => t.value === doc.tipo_documento)?.label || 'Otro'}</span>
+                                    <span>•</span>
+                                    <span>{formatFileSize(doc.tamanio_bytes)}</span>
+                                    {doc.descripcion && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="truncate">{doc.descripcion}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => window.open(doc.url_archivo, '_blank')}
+                                  title="Ver documento"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDescargarDocumento(doc)}
+                                  disabled={isDownloading}
+                                  title="Descargar"
+                                >
+                                  {isDownloading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Download className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEliminarDocumento(doc.id)}
+                                  disabled={isDeleting}
+                                  className="text-destructive hover:text-destructive"
+                                  title="Eliminar"
+                                >
+                                  {isDeleting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </StepContent>
