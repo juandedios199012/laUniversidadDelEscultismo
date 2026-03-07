@@ -168,7 +168,11 @@ export function generateReportMetadata() {
  * Formatea fechas para mostrar en reportes
  * NOTA: Para fechas tipo DATE de PostgreSQL, parseamos como local sin timezone
  */
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) {
+    return 'N/A';
+  }
+  
   let d: Date;
   
   if (typeof date === 'string') {

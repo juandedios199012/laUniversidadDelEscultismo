@@ -187,11 +187,16 @@ asistencias (
   id, scout_id, fecha, presente, justificado, motivo
 )
 
--- Tabla progreso_especialidades
-progreso_especialidades (
-  id, scout_id, especialidad, nivel, fecha_inicio,
-  fecha_finalizacion, estado, porcentaje
-)
+-- Tablas de Progresión (módulo de etapas: Pista, Senda, Rumbo, Travesía)
+etapas_progresion (id, codigo, nombre, descripcion, orden)
+areas_crecimiento (id, codigo, nombre, icono, color)
+objetivos_educativos (id, etapa_id, area_id, titulo, descripcion)
+progreso_scout (id, scout_id, objetivo_id, completado, fecha_completado)
+scout_etapa (id, scout_id, etapa_id, fecha_inicio, fecha_fin)
+
+-- Tablas de Especialidades (módulo separado)
+especialidades (id, codigo, nombre, area_id, descripcion)
+scout_especialidad_progreso (id, scout_id, especialidad_id, fase_exploracion, fase_taller, fase_desafio)
 ```
 
 ## 📦 Dependencias
@@ -218,10 +223,17 @@ El módulo utiliza:
 - Vista en formato tabla
 
 ### 3. Reporte de Progreso (PROGRESS)
-- Especialidades en curso
-- Porcentaje de avance
+- Etapas de progresión: Pista, Senda, Rumbo, Travesía
+- Progreso por áreas de crecimiento (Corporalidad, Creatividad, Carácter, etc.)
+- Objetivos educativos completados
 - Estados: Completado, En Progreso, Pendiente
 - Barras de progreso visuales
+
+### 4. Reporte de Especialidades (ESPECIALIDADES)
+- Especialidades asignadas a cada scout
+- Fases: Exploración, Taller, Desafío
+- Estados de cada fase
+- Dashboard con métricas
 
 ## 🔍 Filtros Disponibles
 

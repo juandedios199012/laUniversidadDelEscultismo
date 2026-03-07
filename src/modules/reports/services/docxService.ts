@@ -413,7 +413,7 @@ function createAttendanceTable(data: AttendanceData[]): Table {
 }
 
 /**
- * Crea una tabla de progreso
+ * Crea una tabla de progreso de ETAPAS (Pista, Senda, Rumbo, Travesía)
  */
 function createProgressTable(data: ProgressData[]): Table {
   const headerRow = new TableRow({
@@ -429,7 +429,7 @@ function createProgressTable(data: ProgressData[]): Table {
       new TableCell({
         children: [
           new Paragraph({
-            children: [new TextRun({ text: 'Especialidad', bold: true })],
+            children: [new TextRun({ text: 'Etapa', bold: true })],
           }),
         ],
         shading: { fill: '0066CC', type: ShadingType.SOLID },
@@ -437,7 +437,7 @@ function createProgressTable(data: ProgressData[]): Table {
       new TableCell({
         children: [
           new Paragraph({
-            children: [new TextRun({ text: 'Nivel', bold: true })],
+            children: [new TextRun({ text: 'Fecha Inicio', bold: true })],
           }),
         ],
         shading: { fill: '0066CC', type: ShadingType.SOLID },
@@ -469,17 +469,18 @@ function createProgressTable(data: ProgressData[]): Table {
             children: [new Paragraph({ text: item.scoutNombre })],
           }),
           new TableCell({
-            children: [new Paragraph({ text: item.especialidad })],
+            children: [new Paragraph({ text: item.etapa || 'Sin asignar' })],
           }),
           new TableCell({
-            children: [new Paragraph({ text: item.nivel })],
+            children: [new Paragraph({ text: item.fechaInicio ? formatDate(item.fechaInicio) : 'N/A' })],
           }),
           new TableCell({
             children: [
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: item.estado,
+                    text: item.estado === 'completado' ? 'Completado' : 
+                          item.estado === 'en_progreso' ? 'En Progreso' : 'Pendiente',
                     bold: true,
                     color:
                       item.estado === 'completado'
@@ -493,7 +494,7 @@ function createProgressTable(data: ProgressData[]): Table {
             ],
           }),
           new TableCell({
-            children: [new Paragraph({ text: `${item.porcentaje}%` })],
+            children: [new Paragraph({ text: `${item.porcentaje || 0}%` })],
           }),
         ],
       })

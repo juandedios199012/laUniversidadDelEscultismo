@@ -1,5 +1,6 @@
 /**
- * Plantilla PDF para reporte de progreso
+ * Plantilla PDF para reporte de progreso de ETAPAS
+ * (Pista, Senda, Rumbo, Travesía)
  */
 
 import React from 'react';
@@ -29,21 +30,28 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
   scoutName,
 }) => {
   // Calcular estadísticas
-  const totalItems = data.length;
-  const completedItems = data.filter((d) => d.estado === 'completado').length;
-  const inProgressItems = data.filter((d) => d.estado === 'en_progreso').length;
-  const pendingItems = data.filter((d) => d.estado === 'pendiente').length;
+  const totalScouts = data.length;
+  const scoutsWithEtapa = data.filter((d) => d.etapa).length;
+  const completedEtapas = data.filter((d) => d.estado === 'completado').length;
+  const inProgressEtapas = data.filter((d) => d.estado === 'en_progreso').length;
   const averageProgress =
-    totalItems > 0
-      ? data.reduce((sum, item) => sum + item.porcentaje, 0) / totalItems
+    totalScouts > 0
+      ? data.reduce((sum, item) => sum + (item.porcentaje || 0), 0) / totalScouts
       : 0;
+
+  // Contar scouts por etapa
+  const etapaCounts: Record<string, number> = {};
+  data.forEach((item) => {
+    const etapa = item.etapa || 'Sin asignar';
+    etapaCounts[etapa] = (etapaCounts[etapa] || 0) + 1;
+  });
 
   return (
     <Document>
       <Page size="A4" style={baseStyles.page}>
         {/* Header */}
         <View style={baseStyles.header}>
-          <Text style={baseStyles.title}>Reporte de Progreso</Text>
+          <Text style={baseStyles.title}>REPORTE DE PROGRESION SCOUT</Text>
           <Text style={baseStyles.subtitle}>
             {scoutName || metadata.organizacion}
           </Text>
@@ -55,8 +63,28 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
             Generado: {formatDate(metadata.generatedAt)}
           </Text>
           <Text style={baseStyles.metadataItem}>
-            Total Especialidades: {totalItems}
+            Total Scouts: {totalScouts}
           </Text>
+        </View>
+
+        {/* Resumen por etapas */}
+        <View style={baseStyles.section}>
+          <Text style={baseStyles.heading}>Distribucion por Etapas</Text>
+          
+          <View style={baseStyles.row}>
+            {Object.entries(etapaCounts).map(([etapa, count]) => (
+              <View key={etapa} style={baseStyles.col}>
+                <View style={[baseStyles.sectionCard, { borderLeftWidth: 4, borderLeftColor: colors.primary }]}>
+                  <Text style={[baseStyles.text, baseStyles.textBold]}>
+                    {etapa}
+                  </Text>
+                  <Text style={[baseStyles.title, { color: colors.primary }]}>
+                    {count}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Resumen estadístico */}
@@ -67,10 +95,10 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
             <View style={baseStyles.col}>
               <View style={[baseStyles.sectionCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
                 <Text style={[baseStyles.text, baseStyles.textBold]}>
-                  Completadas
+                  Etapas Completadas
                 </Text>
                 <Text style={[baseStyles.title, { color: colors.success }]}>
-                  {completedItems}
+                  {completedEtapas}
                 </Text>
               </View>
             </View>
@@ -81,7 +109,7 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
                   En Progreso
                 </Text>
                 <Text style={[baseStyles.title, { color: colors.warning }]}>
-                  {inProgressItems}
+                  {inProgressEtapas}
                 </Text>
               </View>
             </View>
@@ -89,10 +117,10 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
             <View style={baseStyles.col}>
               <View style={[baseStyles.sectionCard, { borderLeftWidth: 4, borderLeftColor: colors.gray }]}>
                 <Text style={[baseStyles.text, baseStyles.textBold]}>
-                  Pendientes
+                  Con Etapa Asignada
                 </Text>
                 <Text style={[baseStyles.title, { color: colors.gray }]}>
-                  {pendingItems}
+                  {scoutsWithEtapa}
                 </Text>
               </View>
             </View>
@@ -117,22 +145,24 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
           </View>
         </View>
 
-        {/* Detalle por especialidad */}
+        {/* Detalle por scout */}
         <View style={baseStyles.section}>
-          <Text style={baseStyles.heading}>Detalle de Especialidades</Text>
+          <Text style={baseStyles.heading}>Detalle por Scout</Text>
 
           {data.map((item, index) => (
             <View
-              key={`${item.scoutId}-${item.especialidad}-${index}`}
+              key={`${item.scoutId}-${item.etapa}-${index}`}
               style={baseStyles.sectionCard}
             >
-              {/* Nombre de especialidad y Scout */}
+              {/* Nombre del scout y etapa */}
               <View style={baseStyles.row}>
                 <View style={baseStyles.col3}>
                   <Text style={[baseStyles.text, baseStyles.textBold]}>
-                    {item.especialidad}
+                    {item.scoutNombre}
                   </Text>
-                  <Text style={baseStyles.textSmall}>{item.scoutNombre}</Text>
+                  <Text style={baseStyles.textSmall}>
+                    Etapa: {item.etapa || 'Sin asignar'}
+                  </Text>
                 </View>
                 <View style={baseStyles.col}>
                   <View
@@ -159,11 +189,8 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
               {/* Información adicional */}
               <View style={baseStyles.row}>
                 <View style={baseStyles.col}>
-                  <Text style={baseStyles.textSmall}>Nivel: {item.nivel}</Text>
-                </View>
-                <View style={baseStyles.col}>
                   <Text style={baseStyles.textSmall}>
-                    Inicio: {formatDate(item.fechaInicio)}
+                    Inicio: {item.fechaInicio ? formatDate(item.fechaInicio) : 'N/A'}
                   </Text>
                 </View>
                 <View style={baseStyles.col}>
@@ -181,13 +208,31 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
                 <View
                   style={[
                     progressStyles.progressFill,
-                    { width: `${item.porcentaje}%` },
+                    { width: `${item.porcentaje || 0}%` },
                   ]}
                 />
                 <Text style={progressStyles.progressText}>
-                  {item.porcentaje}%
+                  {item.porcentaje || 0}%
                 </Text>
               </View>
+
+              {/* Areas de crecimiento (si existen) */}
+              {item.areas && item.areas.length > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={[baseStyles.textSmall, baseStyles.textBold]}>
+                    Areas de Crecimiento:
+                  </Text>
+                  <View style={[baseStyles.row, { flexWrap: 'wrap', marginTop: 4 }]}>
+                    {item.areas.map((area, areaIdx) => (
+                      <View key={areaIdx} style={{ width: '33%', padding: 2 }}>
+                        <Text style={[baseStyles.textSmall, { fontSize: 7 }]}>
+                          {area.area}: {area.completados}/{area.total}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -198,7 +243,7 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
           <Text
             style={baseStyles.footerText}
             render={({ pageNumber, totalPages }) =>
-              `Página ${pageNumber} de ${totalPages}`
+              `Pagina ${pageNumber} de ${totalPages}`
             }
           />
         </View>

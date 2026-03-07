@@ -153,16 +153,26 @@ export interface AttendanceData {
   motivo?: string;
 }
 
-// Datos de progreso
+// Datos de progreso de ETAPAS (Pista, Senda, Rumbo, Travesía)
 export interface ProgressData {
   scoutId: string;
   scoutNombre: string;
-  especialidad: string;
-  nivel: string;
+  etapa: string;  // Nombre de la etapa actual
+  etapaCodigo: string;  // PISTA, SENDA, RUMBO, TRAVESIA
+  etapaIcono?: string;
   fechaInicio: string;
   fechaFinalizacion?: string;
   estado: 'en_progreso' | 'completado' | 'pendiente';
   porcentaje: number;
+  areas?: ProgressAreaData[];  // Progreso por área de crecimiento
+}
+
+// Datos de progreso por área de crecimiento
+export interface ProgressAreaData {
+  area: string;
+  icono?: string;
+  completados: number;
+  total: number;
 }
 
 // Resumen de grupo
