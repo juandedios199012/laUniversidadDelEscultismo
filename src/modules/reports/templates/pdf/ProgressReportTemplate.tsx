@@ -152,8 +152,8 @@ export const ProgressReportTemplate: React.FC<ProgressReportTemplateProps> = ({
           ))}
         </View>
 
-        {/* Resumen estadístico */}
-        <View style={baseStyles.section}>
+        {/* Resumen estadístico - Siempre en página nueva */}
+        <View style={baseStyles.section} break>
           <Text style={baseStyles.heading}>Resumen General</Text>
           
           <View style={baseStyles.row}>
