@@ -367,6 +367,38 @@ export function HistoriaMedicaWizard({
     }
   };
 
+  // Error handler for form validation
+  const onFormError = (errors: any) => {
+    console.error("Errores de validación:", errors);
+    const errorMessages: string[] = [];
+    
+    if (errors.fecha_llenado) errorMessages.push("Fecha de llenado requerida");
+    if (errors.condiciones) errorMessages.push("Error en condiciones médicas");
+    if (errors.alergias) errorMessages.push("Error en alergias");
+    if (errors.medicamentos) errorMessages.push("Error en medicamentos");
+    if (errors.vacunas) errorMessages.push("Error en vacunas");
+    
+    if (errorMessages.length > 0) {
+      error(`Errores: ${errorMessages.join(", ")}`);
+    } else {
+      error("Por favor complete los campos requeridos");
+    }
+  };
+
+  // Manual submit that bypasses strict validation
+  const handleManualSubmit = async () => {
+    const data = form.getValues();
+    
+    // Solo validar fecha_llenado como requerido
+    if (!data.fecha_llenado) {
+      error("La fecha de llenado es requerida");
+      setCurrentStep(0); // Ir al primer paso
+      return;
+    }
+    
+    await onSubmitForm(data);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1018,7 +1050,7 @@ export function HistoriaMedicaWizard({
               totalSteps={WIZARD_STEPS.length}
               onPrevious={handlePrevious}
               onNext={handleNext}
-              onSubmit={handleSubmit(onSubmitForm)}
+              onSubmit={handleManualSubmit}
               isSubmitting={isSubmitting}
               submitLabel="Guardar Historia Médica"
             />
