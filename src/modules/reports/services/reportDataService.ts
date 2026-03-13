@@ -484,7 +484,6 @@ export async function getHistoriaMedicaData(
         id,
         codigo_scout,
         rama_actual,
-        patrulla:patrullas(nombre),
         persona:personas!scouts_persona_id_fkey (
           id,
           nombres,
@@ -505,6 +504,19 @@ export async function getHistoriaMedicaData(
     if (scoutError || !scoutData) {
       console.error('Error obteniendo scout:', scoutError);
       return null;
+    }
+
+    // Obtener patrulla por separado via miembros_patrulla
+    let patrullaNombre = '';
+    const { data: miembroPatrulla } = await supabase
+      .from('miembros_patrulla')
+      .select('patrulla:patrullas(nombre)')
+      .eq('scout_id', scoutId)
+      .eq('estado_miembro', 'ACTIVO')
+      .single();
+    
+    if (miembroPatrulla?.patrulla) {
+      patrullaNombre = (miembroPatrulla.patrulla as any).nombre || '';
     }
 
     const persona = scoutData.persona as any;
@@ -576,7 +588,7 @@ export async function getHistoriaMedicaData(
       direccion: [persona?.direccion, persona?.distrito, persona?.provincia, persona?.departamento]
         .filter(Boolean).join(', '),
       rama: scoutData.rama_actual || '',
-      patrulla: (scoutData.patrulla as any)?.nombre,
+      patrulla: patrullaNombre,
       
       // Contacto de emergencia
       contactoEmergencia: contactoData ? {
