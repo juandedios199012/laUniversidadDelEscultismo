@@ -10,6 +10,7 @@ import {
   GroupSummaryData,
   ActivityHistoryData,
   ReportFilters,
+  HistoriaMedicaReportData,
 } from '../types/reportTypes';
 
 /**
@@ -468,6 +469,190 @@ export async function getDocumentacionPendiente(ano?: number): Promise<any[]> {
   }
 }
 
+/**
+ * Obtiene datos de Historia Médica para reporte PDF/DOCX
+ */
+export async function getHistoriaMedicaData(
+  scoutId: string,
+  personaId: string
+): Promise<HistoriaMedicaReportData | null> {
+  try {
+    // 1. Obtener datos del scout
+    const { data: scoutData, error: scoutError } = await supabase
+      .from('scouts')
+      .select(`
+        id,
+        codigo_scout,
+        rama_actual,
+        patrulla:patrullas(nombre),
+        persona:personas!scouts_persona_id_fkey (
+          id,
+          nombres,
+          apellidos,
+          fecha_nacimiento,
+          sexo,
+          direccion,
+          departamento,
+          provincia,
+          distrito,
+          grupo_sanguineo,
+          factor_sanguineo
+        )
+      `)
+      .eq('id', scoutId)
+      .single();
+
+    if (scoutError || !scoutData) {
+      console.error('Error obteniendo scout:', scoutError);
+      return null;
+    }
+
+    const persona = scoutData.persona as any;
+
+    // 2. Obtener historia médica cabecera
+    const { data: historiaData, error: historiaError } = await supabase
+      .from('historias_medicas')
+      .select('*')
+      .eq('persona_id', personaId)
+      .single();
+
+    // 3. Obtener condiciones médicas
+    const { data: condiciones } = await supabase
+      .from('historia_condiciones')
+      .select('*')
+      .eq('historia_id', historiaData?.id || '')
+      .order('nombre');
+
+    // 4. Obtener alergias
+    const { data: alergias } = await supabase
+      .from('historia_alergias')
+      .select('*')
+      .eq('historia_id', historiaData?.id || '')
+      .order('nombre');
+
+    // 5. Obtener medicamentos
+    const { data: medicamentos } = await supabase
+      .from('historia_medicamentos')
+      .select('*')
+      .eq('historia_id', historiaData?.id || '')
+      .order('nombre');
+
+    // 6. Obtener vacunas
+    const { data: vacunas } = await supabase
+      .from('historia_vacunas')
+      .select('*')
+      .eq('historia_id', historiaData?.id || '')
+      .order('nombre');
+
+    // 7. Obtener contacto de emergencia
+    const { data: contactoData } = await supabase
+      .from('familiares')
+      .select(`
+        persona:personas!familiares_persona_familiar_id_fkey (
+          nombres,
+          apellidos,
+          celular,
+          telefono
+        ),
+        parentesco,
+        es_contacto_emergencia
+      `)
+      .eq('persona_scout_id', personaId)
+      .eq('es_contacto_emergencia', true)
+      .limit(1)
+      .single();
+
+    // Calcular edad
+    const fechaNac = persona?.fecha_nacimiento ? new Date(persona.fecha_nacimiento) : null;
+    const edad = fechaNac ? Math.floor((Date.now() - fechaNac.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+
+    const result: HistoriaMedicaReportData = {
+      scoutId: scoutData.id,
+      codigoScout: scoutData.codigo_scout || '',
+      nombreCompleto: `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim(),
+      fechaNacimiento: persona?.fecha_nacimiento || '',
+      edad,
+      sexo: persona?.sexo,
+      direccion: [persona?.direccion, persona?.distrito, persona?.provincia, persona?.departamento]
+        .filter(Boolean).join(', '),
+      rama: scoutData.rama_actual || '',
+      patrulla: (scoutData.patrulla as any)?.nombre,
+      
+      // Contacto de emergencia
+      contactoEmergencia: contactoData ? {
+        nombre: `${(contactoData.persona as any)?.nombres || ''} ${(contactoData.persona as any)?.apellidos || ''}`.trim(),
+        parentesco: contactoData.parentesco || '',
+        celular: (contactoData.persona as any)?.celular || '',
+        telefono: (contactoData.persona as any)?.telefono,
+      } : undefined,
+      
+      // Cabecera
+      fechaLlenado: historiaData?.fecha_llenado || new Date().toISOString().split('T')[0],
+      lugarNacimiento: historiaData?.lugar_nacimiento,
+      estaturaCm: historiaData?.estatura_cm,
+      pesoKg: historiaData?.peso_kg,
+      
+      // Seguro
+      seguroMedico: historiaData?.seguro_medico,
+      numeroPoliza: historiaData?.numero_poliza,
+      medicoCabecera: historiaData?.medico_cabecera,
+      telefonoMedico: historiaData?.telefono_medico,
+      hospitalPreferencia: historiaData?.hospital_preferencia,
+      
+      // Sangre
+      grupoSanguineo: persona?.grupo_sanguineo,
+      factorSanguineo: persona?.factor_sanguineo,
+      
+      observacionesGenerales: historiaData?.observaciones_generales,
+      
+      // Listas
+      condiciones: (condiciones || []).map(c => ({
+        nombre: c.nombre,
+        tipo: c.tipo || 'CONTROLADA',
+        fechaDiagnostico: c.fecha_diagnostico,
+        tratamiento: c.tratamiento,
+        medicoTratante: c.medico_tratante,
+        notas: c.notas,
+        activa: c.activa ?? true,
+      })),
+      
+      alergias: (alergias || []).map(a => ({
+        nombre: a.nombre,
+        tipo: a.tipo || 'OTRA',
+        severidad: a.severidad || 'LEVE',
+        reaccion: a.reaccion,
+        tratamientoEmergencia: a.tratamiento_emergencia,
+      })),
+      
+      medicamentos: (medicamentos || []).map(m => ({
+        nombre: m.nombre,
+        dosis: m.dosis,
+        frecuencia: m.frecuencia,
+        viaAdministracion: m.via_administracion,
+        fechaInicio: m.fecha_inicio,
+        fechaFin: m.fecha_fin,
+        motivo: m.motivo,
+        prescritoPor: m.prescrito_por,
+        activo: m.activo ?? true,
+      })),
+      
+      vacunas: (vacunas || []).map(v => ({
+        nombre: v.nombre,
+        fechaAplicacion: v.fecha_aplicacion,
+        dosisNumero: v.dosis_numero,
+        lote: v.lote,
+        establecimiento: v.establecimiento,
+        proximaDosis: v.proxima_dosis,
+      })),
+    };
+
+    return result;
+  } catch (error) {
+    console.error('Error obteniendo datos de historia médica:', error);
+    throw error;
+  }
+}
+
 export default {
   getScoutData,
   getAttendanceData,
@@ -480,4 +665,5 @@ export default {
   getRankingPatrullas,
   getContactosEmergencia,
   getDocumentacionPendiente,
+  getHistoriaMedicaData,
 };

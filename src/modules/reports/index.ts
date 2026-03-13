@@ -14,6 +14,7 @@ export { default as ScoutReportTemplate } from './templates/pdf/ScoutReportTempl
 export { default as AttendanceReportTemplate } from './templates/pdf/AttendanceReportTemplate';
 export { default as ProgressReportTemplate } from './templates/pdf/ProgressReportTemplate';
 export { default as DNGI03Template } from './templates/pdf/DNGI03Template';
+export { default as HistoriaMedicaReportTemplate } from './templates/pdf/HistoriaMedicaReportTemplate';
 
 // Servicios
 export * from './services/pdfService';
@@ -21,6 +22,7 @@ export * from './services/docxService';
 export * from './services/reportDataService';
 export * from './services/excelService';
 export * from './services/scoutExcelDataService';
+export * from './services/historiaMedicaExportService';
 
 // Tipos
 export * from './types/reportTypes';

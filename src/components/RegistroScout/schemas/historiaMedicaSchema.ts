@@ -61,13 +61,14 @@ export const historiaCabeceraSchema = z.object({
 
 /**
  * Medical Condition Schema
- * - condicion_id: ID del catálogo de condiciones
+ * - condicion_id: ID del catálogo de condiciones (opcional para registros existentes)
  * - fecha_atencion: Fecha de atención médica
  */
 export const condicionMedicaSchema = z.object({
   id: z.string().uuid().optional(),
-  condicion_id: z.string().min(1, "Seleccione una condición"),
+  condicion_id: z.string().optional(), // Opcional para registros ya guardados
   nombre: z.string().optional(), // Se llena automáticamente desde el catálogo
+  tipo: z.string().optional(),
   fecha_atencion: z.string().optional(),
   tratamiento: z.string().max(500, "Máximo 500 caracteres").optional(),
   notas: z.string().max(500, "Máximo 500 caracteres").optional(),
@@ -76,14 +77,18 @@ export const condicionMedicaSchema = z.object({
 
 /**
  * Allergy Schema
- * - alergia_id: ID del catálogo de alergias
+ * - alergia_id: ID del catálogo de alergias (opcional para registros existentes)
  * - aplica: SI/NO tiene esta alergia
  * - mencionar: Campo de texto para detalles
  */
 export const alergiaSchema = z.object({
   id: z.string().uuid().optional(),
-  alergia_id: z.string().min(1, "Seleccione una alergia"),
+  alergia_id: z.string().optional(), // Opcional para registros ya guardados
   nombre: z.string().optional(), // Se llena automáticamente desde el catálogo
+  tipo: z.string().optional(),
+  severidad: z.string().optional(),
+  reaccion: z.string().optional(),
+  tratamiento_emergencia: z.string().optional(),
   aplica: z.boolean().optional().default(false),
   mencionar: z.string().max(500, "Máximo 500 caracteres").optional(),
 });
@@ -93,9 +98,9 @@ export const alergiaSchema = z.object({
  */
 export const medicamentoSchema = z.object({
   id: z.string().uuid().optional(),
-  nombre: z.string().min(2, "Nombre del medicamento requerido"),
-  dosis: z.string().min(1, "Dosis requerida"),
-  frecuencia: z.string().min(1, "Frecuencia requerida"),
+  nombre: z.string().optional(), // Opcional para datos cargados
+  dosis: z.string().optional(),
+  frecuencia: z.string().optional(),
   via_administracion: z.string().optional(),
   fecha_inicio: z.string().optional(),
   fecha_fin: z.string().optional(),
@@ -106,14 +111,19 @@ export const medicamentoSchema = z.object({
 
 /**
  * Vaccine Schema
- * - vacuna_id: ID del catálogo de vacunas
+ * - vacuna_id: ID del catálogo de vacunas (opcional para registros existentes)
  * - aplica: SI/NO tiene esta vacuna
  * - fecha: Fecha de aplicación
  */
 export const vacunaSchema = z.object({
   id: z.string().uuid().optional(),
-  vacuna_id: z.string().min(1, "Seleccione una vacuna"),
+  vacuna_id: z.string().optional(), // Opcional para registros ya guardados
   nombre: z.string().optional(), // Se llena automáticamente desde el catálogo
+  fecha_aplicacion: z.string().optional(),
+  dosis_numero: z.number().optional(),
+  lote: z.string().optional(),
+  establecimiento: z.string().optional(),
+  proxima_dosis: z.string().optional(),
   aplica: z.boolean().optional().default(false),
   fecha: z.string().optional(),
 });
@@ -167,6 +177,7 @@ export const defaultHistoriaMedicaValues: HistoriaMedicaData = {
 export const defaultCondicion: CondicionMedicaData = {
   condicion_id: "",
   nombre: "",
+  tipo: "",
   fecha_atencion: "",
   tratamiento: "",
   notas: "",
@@ -176,6 +187,10 @@ export const defaultCondicion: CondicionMedicaData = {
 export const defaultAlergia: AlergiaData = {
   alergia_id: "",
   nombre: "",
+  tipo: "",
+  severidad: "",
+  reaccion: "",
+  tratamiento_emergencia: "",
   aplica: false,
   mencionar: "",
 };
@@ -195,6 +210,11 @@ export const defaultMedicamento: MedicamentoData = {
 export const defaultVacuna: VacunaData = {
   vacuna_id: "",
   nombre: "",
+  fecha_aplicacion: "",
+  dosis_numero: undefined,
+  lote: "",
+  establecimiento: "",
+  proxima_dosis: "",
   aplica: false,
   fecha: "",
 };

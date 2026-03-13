@@ -26,6 +26,7 @@ import {
   FileImage,
   Loader2,
   Eye,
+  FileDown,
 } from "lucide-react";
 
 import { Form } from "@/components/ui/form";
@@ -62,6 +63,8 @@ import {
 } from "../schemas/historiaMedicaSchema";
 
 import HistoriaMedicaService, { type CatalogoCondicion, type CatalogoAlergia, type CatalogoVacuna, type DocumentoMedico } from "@/services/historiaMedicaService";
+import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX } from "@/modules/reports/services/historiaMedicaExportService";
+import { ReportStatus } from "@/modules/reports/types/reportTypes";
 
 // ============================================
 // Types
@@ -69,6 +72,7 @@ import HistoriaMedicaService, { type CatalogoCondicion, type CatalogoAlergia, ty
 
 interface HistoriaMedicaWizardProps {
   scoutId: string;
+  personaId?: string; // ID de la persona para obtener historia médica
   scoutName: string;
   initialData?: HistoriaMedicaData | null;
   onSave: (data: HistoriaMedicaData) => Promise<{ success: boolean; message?: string }>;
@@ -169,6 +173,7 @@ function useAutoSave(
 
 export function HistoriaMedicaWizard({
   scoutId,
+  personaId,
   scoutName,
   initialData,
   onSave,
@@ -186,6 +191,8 @@ export function HistoriaMedicaWizard({
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
   const [nuevoDocTipo, setNuevoDocTipo] = useState<string>('OTRO');
   const [nuevoDocDescripcion, setNuevoDocDescripcion] = useState<string>('');
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [exportingDOCX, setExportingDOCX] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // Load catalogs and documents on mount
@@ -399,6 +406,58 @@ export function HistoriaMedicaWizard({
     await onSubmitForm(data);
   };
 
+  // Exportar a PDF
+  const handleExportPDF = async () => {
+    if (!personaId) {
+      error("No se puede exportar: falta ID de persona");
+      return;
+    }
+    
+    setExportingPDF(true);
+    try {
+      const result = await exportarHistoriaMedicaPDF(scoutId, personaId, {
+        organizacion: 'Grupo Scout Lima 12',
+      });
+      
+      if (result.status === ReportStatus.SUCCESS) {
+        success("PDF generado exitosamente");
+      } else {
+        error(result.error || "Error al generar PDF");
+      }
+    } catch (err) {
+      console.error("Error exportando PDF:", err);
+      error("Error al exportar PDF");
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  // Exportar a Word (DOCX)
+  const handleExportDOCX = async () => {
+    if (!personaId) {
+      error("No se puede exportar: falta ID de persona");
+      return;
+    }
+    
+    setExportingDOCX(true);
+    try {
+      const result = await exportarHistoriaMedicaDOCX(scoutId, personaId, {
+        organizacion: 'Grupo Scout Lima 12',
+      });
+      
+      if (result.status === ReportStatus.SUCCESS) {
+        success("Documento Word generado exitosamente");
+      } else {
+        error(result.error || "Error al generar Word");
+      }
+    } catch (err) {
+      console.error("Error exportando DOCX:", err);
+      error("Error al exportar Word");
+    } finally {
+      setExportingDOCX(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -411,6 +470,41 @@ export function HistoriaMedicaWizard({
             Complete la información médica en cada sección. Los datos se guardan automáticamente.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Botones de Exportar */}
+        {personaId && (
+          <div className="flex items-center gap-2 py-2 border-b">
+            <span className="text-sm text-muted-foreground mr-2">Exportar:</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={exportingPDF || exportingDOCX}
+            >
+              {exportingPDF ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 mr-1" />
+              )}
+              PDF
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportDOCX}
+              disabled={exportingPDF || exportingDOCX}
+            >
+              {exportingDOCX ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 mr-1" />
+              )}
+              Word
+            </Button>
+          </div>
+        )}
 
         {/* Stepper */}
         <div className="py-4">

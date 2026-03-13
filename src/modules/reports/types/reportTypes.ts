@@ -19,6 +19,8 @@ export enum ReportType {
   SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
   // Reporte de Especialidades (migrado desde módulo)
   ESPECIALIDADES = 'especialidades',
+  // Reporte de Historia Médica
+  HISTORIA_MEDICA = 'historia_medica',
 }
 
 // Formatos de exportación
@@ -346,6 +348,99 @@ export interface EspecialidadesScoutData {
     enProgreso: number;
     porcentajeGeneral: number;
   };
+}
+
+// ============= HISTORIA MÉDICA REPORT DATA =============
+
+// Condición médica para reporte
+export interface CondicionMedicaReportData {
+  nombre: string;
+  tipo: string;
+  fechaDiagnostico?: string;
+  tratamiento?: string;
+  medicoTratante?: string;
+  notas?: string;
+  activa: boolean;
+}
+
+// Alergia para reporte
+export interface AlergiaReportData {
+  nombre: string;
+  tipo: string;
+  severidad: string;
+  reaccion?: string;
+  tratamientoEmergencia?: string;
+}
+
+// Medicamento para reporte
+export interface MedicamentoReportData {
+  nombre: string;
+  dosis: string;
+  frecuencia: string;
+  viaAdministracion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  motivo?: string;
+  prescritoPor?: string;
+  activo: boolean;
+}
+
+// Vacuna para reporte
+export interface VacunaReportData {
+  nombre: string;
+  fechaAplicacion?: string;
+  dosisNumero?: number;
+  lote?: string;
+  establecimiento?: string;
+  proximaDosis?: string;
+}
+
+// Datos completos de Historia Médica para reportes
+export interface HistoriaMedicaReportData {
+  // Datos del Scout
+  scoutId: string;
+  codigoScout: string;
+  nombreCompleto: string;
+  fechaNacimiento: string;
+  edad: number;
+  sexo?: string;
+  direccion?: string;
+  rama: string;
+  patrulla?: string;
+  
+  // Contacto de emergencia
+  contactoEmergencia?: {
+    nombre: string;
+    parentesco: string;
+    celular: string;
+    telefono?: string;
+  };
+  
+  // Cabecera de historia médica
+  fechaLlenado: string;
+  lugarNacimiento?: string;
+  estaturaCm?: number;
+  pesoKg?: number;
+  
+  // Seguro y atención médica
+  seguroMedico?: string;
+  numeroPoliza?: string;
+  medicoCabecera?: string;
+  telefonoMedico?: string;
+  hospitalPreferencia?: string;
+  
+  // Datos de sangre
+  grupoSanguineo?: string;
+  factorSanguineo?: string;
+  
+  // Observaciones
+  observacionesGenerales?: string;
+  
+  // Listas
+  condiciones: CondicionMedicaReportData[];
+  alergias: AlergiaReportData[];
+  medicamentos: MedicamentoReportData[];
+  vacunas: VacunaReportData[];
 }
 
 export interface EspecialidadesReportData {

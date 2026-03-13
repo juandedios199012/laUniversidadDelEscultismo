@@ -225,6 +225,7 @@ export default function RegistroScoutPage() {
       const histData = await HistoriaMedicaService.obtenerHistoriaMedica(scout.persona_id || scout.id);
       if (histData) {
         // Transform the nested data structure to flat form data
+        // Map DB field names to form field names
         setMedicalHistoryData({
           fecha_llenado: histData.cabecera?.fecha_llenado || new Date().toISOString().split("T")[0],
           lugar_nacimiento: histData.cabecera?.lugar_nacimiento || "",
@@ -236,10 +237,53 @@ export default function RegistroScoutPage() {
           telefono_medico: histData.cabecera?.telefono_medico || "",
           hospital_preferencia: histData.cabecera?.hospital_preferencia || "",
           observaciones_generales: histData.cabecera?.observaciones_generales || "",
-          condiciones: histData.condiciones || [],
-          alergias: histData.alergias || [],
-          medicamentos: histData.medicamentos || [],
-          vacunas: histData.vacunas || [],
+          // Map condiciones: fecha_diagnostico → fecha_atencion, add condicion_id from id
+          condiciones: (histData.condiciones || []).map((c: any) => ({
+            id: c.id,
+            condicion_id: c.id || c.condicion_id || '', // Use existing id as condicion_id for loaded records
+            nombre: c.nombre || '',
+            tipo: c.tipo,
+            fecha_atencion: c.fecha_diagnostico || c.fecha_atencion || '',
+            tratamiento: c.tratamiento || '',
+            notas: c.notas || '',
+            activa: c.activa ?? true,
+          })),
+          // Map alergias: add alergia_id from id
+          alergias: (histData.alergias || []).map((a: any) => ({
+            id: a.id,
+            alergia_id: a.id || a.alergia_id || '',
+            nombre: a.nombre || '',
+            tipo: a.tipo || '',
+            severidad: a.severidad || '',
+            reaccion: a.reaccion || '',
+            tratamiento_emergencia: a.tratamiento_emergencia || '',
+            aplica: true, // Si existe, aplica
+            mencionar: a.reaccion || '',
+          })),
+          // Map medicamentos
+          medicamentos: (histData.medicamentos || []).map((m: any) => ({
+            id: m.id,
+            nombre: m.nombre || '',
+            dosis: m.dosis || '',
+            frecuencia: m.frecuencia || '',
+            via_administracion: m.via_administracion || '',
+            fecha_inicio: m.fecha_inicio || '',
+            fecha_fin: m.fecha_fin || '',
+            motivo: m.motivo || '',
+            prescrito_por: m.prescrito_por || '',
+            activo: m.activo ?? true,
+          })),
+          // Map vacunas: add vacuna_id from id
+          vacunas: (histData.vacunas || []).map((v: any) => ({
+            id: v.id,
+            vacuna_id: v.id || v.vacuna_id || '',
+            nombre: v.nombre || '',
+            fecha_aplicacion: v.fecha_aplicacion || '',
+            dosis_numero: v.dosis_numero,
+            lote: v.lote || '',
+            establecimiento: v.establecimiento || '',
+            proxima_dosis: v.proxima_dosis || '',
+          })),
         } as HistoriaMedicaData);
       } else {
         setMedicalHistoryData(null);
@@ -422,7 +466,8 @@ export default function RegistroScoutPage() {
       {/* Medical History Modal */}
       {medicalHistoryScout && (
         <HistoriaMedicaWizard
-          scoutId={medicalHistoryScout.persona_id || medicalHistoryScout.id}
+          scoutId={medicalHistoryScout.id}
+          personaId={medicalHistoryScout.persona_id || medicalHistoryScout.id}
           scoutName={`${medicalHistoryScout.nombres} ${medicalHistoryScout.apellidos}`}
           initialData={medicalHistoryData}
           onSave={handleSaveMedicalHistory}
