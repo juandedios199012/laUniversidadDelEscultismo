@@ -205,6 +205,8 @@ export const familiarSchema = z.object({
   id: z.string().uuid().optional(),
   nombres: z.string().min(2, "Nombres requeridos"),
   apellidos: z.string().optional(),
+  tipo_documento: TipoDocumentoEnum.optional(),
+  numero_documento: z.string().max(20).optional(),
   parentesco: ParentescoEnum,
   celular: celularSchema,
   correo: emailSchema,
@@ -219,6 +221,8 @@ export const familiarItemSchema = z.object({
   id: z.string().optional(), // Para edición
   nombres: z.string().min(2, "Nombres requeridos"),
   apellidos: z.string().min(2, "Apellidos requeridos"),
+  tipo_documento: TipoDocumentoEnum.default("DNI"),
+  numero_documento: z.string().max(20).optional(),
   parentesco: ParentescoEnum,
   celular: celularSchema,
   correo: emailSchema,

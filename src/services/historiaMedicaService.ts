@@ -25,9 +25,9 @@ export interface Alergia {
   id?: string;
   nombre: string;
   tipo: 'MEDICAMENTO' | 'ALIMENTO' | 'AMBIENTAL' | 'INSECTO' | 'OTRA';
-  severidad: 'LEVE' | 'MODERADA' | 'SEVERA';
   reaccion?: string;
   tratamiento_emergencia?: string;
+  mencionar?: string;
 }
 
 export interface Medicamento {
@@ -192,6 +192,36 @@ export class HistoriaMedicaService {
   ): Promise<{ historia_id: string }> {
     try {
       // Preparar datos para enviar
+      // Transformar campos del form a campos de BD
+      const condicionesTransformadas = (data.condiciones || []).map((c: any) => ({
+        ...c,
+        fecha_diagnostico: c.fecha_diagnostico || c.fecha_atencion || null, // Mapear fecha_atencion → fecha_diagnostico
+      }));
+      
+      // Función para inferir tipo de alergia desde el nombre
+      const inferirTipoAlergia = (nombre: string): string => {
+        const n = (nombre || '').toLowerCase();
+        if (n.includes('medicamento') || n.includes('penicilina') || n.includes('aspirina') || n.includes('ibuprofeno') || n.includes('sulfa') || n.includes('anestésico') || n.includes('anestesico')) {
+          return 'MEDICAMENTO';
+        }
+        if (n.includes('alimento') || n.includes('maní') || n.includes('mani') || n.includes('marisco') || n.includes('pescado') || n.includes('huevo') || n.includes('leche') || n.includes('lácteo') || n.includes('lacteo') || n.includes('gluten') || n.includes('trigo') || n.includes('soya') || n.includes('fruto')) {
+          return 'ALIMENTO';
+        }
+        if (n.includes('planta') || n.includes('polen') || n.includes('ácaro') || n.includes('acaro') || n.includes('moho') || n.includes('pelo') || n.includes('ambiental')) {
+          return 'AMBIENTAL';
+        }
+        if (n.includes('contacto') || n.includes('látex') || n.includes('latex') || n.includes('níquel') || n.includes('niquel') || n.includes('cosmético') || n.includes('cosmetico')) {
+          return 'CONTACTO';
+        }
+        return 'OTRA';
+      };
+      
+      // Transformar alergias agregando tipo si no existe
+      const alergiasTransformadas = (data.alergias || []).map((a: any) => ({
+        ...a,
+        tipo: a.tipo || inferirTipoAlergia(a.nombre),
+      }));
+      
       const payload = {
         fecha_llenado: data.cabecera?.fecha_llenado || new Date().toISOString().split('T')[0],
         lugar_nacimiento: data.cabecera?.lugar_nacimiento || '',
@@ -203,8 +233,8 @@ export class HistoriaMedicaService {
         telefono_medico: data.cabecera?.telefono_medico || '',
         hospital_preferencia: data.cabecera?.hospital_preferencia || '',
         observaciones_generales: data.cabecera?.observaciones_generales || '',
-        condiciones: data.condiciones || [],
-        alergias: data.alergias || [],
+        condiciones: condicionesTransformadas,
+        alergias: alergiasTransformadas,
         medicamentos: data.medicamentos || [],
         vacunas: data.vacunas || []
       };
@@ -348,9 +378,9 @@ export class HistoriaMedicaService {
       alergias: (formData.alergias || []).map((a: any) => ({
         nombre: a.nombre,
         tipo: a.tipo || 'OTRA',
-        severidad: a.severidad || 'LEVE',
         reaccion: a.reaccion,
-        tratamiento_emergencia: a.tratamientoEmergencia
+        tratamiento_emergencia: a.tratamientoEmergencia,
+        mencionar: a.mencionar
       })),
       medicamentos: (formData.medicamentos || []).map((m: any) => ({
         nombre: m.nombre,
@@ -402,9 +432,9 @@ export class HistoriaMedicaService {
       alergias: data.alergias.map(a => ({
         nombre: a.nombre,
         tipo: a.tipo,
-        severidad: a.severidad,
         reaccion: a.reaccion || '',
-        tratamientoEmergencia: a.tratamiento_emergencia || ''
+        tratamientoEmergencia: a.tratamiento_emergencia || '',
+        mencionar: a.mencionar || ''
       })),
       medicamentos: data.medicamentos.map(m => ({
         nombre: m.nombre,

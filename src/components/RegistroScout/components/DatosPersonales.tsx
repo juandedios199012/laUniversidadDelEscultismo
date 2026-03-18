@@ -4,16 +4,19 @@
  */
 
 import { UseFormReturn } from "react-hook-form";
-import { User } from "lucide-react";
+import { User, FileText } from "lucide-react";
 import { ScoutFormData } from "../schemas/scoutFormSchema";
 import { TextField, SelectField, DateField } from "./FormFields";
 import { FormSection } from "./FormSection";
+import { DocumentUpload } from "./DocumentUpload";
 
 interface DatosPersonalesProps {
   form: UseFormReturn<ScoutFormData>;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;
+  /** ID del scout para modo edición (permite subir documentos) */
+  scoutId?: string;
 }
 
 const TIPO_DOCUMENTO_OPTIONS = [
@@ -27,7 +30,7 @@ const SEXO_OPTIONS = [
   { value: "FEMENINO", label: "Femenino" },
 ];
 
-export function DatosPersonales({ form, isOpen, onToggle, errorCount = 0 }: DatosPersonalesProps) {
+export function DatosPersonales({ form, isOpen, onToggle, errorCount = 0, scoutId }: DatosPersonalesProps) {
   return (
     <FormSection
       title="Datos Personales"
@@ -94,6 +97,18 @@ export function DatosPersonales({ form, isOpen, onToggle, errorCount = 0 }: Dato
             label="Número de Documento"
             placeholder="Ingrese número"
             maxLength={12}
+          />
+        </div>
+
+        {/* Upload de Documento de Identidad */}
+        <div className="pt-2">
+          <DocumentUpload
+            entityType="scout"
+            entityId={scoutId}
+            documentType="documento_identidad"
+            label="Copia del Documento de Identidad"
+            description="Sube una imagen o PDF del DNI, Carné de Extranjería o Pasaporte del scout"
+            disabled={!scoutId}
           />
         </div>
       </div>

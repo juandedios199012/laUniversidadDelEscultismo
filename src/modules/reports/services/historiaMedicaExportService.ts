@@ -134,7 +134,7 @@ export async function exportarHistoriaMedicaDOCX(
                 createTableRow('Fecha de Nacimiento', data.fechaNacimiento ? new Date(data.fechaNacimiento).toLocaleDateString('es-PE') : 'N/A'),
                 createTableRow('Edad', `${data.edad} años`),
                 createTableRow('Sexo', data.sexo === 'M' ? 'Masculino' : data.sexo === 'F' ? 'Femenino' : data.sexo || 'N/A'),
-                createTableRow('Estatura', data.estaturaCm ? `${data.estaturaCm} cm` : 'N/A'),
+                createTableRow('Estatura', data.estaturaCm ? `${data.estaturaCm} m` : 'N/A'),
                 createTableRow('Peso', data.pesoKg ? `${data.pesoKg} kg` : 'N/A'),
                 createTableRow('Grupo Sanguíneo', `${data.grupoSanguineo || 'N/A'} ${data.factorSanguineo || ''}`),
                 createTableRow('Rama / Patrulla', `${data.rama || 'N/A'} / ${data.patrulla || 'Sin patrulla'}`),
@@ -216,7 +216,7 @@ export async function exportarHistoriaMedicaDOCX(
                       children: [
                         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Alergia', bold: true })] })] }),
                         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Tipo', bold: true })] })] }),
-                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Severidad', bold: true })] })] }),
+                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Mención', bold: true })] })] }),
                         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Tratamiento', bold: true })] })] }),
                       ],
                     }),
@@ -224,7 +224,7 @@ export async function exportarHistoriaMedicaDOCX(
                       children: [
                         new TableCell({ children: [new Paragraph({ text: a.nombre })] }),
                         new TableCell({ children: [new Paragraph({ text: a.tipo })] }),
-                        new TableCell({ children: [new Paragraph({ text: a.severidad })] }),
+                        new TableCell({ children: [new Paragraph({ text: a.mencionar || '-' })] }),
                         new TableCell({ children: [new Paragraph({ text: a.tratamientoEmergencia || '-' })] }),
                       ],
                     })),

@@ -11,7 +11,9 @@ import {
   ActivityHistoryData,
   ReportFilters,
   HistoriaMedicaReportData,
+  FamiliarReportData,
 } from '../types/reportTypes';
+import { scoutDocumentsService } from '../../../services/scoutDocumentsService';
 
 /**
  * Obtiene datos de un Scout específico
@@ -86,8 +88,8 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
       .eq('scout_id', scoutId)
       .order('es_contacto_emergencia', { ascending: false });
 
-    // Mapear todos los familiares
-    const familiares = familiaresError || !familiaresScoutData 
+    // Mapear todos los familiares con sus documentos
+    const familiaresBase = familiaresError || !familiaresScoutData 
       ? [] 
       : familiaresScoutData.map((fam: any) => ({
           id: fam.id,
@@ -110,8 +112,33 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
           celularSecundario: fam.persona?.celular_secundario || '',
           telefono: fam.persona?.telefono || '',
           esContactoEmergencia: fam.es_contacto_emergencia || false,
-          esAutorizadoRecoger: fam.es_autorizado_recoger || false
+          esAutorizadoRecoger: fam.es_autorizado_recoger || false,
+          esApoderado: fam.es_autorizado_recoger || false
         }));
+
+    // Cargar URLs de documentos (firma, huella digital) para cada familiar
+    const familiares: FamiliarReportData[] = await Promise.all(
+      familiaresBase.map(async (fam) => {
+        if (!fam.id) return fam;
+        
+        try {
+          // Obtener URLs de firma y huella digital en paralelo
+          const [firmaDoc, huellaDigitalDoc] = await Promise.all([
+            scoutDocumentsService.getDocument('familiar', fam.id, 'firma').catch(() => null),
+            scoutDocumentsService.getDocument('familiar', fam.id, 'huella_digital').catch(() => null),
+          ]);
+          
+          return {
+            ...fam,
+            firmaUrl: firmaDoc?.url || undefined,
+            huellaDigitalUrl: huellaDigitalDoc?.url || undefined,
+          };
+        } catch (error) {
+          console.warn(`Error cargando documentos para familiar ${fam.id}:`, error);
+          return fam;
+        }
+      })
+    );
 
     // Mantener compatibilidad: usar primer familiar para campos legacy
     const primerFamiliar = familiares[0];
@@ -477,125 +504,85 @@ export async function getHistoriaMedicaData(
   personaId: string
 ): Promise<HistoriaMedicaReportData | null> {
   try {
-    // 1. Obtener datos del scout
-    const { data: scoutData, error: scoutError } = await supabase
-      .from('scouts')
-      .select(`
-        id,
-        codigo_scout,
-        rama_actual,
-        persona:personas!scouts_persona_id_fkey (
-          id,
-          nombres,
-          apellidos,
-          fecha_nacimiento,
-          sexo,
-          direccion,
-          departamento,
-          provincia,
-          distrito,
-          grupo_sanguineo,
-          factor_sanguineo
-        )
-      `)
-      .eq('id', scoutId)
-      .single();
+    // 1. Obtener datos del scout usando RPC (incluye familiares)
+    const { data: scoutRpcData, error: scoutError } = await supabase
+      .rpc('api_obtener_scout', {
+        p_scout_id: scoutId
+      });
 
-    if (scoutError || !scoutData) {
-      console.error('Error obteniendo scout:', scoutError);
+    if (scoutError || !scoutRpcData?.success) {
+      console.error('Error obteniendo scout via RPC:', scoutError || scoutRpcData?.errors);
       return null;
     }
 
-    // Obtener patrulla por separado via miembros_patrulla
-    let patrullaNombre = '';
-    const { data: miembroPatrulla } = await supabase
-      .from('miembros_patrulla')
-      .select('patrulla:patrullas(nombre)')
-      .eq('scout_id', scoutId)
-      .eq('estado_miembro', 'ACTIVO')
-      .single();
+    const scoutData = scoutRpcData.data;
+    console.log('📋 Scout RPC Response:', scoutData);
+
+    // 2. Obtener historia médica completa usando RPC
+    const { data: historiaRpcData } = await supabase
+      .rpc('api_obtener_historia_medica', {
+        p_persona_id: personaId
+      });
+
+    // Debug: ver qué retorna el RPC
+    console.log('📋 Historia Médica RPC Response:', JSON.stringify(historiaRpcData, null, 2));
+
+    // Extraer datos de la respuesta del RPC
+    const historiaData = historiaRpcData?.success ? historiaRpcData.data?.cabecera : null;
+    const condiciones = historiaRpcData?.success ? historiaRpcData.data?.condiciones || [] : [];
+    const alergias = historiaRpcData?.success ? historiaRpcData.data?.alergias || [] : [];
+    const medicamentos = historiaRpcData?.success ? historiaRpcData.data?.medicamentos || [] : [];
+    const vacunas = historiaRpcData?.success ? historiaRpcData.data?.vacunas || [] : [];
+
+    // Debug: ver datos extraídos
+    console.log('📋 Datos extraídos - Cabecera:', historiaData);
+    console.log('📋 Condiciones:', condiciones);
+
+    // 3. Extraer familiares del scout (ya vienen en la respuesta del RPC)
+    const familiares = scoutData?.familiares || [];
+    console.log('📋 Familiares del scout:', familiares);
     
-    if (miembroPatrulla?.patrulla) {
-      patrullaNombre = (miembroPatrulla.patrulla as any).nombre || '';
-    }
-
-    const persona = scoutData.persona as any;
-
-    // 2. Obtener historia médica cabecera
-    const { data: historiaData, error: historiaError } = await supabase
-      .from('historias_medicas')
-      .select('*')
-      .eq('persona_id', personaId)
-      .single();
-
-    // 3. Obtener condiciones médicas
-    const { data: condiciones } = await supabase
-      .from('historia_condiciones')
-      .select('*')
-      .eq('historia_id', historiaData?.id || '')
-      .order('nombre');
-
-    // 4. Obtener alergias
-    const { data: alergias } = await supabase
-      .from('historia_alergias')
-      .select('*')
-      .eq('historia_id', historiaData?.id || '')
-      .order('nombre');
-
-    // 5. Obtener medicamentos
-    const { data: medicamentos } = await supabase
-      .from('historia_medicamentos')
-      .select('*')
-      .eq('historia_id', historiaData?.id || '')
-      .order('nombre');
-
-    // 6. Obtener vacunas
-    const { data: vacunas } = await supabase
-      .from('historia_vacunas')
-      .select('*')
-      .eq('historia_id', historiaData?.id || '')
-      .order('nombre');
-
-    // 7. Obtener contacto de emergencia
-    const { data: contactoData } = await supabase
-      .from('familiares')
-      .select(`
-        persona:personas!familiares_persona_familiar_id_fkey (
-          nombres,
-          apellidos,
-          celular,
-          telefono
-        ),
-        parentesco,
-        es_contacto_emergencia
-      `)
-      .eq('persona_scout_id', personaId)
-      .eq('es_contacto_emergencia', true)
-      .limit(1)
-      .single();
+    // Tomar primer familiar como contacto emergencia, segundo como alternativo
+    const contactoEmergencia = familiares[0];
+    const contactoAlternativo = familiares[1];
 
     // Calcular edad
-    const fechaNac = persona?.fecha_nacimiento ? new Date(persona.fecha_nacimiento) : null;
+    const fechaNac = scoutData?.fecha_nacimiento ? new Date(scoutData.fecha_nacimiento) : null;
     const edad = fechaNac ? Math.floor((Date.now() - fechaNac.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
 
     const result: HistoriaMedicaReportData = {
-      scoutId: scoutData.id,
+      scoutId: scoutData.id || scoutId,
       codigoScout: scoutData.codigo_scout || '',
-      nombreCompleto: `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim(),
-      fechaNacimiento: persona?.fecha_nacimiento || '',
+      numeroDocumento: scoutData.numero_documento || '',
+      nombreCompleto: scoutData.nombre_completo || `${scoutData.nombres || ''} ${scoutData.apellidos || ''}`.trim(),
+      fechaNacimiento: scoutData.fecha_nacimiento || '',
       edad,
-      sexo: persona?.sexo,
-      direccion: [persona?.direccion, persona?.distrito, persona?.provincia, persona?.departamento]
-        .filter(Boolean).join(', '),
-      rama: scoutData.rama_actual || '',
-      patrulla: patrullaNombre,
+      sexo: scoutData.sexo,
+      // Dirección solo la calle/avenida
+      direccion: scoutData.direccion || '',
+      // Campos separados para el PDF
+      distrito: scoutData.distrito || '',
+      provincia: scoutData.provincia || '',
+      departamento: scoutData.departamento || '',
+      rama: scoutData.rama_actual || scoutData.rama || '',
+      patrulla: scoutData.patrulla || '',
+      telefonoCasa: scoutData.telefono || '', // Teléfono fijo del scout
       
-      // Contacto de emergencia
-      contactoEmergencia: contactoData ? {
-        nombre: `${(contactoData.persona as any)?.nombres || ''} ${(contactoData.persona as any)?.apellidos || ''}`.trim(),
-        parentesco: contactoData.parentesco || '',
-        celular: (contactoData.persona as any)?.celular || '',
-        telefono: (contactoData.persona as any)?.telefono,
+      // Contacto de emergencia (Familiar 1)
+      contactoEmergencia: contactoEmergencia ? {
+        nombre: contactoEmergencia.nombre_completo || `${contactoEmergencia.nombres || ''} ${contactoEmergencia.apellidos || ''}`.trim(),
+        parentesco: contactoEmergencia.parentesco || '',
+        celular: contactoEmergencia.celular || '',
+        telefono: contactoEmergencia.telefono,
+        direccion: contactoEmergencia.direccion || '',
+        numeroDocumento: contactoEmergencia.numero_documento || '',
+      } : undefined,
+      
+      // Contacto alternativo (Familiar 2)
+      contactoAlternativo: contactoAlternativo ? {
+        nombre: contactoAlternativo.nombre_completo || `${contactoAlternativo.nombres || ''} ${contactoAlternativo.apellidos || ''}`.trim(),
+        parentesco: contactoAlternativo.parentesco || '',
+        celular: contactoAlternativo.celular || '',
       } : undefined,
       
       // Cabecera
@@ -612,13 +599,13 @@ export async function getHistoriaMedicaData(
       hospitalPreferencia: historiaData?.hospital_preferencia,
       
       // Sangre
-      grupoSanguineo: persona?.grupo_sanguineo,
-      factorSanguineo: persona?.factor_sanguineo,
+      grupoSanguineo: scoutData.grupo_sanguineo,
+      factorSanguineo: scoutData.factor_sanguineo,
       
       observacionesGenerales: historiaData?.observaciones_generales,
       
       // Listas
-      condiciones: (condiciones || []).map(c => ({
+      condiciones: (condiciones || []).map((c: any) => ({
         nombre: c.nombre,
         tipo: c.tipo || 'CONTROLADA',
         fechaDiagnostico: c.fecha_diagnostico,
@@ -628,15 +615,15 @@ export async function getHistoriaMedicaData(
         activa: c.activa ?? true,
       })),
       
-      alergias: (alergias || []).map(a => ({
+      alergias: (alergias || []).map((a: any) => ({
         nombre: a.nombre,
         tipo: a.tipo || 'OTRA',
-        severidad: a.severidad || 'LEVE',
         reaccion: a.reaccion,
         tratamientoEmergencia: a.tratamiento_emergencia,
+        mencionar: a.mencionar,
       })),
       
-      medicamentos: (medicamentos || []).map(m => ({
+      medicamentos: (medicamentos || []).map((m: any) => ({
         nombre: m.nombre,
         dosis: m.dosis,
         frecuencia: m.frecuencia,
@@ -648,7 +635,7 @@ export async function getHistoriaMedicaData(
         activo: m.activo ?? true,
       })),
       
-      vacunas: (vacunas || []).map(v => ({
+      vacunas: (vacunas || []).map((v: any) => ({
         nombre: v.nombre,
         fechaAplicacion: v.fecha_aplicacion,
         dosisNumero: v.dosis_numero,

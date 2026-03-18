@@ -22,6 +22,7 @@ export const familiarSchema = z.object({
   id: z.string().optional(),
   nombres: z.string().max(100),
   apellidos: z.string().max(100),
+  numero_documento: z.string().max(20).optional(),
   parentesco: z.enum(['PADRE', 'MADRE', 'ABUELO', 'ABUELA', 'TIO', 'TIA', 'HERMANO', 'HERMANA', 'TUTOR', 'OTRO']),
   celular: z.string().optional(),
   correo: z.string().email().optional().or(z.literal('')),

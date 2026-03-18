@@ -72,6 +72,11 @@ export interface FamiliarReportData {
   telefono?: string;
   esContactoEmergencia?: boolean;
   esAutorizadoRecoger?: boolean;
+  esApoderado?: boolean;
+  // URLs de documentos (firma y huella digital)
+  firmaUrl?: string;
+  huellaDigitalUrl?: string;
+  documentoIdentidadUrl?: string;
 }
 
 // Datos del Scout para reportes
@@ -367,9 +372,9 @@ export interface CondicionMedicaReportData {
 export interface AlergiaReportData {
   nombre: string;
   tipo: string;
-  severidad: string;
   reaccion?: string;
   tratamientoEmergencia?: string;
+  mencionar?: string;
 }
 
 // Medicamento para reporte
@@ -400,20 +405,34 @@ export interface HistoriaMedicaReportData {
   // Datos del Scout
   scoutId: string;
   codigoScout: string;
+  numeroDocumento?: string;
   nombreCompleto: string;
   fechaNacimiento: string;
   edad: number;
   sexo?: string;
   direccion?: string;
+  distrito?: string;
+  provincia?: string;
+  departamento?: string; // Región
   rama: string;
   patrulla?: string;
+  telefonoCasa?: string; // Teléfono fijo del scout (step Contacto)
   
-  // Contacto de emergencia
+  // Contacto de emergencia (Familiar 1)
   contactoEmergencia?: {
     nombre: string;
     parentesco: string;
     celular: string;
     telefono?: string;
+    direccion?: string;
+    numeroDocumento?: string;
+  };
+  
+  // Contacto alternativo (Familiar 2)
+  contactoAlternativo?: {
+    nombre: string;
+    parentesco: string;
+    celular: string;
   };
   
   // Cabecera de historia médica

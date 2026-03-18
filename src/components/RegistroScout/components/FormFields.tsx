@@ -48,12 +48,14 @@ interface TextFieldProps<TFieldValues extends FieldValues>
   placeholder?: string;
   maxLength?: number;
   autoComplete?: string;
+  step?: string;
 }
 
 interface SelectFieldProps<TFieldValues extends FieldValues>
   extends BaseFieldProps<TFieldValues> {
   options: { value: string; label: string }[];
   placeholder?: string;
+  onValueChange?: (value: string) => void;
 }
 
 interface TextareaFieldProps<TFieldValues extends FieldValues>
@@ -77,6 +79,7 @@ export function TextField<TFieldValues extends FieldValues>({
   placeholder,
   maxLength,
   autoComplete,
+  step,
 }: TextFieldProps<TFieldValues>) {
   return (
     <FormField
@@ -94,6 +97,7 @@ export function TextField<TFieldValues extends FieldValues>({
               maxLength={maxLength}
               autoComplete={autoComplete}
               disabled={disabled}
+              step={step}
               error={!!fieldState.error}
               className={cn(
                 "transition-all",
@@ -121,6 +125,7 @@ export function SelectField<TFieldValues extends FieldValues>({
   disabled = false,
   options,
   placeholder = "Seleccione...",
+  onValueChange,
 }: SelectFieldProps<TFieldValues>) {
   return (
     <FormField
@@ -130,8 +135,11 @@ export function SelectField<TFieldValues extends FieldValues>({
         <FormItem className={className}>
           <FormLabel required={required}>{label}</FormLabel>
           <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
+            onValueChange={(value) => {
+              field.onChange(value);
+              onValueChange?.(value);
+            }}
+            value={field.value || ""}
             disabled={disabled}
           >
             <FormControl>

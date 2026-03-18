@@ -885,6 +885,59 @@ DROP TYPE IF EXISTS estado_enum CASCADE;
 6. **Olvidar DROP DEFAULT después de agregar columna con DEFAULT**
    - Síntoma: Valor por defecto sobrescribe valores explícitos
 
+7. **Inconsistencia de tildes entre capas (Frontend/Backend/BD)**
+   - Síntoma: Datos no coinciden, búsquedas fallan, matching incorrecto
+   - Causa: "Otra condición" en BD pero "Otra condicion" en Frontend
+
+---
+
+## 🔤 Convención de Tildes y Caracteres Especiales
+
+### Regla Principal: Consistencia Total
+
+Todos los textos con tildes deben ser **idénticos** en las tres capas:
+
+| Capa | Ubicación | Ejemplo |
+|------|-----------|---------|
+| **Base de Datos** | Catálogos, seed data | `'Otra condición no mencionada en la presente lista'` |
+| **Backend** | Funciones SQL, validaciones | `'Otra condición no mencionada en la presente lista'` |
+| **Frontend** | Labels, constantes, comparaciones | `'Otra condición no mencionada en la presente lista'` |
+
+### Checklist de Verificación
+
+Antes de agregar texto con caracteres especiales:
+
+- [ ] ¿El texto es idéntico en BD (catálogo/seed)?
+- [ ] ¿El texto es idéntico en funciones SQL?
+- [ ] ¿El texto es idéntico en constantes del Frontend?
+- [ ] ¿Las comparaciones usan el texto exacto o `.includes()` con substring seguro?
+
+### Estrategia de Matching Seguro
+
+Si hay riesgo de inconsistencia, usar matching flexible:
+
+```typescript
+// ✅ SEGURO: Buscar substring sin tilde problemática
+const otraCondicion = data.condiciones.find(c => 
+  c.nombre?.toLowerCase().includes('otra condici')  // 'condici' cubre con/sin tilde
+);
+
+// ✅ ALTERNATIVA: Normalizar quitando tildes para comparar
+const normalizar = (texto: string) => (texto || '')
+  .toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .trim();
+```
+
+### Ejemplos de Textos con Tildes (Referencia)
+
+| Texto en BD | Substring seguro para matching |
+|-------------|-------------------------------|
+| `Otra condición no mencionada...` | `'otra condici'` |
+| `Hipertensión Arterial` | `'hipertension'` o `'hipertensi'` |
+| `Lesión traumática` | `'lesion'` o `'traumatic'` |
+| `Psicológico o psiquiátrico` | `'psicolog'` o `'psiquiat'` |
+
 ---
 
 ## 📚 Referencias Rápidas
@@ -911,3 +964,154 @@ psql -U postgres -h [host] -p 6543 -d postgres -f database/script.sql
 ## Traking de Desarrollo de la web con GitHub Copilot
 ----  Se requiere saber el tiempo del desarrollo de la web  ----Ademas, cuantos prompts se enviaron a GitHub Copilot para completar el desarrollo de la web. Hora de inicio de cada prompt y hora de finalizacion de cada prompt.  ----  Se requiere saber el tiempo total que se utilizo GitHub Copilot para completar el desarrollo de la web.  ----  Se requiere saber cuantos archivos se crearon, cuantos archivos se modificaron y cuantos archivos se eliminaron durante el desarrollo de la web.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber
 cuando tiempo demora la web, en horas, minutos y segundos.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber.Incluso los errores que se encontraron y como se solucionaron.  ----  Se requiere un resumen detallado de las funcionalidades implementadas en la web. Para saber cuales fueron los archivos creados, modificados y eliminados durante el desarrollo de la web.
+
+---
+
+## 🔄 Procedimiento Completo: Agregar Campo a Entidades (v2 - React Hook Form + Zod)
+
+Este procedimiento aplica al sistema de formularios v2 que usa **React Hook Form + Zod**, particularmente para entidades anidadas como `familiares`.
+
+### Principio Fundamental
+
+Un campo necesita estar presente en **5 lugares del frontend** y **2 funciones SQL**:
+
+| Capa | Archivo | Qué hacer |
+|------|---------|-----------|
+| **1. Schema** | `schemas/scoutSchema.ts` | Agregar campo al schema Zod |
+| **2. UI** | `components/.../DatosFamiliares.tsx` | Agregar input/control |
+| **3. Types** | `services/scoutService.ts` | Agregar al tipo TypeScript |
+| **4. Submit** | `ScoutFormWizard.tsx` → `onSubmit` | Incluir en objeto enviado |
+| **5. Load** | `ScoutFormWizard.tsx` → `mapScoutToFormData` | **CRÍTICO:** Mapear al cargar |
+| **6. SQL Save** | `api_actualizar_scout` | Incluir en UPDATE/INSERT |
+| **7. SQL Get** | `api_obtener_scout` | Incluir en json_build_object |
+
+### Paso a Paso Detallado
+
+#### 1. Schema Zod
+**Archivo:** `src/schemas/scoutSchema.ts`
+
+```typescript
+// En el schema de la entidad (ej: familiarSchema)
+export const familiarSchema = z.object({
+  // ... campos existentes
+  numero_documento: z.string().optional(),  // Nuevo campo
+});
+```
+
+#### 2. Componente UI
+**Archivo:** `src/components/RegistroScout/v2/steps/DatosFamiliares.tsx`
+
+```tsx
+<FormField
+  control={control}
+  name={`familiares.${index}.numero_documento`}
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Número de Documento</FormLabel>
+      <FormControl>
+        <Input placeholder="DNI" {...field} />
+      </FormControl>
+    </FormItem>
+  )}
+/>
+```
+
+#### 3. Types en Service
+**Archivo:** `src/services/scoutService.ts`
+
+```typescript
+familiares?: Array<{
+  // ... campos existentes
+  numero_documento?: string;  // Nuevo campo
+}>;
+```
+
+#### 4. Submit (Enviar al Backend)
+**Archivo:** `src/components/RegistroScout/v2/ScoutFormWizard.tsx`
+
+En la función `onSubmit`, asegurar que el campo se incluye:
+
+```typescript
+familiares: data.familiares?.map(f => ({
+  // ... campos existentes
+  numero_documento: f.numero_documento || '',  // Incluir nuevo campo
+})) || []
+```
+
+#### 5. Load (Mapear al Cargar) ⚠️ CRÍTICO
+**Archivo:** `src/components/RegistroScout/v2/ScoutFormWizard.tsx`
+
+En la función `mapScoutToFormData`:
+
+```typescript
+const familiaresFromScout = scoutAny.familiares?.map((f: any) => ({
+  // ... campos existentes
+  numero_documento: f.numero_documento || '',  // ⚠️ SIN ESTO NO SE MUESTRA AL EDITAR
+})) || [];
+```
+
+> **⚠️ Este paso es el más olvidado.** Sin él, el campo se guarda pero NO se muestra cuando se edita el registro.
+
+#### 6. SQL - Función de Guardar
+**Archivo:** `database/fix_api_actualizar_scout.sql` o similar
+
+```sql
+-- En el UPDATE de la tabla correspondiente (ej: personas para familiares)
+UPDATE personas SET
+    -- ... campos existentes
+    numero_documento = NULLIF(TRIM(v_familiar->>'numero_documento'), ''),
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = v_persona_id;
+```
+
+#### 7. SQL - Función de Obtener
+**Archivo:** `database/fix_api_obtener_scout_personas.sql`
+
+```sql
+SELECT json_agg(
+    json_build_object(
+        -- ... campos existentes
+        'numero_documento', pf.numero_documento,  -- Agregar aquí
+        -- ...
+    )
+) INTO v_familiar_data
+FROM familiares_scout fs
+INNER JOIN personas pf ON fs.persona_id = pf.id;
+```
+
+### Checklist de Validación
+
+Antes de dar por terminado un nuevo campo:
+
+- [ ] ✅ Schema Zod actualizado
+- [ ] ✅ Input en componente UI
+- [ ] ✅ Tipo en scoutService.ts
+- [ ] ✅ Incluido en onSubmit
+- [ ] ✅ **Mapeado en mapScoutToFormData** (más olvidado)
+- [ ] ✅ SQL de guardar actualizado y ejecutado
+- [ ] ✅ SQL de obtener actualizado y ejecutado
+- [ ] 🧪 Probar: Crear registro con el campo
+- [ ] 🧪 Probar: Editar registro y verificar que el campo se muestra
+- [ ] 🧪 Probar: Editar, modificar el campo y guardar
+
+### Errores Comunes
+
+| Error | Síntoma | Solución |
+|-------|---------|----------|
+| Falta en `mapScoutToFormData` | Campo se guarda pero no aparece al editar | Agregar mapeo del campo |
+| Falta en SQL de obtener | Campo vacío siempre al cargar | Agregar a json_build_object |
+| Falta en SQL de guardar | Campo no persiste | Agregar a UPDATE/INSERT |
+| Columna no existe en BD | Error SQL "column X does not exist" | Ejecutar ALTER TABLE primero |
+| Nombre de columna incorrecto | Error SQL | Verificar nombre exacto en BD (ej: `profesion` vs `ocupacion`) |
+
+### Ejemplo Real: Campo `numero_documento` en Familiares
+
+**Archivos modificados:**
+1. `src/schemas/scoutSchema.ts` - familiarSchema
+2. `src/components/RegistroScout/v2/steps/DatosFamiliares.tsx` - Input
+3. `src/services/scoutService.ts` - Tipo familiares
+4. `src/components/RegistroScout/v2/ScoutFormWizard.tsx` - onSubmit + mapScoutToFormData
+5. `database/53_fix_api_actualizar_scout_familiares.sql` - UPDATE personas
+6. `database/fix_api_obtener_scout_personas.sql` - json_build_object
+
+**Tiempo estimado:** 15-30 minutos si se siguen todos los pasos.

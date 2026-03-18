@@ -210,12 +210,13 @@ export function HistoriaMedicaWizard({
         })
         .catch(err => console.error("Error loading catalogs:", err));
       
-      // Cargar documentos existentes
-      HistoriaMedicaService.obtenerDocumentos(scoutId)
+      // Cargar documentos existentes usando personaId (no scoutId)
+      const idParaDocumentos = personaId || scoutId;
+      HistoriaMedicaService.obtenerDocumentos(idParaDocumentos)
         .then(setDocumentos)
         .catch(err => console.error("Error loading documents:", err));
     }
-  }, [isOpen, scoutId]);
+  }, [isOpen, scoutId, personaId]);
 
   // Initialize form - using type assertion for resolver compatibility
   const form = useForm<HistoriaMedicaData>({
@@ -224,7 +225,7 @@ export function HistoriaMedicaWizard({
     mode: "onBlur",
   });
 
-  const { control, watch, formState, handleSubmit, reset } = form;
+  const { control, watch, formState, handleSubmit, reset, setValue } = form;
   const formData = watch();
 
   // Field arrays for dynamic sections
@@ -233,6 +234,30 @@ export function HistoriaMedicaWizard({
   const medicamentosArray = useFieldArray({ control, name: "medicamentos" });
   const vacunasArray = useFieldArray({ control, name: "vacunas" });
 
+  // Handlers para actualizar nombres cuando se selecciona del catálogo
+  const handleCondicionChange = useCallback((index: number, condicionId: string) => {
+    const condicion = catalogoCondiciones.find(c => c.id === condicionId);
+    if (condicion) {
+      setValue(`condiciones.${index}.nombre`, condicion.nombre);
+      setValue(`condiciones.${index}.tipo`, condicion.tipo || 'CONTROLADA');
+    }
+  }, [catalogoCondiciones, setValue]);
+
+  const handleAlergiaChange = useCallback((index: number, alergiaId: string) => {
+    const alergia = catalogoAlergias.find(a => a.id === alergiaId);
+    if (alergia) {
+      setValue(`alergias.${index}.nombre`, alergia.nombre);
+      setValue(`alergias.${index}.tipo`, alergia.tipo || '');
+    }
+  }, [catalogoAlergias, setValue]);
+
+  const handleVacunaChange = useCallback((index: number, vacunaId: string) => {
+    const vacuna = catalogoVacunas.find(v => v.id === vacunaId);
+    if (vacuna) {
+      setValue(`vacunas.${index}.nombre`, vacuna.nombre);
+    }
+  }, [catalogoVacunas, setValue]);
+
   // Auto-save functionality
   const { loadDraft, clearDraft } = useAutoSave(
     scoutId,
@@ -240,13 +265,97 @@ export function HistoriaMedicaWizard({
     formState.isDirty
   );
 
-  // Reset form when initialData changes (for edit mode)
+  // Estado para controlar si ya se hizo el reset inicial
+  const [formReseteado, setFormReseteado] = useState(false);
+
+  // Reset form when initialData changes AND catalogos are loaded
   useEffect(() => {
-    if (isOpen && initialData) {
-      reset(initialData);
-      setCurrentStep(0); // Reset to first step
+    // Solo proceder si tenemos datos, catálogos cargados, y no hemos reseteado aún
+    const catalogosCargados = catalogoCondiciones.length > 0 || catalogoAlergias.length > 0 || catalogoVacunas.length > 0;
+    
+    if (isOpen && initialData && !formReseteado) {
+      // Si hay condiciones pero no hay catálogo aún, esperar
+      if (initialData.condiciones?.length > 0 && catalogoCondiciones.length === 0) {
+        console.log('Esperando catálogo de condiciones...');
+        return;
+      }
+      
+      console.log('=== RESET FORM ===');
+      console.log('initialData:', initialData);
+      console.log('catalogoCondiciones:', catalogoCondiciones);
+      console.log('Condiciones in initialData:', initialData.condiciones);
+      
+      // Clear any draft when loading real data
+      clearDraft();
+      
+      // Preparar datos con IDs del catálogo
+      const datosConIds = { ...initialData };
+      
+      // Match condiciones con catálogo
+      if (catalogoCondiciones.length > 0 && initialData.condiciones) {
+        datosConIds.condiciones = initialData.condiciones.map(c => {
+          console.log(`Procesando condicion: nombre="${c.nombre}", condicion_id="${c.condicion_id}"`);
+          if (c.nombre && !c.condicion_id) {
+            const catalogoItem = catalogoCondiciones.find(
+              cat => cat.nombre.toLowerCase().trim() === c.nombre.toLowerCase().trim()
+            );
+            if (catalogoItem) {
+              console.log(`✅ Matched condicion "${c.nombre}" -> ${catalogoItem.id}`);
+              return { ...c, condicion_id: catalogoItem.id };
+            } else {
+              console.log(`❌ No match found for "${c.nombre}"`);
+              console.log('Catálogo disponible:', catalogoCondiciones.map(cat => cat.nombre));
+            }
+          }
+          return c;
+        });
+        console.log('datosConIds.condiciones:', datosConIds.condiciones);
+      }
+      
+      // Match alergias con catálogo
+      if (catalogoAlergias.length > 0 && initialData.alergias) {
+        datosConIds.alergias = initialData.alergias.map(a => {
+          if (a.nombre && !a.alergia_id) {
+            const catalogoItem = catalogoAlergias.find(
+              cat => cat.nombre.toLowerCase().trim() === a.nombre.toLowerCase().trim()
+            );
+            if (catalogoItem) {
+              return { ...a, alergia_id: catalogoItem.id };
+            }
+          }
+          return a;
+        });
+      }
+      
+      // Match vacunas con catálogo
+      if (catalogoVacunas.length > 0 && initialData.vacunas) {
+        datosConIds.vacunas = initialData.vacunas.map(v => {
+          if (v.nombre && !v.vacuna_id) {
+            const catalogoItem = catalogoVacunas.find(
+              cat => cat.nombre.toLowerCase().trim() === v.nombre.toLowerCase().trim()
+            );
+            if (catalogoItem) {
+              return { ...v, vacuna_id: catalogoItem.id };
+            }
+          }
+          return v;
+        });
+      }
+      
+      // Reset con datos ya mapeados
+      console.log('Reseteando form con:', datosConIds);
+      reset(datosConIds, { keepDefaultValues: false });
+      setCurrentStep(0);
+      setFormReseteado(true);
     }
-  }, [isOpen, initialData, reset]);
+  }, [isOpen, initialData, catalogoCondiciones, catalogoAlergias, catalogoVacunas, reset, clearDraft, formReseteado]);
+
+  // Reset el flag cuando se cierra el diálogo
+  useEffect(() => {
+    if (!isOpen) {
+      setFormReseteado(false);
+    }
+  }, [isOpen]);
 
   // Load draft on mount (only if no initialData)
   useEffect(() => {
@@ -275,7 +384,7 @@ export function HistoriaMedicaWizard({
     }
   };
 
-  // Document handlers
+  // Document handlers - subida directa al seleccionar archivo
   const handleSubirDocumento = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -283,13 +392,16 @@ export function HistoriaMedicaWizard({
     // Validar tamaño (máx 10MB)
     if (file.size > 10 * 1024 * 1024) {
       error('El archivo no puede superar los 10MB');
+      e.target.value = '';
       return;
     }
 
     setUploadingDoc(true);
     try {
+      // Usar personaId para subir documento (no scoutId)
+      const idParaDocumento = personaId || scoutId;
       const nuevoDoc = await HistoriaMedicaService.subirDocumento(
-        scoutId,
+        idParaDocumento,
         file,
         nuevoDocDescripcion || undefined,
         nuevoDocTipo as 'RECETA' | 'EXAMEN' | 'CERTIFICADO' | 'INFORME' | 'OTRO'
@@ -550,9 +662,10 @@ export function HistoriaMedicaWizard({
                     <TextField
                       control={control}
                       name="estatura_cm"
-                      label="Estatura (cm)"
+                      label="Estatura (m)"
                       type="number"
-                      placeholder="170"
+                      placeholder="1.70"
+                      step="0.01"
                     />
                     <TextField
                       control={control}
@@ -560,6 +673,7 @@ export function HistoriaMedicaWizard({
                       label="Peso (kg)"
                       type="number"
                       placeholder="65"
+                      step="0.1"
                     />
                   </div>
 
@@ -672,6 +786,7 @@ export function HistoriaMedicaWizard({
                                 value: c.id,
                                 label: c.nombre
                               }))}
+                              onValueChange={(value) => handleCondicionChange(index, value)}
                             />
                             <DateField
                               control={control}
@@ -774,6 +889,7 @@ export function HistoriaMedicaWizard({
                                 value: a.id,
                                 label: a.nombre
                               }))}
+                              onValueChange={(value) => handleAlergiaChange(index, value)}
                             />
                             <div className="flex items-center pb-2">
                               <CheckboxField
@@ -962,6 +1078,7 @@ export function HistoriaMedicaWizard({
                                 value: v.id,
                                 label: v.nombre
                               }))}
+                              onValueChange={(value) => handleVacunaChange(index, value)}
                             />
                             <div className="flex items-center pb-2">
                               <CheckboxField

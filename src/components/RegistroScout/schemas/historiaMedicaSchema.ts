@@ -15,10 +15,6 @@ import { z } from "zod";
 // Enums
 // ============================================
 
-export const SeveridadEnum = z.enum(["LEVE", "MODERADA", "SEVERA"], {
-  errorMap: () => ({ message: "Seleccione severidad" }),
-});
-
 export const TipoAlergiaEnum = z.enum(
   ["MEDICAMENTO", "ALIMENTO", "AMBIENTAL", "CONTACTO", "OTRA"],
   { errorMap: () => ({ message: "Seleccione tipo de alergia" }) }
@@ -40,15 +36,15 @@ export const historiaCabeceraSchema = z.object({
   fecha_llenado: z.string().min(1, "Fecha requerida"),
   lugar_nacimiento: z.string().max(100, "Máximo 100 caracteres").optional(),
   estatura_cm: z
-    .number()
-    .min(50, "Estatura mínima 50cm")
-    .max(250, "Estatura máxima 250cm")
+    .union([z.string(), z.number()])
+    .transform(val => val === '' || val === null || val === undefined ? undefined : Number(val))
+    .pipe(z.number().min(0.5, "Estatura mínima 0.50m").max(2.5, "Estatura máxima 2.50m").optional())
     .optional()
     .nullable(),
   peso_kg: z
-    .number()
-    .min(10, "Peso mínimo 10kg")
-    .max(300, "Peso máximo 300kg")
+    .union([z.string(), z.number()])
+    .transform(val => val === '' || val === null || val === undefined ? undefined : Number(val))
+    .pipe(z.number().min(10, "Peso mínimo 10kg").max(300, "Peso máximo 300kg").optional())
     .optional()
     .nullable(),
   seguro_medico: z.string().max(100, "Máximo 100 caracteres").optional(),
@@ -86,7 +82,6 @@ export const alergiaSchema = z.object({
   alergia_id: z.string().optional(), // Opcional para registros ya guardados
   nombre: z.string().optional(), // Se llena automáticamente desde el catálogo
   tipo: z.string().optional(),
-  severidad: z.string().optional(),
   reaccion: z.string().optional(),
   tratamiento_emergencia: z.string().optional(),
   aplica: z.boolean().optional().default(false),
@@ -188,7 +183,6 @@ export const defaultAlergia: AlergiaData = {
   alergia_id: "",
   nombre: "",
   tipo: "",
-  severidad: "",
   reaccion: "",
   tratamiento_emergencia: "",
   aplica: false,

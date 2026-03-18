@@ -3,10 +3,11 @@
  * 
  * Componente para registrar N familiares del scout.
  * Permite agregar, editar y eliminar familiares.
+ * Incluye upload de documentos, huella digital y firma.
  */
 
 import { useFormContext, useFieldArray } from "react-hook-form";
-import { Users, Phone, Mail, AlertCircle, Plus, Trash2, UserPlus } from "lucide-react";
+import { Users, Phone, Mail, AlertCircle, Plus, Trash2, UserPlus, FileText, Fingerprint, PenTool } from "lucide-react";
 
 import {
   FormField,
@@ -27,6 +28,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { DocumentUpload } from "./DocumentUpload";
 
 // Tipos de parentesco disponibles
 const PARENTESCOS = [
@@ -39,10 +42,19 @@ const PARENTESCOS = [
   { value: "OTRO", label: "Otro" },
 ] as const;
 
+// Tipos de documento
+const TIPOS_DOCUMENTO = [
+  { value: "DNI", label: "DNI" },
+  { value: "CE", label: "Carné de Extranjería" },
+  { value: "PASAPORTE", label: "Pasaporte" },
+] as const;
+
 // Valor por defecto para un nuevo familiar
 const nuevoFamiliar = {
   nombres: "",
   apellidos: "",
+  tipo_documento: "DNI" as const,
+  numero_documento: "",
   parentesco: "PADRE" as const,
   celular: "",
   correo: "",
@@ -50,7 +62,12 @@ const nuevoFamiliar = {
   es_apoderado: false,
 };
 
-export function DatosFamiliares() {
+interface DatosFamiliaresProps {
+  /** IDs de familiares existentes (para modo edición con uploads) */
+  familiarIds?: string[];
+}
+
+export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
   const { control } = useFormContext();
   
   const { fields, append, remove } = useFieldArray({
@@ -184,6 +201,56 @@ export function DatosFamiliares() {
 
                   <FormField
                     control={control}
+                    name={`familiares.${index}.tipo_documento`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Documento</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || "DNI"}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Tipo..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {TIPOS_DOCUMENTO.map((tipo) => (
+                              <SelectItem key={tipo.value} value={tipo.value}>
+                                {tipo.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name={`familiares.${index}.numero_documento`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº Documento</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="Ej: 12345678"
+                            className="bg-white"
+                            maxLength={20}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Parentesco y Contacto */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={control}
                     name={`familiares.${index}.parentesco`}
                     render={({ field }) => (
                       <FormItem>
@@ -296,6 +363,62 @@ export function DatosFamiliares() {
                     )}
                   />
                 </div>
+
+                {/* Sección de Documentos - Solo visible si el familiar ha sido guardado */}
+                {familiarIds[index] && (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <FileText className="w-4 h-4" />
+                        <span>Documentos del Familiar</span>
+                      </div>
+                      
+                      {/* Grid de uploads */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Documento de Identidad */}
+                        <DocumentUpload
+                          entityType="familiar"
+                          entityId={familiarIds[index]}
+                          documentType="documento_identidad"
+                          label="Documento de Identidad"
+                          description="DNI, CE o Pasaporte"
+                          compact
+                        />
+
+                        {/* Huella Digital */}
+                        <DocumentUpload
+                          entityType="familiar"
+                          entityId={familiarIds[index]}
+                          documentType="huella_digital"
+                          label="Huella Digital"
+                          description="Imagen de la huella"
+                          compact
+                        />
+
+                        {/* Firma */}
+                        <DocumentUpload
+                          entityType="familiar"
+                          entityId={familiarIds[index]}
+                          documentType="firma"
+                          label="Firma"
+                          description="Imagen de la firma"
+                          compact
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Mensaje si el familiar es nuevo */}
+                {!familiarIds[index] && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      Guarda el registro para poder subir documentos, huella digital y firma.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))

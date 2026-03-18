@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   
   fechaCell: {
-    width: 100,
+    width: 120,
     padding: 5,
     fontSize: 8,
   },
@@ -271,6 +271,25 @@ const formatDate = (dateStr?: string): string => {
   }
 };
 
+// Función para obtener prescriptores de medicamentos concatenados
+const getPrescriptores = (medicamentos: { prescritoPor?: string }[]): string => {
+  const prescriptores = medicamentos
+    .map(m => m.prescritoPor)
+    .filter((p): p is string => !!p && p.trim() !== '')
+    .filter((value, index, self) => self.indexOf(value) === index); // Eliminar duplicados
+  
+  if (prescriptores.length === 0) return '';
+  return prescriptores.join('; ');
+};
+
+// Función para formatear grupo sanguíneo con factor
+const formatGrupoSanguineo = (grupo?: string, factor?: string): string => {
+  if (!grupo) return '';
+  const grupoStr = grupo.toUpperCase();
+  const factorStr = factor ? (factor.includes('+') || factor.includes('-') ? factor : `${factor}`) : '';
+  return `${grupoStr}${factorStr ? ' ' + factorStr : ''}`;
+};
+
 interface HistoriaMedicaReportTemplateProps {
   data: HistoriaMedicaReportData;
   metadata: ReportMetadata;
@@ -346,7 +365,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>DNI:</Text>
             </View>
             <View style={[styles.valueCellLast, { width: '55%' }]}>
-              <Text>{data.codigoScout || ''}</Text>
+              <Text>{data.numeroDocumento || ''}</Text>
             </View>
           </View>
           
@@ -355,7 +374,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>Estatura (m):</Text>
             </View>
             <View style={[styles.valueCell, { width: '18%' }]}>
-              <Text>{data.estaturaCm ? `${(data.estaturaCm / 100).toFixed(2)}` : ''}</Text>
+              <Text>{data.estaturaCm ? data.estaturaCm.toFixed(2) : ''}</Text>
             </View>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Peso (kg):</Text>
@@ -370,7 +389,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>Grupo sanguineo y Rh:</Text>
             </View>
             <View style={[styles.valueCell, { width: '25%' }]}>
-              <Text>{data.grupoSanguineo || ''} {data.factorSanguineo || ''}</Text>
+              <Text>{formatGrupoSanguineo(data.grupoSanguineo, data.factorSanguineo)}</Text>
             </View>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Genero:</Text>
@@ -394,19 +413,19 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>Distrito:</Text>
             </View>
             <View style={[styles.valueCell, { width: '21%' }]}>
-              <Text></Text>
+              <Text>{data.distrito || ''}</Text>
             </View>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Provincia:</Text>
             </View>
             <View style={[styles.valueCell, { width: '21%' }]}>
-              <Text></Text>
+              <Text>{data.provincia || ''}</Text>
             </View>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Region:</Text>
             </View>
             <View style={[styles.valueCellLast, { width: '22%' }]}>
-              <Text></Text>
+              <Text>{data.departamento || ''}</Text>
             </View>
           </View>
           
@@ -453,7 +472,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>Direccion:</Text>
               </View>
               <View style={[styles.valueCellLast, { width: '80%' }]}>
-                <Text></Text>
+                <Text>{data.direccion || ''}</Text>
               </View>
             </View>
             
@@ -462,7 +481,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>Telefono casa:</Text>
               </View>
               <View style={[styles.valueCell, { width: '30%' }]}>
-                <Text>{data.contactoEmergencia?.telefono || ''}</Text>
+                <Text>{data.telefonoCasa || ''}</Text>
               </View>
               <View style={[styles.labelCell, { width: '20%' }]}>
                 <Text>Telefono movil:</Text>
@@ -477,7 +496,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>Nombre de contacto alternativo:</Text>
               </View>
               <View style={[styles.valueCellLast, { width: '65%' }]}>
-                <Text></Text>
+                <Text>{data.contactoAlternativo?.nombre || ''}</Text>
               </View>
             </View>
             
@@ -486,13 +505,13 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>Parentesco:</Text>
               </View>
               <View style={[styles.valueCell, { width: '30%' }]}>
-                <Text></Text>
+                <Text>{data.contactoAlternativo?.parentesco || ''}</Text>
               </View>
               <View style={[styles.labelCell, { width: '20%' }]}>
                 <Text>Telefono movil:</Text>
               </View>
               <View style={[styles.valueCellLast, { width: '30%' }]}>
-                <Text></Text>
+                <Text>{data.contactoAlternativo?.celular || ''}</Text>
               </View>
             </View>
           </View>
@@ -524,54 +543,68 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               </View>
             </View>
             
-            {/* Condiciones estándar del formulario */}
+            {/* Mapear condiciones por nombre a las filas del cuadro */}
             {[
-              { nombre: 'Diabetes Mellitus', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('diabetes')) },
-              { nombre: 'Hipertension Arterial', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('hipertension')) },
-              { nombre: 'Asma', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('asma')) },
-              { nombre: 'Convulsiones', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('convulsion')) },
-              { nombre: 'Lesion traumatica', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('lesion') || c.nombre.toLowerCase().includes('trauma')) },
-              { nombre: 'Tratamiento psicologico o psiquiatrico', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('psicolog') || c.nombre.toLowerCase().includes('psiquiat')) },
-              { nombre: 'Cirugias y hospitalizaciones', cond: data.condiciones.find(c => c.nombre.toLowerCase().includes('cirugia') || c.nombre.toLowerCase().includes('hospital')) },
-            ].map((item, idx) => (
-              <View key={idx} style={styles.tableRow}>
-                <View style={styles.checkboxCell}>
-                  <Text>{item.cond ? 'X' : ''}</Text>
+              { fila: 'Diabetes Mellitus', nombres: ['diabetes'] },
+              { fila: 'Hipertension Arterial', nombres: ['hipertension', 'hipertensión'] },
+              { fila: 'Asma', nombres: ['asma'] },
+              { fila: 'Convulsiones', nombres: ['convulsion', 'epilepsia'] },
+              { fila: 'Lesion traumatica', nombres: ['lesion', 'lesión', 'traumatic', 'trauma'] },
+              { fila: 'Tratamiento psicologico o psiquiatrico', nombres: ['psicolog', 'psiquiat'] },
+              { fila: 'Cirugias y hospitalizaciones', nombres: ['cirug', 'hospital'] },
+            ].map((item, idx) => {
+              const condicionEncontrada = data.condiciones.find(c => 
+                item.nombres.some(n => c.nombre?.toLowerCase().includes(n))
+              );
+              const tieneSI = !!condicionEncontrada;
+              
+              return (
+                <View key={idx} style={styles.tableRow}>
+                  <View style={styles.checkboxCell}>
+                    <Text>{tieneSI ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.checkboxCell}>
+                    <Text>{!tieneSI ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.condicionCell}>
+                    <Text>{item.fila}</Text>
+                  </View>
+                  <View style={styles.fechaCell}>
+                    <Text>{condicionEncontrada?.fechaDiagnostico ? formatDate(condicionEncontrada.fechaDiagnostico) : ''}</Text>
+                  </View>
                 </View>
-                <View style={styles.checkboxCell}>
-                  <Text>{!item.cond ? 'X' : ''}</Text>
-                </View>
-                <View style={styles.condicionCell}>
-                  <Text>{item.nombre}</Text>
-                </View>
-                <View style={styles.fechaCell}>
-                  <Text>{item.cond?.fechaDiagnostico ? formatDate(item.cond.fechaDiagnostico) : ''}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
             
-            {/* Otras condiciones */}
-            <View style={styles.tableRowLast}>
-              <View style={styles.checkboxCell}>
-                <Text>{data.condiciones.length > 0 ? 'X' : ''}</Text>
-              </View>
-              <View style={styles.checkboxCell}>
-                <Text>{data.condiciones.length === 0 ? 'X' : ''}</Text>
-              </View>
-              <View style={styles.condicionCell}>
-                <Text>Otra condicion no mencionada en la presente lista:</Text>
-                <Text style={{ fontSize: 7, marginTop: 2 }}>
-                  {data.condiciones
-                    .filter(c => !['diabetes', 'hipertension', 'asma', 'convulsion', 'lesion', 'trauma', 'psicolog', 'psiquiat', 'cirugia', 'hospital']
-                      .some(k => c.nombre.toLowerCase().includes(k)))
-                    .map(c => c.nombre)
-                    .join(', ')}
-                </Text>
-              </View>
-              <View style={styles.fechaCell}>
-                <Text></Text>
-              </View>
-            </View>
+            {/* Otra condición no mencionada en la presente lista */}
+            {(() => {
+              const otraCondicion = data.condiciones.find(c => 
+                c.nombre?.toLowerCase().includes('otra condici')
+              );
+              const tieneOtra = !!otraCondicion;
+              
+              return (
+                <View style={styles.tableRowLast}>
+                  <View style={styles.checkboxCell}>
+                    <Text>{tieneOtra ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.checkboxCell}>
+                    <Text>{!tieneOtra ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.condicionCell}>
+                    <Text>Otra condicion no mencionada en la presente lista:</Text>
+                    {tieneOtra && otraCondicion?.tratamiento && (
+                      <Text style={{ fontSize: 7, marginTop: 2 }}>
+                        {otraCondicion.tratamiento}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.fechaCell}>
+                    <Text>{tieneOtra && otraCondicion?.fechaDiagnostico ? formatDate(otraCondicion.fechaDiagnostico) : ''}</Text>
+                  </View>
+                </View>
+              );
+            })()}
           </View>
         </View>
 
@@ -624,28 +657,37 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               </View>
             </View>
             
+            {/* Mapear alergias por nombre a las filas del cuadro */}
             {[
-              { tipo: 'Medicamentos', alergias: data.alergias.filter(a => a.tipo?.toLowerCase().includes('medicamento')) },
-              { tipo: 'Alimentos', alergias: data.alergias.filter(a => a.tipo?.toLowerCase().includes('alimento') || a.tipo?.toLowerCase().includes('comida')) },
-              { tipo: 'Plantas', alergias: data.alergias.filter(a => a.tipo?.toLowerCase().includes('planta') || a.tipo?.toLowerCase().includes('polen')) },
-              { tipo: 'Picaduras / mordeduras de insectos', alergias: data.alergias.filter(a => a.tipo?.toLowerCase().includes('insecto') || a.tipo?.toLowerCase().includes('picadura')) },
-              { tipo: 'Sustancias u otros', alergias: data.alergias.filter(a => !['medicamento', 'alimento', 'comida', 'planta', 'polen', 'insecto', 'picadura'].some(k => a.tipo?.toLowerCase().includes(k))) },
-            ].map((item, idx) => (
-              <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
-                <View style={styles.checkboxCell}>
-                  <Text>{item.alergias.length > 0 ? 'X' : ''}</Text>
+              { fila: 'Medicamentos', nombres: ['medicamentos', 'medicamento', 'penicilina', 'aspirina', 'ibuprofeno', 'sulfas', 'anestésico', 'anestesico', 'otros medicamentos'] },
+              { fila: 'Alimentos', nombres: ['alimentos', 'alimento', 'maní', 'mani', 'mariscos', 'pescado', 'huevo', 'leche', 'lácteos', 'lacteos', 'gluten', 'trigo', 'soya', 'frutos secos', 'otros alimentos'] },
+              { fila: 'Plantas', nombres: ['plantas', 'planta', 'polen', 'ácaros', 'acaros', 'moho', 'pelo de animales', 'ambiental'] },
+              { fila: 'Picaduras / mordeduras de insectos', nombres: ['picaduras', 'insectos', 'mordeduras', 'insecto', 'picadura'] },
+              { fila: 'Sustancias u otros', nombres: ['sustancias', 'otros', 'otra', 'látex', 'latex', 'níquel', 'niquel', 'cosméticos', 'cosmeticos', 'contacto'] },
+            ].map((item, idx) => {
+              const alergiasEnFila = data.alergias.filter(a => 
+                item.nombres.some(n => a.nombre?.toLowerCase().includes(n))
+              );
+              const tieneSI = alergiasEnFila.length > 0;
+              const mencionar = alergiasEnFila.map(a => a.mencionar || '').filter(Boolean).join(', ');
+              
+              return (
+                <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
+                  <View style={styles.checkboxCell}>
+                    <Text>{tieneSI ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.checkboxCell}>
+                    <Text>{!tieneSI ? 'X' : ''}</Text>
+                  </View>
+                  <View style={{ width: 150, padding: 5, fontSize: 8, borderRightWidth: 1, borderRightColor: COLORS.border }}>
+                    <Text>{item.fila}</Text>
+                  </View>
+                  <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
+                    <Text>{mencionar}</Text>
+                  </View>
                 </View>
-                <View style={styles.checkboxCell}>
-                  <Text>{item.alergias.length === 0 ? 'X' : ''}</Text>
-                </View>
-                <View style={[styles.condicionCell, { width: 150 }]}>
-                  <Text>{item.tipo}</Text>
-                </View>
-                <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
-                  <Text>{item.alergias.map(a => `${a.nombre}${a.severidad ? ` (${a.severidad})` : ''}`).join(', ')}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -718,9 +760,9 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
         {/* Caja de autorización */}
         <View style={{ borderWidth: 1, borderColor: COLORS.border, padding: 8, marginTop: 15 }}>
           <Text style={{ fontSize: 8 }}>
-            La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad):
+            La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad): {getPrescriptores(data.medicamentos)}
           </Text>
-          <View style={{ height: 30 }} />
+          <View style={{ height: 20 }} />
         </View>
 
         {/* Nota de responsabilidad */}
@@ -793,7 +835,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <View style={styles.checkboxCell}>
                   <Text>{!item.vacuna ? 'X' : ''}</Text>
                 </View>
-                <View style={[styles.condicionCell, { width: 180 }]}>
+                <View style={{ width: 180, padding: 5, fontSize: 8, borderRightWidth: 1, borderRightColor: COLORS.border }}>
                   <Text>{item.nombre}</Text>
                 </View>
                 <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
@@ -833,16 +875,16 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
             <View style={styles.firmaBox}>
               <View style={styles.firmaLinea} />
               <Text style={styles.firmaLabel}>Firma del participante mayor de edad</Text>
-              <Text style={styles.firmaSubLabel}>Nombres y Apellidos</Text>
-              <Text style={styles.firmaSubLabel}>DNI:</Text>
+              <Text style={styles.firmaSubLabel}>Nombres y Apellidos: {data.nombreCompleto || '_____________________'}</Text>
+              <Text style={styles.firmaSubLabel}>DNI: {data.numeroDocumento || '_____________________'}</Text>
             </View>
             
             <View style={styles.firmaBox}>
               <View style={styles.firmaLinea} />
               <Text style={styles.firmaLabel}>Firma del padre o tutor del participante menor de edad</Text>
-              <Text style={styles.firmaSubLabel}>Nombres y Apellidos:</Text>
-              <Text style={styles.firmaSubLabel}>DNI:</Text>
-              <Text style={[styles.firmaSubLabel, { marginTop: 5 }]}>Nombres y Apellidos del menor:</Text>
+              <Text style={styles.firmaSubLabel}>Nombres y Apellidos: {data.contactoEmergencia?.nombre || '_____________________'}</Text>
+              <Text style={styles.firmaSubLabel}>DNI: {data.contactoEmergencia?.numeroDocumento || '_____________________'}</Text>
+              <Text style={[styles.firmaSubLabel, { marginTop: 5 }]}>Nombres y Apellidos del menor: {data.nombreCompleto || '_____________________'}</Text>
             </View>
           </View>
         </View>

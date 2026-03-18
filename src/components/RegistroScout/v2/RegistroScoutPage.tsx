@@ -219,14 +219,19 @@ export default function RegistroScoutPage() {
   // Handle medical history
   const handleOpenMedicalHistory = useCallback(async (scout: Scout) => {
     setMedicalHistoryScout(scout);
+    // Reset data first to force re-render
+    setMedicalHistoryData(null);
     
     // Load existing medical history if available
     try {
       const histData = await HistoriaMedicaService.obtenerHistoriaMedica(scout.persona_id || scout.id);
+      console.log('Historia médica raw data:', histData);
+      console.log('Condiciones raw:', histData?.condiciones);
+      
       if (histData) {
         // Transform the nested data structure to flat form data
         // Map DB field names to form field names
-        setMedicalHistoryData({
+        const mappedData = {
           fecha_llenado: histData.cabecera?.fecha_llenado || new Date().toISOString().split("T")[0],
           lugar_nacimiento: histData.cabecera?.lugar_nacimiento || "",
           estatura_cm: histData.cabecera?.estatura_cm || undefined,
@@ -237,10 +242,11 @@ export default function RegistroScoutPage() {
           telefono_medico: histData.cabecera?.telefono_medico || "",
           hospital_preferencia: histData.cabecera?.hospital_preferencia || "",
           observaciones_generales: histData.cabecera?.observaciones_generales || "",
-          // Map condiciones: fecha_diagnostico → fecha_atencion, add condicion_id from id
+          // Map condiciones: fecha_diagnostico → fecha_atencion
+          // Dejar condicion_id vacío para que el wizard haga matching por nombre con el catálogo
           condiciones: (histData.condiciones || []).map((c: any) => ({
             id: c.id,
-            condicion_id: c.id || c.condicion_id || '', // Use existing id as condicion_id for loaded records
+            condicion_id: '', // Se llenará con matching por nombre en el wizard
             nombre: c.nombre || '',
             tipo: c.tipo,
             fecha_atencion: c.fecha_diagnostico || c.fecha_atencion || '',
@@ -248,17 +254,16 @@ export default function RegistroScoutPage() {
             notas: c.notas || '',
             activa: c.activa ?? true,
           })),
-          // Map alergias: add alergia_id from id
+          // Map alergias: dejar alergia_id vacío para matching por nombre
           alergias: (histData.alergias || []).map((a: any) => ({
             id: a.id,
-            alergia_id: a.id || a.alergia_id || '',
+            alergia_id: '', // Se llenará con matching por nombre en el wizard
             nombre: a.nombre || '',
             tipo: a.tipo || '',
-            severidad: a.severidad || '',
             reaccion: a.reaccion || '',
             tratamiento_emergencia: a.tratamiento_emergencia || '',
             aplica: true, // Si existe, aplica
-            mencionar: a.reaccion || '',
+            mencionar: a.mencionar || a.reaccion || '',
           })),
           // Map medicamentos
           medicamentos: (histData.medicamentos || []).map((m: any) => ({
@@ -273,10 +278,10 @@ export default function RegistroScoutPage() {
             prescrito_por: m.prescrito_por || '',
             activo: m.activo ?? true,
           })),
-          // Map vacunas: add vacuna_id from id
+          // Map vacunas: dejar vacuna_id vacío para matching por nombre
           vacunas: (histData.vacunas || []).map((v: any) => ({
             id: v.id,
-            vacuna_id: v.id || v.vacuna_id || '',
+            vacuna_id: '', // Se llenará con matching por nombre en el wizard
             nombre: v.nombre || '',
             fecha_aplicacion: v.fecha_aplicacion || '',
             dosis_numero: v.dosis_numero,
@@ -284,7 +289,11 @@ export default function RegistroScoutPage() {
             establecimiento: v.establecimiento || '',
             proxima_dosis: v.proxima_dosis || '',
           })),
-        } as HistoriaMedicaData);
+        } as HistoriaMedicaData;
+        
+        console.log('Mapped data for form:', mappedData);
+        console.log('Mapped condiciones:', mappedData.condiciones);
+        setMedicalHistoryData(mappedData);
       } else {
         setMedicalHistoryData(null);
       }
@@ -326,7 +335,6 @@ export default function RegistroScoutPage() {
         alergias: data.alergias?.map(a => ({
           ...a,
           tipo: a.tipo as any,
-          severidad: a.severidad as any,
         })) || [],
         medicamentos: data.medicamentos || [],
         vacunas: data.vacunas || [],
@@ -466,6 +474,7 @@ export default function RegistroScoutPage() {
       {/* Medical History Modal */}
       {medicalHistoryScout && (
         <HistoriaMedicaWizard
+          key={`medical-history-${medicalHistoryScout.id}-${medicalHistoryOpen}`}
           scoutId={medicalHistoryScout.id}
           personaId={medicalHistoryScout.persona_id || medicalHistoryScout.id}
           scoutName={`${medicalHistoryScout.nombres} ${medicalHistoryScout.apellidos}`}

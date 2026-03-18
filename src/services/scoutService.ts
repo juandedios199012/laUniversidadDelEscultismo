@@ -457,6 +457,7 @@ class ScoutService {
         familiares: scoutData.familiares?.map(f => ({
           nombres: f.nombres,
           apellidos: f.apellidos,
+          numero_documento: f.numero_documento || null,
           parentesco: ScoutService.mapParentescoToDb(f.parentesco),
           celular: f.celular,
           correo: f.correo,
@@ -549,6 +550,7 @@ class ScoutService {
       id?: string;
       nombres: string;
       apellidos: string;
+      numero_documento?: string;
       parentesco: string;
       celular?: string;
       correo?: string;

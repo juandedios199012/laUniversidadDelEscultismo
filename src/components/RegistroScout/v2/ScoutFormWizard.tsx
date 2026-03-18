@@ -383,6 +383,7 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
             id: f.id,
             nombres: f.nombres,
             apellidos: f.apellidos,
+            numero_documento: f.numero_documento,
             parentesco: f.parentesco,
             celular: f.celular,
             correo: f.correo,
@@ -519,11 +520,14 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
     // All sections receive isOpen=true since we show one at a time
     switch (stepId) {
       case "personal":
-        return <DatosPersonales form={form as any} isOpen={true} onToggle={() => {}} />;
+        return <DatosPersonales form={form as any} isOpen={true} onToggle={() => {}} scoutId={scout?.id} />;
       case "contacto":
         return <DatosContacto form={form as any} isOpen={true} onToggle={() => {}} />;
       case "familiar":
-        return <DatosFamiliares />;
+        // Extraer IDs de familiares del formulario para habilitar uploads
+        const familiares = form.getValues('familiares') || [];
+        const familiarIds = familiares.map((f: any) => f?.id).filter(Boolean);
+        return <DatosFamiliares familiarIds={familiarIds} />;
       case "educacion":
         return <DatosEducacion form={form as any} isOpen={true} onToggle={() => {}} />;
       case "religion":
@@ -675,14 +679,15 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
   // Mapear familiares si existen en el objeto scout
   const scoutAny = scout as any;
   const familiaresFromScout = scoutAny.familiares?.map((f: any) => ({
-    id: f.id || f.persona_id || '',
+    id: f.id || f.familiar_id || f.persona_id || '',
     nombres: f.nombres || '',
     apellidos: f.apellidos || '',
+    numero_documento: f.numero_documento || '',
     parentesco: f.parentesco || 'PADRE',
     celular: f.celular || f.telefono || '',
     correo: f.correo || '',
     es_contacto_emergencia: f.es_contacto_emergencia ?? true,
-    es_apoderado: f.es_apoderado ?? false,
+    es_apoderado: f.es_apoderado ?? f.es_autorizado_recoger ?? false,
   })) || [];
 
   return {

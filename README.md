@@ -113,6 +113,91 @@ VALUES (
 | `grupo_admin` | Puede gestionar dirigentes y configuración del grupo |
 | `super_admin` | Acceso total al sistema |
 
+## 🔒 Políticas RLS - Documentos de Scouts (Revisión Pendiente)
+
+### Contexto
+La tabla `scout_documents` almacena metadata de documentos subidos (DNI, huellas digitales, firmas) para scouts y familiares. Los archivos se guardan en Supabase Storage (bucket `finanzas/documentos-scouts/`).
+
+### Configuración Actual (TO REVIEW)
+
+```sql
+-- Tabla: scout_documents
+-- RLS: HABILITADO
+
+-- Políticas actuales: PERMITEN TODO A USUARIOS AUTENTICADOS
+CREATE POLICY "scout_documents_select_authenticated" FOR SELECT TO authenticated USING (true);
+CREATE POLICY "scout_documents_insert_authenticated" FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "scout_documents_update_authenticated" FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "scout_documents_delete_authenticated" FOR DELETE TO authenticated USING (true);
+```
+
+### ⚠️ Puntos a Evaluar para Producción
+
+| Aspecto | Estado Actual | Riesgo | Recomendación |
+|---------|---------------|--------|---------------|
+| **Lectura** | Cualquier authenticated puede ver TODOS los documentos | 🟡 Medio | Restringir por grupo_scout_id o rol |
+| **Escritura** | Cualquier authenticated puede crear documentos | 🟡 Medio | Validar que el usuario tenga permisos sobre el scout/familiar |
+| **Actualización** | Cualquier authenticated puede modificar cualquier documento | 🔴 Alto | Restringir al creador o admins |
+| **Eliminación** | Cualquier authenticated puede eliminar cualquier documento | 🔴 Alto | Solo admins o creador |
+
+### Opciones de Arquitectura para Producción
+
+**Opción 1: Por Grupo Scout (Recomendada)**
+```sql
+-- Los usuarios solo pueden ver/modificar documentos de scouts de su grupo
+CREATE POLICY "scout_documents_by_group" ON scout_documents
+FOR ALL TO authenticated
+USING (
+    entity_id IN (
+        SELECT s.id FROM scouts s
+        INNER JOIN grupos_scout g ON s.grupo_scout_id = g.id
+        INNER JOIN dirigentes_autorizados da ON g.id = da.grupo_scout_id
+        WHERE da.auth_user_id = auth.uid()
+    )
+    OR
+    entity_id IN (
+        SELECT fs.id FROM familiares_scout fs
+        INNER JOIN scouts s ON fs.scout_id = s.id
+        INNER JOIN grupos_scout g ON s.grupo_scout_id = g.id
+        INNER JOIN dirigentes_autorizados da ON g.id = da.grupo_scout_id
+        WHERE da.auth_user_id = auth.uid()
+    )
+);
+```
+
+**Opción 2: Por Creador**
+```sql
+-- Solo el creador puede modificar/eliminar
+ALTER TABLE scout_documents ADD COLUMN created_by UUID REFERENCES auth.users(id);
+
+CREATE POLICY "scout_documents_owner_modify" ON scout_documents
+FOR UPDATE TO authenticated
+USING (created_by = auth.uid());
+
+CREATE POLICY "scout_documents_owner_delete" ON scout_documents
+FOR DELETE TO authenticated
+USING (created_by = auth.uid());
+```
+
+**Opción 3: Por Rol (Admins completo, dirigentes limitado)**
+```sql
+CREATE POLICY "scout_documents_admin_all" ON scout_documents
+FOR ALL TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM dirigentes_autorizados da
+        WHERE da.auth_user_id = auth.uid()
+        AND da.role IN ('super_admin', 'grupo_admin')
+    )
+);
+```
+
+### Decisión Pendiente
+- [ ] Elegir modelo de permisos para producción
+- [ ] Implementar auditoría de cambios
+- [ ] Definir política de retención de documentos
+- [ ] Evaluar encriptación de documentos sensibles
+
 ## 📊 Estructura de Ramas Scout
 
 | Rama | Edad | Color | Icono | Características |
