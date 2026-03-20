@@ -195,21 +195,38 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
         
         // Primero intentar cargar del array familiares (tabla familiares_scout)
         if (familiares && familiares.length > 0) {
-          // Mapear los familiares al formato del formulario
-          const familiaresMapped = familiares.map((f: any) => ({
-            id: f.id || f.persona_id,
-            nombres: f.nombres || '',
-            apellidos: f.apellidos || '',
-            parentesco: f.parentesco || 'PADRE',
-            celular: f.celular || f.telefono || '',
-            correo: f.correo || '',
-            es_contacto_emergencia: f.es_contacto_emergencia ?? true,
-            es_apoderado: f.es_apoderado ?? false,
-          }));
+          // Mapear los familiares al formato del formulario (TODOS los campos)
+          const familiaresMapped = familiares.map((f: any) => {
+            // Si no tiene dirección propia, asumimos que usa la del scout
+            const tienePropiaDireccion = !!(f.direccion || f.departamento || f.provincia || f.distrito);
+            
+            return {
+              id: f.id || f.familiar_id || '',
+              _persona_id: f.persona_id || '',
+              nombres: f.nombres || '',
+              apellidos: f.apellidos || '',
+              sexo: f.sexo || '',
+              tipo_documento: f.tipo_documento || 'DNI',
+              numero_documento: f.numero_documento || '',
+              parentesco: f.parentesco || 'PADRE',
+              celular: f.celular || f.telefono || '',
+              correo: f.correo || '',
+              profesion: f.profesion || '',
+              centro_laboral: f.centro_laboral || '',
+              cargo: f.cargo || '',
+              usar_direccion_scout: !tienePropiaDireccion,
+              direccion: f.direccion || '',
+              departamento: f.departamento || '',
+              provincia: f.provincia || '',
+              distrito: f.distrito || '',
+              es_contacto_emergencia: f.es_contacto_emergencia ?? true,
+              es_apoderado: f.es_apoderado ?? f.es_autorizado_recoger ?? false,
+            };
+          });
           
           console.log('✅ Familiares mapeados para formulario:', familiaresMapped.length, familiaresMapped);
           
-          // Usar replace en lugar de setValue para forzar actualización de useFieldArray
+          // Usar setValue para actualizar useFieldArray
           form.setValue('familiares', familiaresMapped, { 
             shouldValidate: false,
             shouldDirty: false,
@@ -228,11 +245,23 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
             console.log('✅ Familiar principal encontrado en campos familiar_*');
             const familiarPrincipal = {
               id: 'principal',
+              _persona_id: '',
               nombres: scoutData.familiar_nombres || '',
               apellidos: scoutData.familiar_apellidos || '',
-              parentesco: scoutData.familiar_parentesco || 'PADRE',
+              sexo: '' as '' | 'MASCULINO' | 'FEMENINO',
+              tipo_documento: 'DNI' as const,
+              numero_documento: '',
+              parentesco: (scoutData.familiar_parentesco || 'PADRE') as 'PADRE' | 'MADRE' | 'TUTOR' | 'HERMANO' | 'ABUELO' | 'TIO' | 'OTRO',
               celular: scoutData.familiar_telefono || '',
               correo: scoutData.familiar_correo || '',
+              profesion: '',
+              centro_laboral: '',
+              cargo: '',
+              usar_direccion_scout: true,
+              direccion: '',
+              departamento: '',
+              provincia: '',
+              distrito: '',
               es_contacto_emergencia: scoutData.familiar_es_contacto_emergencia ?? true,
               es_apoderado: scoutData.familiar_es_apoderado ?? true,
             };
@@ -381,12 +410,23 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
           // Array completo de familiares para tabla familiares_scout
           familiares: data.familiares?.map(f => ({
             id: f.id,
+            _vincular_persona_id: (f as any)._vincular_persona_id, // Para reasignar a persona existente
             nombres: f.nombres,
             apellidos: f.apellidos,
+            sexo: f.sexo,
+            tipo_documento: f.tipo_documento,
             numero_documento: f.numero_documento,
             parentesco: f.parentesco,
             celular: f.celular,
             correo: f.correo,
+            profesion: f.profesion,
+            centro_laboral: f.centro_laboral,
+            cargo: f.cargo,
+            usar_direccion_scout: f.usar_direccion_scout,
+            direccion: f.usar_direccion_scout ? '' : f.direccion,
+            departamento: f.usar_direccion_scout ? '' : f.departamento,
+            provincia: f.usar_direccion_scout ? '' : f.provincia,
+            distrito: f.usar_direccion_scout ? '' : f.distrito,
             es_contacto_emergencia: f.es_contacto_emergencia,
             es_apoderado: f.es_apoderado,
           })),
@@ -678,17 +718,34 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
 function mapScoutToFormData(scout: Scout): ScoutFormData {
   // Mapear familiares si existen en el objeto scout
   const scoutAny = scout as any;
-  const familiaresFromScout = scoutAny.familiares?.map((f: any) => ({
-    id: f.id || f.familiar_id || f.persona_id || '',
-    nombres: f.nombres || '',
-    apellidos: f.apellidos || '',
-    numero_documento: f.numero_documento || '',
-    parentesco: f.parentesco || 'PADRE',
-    celular: f.celular || f.telefono || '',
-    correo: f.correo || '',
-    es_contacto_emergencia: f.es_contacto_emergencia ?? true,
-    es_apoderado: f.es_apoderado ?? f.es_autorizado_recoger ?? false,
-  })) || [];
+  const familiaresFromScout = scoutAny.familiares?.map((f: any) => {
+    // Si el familiar NO tiene dirección propia, asumimos que usa la del scout
+    const tienePropiaDireccion = !!(f.direccion || f.departamento || f.provincia || f.distrito);
+    
+    return {
+      id: f.id || f.familiar_id || '',
+      _persona_id: f.persona_id || '', // Guardar persona_id para validaciones
+      nombres: f.nombres || '',
+      apellidos: f.apellidos || '',
+      sexo: f.sexo || '',
+      tipo_documento: f.tipo_documento || 'DNI',
+      numero_documento: f.numero_documento || '',
+      parentesco: f.parentesco || 'PADRE',
+      celular: f.celular || f.telefono || '',
+      correo: f.correo || '',
+      profesion: f.profesion || '',
+      centro_laboral: f.centro_laboral || '',
+      cargo: f.cargo || '',
+      // Si no tiene dirección propia, usa la del scout (checkbox marcado)
+      usar_direccion_scout: !tienePropiaDireccion,
+      direccion: f.direccion || '',
+      departamento: f.departamento || '',
+      provincia: f.provincia || '',
+      distrito: f.distrito || '',
+      es_contacto_emergencia: f.es_contacto_emergencia ?? true,
+      es_apoderado: f.es_apoderado ?? f.es_autorizado_recoger ?? false,
+    };
+  }) || [];
 
   return {
     nombres: scout.nombres || "",

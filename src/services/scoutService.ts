@@ -410,9 +410,20 @@ class ScoutService {
     familiares?: Array<{
       nombres: string;
       apellidos: string;
+      sexo?: string;
+      tipo_documento?: string;
+      numero_documento?: string;
       parentesco: string;
       celular?: string;
       correo?: string;
+      profesion?: string;
+      centro_laboral?: string;
+      cargo?: string;
+      usar_direccion_scout?: boolean;
+      direccion?: string;
+      departamento?: string;
+      provincia?: string;
+      distrito?: string;
       es_contacto_emergencia?: boolean;
       es_apoderado?: boolean;
     }>;
@@ -457,14 +468,22 @@ class ScoutService {
         familiares: scoutData.familiares?.map(f => ({
           nombres: f.nombres,
           apellidos: f.apellidos,
+          sexo: f.sexo || 'MASCULINO',
+          tipo_documento: f.tipo_documento || 'DNI',
           numero_documento: f.numero_documento || null,
           parentesco: ScoutService.mapParentescoToDb(f.parentesco),
           celular: f.celular,
           correo: f.correo,
+          profesion: f.profesion || null,
+          centro_laboral: f.centro_laboral || null,
+          cargo: f.cargo || null,
+          // Si usa_direccion_scout, no enviar dirección del familiar
+          direccion: f.usar_direccion_scout ? null : (f.direccion || null),
+          departamento: f.usar_direccion_scout ? null : (f.departamento || null),
+          provincia: f.usar_direccion_scout ? null : (f.provincia || null),
+          distrito: f.usar_direccion_scout ? null : (f.distrito || null),
           es_contacto_emergencia: f.es_contacto_emergencia ?? true,
           es_autorizado_recoger: f.es_apoderado ?? false,
-          sexo: 'MASCULINO', // Default, se puede mejorar
-          tipo_documento: 'DNI',
         })) || [],
       };
 
@@ -550,10 +569,20 @@ class ScoutService {
       id?: string;
       nombres: string;
       apellidos: string;
+      sexo?: string;
+      tipo_documento?: string;
       numero_documento?: string;
       parentesco: string;
       celular?: string;
       correo?: string;
+      profesion?: string;
+      centro_laboral?: string;
+      cargo?: string;
+      usar_direccion_scout?: boolean;
+      direccion?: string;
+      departamento?: string;
+      provincia?: string;
+      distrito?: string;
       es_contacto_emergencia?: boolean;
       es_apoderado?: boolean;
     }>;
@@ -754,6 +783,57 @@ class ScoutService {
   /**
    * 👨‍👩‍👧‍👦 CRUD de Familiares
    */
+
+  /**
+   * 🔍 Buscar persona por documento (para reutilización de familiares entre hermanos)
+   * 
+   * @param tipoDocumento - Tipo de documento (DNI, CE, PASAPORTE)
+   * @param numeroDocumento - Número del documento
+   * @returns Datos de la persona si existe, incluyendo de qué scouts es familiar
+   */
+  static async buscarPersonaPorDocumento(
+    tipoDocumento: string,
+    numeroDocumento: string
+  ): Promise<{
+    existe: boolean;
+    persona_id?: string;
+    nombres?: string;
+    apellidos?: string;
+    celular?: string;
+    correo?: string;
+    sexo?: string;
+    es_familiar_de?: Array<{
+      scout_id: string;
+      scout_nombre: string;
+      parentesco: string;
+    }>;
+    mensaje?: string;
+  }> {
+    try {
+      // No buscar si documento está vacío
+      if (!numeroDocumento?.trim()) {
+        return { existe: false, mensaje: 'Número de documento vacío' };
+      }
+
+      console.log('🔍 Buscando persona por documento:', tipoDocumento, numeroDocumento);
+      
+      const { data, error } = await supabase.rpc('api_buscar_persona_por_documento', {
+        p_tipo_documento: tipoDocumento || 'DNI',
+        p_numero_documento: numeroDocumento.trim()
+      });
+
+      if (error) {
+        console.error('❌ Error buscando persona por documento:', error);
+        return { existe: false, mensaje: error.message };
+      }
+
+      console.log('✅ Resultado búsqueda documento:', data);
+      return data;
+    } catch (error: any) {
+      console.error('❌ Error buscando persona por documento:', error);
+      return { existe: false, mensaje: error.message };
+    }
+  }
   
   /**
    * Crear un familiar para un scout

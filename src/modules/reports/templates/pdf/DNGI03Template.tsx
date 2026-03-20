@@ -17,6 +17,29 @@ import {
 import { fondoAnualBase64 } from '../../../../assets/images/fondoAnualBase64';
 import { ScoutReportData, ReportMetadata, FamiliarReportData } from '../../types/reportTypes';
 
+// =============================================================================
+// FUNCIONES HELPER
+// =============================================================================
+
+/**
+ * Formatea fecha de YYYY-MM-DD a DD-MM-YYYY
+ */
+const formatearFecha = (fecha: string | null | undefined): string => {
+  if (!fecha) return '';
+  // Si ya tiene formato DD-MM-YYYY, retornar tal cual
+  if (/^\d{2}-\d{2}-\d{4}$/.test(fecha)) return fecha;
+  // Si tiene formato YYYY-MM-DD, convertir a DD-MM-YYYY
+  if (/^\d{4}-\d{2}-\d{2}/.test(fecha)) {
+    const [year, month, day] = fecha.split('T')[0].split('-');
+    return `${day}-${month}-${year}`;
+  }
+  return fecha;
+};
+
+// =============================================================================
+// REGISTRO DE FUENTES
+// =============================================================================
+
 // Registrar fuente Open Sans para el cuerpo del documento
 Font.register({
   family: 'OpenSans',
@@ -259,7 +282,18 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
   );
 
   // Helper para renderizar cada familiar dinámicamente
-  const renderFamiliar = (familiar: FamiliarReportData, index: number) => (
+  // Si el familiar no tiene dirección propia, usa la del scout
+  const renderFamiliar = (familiar: FamiliarReportData, index: number) => {
+    // Verificar si el familiar tiene dirección propia
+    const tienePropiaDireccion = !!(familiar.direccion || familiar.departamento || familiar.provincia || familiar.distrito);
+    
+    // Usar dirección del familiar o del scout como fallback
+    const direccionMostrar = tienePropiaDireccion ? familiar.direccion : scout.direccion;
+    const departamentoMostrar = tienePropiaDireccion ? familiar.departamento : scout.departamento;
+    const provinciaMostrar = tienePropiaDireccion ? familiar.provincia : scout.provincia;
+    const distritoMostrar = tienePropiaDireccion ? familiar.distrito : scout.distrito;
+    
+    return (
     <View style={styles.table} key={`familiar-${index}`}>
       <View style={styles.tableRow}>
         <View style={[styles.tableCell, styles.tableCellBorder, { width: '50%', backgroundColor: '#808080' }]}>
@@ -335,7 +369,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
       
       <View style={styles.tableRow}>
         <View style={[styles.tableCell, { width: '100%' }]}>
-          <Text>{familiar.direccion || ''}</Text>
+          <Text>{direccionMostrar || ''}</Text>
         </View>
       </View>
       
@@ -353,13 +387,13 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
       
       <View style={styles.tableRow}>
         <View style={[styles.tableCell, styles.tableCellBorder, { width: '33%' }]}>
-          <Text>{familiar.departamento || ''}</Text>
+          <Text>{departamentoMostrar || ''}</Text>
         </View>
         <View style={[styles.tableCell, styles.tableCellBorder, { width: '34%' }]}>
-          <Text>{familiar.provincia || ''}</Text>
+          <Text>{provinciaMostrar || ''}</Text>
         </View>
         <View style={[styles.tableCell, { width: '33%' }]}>
-          <Text>{familiar.distrito || ''}</Text>
+          <Text>{distritoMostrar || ''}</Text>
         </View>
       </View>
       
@@ -412,6 +446,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
       </View>
     </View>
   );
+  };
 
   return (
     <Document>
@@ -472,7 +507,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
               <Text>{scout.sexo || ''}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '25%' }]}>
-              <Text>{scout.fechaNacimiento || ''}</Text>
+              <Text>{formatearFecha(scout.fechaNacimiento)}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
               <Text>{scout.tipoDocumento || ''}</Text>

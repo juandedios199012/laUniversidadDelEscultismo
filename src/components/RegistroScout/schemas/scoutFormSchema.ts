@@ -221,11 +221,23 @@ export const familiarItemSchema = z.object({
   id: z.string().optional(), // Para edición
   nombres: z.string().min(2, "Nombres requeridos"),
   apellidos: z.string().min(2, "Apellidos requeridos"),
+  sexo: SexoEnum.optional(),
   tipo_documento: TipoDocumentoEnum.default("DNI"),
   numero_documento: z.string().max(20).optional(),
   parentesco: ParentescoEnum,
   celular: celularSchema,
   correo: emailSchema,
+  // Datos laborales
+  profesion: z.string().max(100).optional(),
+  centro_laboral: z.string().max(200).optional(),
+  cargo: z.string().max(100).optional(),
+  // Dirección
+  usar_direccion_scout: z.boolean().default(true),
+  direccion: z.string().max(300).optional(),
+  departamento: z.string().max(100).optional(),
+  provincia: z.string().max(100).optional(),
+  distrito: z.string().max(100).optional(),
+  // Flags
   es_contacto_emergencia: z.boolean().default(true),
   es_apoderado: z.boolean().default(false),
 });

@@ -15,20 +15,20 @@ interface DatosEducacionProps {
   errorCount?: number;
 }
 
+// El value es igual al label para guardar directamente el texto legible en BD (KISS, DRY)
 const ANIO_ESTUDIOS_OPTIONS = [
-  { value: "0", label: "No especificado" },
-  { value: "1", label: "1° Primaria" },
-  { value: "2", label: "2° Primaria" },
-  { value: "3", label: "3° Primaria" },
-  { value: "4", label: "4° Primaria" },
-  { value: "5", label: "5° Primaria" },
-  { value: "6", label: "6° Primaria" },
-  { value: "7", label: "1° Secundaria" },
-  { value: "8", label: "2° Secundaria" },
-  { value: "9", label: "3° Secundaria" },
-  { value: "10", label: "4° Secundaria" },
-  { value: "11", label: "5° Secundaria" },
-  { value: "12", label: "Universidad / Superior" },
+  { value: "1° Primaria", label: "1° Primaria" },
+  { value: "2° Primaria", label: "2° Primaria" },
+  { value: "3° Primaria", label: "3° Primaria" },
+  { value: "4° Primaria", label: "4° Primaria" },
+  { value: "5° Primaria", label: "5° Primaria" },
+  { value: "6° Primaria", label: "6° Primaria" },
+  { value: "1° Secundaria", label: "1° Secundaria" },
+  { value: "2° Secundaria", label: "2° Secundaria" },
+  { value: "3° Secundaria", label: "3° Secundaria" },
+  { value: "4° Secundaria", label: "4° Secundaria" },
+  { value: "5° Secundaria", label: "5° Secundaria" },
+  { value: "Universidad / Superior", label: "Universidad / Superior" },
 ];
 
 export function DatosEducacion({ form, isOpen, onToggle, errorCount = 0 }: DatosEducacionProps) {
