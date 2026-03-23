@@ -4,11 +4,11 @@
  */
 
 import { UseFormReturn } from "react-hook-form";
-import { User, FileText } from "lucide-react";
+import { User } from "lucide-react";
 import { ScoutFormData } from "../schemas/scoutFormSchema";
 import { TextField, SelectField, DateField } from "./FormFields";
 import { FormSection } from "./FormSection";
-import { DocumentUpload } from "./DocumentUpload";
+import { IdentityDocumentUpload } from "./IdentityDocumentUpload";
 
 interface DatosPersonalesProps {
   form: UseFormReturn<ScoutFormData>;
@@ -100,14 +100,12 @@ export function DatosPersonales({ form, isOpen, onToggle, errorCount = 0, scoutI
           />
         </div>
 
-        {/* Upload de Documento de Identidad */}
+        {/* Upload de Documento de Identidad - Anverso y Reverso */}
         <div className="pt-2">
-          <DocumentUpload
+          <IdentityDocumentUpload
             entityType="scout"
             entityId={scoutId}
-            documentType="documento_identidad"
             label="Copia del Documento de Identidad"
-            description="Sube una imagen o PDF del DNI, Carné de Extranjería o Pasaporte del scout"
             disabled={!scoutId}
           />
         </div>

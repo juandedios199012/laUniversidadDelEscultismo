@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { FileText } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
+import { scoutDocumentsService } from '../../services/scoutDocumentsService';
 import type { Scout } from '../../lib/supabase';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { getScoutData } from '../../modules/reports/services/reportDataService';
@@ -152,8 +153,20 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
       // Generar metadata
       const metadata = generateReportMetadata();
 
-      // Generar documento PDF
-      const doc = <DNGI03Template scout={scoutData} metadata={metadata} />;
+      // Obtener imágenes del documento de identidad
+      const identityDocs = await scoutDocumentsService.getIdentityDocumentsForPdf('scout', scout.id);
+
+      // Generar documento PDF con imágenes de documento de identidad
+      const doc = (
+        <DNGI03Template 
+          scout={scoutData} 
+          metadata={metadata}
+          additionalData={{
+            documentoIdentidadAnverso: identityDocs.anverso,
+            documentoIdentidadReverso: identityDocs.reverso
+          }}
+        />
+      );
       const asPdf = pdf(doc);
       const blob = await asPdf.toBlob();
 
@@ -161,7 +174,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `DNGI03_${scout.codigo_scout}_${scout.nombres}_${scout.apellidos}.pdf`;
+      link.download = `${scout.nombres}_${scout.apellidos}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

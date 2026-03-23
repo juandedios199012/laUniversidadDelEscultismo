@@ -16,6 +16,7 @@ import { EmptyState } from "./EmptyState";
 import { usePermissions } from "@/contexts/PermissionsContext";
 import { getScoutData } from "@/modules/reports/services/reportDataService";
 import { generateReportMetadata } from "@/modules/reports/services/pdfService";
+import { scoutDocumentsService } from "@/services/scoutDocumentsService";
 import DNGI03Template from "@/modules/reports/templates/pdf/DNGI03Template";
 import type { Scout } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -77,14 +78,27 @@ export function ScoutList({
       }
 
       const metadata = generateReportMetadata();
-      const doc = <DNGI03Template scout={scoutData} metadata={metadata} />;
+      
+      // Obtener imágenes del documento de identidad
+      const identityDocs = await scoutDocumentsService.getIdentityDocumentsForPdf('scout', scout.id);
+      
+      const doc = (
+        <DNGI03Template 
+          scout={scoutData} 
+          metadata={metadata}
+          additionalData={{
+            documentoIdentidadAnverso: identityDocs.anverso,
+            documentoIdentidadReverso: identityDocs.reverso
+          }}
+        />
+      );
       const asPdf = pdf(doc);
       const blob = await asPdf.toBlob();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `DNGI03_${scout.codigo_scout}_${scout.nombres}_${scout.apellidos}.pdf`;
+      link.download = `${scout.nombres}_${scout.apellidos}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

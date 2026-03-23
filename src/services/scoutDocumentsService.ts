@@ -15,12 +15,14 @@ import imageCompression from 'browser-image-compression';
 
 export type DocumentType = 'documento_identidad' | 'huella_digital' | 'firma';
 export type EntityType = 'scout' | 'familiar';
+export type DocumentSide = 'ANVERSO' | 'REVERSO';
 
 export interface DocumentMetadata {
   id: string;
   entity_type: EntityType;
   entity_id: string;
   document_type: DocumentType;
+  document_side?: DocumentSide | null;
   storage_path: string;
   file_name: string;
   file_size: number;
@@ -34,6 +36,7 @@ export interface UploadDocumentRequest {
   entityId: string;
   documentType: DocumentType;
   file: File;
+  documentSide?: DocumentSide;
 }
 
 export interface UploadResult {
@@ -41,6 +44,11 @@ export interface UploadResult {
   url?: string;
   storagePath?: string;
   error?: string;
+}
+
+export interface IdentityDocumentUrls {
+  anverso?: string;
+  reverso?: string;
 }
 
 // ============================================
@@ -462,6 +470,466 @@ class ScoutDocumentsService {
    */
   clearCache(): void {
     urlCache.clear();
+  }
+
+  // ============================================
+  // MÉTODOS PARA MÚLTIPLES DOCUMENTOS
+  // ============================================
+
+  /**
+   * Obtiene TODOS los documentos de un tipo específico (múltiples imágenes)
+   */
+  async getDocuments(
+    entityType: EntityType,
+    entityId: string,
+    documentType: DocumentType
+  ): Promise<Array<{ url: string; metadata: DocumentMetadata }>> {
+    try {
+      const { data, error } = await supabase
+        .from('scout_documents')
+        .select('*')
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('document_type', documentType)
+        .order('created_at', { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        return [];
+      }
+
+      const documents = await Promise.all(
+        data.map(async (doc) => {
+          const url = await this.getSignedUrl(doc.storage_path);
+          return {
+            url,
+            metadata: doc as DocumentMetadata
+          };
+        })
+      );
+
+      return documents;
+    } catch (error) {
+      console.error('Error obteniendo documentos múltiples:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sube un documento adicional (para múltiples imágenes)
+   * NO elimina documentos existentes del mismo tipo
+   */
+  async uploadAdditionalDocument(request: UploadDocumentRequest): Promise<UploadResult> {
+    const { entityType, entityId, documentType, file, documentSide } = request;
+
+    // Para documentos de identidad, usar el método específico
+    if (documentType === 'documento_identidad' && documentSide) {
+      return this.uploadIdentityDocument(entityType, entityId, documentSide, file);
+    }
+
+    // Validar archivo
+    const validation = this.validateFile(file);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    try {
+      // Comprimir si es imagen
+      const fileToUpload = await this.compressImage(file);
+
+      // Generar path de storage
+      const storagePath = this.generateStoragePath(entityType, entityId, documentType, file.name);
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, fileToUpload, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Error subiendo archivo:', uploadError);
+        return { success: false, error: `Error al subir archivo: ${uploadError.message}` };
+      }
+
+      // Guardar metadata en la base de datos (INSERT)
+      const { error: metaError } = await supabase
+        .from('scout_documents')
+        .insert({
+          entity_type: entityType,
+          entity_id: entityId,
+          document_type: documentType,
+          document_side: documentSide || null,
+          storage_path: storagePath,
+          file_name: file.name,
+          file_size: fileToUpload.size,
+          mime_type: fileToUpload.type,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (metaError) {
+        console.error('Error guardando metadata:', metaError);
+        // Intentar eliminar el archivo subido
+        await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
+        return { success: false, error: `Error al guardar metadata: ${metaError.message}` };
+      }
+
+      // Obtener URL firmada
+      const url = await this.getSignedUrl(storagePath);
+
+      return { 
+        success: true, 
+        url,
+        storagePath 
+      };
+
+    } catch (error) {
+      console.error('Error en uploadAdditionalDocument:', error);
+      return { 
+        success: false, 
+        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      };
+    }
+  }
+
+  /**
+   * Elimina un documento específico por su ID
+   */
+  async deleteDocumentById(documentId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Buscar metadata
+      const { data, error } = await supabase
+        .from('scout_documents')
+        .select('storage_path')
+        .eq('id', documentId)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Error buscando documento a eliminar:', error);
+        return { success: false, error: 'Error buscando documento' };
+      }
+      
+      if (!data) {
+        return { success: false, error: 'Documento no encontrado' };
+      }
+
+      // Eliminar del storage
+      const { error: storageError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([data.storage_path]);
+
+      if (storageError) {
+        console.error('Error eliminando del storage:', storageError);
+      }
+
+      // Eliminar metadata
+      const { error: deleteError } = await supabase
+        .from('scout_documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (deleteError) {
+        return { success: false, error: `Error al eliminar: ${deleteError.message}` };
+      }
+
+      // Limpiar caché
+      urlCache.delete(data.storage_path);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error en deleteDocumentById:', error);
+      return { 
+        success: false, 
+        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      };
+    }
+  }
+
+  /**
+   * Elimina TODOS los documentos de un tipo específico
+   */
+  async deleteAllDocuments(
+    entityType: EntityType,
+    entityId: string,
+    documentType: DocumentType
+  ): Promise<{ success: boolean; deletedCount: number; error?: string }> {
+    try {
+      // Buscar todos los documentos
+      const { data, error } = await supabase
+        .from('scout_documents')
+        .select('id, storage_path')
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('document_type', documentType);
+
+      if (error) {
+        return { success: false, deletedCount: 0, error: 'Error buscando documentos' };
+      }
+      
+      if (!data || data.length === 0) {
+        return { success: true, deletedCount: 0 };
+      }
+
+      // Eliminar archivos del storage
+      const storagePaths = data.map(d => d.storage_path);
+      await supabase.storage.from(STORAGE_BUCKET).remove(storagePaths);
+
+      // Eliminar metadata
+      const { error: deleteError } = await supabase
+        .from('scout_documents')
+        .delete()
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('document_type', documentType);
+
+      if (deleteError) {
+        return { success: false, deletedCount: 0, error: `Error al eliminar: ${deleteError.message}` };
+      }
+
+      // Limpiar caché
+      storagePaths.forEach(path => urlCache.delete(path));
+
+      return { success: true, deletedCount: data.length };
+    } catch (error) {
+      console.error('Error en deleteAllDocuments:', error);
+      return { 
+        success: false, 
+        deletedCount: 0,
+        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      };
+    }
+  }
+
+  // ============================================
+  // MÉTODOS ESPECÍFICOS PARA DOCUMENTO DE IDENTIDAD
+  // ============================================
+
+  /**
+   * Sube una imagen del documento de identidad (anverso o reverso)
+   */
+  async uploadIdentityDocument(
+    entityType: EntityType,
+    entityId: string,
+    side: DocumentSide,
+    file: File
+  ): Promise<UploadResult> {
+    // Validar archivo
+    const validation = this.validateFile(file);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    try {
+      // Comprimir si es imagen
+      const fileToUpload = await this.compressImage(file);
+      
+      // Generar path de storage con el lado incluido
+      const timestamp = Date.now();
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'file';
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storagePath = `${STORAGE_BASE_PATH}/${entityType}/${entityId}/documento_identidad/${side.toLowerCase()}_${timestamp}_${sanitizedName}`;
+
+      // Eliminar documento anterior del mismo lado si existe
+      await this.deleteIdentityDocumentBySide(entityType, entityId, side);
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, fileToUpload, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Error subiendo archivo:', uploadError);
+        return { success: false, error: `Error al subir archivo: ${uploadError.message}` };
+      }
+
+      // Guardar metadata en la base de datos
+      const { error: metaError } = await supabase
+        .from('scout_documents')
+        .insert({
+          entity_type: entityType,
+          entity_id: entityId,
+          document_type: 'documento_identidad',
+          document_side: side,
+          storage_path: storagePath,
+          file_name: file.name,
+          file_size: fileToUpload.size,
+          mime_type: fileToUpload.type,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (metaError) {
+        console.error('Error guardando metadata:', metaError);
+        // Intentar eliminar el archivo subido
+        await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
+        return { success: false, error: `Error al guardar metadata: ${metaError.message}` };
+      }
+
+      // Obtener URL firmada
+      const url = await this.getSignedUrl(storagePath);
+
+      return { 
+        success: true, 
+        url,
+        storagePath 
+      };
+
+    } catch (error) {
+      console.error('Error en uploadIdentityDocument:', error);
+      return { 
+        success: false, 
+        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      };
+    }
+  }
+
+  /**
+   * Elimina documento de identidad por lado (anverso o reverso)
+   */
+  private async deleteIdentityDocumentBySide(
+    entityType: EntityType,
+    entityId: string,
+    side: DocumentSide
+  ): Promise<void> {
+    try {
+      const { data } = await supabase
+        .from('scout_documents')
+        .select('storage_path')
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('document_type', 'documento_identidad')
+        .eq('document_side', side)
+        .maybeSingle();
+
+      if (data?.storage_path) {
+        await supabase.storage.from(STORAGE_BUCKET).remove([data.storage_path]);
+        await supabase
+          .from('scout_documents')
+          .delete()
+          .eq('entity_type', entityType)
+          .eq('entity_id', entityId)
+          .eq('document_type', 'documento_identidad')
+          .eq('document_side', side);
+        urlCache.delete(data.storage_path);
+      }
+    } catch (error) {
+      console.warn('Error eliminando documento existente:', error);
+    }
+  }
+
+  /**
+   * Obtiene documentos de identidad (anverso y reverso)
+   */
+  async getIdentityDocuments(
+    entityType: EntityType,
+    entityId: string
+  ): Promise<{ anverso?: { url: string; metadata: DocumentMetadata }; reverso?: { url: string; metadata: DocumentMetadata } }> {
+    try {
+      const { data, error } = await supabase
+        .from('scout_documents')
+        .select('*')
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .eq('document_type', 'documento_identidad');
+
+      if (error || !data || data.length === 0) {
+        return {};
+      }
+
+      const result: { anverso?: { url: string; metadata: DocumentMetadata }; reverso?: { url: string; metadata: DocumentMetadata } } = {};
+
+      for (const doc of data) {
+        const url = await this.getSignedUrl(doc.storage_path);
+        const item = { url, metadata: doc as DocumentMetadata };
+        
+        if (doc.document_side === 'ANVERSO') {
+          result.anverso = item;
+        } else if (doc.document_side === 'REVERSO') {
+          result.reverso = item;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error obteniendo documentos de identidad:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Obtiene URLs de documentos de identidad para el PDF
+   */
+  async getIdentityDocumentsForPdf(
+    entityType: EntityType,
+    entityId: string
+  ): Promise<IdentityDocumentUrls> {
+    try {
+      const docs = await this.getIdentityDocuments(entityType, entityId);
+      const result: IdentityDocumentUrls = {};
+
+      // Convertir a base64 para el PDF
+      if (docs.anverso) {
+        const base64 = await this.convertToBase64(docs.anverso.metadata.storage_path);
+        if (base64) result.anverso = base64;
+      }
+
+      if (docs.reverso) {
+        const base64 = await this.convertToBase64(docs.reverso.metadata.storage_path);
+        if (base64) result.reverso = base64;
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error obteniendo documentos para PDF:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Convierte un archivo de storage a base64
+   */
+  private async convertToBase64(storagePath: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .download(storagePath);
+
+      if (error || !data) {
+        console.error('Error descargando imagen:', error);
+        return null;
+      }
+
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(data);
+      });
+    } catch (error) {
+      console.error('Error convirtiendo a base64:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Elimina documento de identidad por lado (público)
+   */
+  async deleteIdentityDocument(
+    entityType: EntityType,
+    entityId: string,
+    side: DocumentSide
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      await this.deleteIdentityDocumentBySide(entityType, entityId, side);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: `Error al eliminar: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      };
+    }
   }
 }
 

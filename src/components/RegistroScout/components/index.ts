@@ -11,3 +11,6 @@ export { DatosReligiosos } from "./DatosReligiosos";
 export { DatosSalud } from "./DatosSalud";
 export { DatosScout } from "./DatosScout";
 export { DatosFamiliares } from "./DatosFamiliares";
+export { DocumentUpload } from "./DocumentUpload";
+export { MultiDocumentUpload } from "./MultiDocumentUpload";
+export { IdentityDocumentUpload } from "./IdentityDocumentUpload";

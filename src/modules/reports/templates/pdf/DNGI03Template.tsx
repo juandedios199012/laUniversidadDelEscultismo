@@ -254,6 +254,10 @@ interface DNGI03TemplateProps {
     madre?: any;
     tipoRegistro?: string;
     fechaRegistro?: string;
+    /** URL base64 del anverso del documento de identidad */
+    documentoIdentidadAnverso?: string;
+    /** URL base64 del reverso del documento de identidad */
+    documentoIdentidadReverso?: string;
   };
 }
 
@@ -875,7 +879,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           <View style={styles.signatureBox}>
             {/* Mostrar imagen de firma del primer apoderado si existe */}
             {apoderados[0]?.firmaUrl ? (
-              <View style={{ height: 60, justifyContent: 'flex-end' }}>
+              <View style={{ height: 60, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 5 }}>
                 <Image 
                   src={apoderados[0].firmaUrl} 
                   style={{ height: 55, objectFit: 'contain' }} 
@@ -884,7 +888,6 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
             ) : (
               <View style={styles.signatureLine} />
             )}
-            <View style={{ borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 5 }} />
             <Text style={styles.signatureLabel}>
               FIRMA (igual que en su documento de identidad)
             </Text>
@@ -911,6 +914,84 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           </View>
         </View>
       </Page>
+
+      {/* PÁGINA FINAL: Copia del Documento de Identidad */}
+      {(additionalData.documentoIdentidadAnverso || additionalData.documentoIdentidadReverso) && (
+        <Page size="A4" style={styles.page}>
+          <Image src={fondoAnualBase64} style={styles.watermark} fixed />
+          {renderHeader(totalPaginas + 1)}
+          
+          <Text style={styles.sectionTitle}>
+            Copia del Documento de Identidad del Menor
+          </Text>
+          
+          <Text style={[styles.normalText, { marginBottom: 20 }]}>
+            A continuación se adjuntan las copias del documento de identidad de{' '}
+            <Text style={styles.boldText}>{scout.nombre} {scout.apellido}</Text>
+            {' '}({scout.tipoDocumento || 'DNI'} N° {scout.numeroDocumento || scout.numeroRegistro || '________'}).
+          </Text>
+          
+          <View style={{ flexDirection: 'column', gap: 20 }}>
+            {/* Anverso */}
+            {additionalData.documentoIdentidadAnverso && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 8, color: '#333' }}>
+                  ANVERSO (Cara Frontal)
+                </Text>
+                <View style={{ 
+                  borderWidth: 1, 
+                  borderColor: '#000', 
+                  padding: 5,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 200,
+                  maxHeight: 280,
+                }}>
+                  <Image 
+                    src={additionalData.documentoIdentidadAnverso} 
+                    style={{ 
+                      maxWidth: '100%',
+                      maxHeight: 270,
+                      objectFit: 'contain',
+                    }} 
+                  />
+                </View>
+              </View>
+            )}
+            
+            {/* Reverso */}
+            {additionalData.documentoIdentidadReverso && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 8, color: '#333' }}>
+                  REVERSO (Cara Posterior)
+                </Text>
+                <View style={{ 
+                  borderWidth: 1, 
+                  borderColor: '#000', 
+                  padding: 5,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 200,
+                  maxHeight: 280,
+                }}>
+                  <Image 
+                    src={additionalData.documentoIdentidadReverso} 
+                    style={{ 
+                      maxWidth: '100%',
+                      maxHeight: 270,
+                      objectFit: 'contain',
+                    }} 
+                  />
+                </View>
+              </View>
+            )}
+          </View>
+          
+          <Text style={[styles.footer, { position: 'absolute', bottom: 30, left: 30 }]}>
+            * Documento generado automáticamente por el Sistema de Gestión Scout
+          </Text>
+        </Page>
+      )}
     </Document>
   );
 };
