@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Search, Edit, Eye, Plus, Users, Heart, FileText, UserMinus, Trash2 } from "lucide-react";
+import { Search, Edit, Eye, Plus, Users, Heart, FileText, UserMinus, UserCheck, Trash2 } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ interface ScoutListProps {
   onNewScout: () => void;
   onMedicalHistory?: (scout: Scout) => void;
   onDeactivate?: (scout: Scout) => void;
+  onActivate?: (scout: Scout) => void;
   onDelete?: (scout: Scout) => void;
   onRefresh?: () => void;
   selectedId?: string;
@@ -55,6 +56,7 @@ export function ScoutList({
   onNewScout,
   onMedicalHistory,
   onDeactivate,
+  onActivate,
   onDelete,
   onRefresh,
   selectedId,
@@ -289,6 +291,20 @@ export function ScoutList({
                         className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
                       >
                         <UserMinus className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onActivate && puedeEditar('scouts') && scout.estado !== "ACTIVO" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onActivate(scout);
+                        }}
+                        title="Activar scout"
+                        className="text-green-500 hover:text-green-600 hover:bg-green-50"
+                      >
+                        <UserCheck className="h-4 w-4" />
                       </Button>
                     )}
                     {onDelete && puedeEliminar('scouts') && (

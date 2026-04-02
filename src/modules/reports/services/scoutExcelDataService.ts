@@ -44,7 +44,6 @@ export async function getAllScoutsForExcel(options?: {
         anio_estudios,
         ocupacion,
         centro_laboral,
-        seguro_medico,
         persona:personas!scouts_persona_id_fkey (
           id,
           nombres,
@@ -70,6 +69,7 @@ export async function getAllScoutsForExcel(options?: {
           religion,
           grupo_sanguineo,
           factor_sanguineo,
+          seguro_medico,
           tipo_discapacidad,
           carnet_conadis,
           descripcion_discapacidad
@@ -243,7 +243,7 @@ export async function getAllScoutsForExcel(options?: {
         // Salud
         grupo_sanguineo: persona.grupo_sanguineo || '',
         factor_sanguineo: persona.factor_sanguineo || '',
-        seguro_medico: scout.seguro_medico || '',
+        seguro_medico: persona.seguro_medico || '',
         tipo_discapacidad: persona.tipo_discapacidad || '',
         carnet_conadis: persona.carnet_conadis || '',
         descripcion_discapacidad: persona.descripcion_discapacidad || '',

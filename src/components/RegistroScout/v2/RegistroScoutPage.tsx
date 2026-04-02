@@ -195,6 +195,27 @@ export default function RegistroScoutPage() {
     }
   }, [loadScouts, loadStats, success, error]);
 
+  // Handle activate scout
+  const handleActivateScout = useCallback(async (scout: Scout) => {
+    if (!window.confirm(`¿Reactivar al scout ${scout.nombres} ${scout.apellidos}?\n\nEl scout volverá a estado ACTIVO.`)) {
+      return;
+    }
+
+    try {
+      const result = await ScoutService.activarScout(scout.id);
+      if (result.success) {
+        await loadScouts();
+        await loadStats();
+        success('Scout activado exitosamente');
+      } else {
+        error(`Error al activar: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Error al activar scout:', err);
+      error('Error al activar el scout');
+    }
+  }, [loadScouts, loadStats, success, error]);
+
   // Handle delete scout
   const handleDeleteScout = useCallback(async (scout: Scout) => {
     if (!window.confirm(`⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE al scout ${scout.nombres} ${scout.apellidos} y no se podrá recuperar.\n\n¿Estás COMPLETAMENTE SEGURO?`)) {
@@ -421,6 +442,7 @@ export default function RegistroScoutPage() {
             onNewScout={handleNewScout}
             onMedicalHistory={handleOpenMedicalHistory}
             onDeactivate={handleDeactivateScout}
+            onActivate={handleActivateScout}
             onDelete={handleDeleteScout}
             onRefresh={handleRefresh}
             selectedId={selectedScout?.id}
@@ -437,6 +459,7 @@ export default function RegistroScoutPage() {
             onNewScout={handleNewScout}
             onMedicalHistory={handleOpenMedicalHistory}
             onDeactivate={handleDeactivateScout}
+            onActivate={handleActivateScout}
             onDelete={handleDeleteScout}
             onRefresh={handleRefresh}
             selectedId={selectedScout?.id}
@@ -452,6 +475,7 @@ export default function RegistroScoutPage() {
             onEdit={handleEditScout}
             onNewScout={handleNewScout}
             onMedicalHistory={handleOpenMedicalHistory}
+            onActivate={handleActivateScout}
             onDelete={handleDeleteScout}
             onRefresh={handleRefresh}
             selectedId={selectedScout?.id}

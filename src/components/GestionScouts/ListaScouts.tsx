@@ -138,6 +138,25 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
     }
   };
 
+  const handleActivar = async (scout: Scout) => {
+    if (!window.confirm(`¿Activar al scout ${scout.nombres} ${scout.apellidos}?\n\nEl scout volverá a estado ACTIVO.`)) {
+      return;
+    }
+
+    try {
+      const result = await ScoutService.activarScout(scout.id);
+      if (result.success) {
+        await cargarScouts(); // Recargar la lista
+        alert('✅ Scout activado exitosamente');
+      } else {
+        alert(`❌ Error al activar: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error al activar scout:', error);
+      alert('❌ Error al activar el scout');
+    }
+  };
+
   const handleGenerarPDF = async (scout: Scout) => {
     try {
       console.log('📄 Generando PDF para scout:', scout.id);
@@ -400,11 +419,11 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      scout.estado === 'ACTIVO' ? 'bg-green-100 text-green-800' :
-                      scout.estado === 'INACTIVO' ? 'bg-gray-100 text-gray-800' :
+                      scout.estado?.toUpperCase() === 'ACTIVO' ? 'bg-green-100 text-green-800' :
+                      scout.estado?.toUpperCase() === 'INACTIVO' ? 'bg-gray-100 text-gray-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {scout.estado}
+                      {scout.estado?.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -438,13 +457,22 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                           ✏️
                         </button>
                       )}
-                      {puedeEditar('scouts') && (
+                      {puedeEditar('scouts') && scout.estado?.toUpperCase() === 'ACTIVO' && (
                         <button
                           onClick={() => handleDesactivar(scout)}
                           className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded transition-colors"
                           title="Desactivar (cambiar a INACTIVO)"
                         >
                           ⏸️
+                        </button>
+                      )}
+                      {puedeEditar('scouts') && scout.estado?.toUpperCase() === 'INACTIVO' && (
+                        <button
+                          onClick={() => handleActivar(scout)}
+                          className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded transition-colors"
+                          title="Activar (cambiar a ACTIVO)"
+                        >
+                          ▶️
                         </button>
                       )}
                       {puedeEliminar('scouts') && (

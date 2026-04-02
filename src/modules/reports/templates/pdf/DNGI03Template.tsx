@@ -52,7 +52,10 @@ Font.register({
 // Estilos del documento
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
+    paddingTop: 30,
+    paddingRight: 30,
+    paddingBottom: 30,
+    paddingLeft: 44,
     fontFamily: 'OpenSans',
     fontSize: 10,
   },
@@ -96,7 +99,7 @@ const styles = StyleSheet.create({
   
   headerSubtitle: {
     fontFamily: 'OpenSans',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#666',
     marginTop: 5,
@@ -661,13 +664,13 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           
           {/* Fila 9: Datos médicos */}
           <View style={styles.tableRow}>
-            <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '15%', backgroundColor: '#808080' }]}>
+            <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '18%', backgroundColor: '#808080' }]}>
               <Text style={styles.tableHeader}>GRUPO SANGUÍNEO</Text>
             </View>
             <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '18%', backgroundColor: '#808080' }]}>
               <Text style={styles.tableHeader}>FACTOR SANGUÍNEO</Text>
             </View>
-            <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '27%', backgroundColor: '#808080' }]}>
+            <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '24%', backgroundColor: '#808080' }]}>
               <Text style={styles.tableHeader}>SEGURO MÉDICO</Text>
             </View>
             <View style={[styles.tableCellCompact, styles.tableCellBorder, { width: '20%', backgroundColor: '#808080' }]}>
@@ -679,13 +682,13 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           </View>
           
           <View style={styles.tableRow}>
-            <View style={[styles.tableCell, styles.tableCellBorder, { width: '15%' }]}>
+            <View style={[styles.tableCell, styles.tableCellBorder, { width: '18%' }]}>
               <Text>{scout.grupoSanguineo || ''}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '18%' }]}>
               <Text>{scout.factorSanguineo || ''}</Text>
             </View>
-            <View style={[styles.tableCell, styles.tableCellBorder, { width: '27%' }]}>
+            <View style={[styles.tableCell, styles.tableCellBorder, { width: '24%' }]}>
               <Text>{scout.seguroMedico || ''}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '20%' }]}>
@@ -874,20 +877,10 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           </Text>
         </View>
         
-        {/* Sección de firma - mostrar imagen si existe */}
+        {/* Sección de firma y huella - para firma y huella manual física */}
         <View style={styles.signatureSection}>
           <View style={styles.signatureBox}>
-            {/* Mostrar imagen de firma del primer apoderado si existe */}
-            {apoderados[0]?.firmaUrl ? (
-              <View style={{ height: 60, justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 5 }}>
-                <Image 
-                  src={apoderados[0].firmaUrl} 
-                  style={{ height: 55, objectFit: 'contain' }} 
-                />
-              </View>
-            ) : (
-              <View style={styles.signatureLine} />
-            )}
+            <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>
               FIRMA (igual que en su documento de identidad)
             </Text>
@@ -897,20 +890,9 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           </View>
           
           <View style={{ alignItems: 'center', marginLeft: 70 }}>
-            <View style={[styles.fingerprintBox, { justifyContent: 'center', alignItems: 'center' }]}>
-              {/* Mostrar imagen de huella digital del primer apoderado si existe */}
-              {apoderados[0]?.huellaDigitalUrl ? (
-                <Image 
-                  src={apoderados[0].huellaDigitalUrl} 
-                  style={{ width: 80, height: 100, objectFit: 'contain' }} 
-                />
-              ) : (
-                <Text style={{ fontSize: 9, fontWeight: 'bold' }}>Huella Digital</Text>
-              )}
+            <View style={[styles.fingerprintBox, { justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 8 }]}>
+              <Text style={{ fontSize: 9 }}>Huella Digital</Text>
             </View>
-            {!apoderados[0]?.huellaDigitalUrl && (
-              <Text style={{ fontSize: 9, fontWeight: 'bold', marginTop: 5 }}>Huella Digital</Text>
-            )}
           </View>
         </View>
       </Page>

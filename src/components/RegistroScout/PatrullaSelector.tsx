@@ -191,11 +191,33 @@ export default function PatrullaSelector({
   }
 
   if (patrullas.length === 0) {
+    // Para Tropa, la patrulla es muy recomendada (sistema tradicional)
+    // Para otras ramas (Manada, Comunidad, Clan), es opcional
+    const esRamaConPatrullaTradicional = ramaActual === 'Tropa';
+    
+    if (esRamaConPatrullaTradicional) {
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-700">
+            <Info className="w-5 h-5" />
+            <p className="text-sm">No hay patrullas activas en la rama {ramaActual}. Se recomienda crear una.</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Para Manada, Comunidad, Clan - mensaje informativo (no es obligatorio)
     return (
-      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div className="flex items-center gap-2 text-yellow-700">
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 text-blue-700">
           <Info className="w-5 h-5" />
-          <p className="text-sm">No hay patrullas activas en la rama {ramaActual}. Crea una primero.</p>
+          <p className="text-sm">
+            No hay patrullas configuradas para {ramaActual}. 
+            {ramaActual === 'Manada' && ' Las seisenas son opcionales.'}
+            {ramaActual === 'Comunidad' && ' Los equipos son opcionales.'}
+            {ramaActual === 'Clan' && ' La organización por equipos es opcional.'}
+            {ramaActual === 'Dirigentes' && ' Los dirigentes no requieren patrulla.'}
+          </p>
         </div>
       </div>
     );

@@ -3,7 +3,7 @@
  * 
  * Componente para registrar N familiares del scout.
  * Permite agregar, editar y eliminar familiares.
- * Incluye upload de documentos, huella digital y firma.
+ * Incluye upload del documento de identidad (anverso y reverso).
  * 
  * MEJORA: Detecta automáticamente si el DNI ya existe (caso hermanos)
  * y ofrece vincular la persona existente en lugar de crear duplicados.
@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DocumentUpload } from "./DocumentUpload";
+import { IdentityDocumentUpload } from "./IdentityDocumentUpload";
 import { UbigeoSelector } from "./UbigeoSelector";
 import ScoutService from "@/services/scoutService";
 
@@ -760,41 +760,15 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <FileText className="w-4 h-4" />
-                        <span>Documentos del Familiar</span>
+                        <span>Copia del Documento de Identidad</span>
                       </div>
                       
-                      {/* Grid de uploads */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Documento de Identidad */}
-                        <DocumentUpload
-                          entityType="familiar"
-                          entityId={familiarIds[index]}
-                          documentType="documento_identidad"
-                          label="Documento de Identidad"
-                          description="DNI, CE o Pasaporte"
-                          compact
-                        />
-
-                        {/* Huella Digital */}
-                        <DocumentUpload
-                          entityType="familiar"
-                          entityId={familiarIds[index]}
-                          documentType="huella_digital"
-                          label="Huella Digital"
-                          description="Imagen de la huella"
-                          compact
-                        />
-
-                        {/* Firma */}
-                        <DocumentUpload
-                          entityType="familiar"
-                          entityId={familiarIds[index]}
-                          documentType="firma"
-                          label="Firma"
-                          description="Imagen de la firma"
-                          compact
-                        />
-                      </div>
+                      {/* Upload de Anverso y Reverso del DNI */}
+                      <IdentityDocumentUpload
+                        entityType="familiar"
+                        entityId={familiarIds[index]}
+                        label="Documento de Identidad del Familiar"
+                      />
                     </div>
                   </>
                 )}
@@ -804,7 +778,7 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-700 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      Guarda el registro para poder subir documentos, huella digital y firma.
+                      Guarda el registro para poder subir la copia del documento de identidad.
                     </p>
                   </div>
                 )}

@@ -8,9 +8,13 @@ import {
   Search,
   UserCircle,
   Activity,
-  Target
+  Target,
+  ArrowRightLeft,
+  ArrowRight,
+  Calendar,
+  Clock
 } from 'lucide-react';
-import ScoutService from '../../services/scoutService';
+import ScoutService, { ReporteCambiosRama, CambioRamaReciente } from '../../services/scoutService';
 
 // Interfaces para los datos de reportes
 interface EstadisticasGenerales {
@@ -77,19 +81,21 @@ export default function ReportsMigrated() {
   const [scoutsPorRama, setScoutsPorRama] = useState<ScoutPorRama[]>([]);
   const [tendencias, setTendencias] = useState<TendenciaMensual[]>([]);
   const [scoutsProgresion, setScoutsProgresion] = useState<Scout[]>([]);
+  const [reporteCambiosRama, setReporteCambiosRama] = useState<ReporteCambiosRama | null>(null);
 
   // Estados de UI
   const [selectedReport, setSelectedReport] = useState('scouts-rama');
   const [selectedScout, setSelectedScout] = useState<Scout | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRama, setFilterRama] = useState<'todas' | 'manada' | 'tropa' | 'comunidad'>('todas');
+  const [filterAnio, setFilterAnio] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
     loadReportsData();
-  }, []);
+  }, [filterAnio]);
 
   // Función para cargar todos los datos de reportes
   const loadReportsData = async () => {
@@ -102,18 +108,21 @@ export default function ReportsMigrated() {
         estadisticasData,
         ramasData,
         tendenciasData,
-        scoutsData
+        scoutsData,
+        cambiosRamaData
       ] = await Promise.all([
         ScoutService.getEstadisticasGenerales(),
         ScoutService.getScoutsPorRama(),
         ScoutService.getTendenciasMensuales(),
-        ScoutService.getScoutsConProgresion()
+        ScoutService.getScoutsConProgresion(),
+        ScoutService.getReporteCambiosRama(filterAnio)
       ]);
 
       setEstadisticas(estadisticasData);
       setScoutsPorRama(ramasData || []);
       setTendencias(tendenciasData || []);
       setScoutsProgresion(scoutsData || []);
+      setReporteCambiosRama(cambiosRamaData);
 
     } catch (err) {
       console.error('Error cargando reportes:', err);
@@ -174,6 +183,13 @@ export default function ReportsMigrated() {
       description: 'Lista y estadísticas de scouts organizados por rama',
       icon: Users,
       color: 'bg-blue-500'
+    },
+    {
+      id: 'cambios-rama',
+      title: 'Cambios de Rama',
+      description: 'Scouts que fueron promovidos o cambiaron de rama',
+      icon: ArrowRightLeft,
+      color: 'bg-indigo-500'
     },
     {
       id: 'estadisticas',
@@ -401,6 +417,186 @@ export default function ReportsMigrated() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Cambios de Rama */}
+          {selectedReport === 'cambios-rama' && (
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-semibold text-white flex items-center gap-3">
+                  <ArrowRightLeft className="w-8 h-8 text-indigo-400" />
+                  Cambios de Rama
+                </h2>
+                <div className="flex items-center gap-4">
+                  <select
+                    value={filterAnio}
+                    onChange={(e) => setFilterAnio(e.target.value)}
+                    className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent"
+                  >
+                    <option value="" className="bg-slate-800">Todos los años</option>
+                    <option value="2026" className="bg-slate-800">2026</option>
+                    <option value="2025" className="bg-slate-800">2025</option>
+                    <option value="2024" className="bg-slate-800">2024</option>
+                  </select>
+                  <button className="flex items-center space-x-2 px-4 py-2 bg-[#4A90E2] text-white rounded-lg hover:bg-[#4A90E2]/80 transition-colors">
+                    <Download className="w-4 h-4" />
+                    <span>Exportar</span>
+                  </button>
+                </div>
+              </div>
+
+              {reporteCambiosRama ? (
+                <>
+                  {/* Resumen General */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-gradient-to-r from-indigo-500/20 to-indigo-400/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-indigo-500/30 rounded-lg">
+                          <ArrowRightLeft className="w-6 h-6 text-indigo-300" />
+                        </div>
+                        <span className="text-white/80 text-sm">Total Cambios</span>
+                      </div>
+                      <p className="text-4xl font-bold text-white">{reporteCambiosRama.resumen.total_cambios}</p>
+                      <p className="text-sm text-white/60 mt-1">en {reporteCambiosRama.resumen.anio}</p>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-green-500/20 to-green-400/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-green-500/30 rounded-lg">
+                          <TrendingUp className="w-6 h-6 text-green-300" />
+                        </div>
+                        <span className="text-white/80 text-sm">Scouts Promovidos</span>
+                      </div>
+                      <p className="text-4xl font-bold text-white">{reporteCambiosRama.resumen.scouts_promovidos}</p>
+                      <p className="text-sm text-white/60 mt-1">avanzaron de rama</p>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-purple-500/20 to-purple-400/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-purple-500/30 rounded-lg">
+                          <Calendar className="w-6 h-6 text-purple-300" />
+                        </div>
+                        <span className="text-white/80 text-sm">Año del Reporte</span>
+                      </div>
+                      <p className="text-4xl font-bold text-white">{reporteCambiosRama.resumen.anio}</p>
+                      <p className="text-sm text-white/60 mt-1">período seleccionado</p>
+                    </div>
+                  </div>
+
+                  {/* Distribución por Rama Destino */}
+                  {reporteCambiosRama.resumen.por_rama_destino && (
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 mb-8">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-indigo-400" />
+                        Distribución por Rama Destino
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {reporteCambiosRama.resumen.por_rama_destino.map((item: { rama: string; cantidad: number }) => {
+                          const ramaColors: Record<string, string> = {
+                            'Manada': 'from-amber-500/30 to-amber-400/10 border-amber-400/30',
+                            'Tropa': 'from-blue-500/30 to-blue-400/10 border-blue-400/30',
+                            'Comunidad': 'from-red-500/30 to-red-400/10 border-red-400/30',
+                            'Clan': 'from-purple-500/30 to-purple-400/10 border-purple-400/30'
+                          };
+                          const colorClass = ramaColors[item.rama] || 'from-gray-500/30 to-gray-400/10 border-gray-400/30';
+                          return (
+                            <div key={item.rama} className={`bg-gradient-to-r ${colorClass} rounded-xl border p-4`}>
+                              <p className="text-white/80 text-sm">{item.rama}</p>
+                              <p className="text-2xl font-bold text-white">{item.cantidad}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Distribución por Mes */}
+                  {reporteCambiosRama.resumen.por_mes && reporteCambiosRama.resumen.por_mes.length > 0 && (
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 mb-8">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-purple-400" />
+                        Cambios por Mes
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <div className="flex gap-2">
+                          {reporteCambiosRama.resumen.por_mes.map((item: { mes: number; nombre_mes: string; cantidad: number }) => (
+                            <div key={item.mes} className="flex flex-col items-center min-w-[60px]">
+                              <div 
+                                className="w-8 bg-indigo-500/50 rounded-t-lg" 
+                                style={{ height: `${Math.max(item.cantidad * 20, 10)}px` }}
+                              ></div>
+                              <span className="text-xs text-white/60 mt-1">{item.nombre_mes.slice(0, 3)}</span>
+                              <span className="text-sm font-bold text-white">{item.cantidad}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tabla de Cambios Recientes */}
+                  {reporteCambiosRama.cambios_recientes && reporteCambiosRama.cambios_recientes.length > 0 && (
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-green-400" />
+                        Cambios Recientes
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-white/20">
+                              <th className="text-left py-3 text-sm font-medium text-white/80">Scout</th>
+                              <th className="text-center py-3 text-sm font-medium text-white/80">Rama Anterior</th>
+                              <th className="text-center py-3 text-sm font-medium text-white/80"></th>
+                              <th className="text-center py-3 text-sm font-medium text-white/80">Rama Nueva</th>
+                              <th className="text-center py-3 text-sm font-medium text-white/80">Fecha</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {reporteCambiosRama.cambios_recientes.map((cambio: CambioRamaReciente) => (
+                              <tr key={cambio.id} className="border-b border-white/10 hover:bg-white/5">
+                                <td className="py-3">
+                                  <div>
+                                    <p className="font-medium text-white">{cambio.nombres} {cambio.apellidos}</p>
+                                    <p className="text-xs text-white/60">{cambio.codigo_scout}</p>
+                                  </div>
+                                </td>
+                                <td className="py-3 text-center">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-500/20 text-gray-300">
+                                    {cambio.rama_anterior || 'Sin rama'}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-center">
+                                  <ArrowRight className="w-5 h-5 text-indigo-400 mx-auto" />
+                                </td>
+                                <td className="py-3 text-center">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-500/20 text-indigo-300">
+                                    {cambio.rama_nueva}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-center text-white/80">
+                                  {new Date(cambio.fecha_cambio).toLocaleDateString('es-PE', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <ArrowRightLeft className="mx-auto h-16 w-16 text-white/30 mb-4" />
+                  <h3 className="text-xl font-medium text-white/80 mb-2">No hay cambios de rama registrados</h3>
+                  <p className="text-white/60">Los cambios de rama se registran automáticamente cuando se actualiza la rama de un scout</p>
+                </div>
+              )}
             </div>
           )}
 

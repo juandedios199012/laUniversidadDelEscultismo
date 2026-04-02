@@ -46,6 +46,7 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
           religion,
           grupo_sanguineo,
           factor_sanguineo,
+          seguro_medico,
           tipo_discapacidad,
           carnet_conadis,
           descripcion_discapacidad
@@ -116,22 +117,19 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
           esApoderado: fam.es_autorizado_recoger || false
         }));
 
-    // Cargar URLs de documentos (firma, huella digital) para cada familiar
+    // Cargar URLs de documentos (DNI anverso/reverso) para cada familiar
     const familiares: FamiliarReportData[] = await Promise.all(
       familiaresBase.map(async (fam) => {
         if (!fam.id) return fam;
         
         try {
-          // Obtener URLs de firma y huella digital en paralelo
-          const [firmaDoc, huellaDigitalDoc] = await Promise.all([
-            scoutDocumentsService.getDocument('familiar', fam.id, 'firma').catch(() => null),
-            scoutDocumentsService.getDocument('familiar', fam.id, 'huella_digital').catch(() => null),
-          ]);
+          // Obtener URLs de DNI anverso y reverso
+          const dniDocs = await scoutDocumentsService.getIdentityDocumentUrls('familiar', fam.id).catch(() => null);
           
           return {
             ...fam,
-            firmaUrl: firmaDoc?.url || undefined,
-            huellaDigitalUrl: huellaDigitalDoc?.url || undefined,
+            dniAnversoUrl: dniDocs?.anverso || undefined,
+            dniReversoUrl: dniDocs?.reverso || undefined,
           };
         } catch (error) {
           console.warn(`Error cargando documentos para familiar ${fam.id}:`, error);
@@ -180,10 +178,10 @@ export async function getScoutData(scoutId: string): Promise<ScoutReportData | n
       anioEstudios: scoutData.anio_estudios || '',
       // Datos religiosos
       religion: personaData.religion || '',
-      // Datos médicos y de salud
+      // Datos médicos y de salud (todos vienen de personas)
       grupoSanguineo: personaData.grupo_sanguineo || '',
       factorSanguineo: personaData.factor_sanguineo || '',
-      seguroMedico: scoutData.seguro_medico || '',
+      seguroMedico: personaData.seguro_medico || '',
       tipoDiscapacidad: personaData.tipo_discapacidad || '',
       carnetConadis: personaData.carnet_conadis || '',
       descripcionDiscapacidad: personaData.descripcion_discapacidad || '',

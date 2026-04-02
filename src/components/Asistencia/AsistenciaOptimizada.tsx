@@ -90,9 +90,9 @@ export default function AsistenciaOptimizada() {
       if (programasError) throw programasError;
       setProgramas(programasData || []);
 
-      // Cargar scouts activos
+      // Cargar scouts activos (excluir inactivos, suspendidos, eliminados)
       const scoutsData = await ScoutService.getScouts();
-      setScouts(scoutsData.filter(s => s.estado === 'activo'));
+      setScouts(scoutsData.filter(s => s.estado === 'ACTIVO'));
 
     } catch (error) {
       console.error('Error al cargar datos:', error);

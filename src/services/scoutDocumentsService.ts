@@ -931,6 +931,26 @@ class ScoutDocumentsService {
       };
     }
   }
+
+  /**
+   * Obtiene solo las URLs de documentos de identidad (anverso y reverso)
+   * Útil para reportes donde solo se necesitan las URLs
+   */
+  async getIdentityDocumentUrls(
+    entityType: EntityType,
+    entityId: string
+  ): Promise<{ anverso?: string; reverso?: string }> {
+    try {
+      const docs = await this.getIdentityDocuments(entityType, entityId);
+      return {
+        anverso: docs.anverso?.url,
+        reverso: docs.reverso?.url,
+      };
+    } catch (error) {
+      console.error('Error obteniendo URLs de documentos de identidad:', error);
+      return {};
+    }
+  }
 }
 
 // Exportar instancia singleton

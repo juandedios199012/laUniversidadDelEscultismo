@@ -3,7 +3,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
+import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import {
   ReportType,
   ExportFormat,
@@ -26,6 +28,15 @@ import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
 import { getEspecialidadesReportData } from '../services/especialidadesDataService';
 import { supabase } from '../../../lib/supabase';
+// Imports para reportes masivos
+import DniCollectionTemplate from '../templates/pdf/DniCollectionTemplate';
+import {
+  getAllScoutsWithDni,
+  getAllFamiliaresWithDni,
+  generateMasiveReportMetadata,
+  getAvailableRamas,
+  splitPersonasForPdf,
+} from '../services/masiveReportService';
 
 interface Scout {
   id: string;
@@ -42,6 +53,7 @@ interface ReportManagerProps {
 }
 
 export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) => {
+  const { error: showError, info } = useToast();
   const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null);
   const [filters, setFilters] = useState<ReportFilters>({
     dateFrom: '',
@@ -52,11 +64,21 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [especialidadesRama, setEspecialidadesRama] = useState<string>('');
   const [loadingScouts, setLoadingScouts] = useState(false);
+  
+  // Estado para filtro de rama en reportes masivos
+  const [ramaFilter, setRamaFilter] = useState<string>('TODAS');
+  const [availableRamas, setAvailableRamas] = useState<string[]>([]);
 
-  // Cargar lista de scouts al montar el componente
+  // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
     loadScouts();
+    loadRamas();
   }, []);
+  
+  const loadRamas = async () => {
+    const ramas = await getAvailableRamas();
+    setAvailableRamas(ramas);
+  };
 
   const loadScouts = async () => {
     setLoadingScouts(true);
@@ -201,6 +223,43 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
       ]
+    },
+    {
+      name: 'Impresiones Masivas',
+      reports: [
+        {
+          type: ReportType.DNI_SCOUTS,
+          title: 'DNI de Scouts',
+          description: 'Documentos de identidad de scouts (PDF único)',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'sky',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.DNI_SCOUTS_SPLIT,
+          title: 'DNI Scouts (múltiples PDF)',
+          description: 'DNI dividido en archivos de máx. 600KB',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'cyan',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.DNI_FAMILIARES,
+          title: 'DNI de Familiares',
+          description: 'Documentos de identidad de familiares',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'fuchsia',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.DNI_FAMILIARES_SPLIT,
+          title: 'DNI Familiares (múltiples PDF)',
+          description: 'DNI dividido en archivos de máx. 600KB',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'purple',
+          badge: '¡Nuevo!'
+        },
+      ]
     }
   ];
 
@@ -231,6 +290,18 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.ESPECIALIDADES:
           return await exportEspecialidadesReport(format, metadata);
+
+        case ReportType.DNI_SCOUTS:
+          return await exportDniScouts(format);
+          
+        case ReportType.DNI_SCOUTS_SPLIT:
+          return await exportDniScoutsSplit(format);
+
+        case ReportType.DNI_FAMILIARES:
+          return await exportDniFamiliares(format);
+          
+        case ReportType.DNI_FAMILIARES_SPLIT:
+          return await exportDniFamiliaresSplit(format);
 
         default:
           return {
@@ -533,6 +604,247 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
   };
 
+  // =====================================================
+  // FUNCIONES DE EXPORTACIÓN - REPORTES MASIVOS
+  // =====================================================
+
+  const exportDniScouts = async (format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      const { personas, showAlert, alertMessage } = await getAllScoutsWithDni(ramaFilter);
+      
+      if (personas.length === 0) {
+        showError("No hay scouts con documentos de identidad cargados");
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      // Mostrar alerta en UI antes de generar
+      if (showAlert) {
+        info(alertMessage || "El archivo supera el límite recomendado de 600KB. Se generará de todas formas.");
+      }
+
+      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
+      const fileName = `DNI_Scouts${ramaSuffix}_${new Date().toISOString().split('T')[0]}`;
+      const metadata = generateMasiveReportMetadata();
+      
+      if (format === 'pdf') {
+        const result = await generateAndDownloadPDF(
+          <DniCollectionTemplate personas={personas} tipo="scouts" metadata={metadata} />,
+          fileName
+        );
+        return { status: result.status, fileName: result.fileName };
+      } else {
+        // Para Word, crear documento con información
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: 'DNI de Scouts', bold: true, size: 32 })],
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({ children: [new TextRun({ text: `Generado: ${new Date().toLocaleDateString('es-PE')}`, size: 20 })] }),
+              new Paragraph({ children: [] }),
+              ...personas.flatMap(persona => [
+                new Paragraph({
+                  children: [new TextRun({ text: `${persona.nombres} ${persona.apellidos}`, bold: true, size: 24 })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `DNI Anverso: ${persona.dniAnversoUrl ? 'Cargado' : 'No disponible'}` })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `DNI Reverso: ${persona.dniReversoUrl ? 'Cargado' : 'No disponible'}` })],
+                }),
+                new Paragraph({ children: [] }),
+              ]),
+            ],
+          }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        return { status: 'success' as any, fileName: `${fileName}.docx` };
+      }
+    } catch (error) {
+      console.error('Error exportando DNI de scouts:', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
+  // Exportar DNI de Scouts dividido en múltiples PDFs (máx 600KB cada uno)
+  const exportDniScoutsSplit = async (_format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      const { personas } = await getAllScoutsWithDni(ramaFilter);
+      
+      if (personas.length === 0) {
+        showError("No hay scouts con documentos de identidad cargados");
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      const grupos = splitPersonasForPdf(personas);
+      const metadata = generateMasiveReportMetadata();
+      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
+      const fechaStr = new Date().toISOString().split('T')[0];
+      
+      info(`Se generarán ${grupos.length} archivo(s) PDF para ${personas.length} scouts.`);
+
+      // Generar cada PDF secuencialmente
+      for (let i = 0; i < grupos.length; i++) {
+        const grupo = grupos[i];
+        if (grupo.length === 0) continue;
+        
+        const fileName = `DNI_Scouts${ramaSuffix}_Parte${i + 1}de${grupos.length}_${fechaStr}`;
+        await generateAndDownloadPDF(
+          <DniCollectionTemplate personas={grupo} tipo="scouts" metadata={metadata} />,
+          fileName
+        );
+        
+        // Pequeña pausa entre descargas para evitar problemas
+        if (i < grupos.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      return { status: 'success' as any, fileName: `DNI_Scouts${ramaSuffix}_${grupos.length}archivos.zip` };
+    } catch (error) {
+      console.error('Error exportando DNI de scouts (split):', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
+  const exportDniFamiliares = async (format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      const { personas, showAlert, alertMessage } = await getAllFamiliaresWithDni(ramaFilter);
+      
+      if (personas.length === 0) {
+        showError("No hay familiares con documentos de identidad cargados");
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      // Mostrar alerta en UI antes de generar
+      if (showAlert) {
+        info(alertMessage || "El archivo supera el límite recomendado de 600KB. Se generará de todas formas.");
+      }
+
+      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
+      const fileName = `DNI_Familiares${ramaSuffix}_${new Date().toISOString().split('T')[0]}`;
+      const metadata = generateMasiveReportMetadata();
+      
+      if (format === 'pdf') {
+        const result = await generateAndDownloadPDF(
+          <DniCollectionTemplate personas={personas} tipo="familiares" metadata={metadata} />,
+          fileName
+        );
+        return { status: result.status, fileName: result.fileName };
+      } else {
+        // Para Word, crear documento con información
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: 'DNI de Familiares', bold: true, size: 32 })],
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({ children: [new TextRun({ text: `Generado: ${new Date().toLocaleDateString('es-PE')}`, size: 20 })] }),
+              new Paragraph({ children: [] }),
+              ...personas.flatMap(persona => [
+                new Paragraph({
+                  children: [new TextRun({ text: `${persona.nombres} ${persona.apellidos} - ${persona.parentesco || 'Sin parentesco'}`, bold: true, size: 24 })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Scout relacionado: ${persona.scoutAsociado || 'No especificado'}` })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `DNI Anverso: ${persona.dniAnversoUrl ? 'Cargado' : 'No disponible'}` })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `DNI Reverso: ${persona.dniReversoUrl ? 'Cargado' : 'No disponible'}` })],
+                }),
+                new Paragraph({ children: [] }),
+              ]),
+            ],
+          }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        return { status: 'success' as any, fileName: `${fileName}.docx` };
+      }
+    } catch (error) {
+      console.error('Error exportando DNI de familiares:', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
+  // Exportar DNI de Familiares dividido en múltiples PDFs (máx 600KB cada uno)
+  const exportDniFamiliaresSplit = async (_format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      const { personas } = await getAllFamiliaresWithDni(ramaFilter);
+      
+      if (personas.length === 0) {
+        showError("No hay familiares con documentos de identidad cargados");
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      const grupos = splitPersonasForPdf(personas);
+      const metadata = generateMasiveReportMetadata();
+      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
+      const fechaStr = new Date().toISOString().split('T')[0];
+      
+      info(`Se generarán ${grupos.length} archivo(s) PDF para ${personas.length} familiares.`);
+
+      // Generar cada PDF secuencialmente
+      for (let i = 0; i < grupos.length; i++) {
+        const grupo = grupos[i];
+        if (grupo.length === 0) continue;
+        
+        const fileName = `DNI_Familiares${ramaSuffix}_Parte${i + 1}de${grupos.length}_${fechaStr}`;
+        await generateAndDownloadPDF(
+          <DniCollectionTemplate personas={grupo} tipo="familiares" metadata={metadata} />,
+          fileName
+        );
+        
+        // Pequeña pausa entre descargas para evitar problemas
+        if (i < grupos.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      return { status: 'success' as any, fileName: `DNI_Familiares${ramaSuffix}_${grupos.length}archivos.zip` };
+    } catch (error) {
+      console.error('Error exportando DNI de familiares (split):', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
   return (
     <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
       <div className="flex items-center gap-3 mb-6">
@@ -662,6 +974,31 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </div>
               {/* Componente de Excel con su propio filtro */}
               <EspecialidadesExcelReport filterRama={especialidadesRama} />
+            </div>
+          )}
+
+          {/* Filtro de rama para reportes masivos de DNI */}
+          {(selectedReportType === ReportType.DNI_SCOUTS || 
+            selectedReportType === ReportType.DNI_SCOUTS_SPLIT ||
+            selectedReportType === ReportType.DNI_FAMILIARES ||
+            selectedReportType === ReportType.DNI_FAMILIARES_SPLIT) && (
+            <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-4">
+              <label className="block text-sm font-medium text-sky-800 mb-2">
+                Filtrar por Rama
+              </label>
+              <select
+                value={ramaFilter}
+                onChange={(e) => setRamaFilter(e.target.value)}
+                className="w-full md:w-64 px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                <option value="TODAS">Todas las ramas</option>
+                {availableRamas.map(rama => (
+                  <option key={rama} value={rama}>{rama}</option>
+                ))}
+              </select>
+              <p className="text-xs text-sky-600 mt-2">
+                Selecciona una rama para filtrar los documentos de identidad.
+              </p>
             </div>
           )}
 

@@ -21,6 +21,11 @@ export enum ReportType {
   ESPECIALIDADES = 'especialidades',
   // Reporte de Historia Médica
   HISTORIA_MEDICA = 'historia_medica',
+  // Reportes masivos de impresión
+  DNI_SCOUTS = 'dni_scouts',
+  DNI_SCOUTS_SPLIT = 'dni_scouts_split',
+  DNI_FAMILIARES = 'dni_familiares',
+  DNI_FAMILIARES_SPLIT = 'dni_familiares_split',
 }
 
 // Formatos de exportación
@@ -73,10 +78,9 @@ export interface FamiliarReportData {
   esContactoEmergencia?: boolean;
   esAutorizadoRecoger?: boolean;
   esApoderado?: boolean;
-  // URLs de documentos (firma y huella digital)
-  firmaUrl?: string;
-  huellaDigitalUrl?: string;
-  documentoIdentidadUrl?: string;
+  // URLs de documento de identidad del familiar (anverso y reverso)
+  dniAnversoUrl?: string;
+  dniReversoUrl?: string;
 }
 
 // Datos del Scout para reportes

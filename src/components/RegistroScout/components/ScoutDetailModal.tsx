@@ -4,14 +4,14 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, User, Users, FileText, Phone, Mail, MapPin, Building2, Calendar } from 'lucide-react';
+import { X, User, Users, FileText, Phone, Mail, MapPin, Building2, Calendar, ArrowRight, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import ScoutService from '@/services/scoutService';
+import ScoutService, { HistorialRamaItem } from '@/services/scoutService';
 import type { Scout, FamiliarScout } from '@/lib/supabase';
 
 interface ScoutDetailModalProps {
@@ -35,6 +35,7 @@ const ramaBadgeVariant: Record<string, "manada" | "tropa" | "comunidad" | "clan"
 
 export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetailModalProps) {
   const [familiares, setFamiliares] = useState<FamiliarScout[]>([]);
+  const [historialRamas, setHistorialRamas] = useState<HistorialRamaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [scoutCompleto, setScoutCompleto] = useState<Scout | null>(null);
 
@@ -56,6 +57,16 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const getRamaBadgeColor = (rama: string) => {
+    const ramaLower = rama.toLowerCase();
+    if (ramaLower.includes('manada')) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    if (ramaLower.includes('tropa')) return 'bg-green-100 text-green-800 border-green-300';
+    if (ramaLower.includes('comunidad') || ramaLower.includes('caminante')) return 'bg-orange-100 text-orange-800 border-orange-300';
+    if (ramaLower.includes('clan') || ramaLower.includes('rover')) return 'bg-red-100 text-red-800 border-red-300';
+    if (ramaLower.includes('dirigente')) return 'bg-blue-100 text-blue-800 border-blue-300';
+    return 'bg-gray-100 text-gray-800 border-gray-300';
   };
 
   // Cargar datos completos y familiares cuando se abre el modal
@@ -81,6 +92,10 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
       } else {
         setScoutCompleto(scout);
       }
+
+      // Cargar historial de ramas
+      const historial = await ScoutService.getHistorialRamas(scout.id);
+      setHistorialRamas(historial);
     } catch (error) {
       console.error('Error al cargar datos del scout:', error);
       setScoutCompleto(scout);
@@ -330,11 +345,84 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
             </TabsContent>
 
             <TabsContent value="historial" className="mt-4">
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <p className="text-yellow-800 dark:text-yellow-200">
-                  🚧 Esta sección estará disponible próximamente con el historial de actividades, logros y cambios de rama.
-                </p>
-              </div>
+              {historialRamas.length === 0 ? (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <History className="h-5 w-5" />
+                    <p>No hay cambios de rama registrados para este scout.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Historial de Cambios de Rama
+                  </h4>
+                  
+                  {/* Timeline vertical */}
+                  <div className="relative">
+                    {/* Línea vertical */}
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+                    
+                    <div className="space-y-4">
+                      {historialRamas.map((cambio, index) => (
+                        <div key={cambio.id} className="relative pl-10">
+                          {/* Punto en la timeline */}
+                          <div className={`absolute left-2 w-5 h-5 rounded-full border-2 ${
+                            index === 0 
+                              ? 'bg-green-500 border-green-500' 
+                              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                          }`}>
+                            {index === 0 && (
+                              <span className="absolute inset-0 flex items-center justify-center text-white text-xs">✓</span>
+                            )}
+                          </div>
+                          
+                          {/* Card del cambio */}
+                          <Card className={index === 0 ? 'border-green-200 bg-green-50/50 dark:bg-green-900/20' : ''}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {cambio.rama_anterior !== 'Ingreso' ? (
+                                  <>
+                                    <Badge variant="outline" className={getRamaBadgeColor(cambio.rama_anterior)}>
+                                      {cambio.rama_anterior}
+                                    </Badge>
+                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">Ingreso a</span>
+                                )}
+                                <Badge variant="outline" className={getRamaBadgeColor(cambio.rama_nueva)}>
+                                  {cambio.rama_nueva}
+                                </Badge>
+                              </div>
+                              
+                              <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  <span>{formatearFecha(cambio.fecha_cambio)}</span>
+                                </div>
+                              </div>
+                              
+                              {cambio.motivo && (
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  📝 {cambio.motivo}
+                                </p>
+                              )}
+                              
+                              {cambio.autorizado_por && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Autorizado por: {cambio.autorizado_por}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         )}

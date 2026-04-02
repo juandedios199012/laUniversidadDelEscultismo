@@ -1,6 +1,41 @@
 import { supabase } from '../lib/supabase';
 import type { Scout, FamiliarScout } from '../lib/supabase';
 
+// Tipo para historial de cambios de rama
+export interface HistorialRamaItem {
+  id: string;
+  rama_anterior: string;
+  rama_nueva: string;
+  fecha_cambio: string;
+  motivo: string | null;
+  autorizado_por: string | null;
+  created_at: string;
+}
+
+// Tipo para reporte de cambios de rama (Dashboard)
+export interface CambioRamaReciente {
+  id: string;
+  scout_id: string;
+  codigo_scout: string;
+  nombres: string;
+  apellidos: string;
+  rama_anterior: string;
+  rama_nueva: string;
+  fecha_cambio: string;
+  motivo: string | null;
+}
+
+export interface ReporteCambiosRama {
+  resumen: {
+    anio: number;
+    total_cambios: number;
+    scouts_promovidos: number;
+    por_rama_destino: Array<{ rama: string; cantidad: number }> | null;
+    por_mes: Array<{ mes: number; cantidad: number }> | null;
+  };
+  cambios_recientes: CambioRamaReciente[] | null;
+}
+
 /**
  * 🎯 Scout Service - Gestión completa del sistema Scout
  * 
@@ -695,6 +730,69 @@ class ScoutService {
     } catch (error) {
       console.error('❌ Error al desactivar scout:', error);
       throw error;
+    }
+  }
+
+  /**
+   * ✅ Activar scout (cambiar estado a ACTIVO)
+   * Endpoint: PUT /api/scouts/{id}/activar
+   */
+  static async activarScout(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('scouts')
+        .update({ estado: 'ACTIVO' })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error al activar scout:', error);
+      return { success: false, error: 'Error al activar el scout' };
+    }
+  }
+
+  /**
+   * 📜 Obtener historial de cambios de rama de un scout
+   */
+  static async getHistorialRamas(scoutId: string): Promise<HistorialRamaItem[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('api_obtener_historial_rama', { p_scout_id: scoutId });
+
+      if (error) {
+        console.error('❌ Error al obtener historial de ramas:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error al obtener historial de ramas:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 📊 Obtener reporte de cambios de rama (Dashboard)
+   */
+  static async getReporteCambiosRama(anio?: number, ramaDestino?: string): Promise<ReporteCambiosRama | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('api_reporte_cambios_rama', { 
+          p_anio: anio || null,
+          p_rama_destino: ramaDestino || null
+        });
+
+      if (error) {
+        console.error('❌ Error al obtener reporte de cambios de rama:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Error al obtener reporte de cambios de rama:', error);
+      return null;
     }
   }
 

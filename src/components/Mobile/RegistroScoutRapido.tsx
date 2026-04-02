@@ -1146,7 +1146,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
                     <p className="text-xs text-gray-500">Fecha Nac.</p>
                     <p className="font-semibold text-gray-800">
                       {watch('fecha_nacimiento') && 
-                        new Date(watch('fecha_nacimiento')).toLocaleDateString('es-PE')}
+                        new Date(watch('fecha_nacimiento') + 'T12:00:00').toLocaleDateString('es-PE')}
                     </p>
                   </div>
                 </div>
