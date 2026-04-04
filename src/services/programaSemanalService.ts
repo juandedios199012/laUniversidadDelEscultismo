@@ -468,6 +468,86 @@ export class ProgramaSemanalService {
       return [];
     }
   }
+
+  // ============= 👥 GESTIÓN DE DIRIGENTES ACTIVOS =============
+
+  /**
+   * 👥 Obtener dirigentes activos para selectores de responsable
+   * Devuelve lista simplificada con id, nombre completo y cargo
+   */
+  static async obtenerDirigentesActivos(): Promise<Array<{
+    id: string;
+    nombre_completo: string;
+    cargo: string;
+    rama?: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('dirigentes')
+        .select(`
+          id,
+          cargo,
+          unidad,
+          persona:persona_id (
+            nombres,
+            apellidos
+          )
+        `)
+        .eq('estado', 'ACTIVO')
+        .order('cargo');
+
+      if (error) throw error;
+
+      return (data || []).map((d: any) => ({
+        id: d.id,
+        nombre_completo: d.persona 
+          ? `${d.persona.nombres || ''} ${d.persona.apellidos || ''}`.trim()
+          : 'Sin nombre',
+        cargo: d.cargo || 'Dirigente',
+        rama: d.unidad
+      }));
+    } catch (error) {
+      console.error('Error al obtener dirigentes activos:', error);
+      return [];
+    }
+  }
+
+  // ============= 🏕️ ACTIVIDADES AUTOMÁTICAS I.B.O =============
+
+  /**
+   * 🏕️ Generar actividades I.B.O automáticas
+   * Devuelve las dos actividades predefinidas para agregar al programa
+   */
+  static getActividadesIBO(): Array<{
+    nombre: string;
+    desarrollo: string;
+    hora_inicio: string;
+    duracion_minutos: number;
+    responsable: string;
+    materiales: string[];
+    observaciones: string;
+  }> {
+    return [
+      {
+        nombre: 'I.B.O al inicio',
+        desarrollo: 'Recojo y colocación del ASTA metálica. Izamiento de Bandera, oración, inspección. También aplica colocar una soguilla de un árbol a otro y colgar la bandera.',
+        hora_inicio: '16:00',
+        duracion_minutos: 15,
+        responsable: '',
+        materiales: ['Silbato', 'Bandera', 'Asta'],
+        observaciones: ''
+      },
+      {
+        nombre: 'I.B.O al Final',
+        desarrollo: 'Arriar o Bajar de Bandera, oración, inspección.',
+        hora_inicio: '17:45',
+        duracion_minutos: 15,
+        responsable: '',
+        materiales: ['Silbato'],
+        observaciones: ''
+      }
+    ];
+  }
 }
 
 export default ProgramaSemanalService;

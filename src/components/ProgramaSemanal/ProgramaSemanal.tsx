@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy } from 'lucide-react';
+import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy, Flag, ChevronUp, ChevronDown } from 'lucide-react';
 import { ProgramaSemanalEntry, ProgramaActividad } from '../../lib/supabase';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 import PuntajesActividad from './PuntajesActividad';
 import RankingPatrullas from './RankingPatrullas';
 import { formatFechaLocal } from '../../utils/dateUtils';
+
+// Tipo para dirigentes activos
+interface DirigenteActivo {
+  id: string;
+  nombre_completo: string;
+  cargo: string;
+  rama?: string;
+}
 
 interface ProgramaSemanalProps {}
 
@@ -15,6 +23,9 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRama, setFilterRama] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
+
+  // Estados para dirigentes activos
+  const [dirigentesActivos, setDirigentesActivos] = useState<DirigenteActivo[]>([]);
 
   // Estados para modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -59,9 +70,20 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   // ============= EFECTOS =============
   useEffect(() => {
     loadProgramas();
+    loadDirigentesActivos();
   }, []);
 
   // ============= FUNCIONES DE CARGA =============
+  const loadDirigentesActivos = async () => {
+    try {
+      console.log('👥 Cargando dirigentes activos...');
+      const dirigentes = await ProgramaSemanalService.obtenerDirigentesActivos();
+      setDirigentesActivos(dirigentes);
+    } catch (error) {
+      console.error('❌ Error al cargar dirigentes:', error);
+    }
+  };
+
   const loadProgramas = async () => {
     setLoading(true);
     try {
@@ -139,8 +161,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     e.preventDefault();
     setLoading(true);
     try {
+      // Ordenar actividades por hora antes de guardar
+      const actividadesOrdenadas = ordenarActividadesPorHora(createForm.actividades);
       // Normalizar actividades para tipado estricto
-      const actividadesNormalizadas = (createForm.actividades || []).map(a => ({
+      const actividadesNormalizadas = (actividadesOrdenadas || []).map(a => ({
         ...a,
         desarrollo: a.desarrollo || '',
         nombre: a.nombre || '',
@@ -170,8 +194,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     
     setLoading(true);
     try {
+      // Ordenar actividades por hora antes de guardar
+      const actividadesOrdenadas = ordenarActividadesPorHora(editForm.actividades);
       // Normalizar actividades para tipado estricto
-      const actividadesNormalizadas = (editForm.actividades || []).map(a => ({
+      const actividadesNormalizadas = (actividadesOrdenadas || []).map(a => ({
         ...a,
         desarrollo: a.desarrollo || '',
         nombre: a.nombre || '',
@@ -241,6 +267,52 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       ...prev,
       actividades: prev.actividades.map((act, i) => i === index ? { ...act, [field]: value } : act)
     }));
+  };
+
+  // Función para ordenar actividades por hora_inicio
+  const ordenarActividadesPorHora = (actividades: ProgramaActividad[]): ProgramaActividad[] => {
+    return [...actividades].sort((a, b) => {
+      const horaA = a.hora_inicio || '00:00';
+      const horaB = b.hora_inicio || '00:00';
+      return horaA.localeCompare(horaB);
+    });
+  };
+
+  // Mover actividad hacia arriba
+  const moveActividadUp = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    if (index <= 0) return;
+    setForm(prev => {
+      const newActividades = [...prev.actividades];
+      [newActividades[index - 1], newActividades[index]] = [newActividades[index], newActividades[index - 1]];
+      return { ...prev, actividades: newActividades };
+    });
+  };
+
+  // Mover actividad hacia abajo
+  const moveActividadDown = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => {
+      if (index >= prev.actividades.length - 1) return prev;
+      const newActividades = [...prev.actividades];
+      [newActividades[index], newActividades[index + 1]] = [newActividades[index + 1], newActividades[index]];
+      return { ...prev, actividades: newActividades };
+    });
+  };
+
+  // Agregar actividades I.B.O automáticas (inserta en posición correcta)
+  const addActividadesIBO = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    const actividadesIBO = ProgramaSemanalService.getActividadesIBO();
+    const iboInicio = actividadesIBO[0]; // I.B.O al inicio (16:00)
+    const iboFinal = actividadesIBO[1];  // I.B.O al Final (17:45)
+    
+    setForm(prev => {
+      // Insertar I.B.O inicio al principio y I.B.O final al final
+      const nuevasActividades = [iboInicio, ...prev.actividades, iboFinal];
+      // Ordenar por hora para garantizar orden cronológico
+      return {
+        ...prev,
+        actividades: ordenarActividadesPorHora(nuevasActividades)
+      };
+    });
   };
 
   // ============= FUNCIONES DE FILTRADO =============
@@ -593,14 +665,19 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Responsable del Programa *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={createForm.responsable_programa}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, responsable_programa: e.target.value }))}
-                    placeholder="Nombre del dirigente responsable"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
-                  />
+                  >
+                    <option value="">Seleccionar dirigente responsable</option>
+                    {dirigentesActivos.map(dirigente => (
+                      <option key={dirigente.id} value={dirigente.nombre_completo}>
+                        {dirigente.nombre_completo} - {dirigente.cargo}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -649,28 +726,64 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   <label className="block text-sm font-medium text-gray-700">
                     Actividades *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => addActividad(setCreateForm)}
-                    className="text-green-600 hover:text-green-700 text-sm font-medium"
-                  >
-                    + Agregar Actividad
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => addActividadesIBO(setCreateForm)}
+                      className="text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center gap-1"
+                      title="Agregar actividades I.B.O predefinidas (Inicio y Final)"
+                    >
+                      <Flag className="w-4 h-4" />
+                      + Agregar I.B.O
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addActividad(setCreateForm)}
+                      className="text-green-600 hover:text-green-700 text-sm font-medium"
+                    >
+                      + Agregar Actividad
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   {createForm.actividades.map((actividad, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
-                        {createForm.actividades.length > 1 && (
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
+                          <span className="text-xs text-gray-500">({actividad.hora_inicio || 'Sin hora'})</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {/* Flechas de reordenamiento */}
                           <button
                             type="button"
-                            onClick={() => removeActividad(index, setCreateForm)}
-                            className="text-red-600 hover:bg-red-50 p-1 rounded"
+                            onClick={() => moveActividadUp(index, setCreateForm)}
+                            disabled={index === 0}
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Mover arriba"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <ChevronUp className="w-4 h-4" />
                           </button>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => moveActividadDown(index, setCreateForm)}
+                            disabled={index === createForm.actividades.length - 1}
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Mover abajo"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                          {createForm.actividades.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeActividad(index, setCreateForm)}
+                              className="text-red-600 hover:bg-red-50 p-1 rounded"
+                              title="Eliminar actividad"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -704,13 +817,18 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Responsable</label>
-                          <input
-                            type="text"
+                          <select
                             value={actividad.responsable}
                             onChange={(e) => updateActividad(index, 'responsable', e.target.value, setCreateForm)}
-                            placeholder="Dirigente responsable"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          />
+                          >
+                            <option value="">Seleccionar responsable</option>
+                            {dirigentesActivos.map(dirigente => (
+                              <option key={dirigente.id} value={dirigente.nombre_completo}>
+                                {dirigente.nombre_completo}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-xs font-medium text-gray-600 mb-1">Desarrollo *</label>
@@ -858,14 +976,23 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Responsable del Programa *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={editForm.responsable_programa}
                     onChange={(e) => setEditForm(prev => ({ ...prev, responsable_programa: e.target.value }))}
-                    placeholder="Nombre del dirigente responsable"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
-                  />
+                  >
+                    <option value="">Seleccionar dirigente responsable</option>
+                    {/* Mantener el valor actual si existe */}
+                    {editForm.responsable_programa && !dirigentesActivos.find(d => d.nombre_completo === editForm.responsable_programa) && (
+                      <option value={editForm.responsable_programa}>{editForm.responsable_programa} (valor actual)</option>
+                    )}
+                    {dirigentesActivos.map(dirigente => (
+                      <option key={dirigente.id} value={dirigente.nombre_completo}>
+                        {dirigente.nombre_completo} - {dirigente.cargo}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -914,28 +1041,64 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   <label className="block text-sm font-medium text-gray-700">
                     Actividades *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => addActividad(setEditForm)}
-                    className="text-green-600 hover:text-green-700 text-sm font-medium"
-                  >
-                    + Agregar Actividad
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => addActividadesIBO(setEditForm)}
+                      className="text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center gap-1"
+                      title="Agregar actividades I.B.O predefinidas (Inicio y Final)"
+                    >
+                      <Flag className="w-4 h-4" />
+                      + Agregar I.B.O
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addActividad(setEditForm)}
+                      className="text-green-600 hover:text-green-700 text-sm font-medium"
+                    >
+                      + Agregar Actividad
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   {editForm.actividades.map((actividad, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
-                        {editForm.actividades.length > 1 && (
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-900">Actividad {index + 1}</h4>
+                          <span className="text-xs text-gray-500">({actividad.hora_inicio || 'Sin hora'})</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {/* Flechas de reordenamiento */}
                           <button
                             type="button"
-                            onClick={() => removeActividad(index, setEditForm)}
-                            className="text-red-600 hover:bg-red-50 p-1 rounded"
+                            onClick={() => moveActividadUp(index, setEditForm)}
+                            disabled={index === 0}
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Mover arriba"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <ChevronUp className="w-4 h-4" />
                           </button>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => moveActividadDown(index, setEditForm)}
+                            disabled={index === editForm.actividades.length - 1}
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Mover abajo"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                          {editForm.actividades.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeActividad(index, setEditForm)}
+                              className="text-red-600 hover:bg-red-50 p-1 rounded"
+                              title="Eliminar actividad"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Fragmento para agrupar los elementos hijos */}
@@ -971,13 +1134,22 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Responsable</label>
-                            <input
-                              type="text"
+                            <select
                               value={actividad.responsable || ''}
                               onChange={(e) => updateActividad(index, 'responsable', e.target.value, setEditForm)}
-                              placeholder="Dirigente responsable"
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
+                            >
+                              <option value="">Seleccionar responsable</option>
+                              {/* Mantener el valor actual si existe */}
+                              {actividad.responsable && !dirigentesActivos.find(d => d.nombre_completo === actividad.responsable) && (
+                                <option value={actividad.responsable}>{actividad.responsable} (valor actual)</option>
+                              )}
+                              {dirigentesActivos.map(dirigente => (
+                                <option key={dirigente.id} value={dirigente.nombre_completo}>
+                                  {dirigente.nombre_completo}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                           <div className="md:col-span-2">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Desarrollo *</label>
