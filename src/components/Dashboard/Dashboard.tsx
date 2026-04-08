@@ -6,7 +6,21 @@ import {
   Calendar, 
   Clock,
   MapPin,
-  Book
+  Book,
+  Star,
+  TrendingUp,
+  Flag,
+  Shield,
+  ClipboardCheck,
+  Tent,
+  Map,
+  Package,
+  Wallet,
+  BarChart,
+  Lock,
+  Medal,
+  ChevronRight,
+  HeartHandshake
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -15,6 +29,145 @@ const quickActions = [
   { title: 'Programa Semanal', description: 'Crear programa de actividades', icon: Calendar, action: 'programa-semanal' },
   { title: 'Tomar Asistencia', description: 'Registrar asistencia del día', icon: Clock, action: 'asistencia' },
   { title: 'Libro de Oro', description: 'Agregar nueva entrada', icon: Book, action: 'libro-oro' }
+];
+
+const systemModules = [
+  {
+    id: 'scouts',
+    title: 'Scouts',
+    description: 'Registra y gestiona los datos personales, rama, patrulla y estado de cada scout.',
+    icon: Users,
+    gradient: 'from-green-500 to-emerald-500',
+    color: 'green'
+  },
+  {
+    id: 'inscripcion-anual',
+    title: 'Inscripción Anual',
+    description: 'Gestiona las inscripciones y pagos anuales de todos los scouts del grupo.',
+    icon: Star,
+    gradient: 'from-teal-500 to-cyan-500',
+    color: 'teal'
+  },
+  {
+    id: 'progresion',
+    title: 'Progresión',
+    description: 'Sigue el avance de cada scout en sus objetivos educativos y etapas de progresión.',
+    icon: TrendingUp,
+    gradient: 'from-amber-500 to-orange-500',
+    color: 'amber'
+  },
+  {
+    id: 'especialidades',
+    title: 'Especialidades',
+    description: 'Registra y gestiona las especialidades obtenidas por cada scout.',
+    icon: Medal,
+    gradient: 'from-yellow-500 to-amber-500',
+    color: 'yellow'
+  },
+  {
+    id: 'grupo-scout',
+    title: 'Grupo Scout',
+    description: 'Configura la información general del grupo, ramas y unidades.',
+    icon: Flag,
+    gradient: 'from-purple-500 to-violet-500',
+    color: 'purple'
+  },
+  {
+    id: 'comite-padres',
+    title: 'Comité de Padres',
+    description: 'Administra los integrantes del comité de padres y sus roles.',
+    icon: HeartHandshake,
+    gradient: 'from-purple-500 to-violet-500',
+    color: 'purple'
+  },
+  {
+    id: 'dirigentes',
+    title: 'Dirigentes',
+    description: 'Gestiona el registro, cargos y estado de los dirigentes del grupo.',
+    icon: Shield,
+    gradient: 'from-orange-500 to-red-500',
+    color: 'orange'
+  },
+  {
+    id: 'patrullas',
+    title: 'Patrullas',
+    description: 'Organiza las patrullas, asigna scouts y gestiona puntajes por patrulla.',
+    icon: Award,
+    gradient: 'from-red-500 to-pink-500',
+    color: 'red'
+  },
+  {
+    id: 'programa-semanal',
+    title: 'Programa Semanal',
+    description: 'Planifica y organiza las actividades semanales de cada unidad.',
+    icon: Calendar,
+    gradient: 'from-indigo-500 to-purple-500',
+    color: 'indigo'
+  },
+  {
+    id: 'asistencia',
+    title: 'Asistencia',
+    description: 'Toma y consulta la asistencia de scouts y dirigentes a las reuniones.',
+    icon: ClipboardCheck,
+    gradient: 'from-pink-500 to-rose-500',
+    color: 'pink'
+  },
+  {
+    id: 'actividades-exterior',
+    title: 'Aire Libre',
+    description: 'Registra campamentos, excursiones y actividades al aire libre del grupo.',
+    icon: Tent,
+    gradient: 'from-green-600 to-teal-600',
+    color: 'green'
+  },
+  {
+    id: 'mapas',
+    title: 'Mapas',
+    description: 'Visualiza ubicaciones de scouts y actividades en mapas interactivos del Perú.',
+    icon: Map,
+    gradient: 'from-emerald-500 to-teal-500',
+    color: 'emerald'
+  },
+  {
+    id: 'libro-oro',
+    title: 'Libro de Oro',
+    description: 'Registra los logros, promesas y momentos especiales de la historia del grupo.',
+    icon: Book,
+    gradient: 'from-yellow-500 to-orange-500',
+    color: 'yellow'
+  },
+  {
+    id: 'inventario',
+    title: 'Inventario',
+    description: 'Controla el equipamiento, materiales y recursos del grupo scout.',
+    icon: Package,
+    gradient: 'from-gray-500 to-slate-500',
+    color: 'gray'
+  },
+  {
+    id: 'finanzas',
+    title: 'Finanzas',
+    description: 'Gestiona ingresos, egresos, préstamos y el estado financiero del grupo.',
+    icon: Wallet,
+    gradient: 'from-emerald-500 to-green-600',
+    color: 'emerald'
+  },
+  {
+    id: 'reportes',
+    title: 'Reportes',
+    description: 'Genera reportes de asistencia, progresión, finanzas e inscripciones.',
+    icon: BarChart,
+    gradient: 'from-blue-600 to-indigo-600',
+    color: 'blue'
+  },
+  {
+    id: 'seguridad',
+    title: 'Seguridad',
+    description: 'Administra usuarios autorizados, roles y permisos de acceso al sistema.',
+    icon: Lock,
+    gradient: 'from-slate-500 to-gray-600',
+    color: 'slate'
+  }
 ];
 
 interface DashboardProps {
@@ -392,6 +545,37 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* System Capabilities */}
+      <div className="mt-10">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">¿Qué puede hacer el sistema?</h2>
+          <p className="text-gray-500 text-sm">Explora todos los módulos disponibles para gestionar tu grupo scout</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {systemModules.map((mod) => {
+            const Icon = mod.icon;
+            return (
+              <button
+                key={mod.id}
+                onClick={() => onNavigate(mod.id)}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all text-left group flex flex-col"
+              >
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${mod.gradient} group-hover:scale-110 transition-transform shadow`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 text-sm">{mod.title}</h3>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed flex-1">{mod.description}</p>
+                <div className="mt-3 flex items-center text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Abrir módulo <ChevronRight className="w-3 h-3 ml-1" />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
