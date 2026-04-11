@@ -784,6 +784,11 @@ function ProgresoCard({
             </div>
           </div>
 
+          {/* Contenido de las Fases (Viñetas) */}
+          {(progreso.especialidad.exploracion || progreso.especialidad.taller || progreso.especialidad.desafio) && (
+            <FasesContenido progreso={progreso} />
+          )}
+
           {/* Info adicional */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
@@ -919,6 +924,119 @@ function ProgresoCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPONENTE DE CONTENIDO DE FASES (VIÑETAS)
+// ============================================================================
+
+/**
+ * Parsea el texto de una fase en viñetas individuales.
+ * El separador es " • " (punto medio con espacios)
+ */
+function parsearVinetas(texto: string | undefined): string[] {
+  if (!texto || texto.trim() === '') return [];
+  
+  // Separar por el bullet point
+  const vinetas = texto.split(' • ').map(v => v.trim()).filter(v => v.length > 0);
+  
+  // Si no hay separador, devolver el texto completo como una sola viñeta
+  return vinetas.length > 0 ? vinetas : [texto];
+}
+
+interface FasesContenidoProps {
+  progreso: ProgresoEspecialidad;
+}
+
+function FasesContenido({ progreso }: FasesContenidoProps) {
+  const [faseExpandida, setFaseExpandida] = useState<FaseId | null>(null);
+  
+  const fases: { id: FaseId; titulo: string; icono: string; color: string; contenido?: string; estado: string }[] = [
+    { 
+      id: 'exploracion', 
+      titulo: 'Exploración', 
+      icono: '🔍', 
+      color: 'bg-blue-50 border-blue-200 text-blue-800',
+      contenido: progreso.especialidad.exploracion,
+      estado: progreso.fase_exploracion
+    },
+    { 
+      id: 'taller', 
+      titulo: 'Taller', 
+      icono: '🔧', 
+      color: 'bg-amber-50 border-amber-200 text-amber-800',
+      contenido: progreso.especialidad.taller,
+      estado: progreso.fase_taller
+    },
+    { 
+      id: 'desafio', 
+      titulo: 'Desafío', 
+      icono: '🎯', 
+      color: 'bg-green-50 border-green-200 text-green-800',
+      contenido: progreso.especialidad.desafio,
+      estado: progreso.fase_desafio
+    }
+  ];
+  
+  return (
+    <div className="border-t border-gray-100 pt-4">
+      <h4 className="text-sm font-medium text-gray-700 mb-3">📋 Requisitos por Fase</h4>
+      <div className="space-y-2">
+        {fases.map((fase) => {
+          const vinetas = parsearVinetas(fase.contenido);
+          const estaExpandida = faseExpandida === fase.id;
+          const completada = fase.estado === 'completada';
+          
+          if (vinetas.length === 0) return null;
+          
+          return (
+            <div key={fase.id} className={`rounded-lg border overflow-hidden ${fase.color}`}>
+              <button
+                onClick={() => setFaseExpandida(estaExpandida ? null : fase.id)}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/30 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span>{fase.icono}</span>
+                  <span className="font-medium">{fase.titulo}</span>
+                  <span className="text-xs opacity-70">({vinetas.length} requisitos)</span>
+                  {completada && (
+                    <span className="flex items-center gap-1 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                      <Check className="w-3 h-3" /> Completada
+                    </span>
+                  )}
+                </div>
+                {estaExpandida ? (
+                  <ChevronUp className="w-4 h-4 opacity-60" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 opacity-60" />
+                )}
+              </button>
+              
+              {estaExpandida && (
+                <div className="px-4 pb-4 bg-white/50">
+                  <ul className="space-y-2">
+                    {vinetas.map((vineta, index) => (
+                      <li 
+                        key={index} 
+                        className={`flex items-start gap-2 text-sm ${
+                          completada ? 'text-gray-500' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className={`mt-0.5 shrink-0 ${completada ? 'text-green-500' : 'text-gray-400'}`}>
+                          {completada ? '✓' : '•'}
+                        </span>
+                        <span className={completada ? 'line-through' : ''}>{vineta}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

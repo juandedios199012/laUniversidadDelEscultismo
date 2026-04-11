@@ -86,6 +86,10 @@ export interface ProgresoEspecialidad {
     codigo: string;
     nombre: string;
     descripcion: string;
+    // Contenido de las fases (viñetas separadas por " • ")
+    exploracion?: string;
+    taller?: string;
+    desafio?: string;
   };
   area: {
     id: string;

@@ -311,11 +311,38 @@ interface FaseCardProps {
   color: string;
 }
 
+/**
+ * Parsea el texto de una fase en viñetas individuales.
+ * El separador es " • " (punto medio con espacios)
+ */
+function parsearVinetas(texto: string): string[] {
+  if (!texto || texto.trim() === '') return [];
+  
+  // Separar por el bullet point
+  const vinetas = texto.split(' • ').map(v => v.trim()).filter(v => v.length > 0);
+  
+  // Si no hay separador, devolver el texto completo como una sola viñeta
+  return vinetas.length > 0 ? vinetas : [texto];
+}
+
 function FaseCard({ titulo, descripcion, color }: FaseCardProps) {
+  const vinetas = parsearVinetas(descripcion);
+  
   return (
     <div className={`p-4 rounded-xl border ${color}`}>
-      <h4 className="font-semibold text-gray-800 mb-2">{titulo}</h4>
-      <p className="text-sm text-gray-600">{descripcion}</p>
+      <h4 className="font-semibold text-gray-800 mb-3">{titulo}</h4>
+      {vinetas.length === 1 ? (
+        <p className="text-sm text-gray-600">{vinetas[0]}</p>
+      ) : (
+        <ul className="space-y-2">
+          {vinetas.map((vineta, index) => (
+            <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+              <span className="text-gray-400 mt-0.5 shrink-0">•</span>
+              <span>{vineta}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -19,6 +19,8 @@ export enum ReportType {
   SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
   // Reporte de Especialidades (migrado desde módulo)
   ESPECIALIDADES = 'especialidades',
+  // Reporte de Especialidades DETALLADO (cada especialidad por scout)
+  ESPECIALIDADES_DETALLE = 'especialidades_detalle',
   // Reporte de Historia Médica
   HISTORIA_MEDICA = 'historia_medica',
   // Reportes masivos de impresión

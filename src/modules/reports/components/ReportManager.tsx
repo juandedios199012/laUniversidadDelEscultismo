@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import {
@@ -17,6 +17,7 @@ import { generateAndDownloadPDF, generateReportMetadata } from '../services/pdfS
 import { generateAndDownloadDOCX, createScoutReportDOCX, createAttendanceReportDOCX, createProgressReportDOCX } from '../services/docxService';
 import { ScoutsExcelReport } from './ScoutsExcelReport';
 import { EspecialidadesExcelReport } from './EspecialidadesExcelReport';
+import { EspecialidadesDetalleExcelReport } from './EspecialidadesDetalleExcelReport';
 import {
   getScoutData,
   getAttendanceData,
@@ -138,6 +139,13 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'Progreso y estadísticas de especialidades por rama',
           icon: <Award className="w-6 h-6" />,
           color: 'amber',
+        },
+        {
+          type: ReportType.ESPECIALIDADES_DETALLE,
+          title: 'Especialidades Detallado',
+          description: 'Lista detallada de cada especialidad por scout con fases',
+          icon: <List className="w-6 h-6" />,
+          color: 'indigo',
           badge: '¡Nuevo!'
         },
       ]
@@ -974,6 +982,24 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </div>
               {/* Componente de Excel con su propio filtro */}
               <EspecialidadesExcelReport filterRama={especialidadesRama} />
+            </div>
+          )}
+
+          {/* Reporte de Especialidades DETALLADO - Cada especialidad por scout */}
+          {selectedReportType === ReportType.ESPECIALIDADES_DETALLE && (
+            <div className="space-y-4">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-indigo-800 mb-2">
+                  📊 Reporte Detallado de Especialidades
+                </h3>
+                <p className="text-xs text-indigo-600">
+                  Este reporte muestra <strong>cada especialidad asignada</strong> a cada scout, 
+                  incluyendo: estado de fases (Exploración, Taller, Desafío), fechas de inicio/fin, 
+                  asesor asignado y notas. Ideal para seguimiento detallado.
+                </p>
+              </div>
+              {/* Componente de Excel Detallado */}
+              <EspecialidadesDetalleExcelReport />
             </div>
           )}
 
