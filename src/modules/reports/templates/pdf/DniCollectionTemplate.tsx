@@ -13,6 +13,7 @@ import {
   Image,
   Font,
 } from '@react-pdf/renderer';
+import { getTipoDocumentoLabel } from '../../../../data/constants';
 
 // Registrar fuente Open Sans
 Font.register({
@@ -187,7 +188,7 @@ export const DniCollectionTemplate: React.FC<DniCollectionTemplateProps> = ({
           {persona.nombres} {persona.apellidos}
         </Text>
         <Text style={styles.personInfo}>
-          {persona.tipoDocumento || 'DNI'}: {persona.numeroDocumento || 'Sin documento'}
+          {getTipoDocumentoLabel(persona.tipoDocumento) || 'DNI'}: {persona.numeroDocumento || 'Sin documento'}
           {tipo === 'familiares' && persona.parentesco && ` • ${persona.parentesco}`}
           {tipo === 'familiares' && persona.scoutAsociado && ` • Scout: ${persona.scoutAsociado}`}
         </Text>

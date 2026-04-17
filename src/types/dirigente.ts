@@ -325,9 +325,10 @@ export const RAMAS_LABELS: Record<Rama, string> = {
   GRUPO: 'Grupo (General)',
 };
 
+// ⚠️ IMPORTANTE: Estos valores deben coincidir con el enum tipo_documento_enum en la BD
 export const TIPOS_DOCUMENTO = [
   { value: 'DNI', label: 'DNI' },
-  { value: 'CE', label: 'Carnet de Extranjería' },
+  { value: 'CARNET_EXTRANJERIA', label: 'Carné de Extranjería' },
   { value: 'PASAPORTE', label: 'Pasaporte' },
 ];
 

@@ -361,7 +361,7 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     apellidos: scout.apellidos || "",
     fecha_nacimiento: scout.fecha_nacimiento || "",
     sexo: (scout.sexo as "MASCULINO" | "FEMENINO" | "") || "",
-    tipo_documento: (scout.tipo_documento as "DNI" | "CE" | "PASAPORTE") || "DNI",
+    tipo_documento: (scout.tipo_documento as "DNI" | "CARNET_EXTRANJERIA" | "PASAPORTE") || "DNI",
     numero_documento: scout.numero_documento || "",
     celular: scout.celular || "",
     celular_secundario: scout.celular_secundario || "",

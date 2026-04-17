@@ -79,7 +79,7 @@ export const SexoEnum = z.enum(["MASCULINO", "FEMENINO", ""], {
   errorMap: () => ({ message: "Seleccione un sexo" }),
 });
 
-export const TipoDocumentoEnum = z.enum(["DNI", "CE", "PASAPORTE"], {
+export const TipoDocumentoEnum = z.enum(["DNI", "CARNET_EXTRANJERIA", "PASAPORTE"], {
   errorMap: () => ({ message: "Seleccione tipo de documento" }),
 });
 

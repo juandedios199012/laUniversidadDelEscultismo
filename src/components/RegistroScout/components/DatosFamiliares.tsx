@@ -49,10 +49,10 @@ const PARENTESCOS = [
   { value: "OTRO", label: "Otro" },
 ] as const;
 
-// Tipos de documento
+// Tipos de documento (debe coincidir con enum tipo_documento_enum en BD)
 const TIPOS_DOCUMENTO = [
   { value: "DNI", label: "DNI" },
-  { value: "CE", label: "Carné de Extranjería" },
+  { value: "CARNET_EXTRANJERIA", label: "Carné de Extranjería" },
   { value: "PASAPORTE", label: "Pasaporte" },
 ] as const;
 

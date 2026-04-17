@@ -16,6 +16,7 @@ import {
 } from '@react-pdf/renderer';
 import { fondoAnualBase64 } from '../../../../assets/images/fondoAnualBase64';
 import { ScoutReportData, ReportMetadata, FamiliarReportData } from '../../types/reportTypes';
+import { getTipoDocumentoLabel } from '../../../../data/constants';
 
 // =============================================================================
 // FUNCIONES HELPER
@@ -340,7 +341,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           <Text>{familiar.sexo || ''}</Text>
         </View>
         <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
-          <Text>{familiar.tipoDocumento || ''}</Text>
+          <Text>{getTipoDocumentoLabel(familiar.tipoDocumento)}</Text>
         </View>
         <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
           <Text>{familiar.numeroDocumento || ''}</Text>
@@ -517,7 +518,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
               <Text>{formatearFecha(scout.fechaNacimiento)}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
-              <Text>{scout.tipoDocumento || ''}</Text>
+              <Text>{getTipoDocumentoLabel(scout.tipoDocumento)}</Text>
             </View>
             <View style={[styles.tableCell, { width: '30%' }]}>
               <Text>{scout.numeroDocumento || scout.numeroRegistro || ''}</Text>
@@ -910,7 +911,7 @@ export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
           <Text style={[styles.normalText, { marginBottom: 20 }]}>
             A continuación se adjuntan las copias del documento de identidad de{' '}
             <Text style={styles.boldText}>{scout.nombre} {scout.apellido}</Text>
-            {' '}({scout.tipoDocumento || 'DNI'} N° {scout.numeroDocumento || scout.numeroRegistro || '________'}).
+            {' '}({getTipoDocumentoLabel(scout.tipoDocumento) || 'DNI'} N° {scout.numeroDocumento || scout.numeroRegistro || '________'}).
           </Text>
           
           <View style={{ flexDirection: 'column', gap: 20 }}>

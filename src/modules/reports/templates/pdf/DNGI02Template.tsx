@@ -13,6 +13,7 @@ import {
   StyleSheet,
 } from '@react-pdf/renderer';
 import { Dirigente, CARGOS_LABELS, TIPOS_MEMBRESIA_LABELS } from '../../../../types/dirigente';
+import { getTipoDocumentoLabel } from '../../../../data/constants';
 
 // Estilos del documento
 const styles = StyleSheet.create({
@@ -318,7 +319,7 @@ export const DNGI02Template: React.FC<DNGI02TemplateProps> = ({
               <Text>{fechaNac}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
-              <Text>{dirigente.persona.tipo_documento || 'DNI'}</Text>
+              <Text>{getTipoDocumentoLabel(dirigente.persona.tipo_documento) || 'DNI'}</Text>
             </View>
             <View style={[styles.tableCell, { width: '30%' }]}>
               <Text>{dirigente.persona.numero_documento || ''}</Text>

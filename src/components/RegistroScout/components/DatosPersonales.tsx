@@ -21,7 +21,7 @@ interface DatosPersonalesProps {
 
 const TIPO_DOCUMENTO_OPTIONS = [
   { value: "DNI", label: "DNI" },
-  { value: "CE", label: "Carné de Extranjería" },
+  { value: "CARNET_EXTRANJERIA", label: "Carné de Extranjería" },
   { value: "PASAPORTE", label: "Pasaporte" },
 ];
 

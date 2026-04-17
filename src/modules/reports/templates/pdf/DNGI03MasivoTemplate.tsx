@@ -16,6 +16,7 @@ import {
 } from '@react-pdf/renderer';
 import { fondoAnualBase64 } from '../../../../assets/images/fondoAnualBase64';
 import { ScoutReportData, FamiliarReportData } from '../../types/reportTypes';
+import { getTipoDocumentoLabel } from '../../../../data/constants';
 
 // =============================================================================
 // FUNCIONES HELPER
@@ -273,7 +274,7 @@ export const DNGI03MasivoTemplate: React.FC<DNGI03MasivoTemplateProps> = ({
             <Text>{familiar.sexo || ''}</Text>
           </View>
           <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
-            <Text>{familiar.tipoDocumento || ''}</Text>
+            <Text>{getTipoDocumentoLabel(familiar.tipoDocumento)}</Text>
           </View>
           <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
             <Text>{familiar.numeroDocumento || ''}</Text>
@@ -461,7 +462,7 @@ export const DNGI03MasivoTemplate: React.FC<DNGI03MasivoTemplateProps> = ({
               <Text>{formatearFecha(scout.fechaNacimiento)}</Text>
             </View>
             <View style={[styles.tableCell, styles.tableCellBorder, { width: '30%' }]}>
-              <Text>{scout.tipoDocumento || ''}</Text>
+              <Text>{getTipoDocumentoLabel(scout.tipoDocumento)}</Text>
             </View>
             <View style={[styles.tableCell, { width: '30%' }]}>
               <Text>{scout.numeroDocumento || scout.numeroRegistro || ''}</Text>
