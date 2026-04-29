@@ -125,6 +125,21 @@ interface GrupoScoutOption {
 }
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Mapea el valor del sexo del backend (MASCULINO/FEMENINO) al formato del formulario (M/F)
+ */
+const mapearSexoDesdeBackend = (sexo: string | undefined | null): 'M' | 'F' | '' => {
+  if (!sexo) return '';
+  const sexoUpper = sexo.toUpperCase();
+  if (sexoUpper === 'MASCULINO' || sexoUpper === 'M') return 'M';
+  if (sexoUpper === 'FEMENINO' || sexoUpper === 'F') return 'F';
+  return '';
+};
+
+// ============================================================================
 // COMPONENTE PRINCIPAL
 // ============================================================================
 
@@ -174,12 +189,16 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
     setLoadingData(true);
     try {
       const dirigente = await DirigenteService.obtenerDirigentePorId(id);
+      console.log('DEBUG - Dirigente cargado:', dirigente);
+      console.log('DEBUG - persona.numero_documento:', dirigente?.persona?.numero_documento);
+      console.log('DEBUG - codigo_credencial:', dirigente?.codigo_credencial);
+      console.log('DEBUG - persona.sexo:', dirigente?.persona?.sexo);
       if (dirigente) {
         setFormData({
           nombres: dirigente.persona.nombres,
           apellidos: dirigente.persona.apellidos,
           fecha_nacimiento: dirigente.persona.fecha_nacimiento || '',
-          sexo: dirigente.persona.sexo || '',
+          sexo: mapearSexoDesdeBackend(dirigente.persona.sexo),
           tipo_documento: dirigente.persona.tipo_documento || 'DNI',
           numero_documento: dirigente.persona.numero_documento || '',
           correo: dirigente.persona.correo || '',

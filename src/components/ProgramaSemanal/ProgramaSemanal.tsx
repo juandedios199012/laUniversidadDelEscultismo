@@ -42,6 +42,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   const [createForm, setCreateForm] = useState({
     fecha_inicio: '',
     fecha_fin: '',
+    hora_inicio_programa: '',
+    hora_fin_programa: '',
     tema_central: '',
     rama: 'Tropa' as 'Manada' | 'Tropa' | 'Comunidad' | 'Clan',
     objetivos: [''],
@@ -92,9 +94,19 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       // Normalizar actividades: siempre array
       const programasNormalizados = (programasData || []).map(p => ({
         ...p,
-        actividades: Array.isArray(p.programa_actividades)
+        actividades: (Array.isArray(p.programa_actividades)
           ? p.programa_actividades
-          : (Array.isArray(p.actividades) ? p.actividades : []),
+          : (Array.isArray(p.actividades) ? p.actividades : [])
+        ).sort((a, b) => {
+          const ordenA = typeof a?.orden_ejecucion === 'number' ? a.orden_ejecucion : Number.MAX_SAFE_INTEGER;
+          const ordenB = typeof b?.orden_ejecucion === 'number' ? b.orden_ejecucion : Number.MAX_SAFE_INTEGER;
+
+          if (ordenA !== ordenB) return ordenA - ordenB;
+
+          const horaA = a?.hora_inicio || '99:99';
+          const horaB = b?.hora_inicio || '99:99';
+          return horaA.localeCompare(horaB);
+        }),
       }));
       console.log('📊 Datos recibidos:', programasNormalizados.length, 'programas');
       setProgramas(programasNormalizados);
@@ -117,6 +129,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     setCreateForm({
       fecha_inicio: '',
       fecha_fin: '',
+      hora_inicio_programa: '',
+      hora_fin_programa: '',
       tema_central: '',
       rama: 'Tropa',
       objetivos: [''],
@@ -128,23 +142,34 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   };
 
   const openEditModal = (programa: ProgramaSemanalEntry) => {
+    const actividadesNormalizadas = Array.isArray(programa.actividades)
+      ? programa.actividades.map(a => ({
+          ...a,
+          desarrollo: a.desarrollo || a.descripcion || '',
+          nombre: a.nombre || '',
+          hora_inicio: a.hora_inicio || '',
+          duracion_minutos: a.duracion_minutos || 0,
+          responsable: a.responsable || '',
+          materiales: Array.isArray(a.materiales) ? a.materiales : [''],
+          observaciones: a.observaciones || ''
+        }))
+      : [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }];
+
+    const horaInicioDerivada = actividadesNormalizadas[0]?.hora_inicio || '';
+    const totalDuracion = actividadesNormalizadas.reduce((sum, act) => sum + (Number(act.duracion_minutos) > 0 ? Number(act.duracion_minutos) : 0), 0);
+    const inicioMinutos = timeToMinutes(horaInicioDerivada);
+    const horaFinDerivada = inicioMinutos === null ? '' : minutesToTime(inicioMinutos + totalDuracion);
+
     setSelectedPrograma(programa);
     setEditForm({
       fecha_inicio: programa.fecha_inicio,
       fecha_fin: programa.fecha_fin,
+      hora_inicio_programa: (programa as any).hora_inicio_programa || horaInicioDerivada,
+      hora_fin_programa: (programa as any).hora_fin_programa || horaFinDerivada,
       tema_central: programa.tema_central,
       rama: programa.rama || 'Tropa',
       objetivos: Array.isArray(programa.objetivos) ? programa.objetivos : [''],
-      actividades: Array.isArray(programa.actividades) ? programa.actividades.map(a => ({
-        ...a,
-        desarrollo: a.desarrollo || a.descripcion || '',
-        nombre: a.nombre || '',
-        hora_inicio: a.hora_inicio || '',
-        duracion_minutos: a.duracion_minutos || 0,
-        responsable: a.responsable || '',
-        materiales: Array.isArray(a.materiales) ? a.materiales : [''],
-        observaciones: a.observaciones || ''
-      })) : [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }],
+      actividades: actividadesNormalizadas,
       responsable_programa: programa.responsable_programa || '',
       observaciones_generales: programa.observaciones_generales || ''
     });
@@ -159,12 +184,16 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   // ============= FUNCIONES CRUD =============
   const handleCreatePrograma = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = getVentanaHorariaError(createForm);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Ordenar actividades por hora antes de guardar
-      const actividadesOrdenadas = ordenarActividadesPorHora(createForm.actividades);
       // Normalizar actividades para tipado estricto
-      const actividadesNormalizadas = (actividadesOrdenadas || []).map(a => ({
+      const actividadesNormalizadas = (createForm.actividades || []).map(a => ({
         ...a,
         desarrollo: a.desarrollo || '',
         nombre: a.nombre || '',
@@ -175,7 +204,13 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         observaciones: a.observaciones || ''
       }));
       await ProgramaSemanalService.crearPrograma({
-        ...createForm,
+        fecha_inicio: createForm.fecha_inicio,
+        fecha_fin: createForm.fecha_fin,
+        tema_central: createForm.tema_central,
+        rama: createForm.rama,
+        objetivos: createForm.objetivos,
+        responsable_programa: createForm.responsable_programa,
+        observaciones_generales: createForm.observaciones_generales,
         actividades: actividadesNormalizadas
       });
       await loadProgramas();
@@ -191,13 +226,17 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   const handleUpdatePrograma = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPrograma) return;
+
+    const validationError = getVentanaHorariaError(editForm);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
     
     setLoading(true);
     try {
-      // Ordenar actividades por hora antes de guardar
-      const actividadesOrdenadas = ordenarActividadesPorHora(editForm.actividades);
       // Normalizar actividades para tipado estricto
-      const actividadesNormalizadas = (actividadesOrdenadas || []).map(a => ({
+      const actividadesNormalizadas = (editForm.actividades || []).map(a => ({
         ...a,
         desarrollo: a.desarrollo || '',
         nombre: a.nombre || '',
@@ -213,8 +252,13 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         return rama.charAt(0).toUpperCase() + rama.slice(1).toLowerCase();
       };
       await ProgramaSemanalService.updatePrograma(selectedPrograma.id, {
-        ...editForm,
+        fecha_inicio: editForm.fecha_inicio,
+        fecha_fin: editForm.fecha_fin,
+        tema_central: editForm.tema_central,
         rama: normalizarRama(editForm.rama),
+        objetivos: editForm.objetivos,
+        responsable_programa: editForm.responsable_programa,
+        observaciones_generales: editForm.observaciones_generales,
         actividades: actividadesNormalizadas
       });
       await loadProgramas();
@@ -251,22 +295,54 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   const addActividad = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
     setForm(prev => ({
       ...prev,
-      actividades: [...prev.actividades, { nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }]
+      actividades: recalcularHorarioSecuencial(
+        [...prev.actividades, { nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }],
+        prev.hora_inicio_programa || prev.actividades[0]?.hora_inicio || '09:00'
+      )
     }));
   };
 
   const removeActividad = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
     setForm(prev => ({
       ...prev,
-      actividades: prev.actividades.filter((_, i) => i !== index)
+      actividades: recalcularHorarioSecuencial(
+        prev.actividades.filter((_, i) => i !== index),
+        prev.hora_inicio_programa || prev.actividades[0]?.hora_inicio || '09:00'
+      )
     }));
   };
 
   const updateActividad = (index: number, field: keyof ProgramaActividad, value: any, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
-    setForm(prev => ({
-      ...prev,
-      actividades: prev.actividades.map((act, i) => i === index ? { ...act, [field]: value } : act)
-    }));
+    setForm(prev => {
+      const actividadesActualizadas = prev.actividades.map((act, i) => i === index ? { ...act, [field]: value } : act);
+      const requiereRecalculo = field === 'hora_inicio' || field === 'duracion_minutos';
+
+      return {
+        ...prev,
+        actividades: requiereRecalculo
+          ? recalcularHorarioSecuencial(
+              actividadesActualizadas,
+              prev.hora_inicio_programa || actividadesActualizadas[0]?.hora_inicio || '09:00'
+            )
+          : actividadesActualizadas
+      };
+    });
+  };
+
+  const updateHorarioPrograma = (
+    field: 'hora_inicio_programa' | 'hora_fin_programa',
+    value: string,
+    setForm: React.Dispatch<React.SetStateAction<typeof createForm>>
+  ) => {
+    setForm(prev => {
+      const updated = { ...prev, [field]: value };
+      if (field !== 'hora_inicio_programa') return updated;
+
+      return {
+        ...updated,
+        actividades: recalcularHorarioSecuencial(updated.actividades, value || updated.actividades[0]?.hora_inicio || '09:00')
+      };
+    });
   };
 
   // Función para ordenar actividades por hora_inicio
@@ -284,7 +360,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     setForm(prev => {
       const newActividades = [...prev.actividades];
       [newActividades[index - 1], newActividades[index]] = [newActividades[index], newActividades[index - 1]];
-      return { ...prev, actividades: newActividades };
+      return {
+        ...prev,
+        actividades: recalcularHorarioSecuencial(newActividades, prev.hora_inicio_programa || newActividades[0]?.hora_inicio || '09:00')
+      };
     });
   };
 
@@ -294,7 +373,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       if (index >= prev.actividades.length - 1) return prev;
       const newActividades = [...prev.actividades];
       [newActividades[index], newActividades[index + 1]] = [newActividades[index + 1], newActividades[index]];
-      return { ...prev, actividades: newActividades };
+      return {
+        ...prev,
+        actividades: recalcularHorarioSecuencial(newActividades, prev.hora_inicio_programa || newActividades[0]?.hora_inicio || '09:00')
+      };
     });
   };
 
@@ -307,12 +389,72 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     setForm(prev => {
       // Insertar I.B.O inicio al principio y I.B.O final al final
       const nuevasActividades = [iboInicio, ...prev.actividades, iboFinal];
-      // Ordenar por hora para garantizar orden cronológico
       return {
         ...prev,
-        actividades: ordenarActividadesPorHora(nuevasActividades)
+        actividades: recalcularHorarioSecuencial(
+          nuevasActividades,
+          prev.hora_inicio_programa || nuevasActividades[0]?.hora_inicio || '09:00'
+        )
       };
     });
+  };
+
+  const timeToMinutes = (time: string): number | null => {
+    if (!time || !time.includes(':')) return null;
+    const [hh, mm] = time.split(':').map(Number);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    return (hh * 60) + mm;
+  };
+
+  const minutesToTime = (minutes: number): string => {
+    const normalized = ((minutes % 1440) + 1440) % 1440;
+    const hh = Math.floor(normalized / 60).toString().padStart(2, '0');
+    const mm = (normalized % 60).toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  const recalcularHorarioSecuencial = (
+    actividades: ProgramaActividad[],
+    startTime: string
+  ): ProgramaActividad[] => {
+    if (!Array.isArray(actividades) || actividades.length === 0) return [];
+
+    const startMinutes = timeToMinutes(startTime) ?? 9 * 60;
+    let currentStart = startMinutes;
+
+    return actividades.map((actividad, index) => {
+      const duracion = Number(actividad.duracion_minutos) > 0 ? Number(actividad.duracion_minutos) : 0;
+      const horaInicio = index === 0
+        ? (startTime || actividad.hora_inicio || '09:00')
+        : minutesToTime(currentStart);
+
+      currentStart += duracion;
+      return {
+        ...actividad,
+        hora_inicio: horaInicio
+      };
+    });
+  };
+
+  const getVentanaHorariaError = (form: typeof createForm): string | null => {
+    if (!form.hora_inicio_programa || !form.hora_fin_programa) return null;
+
+    const inicioVentana = timeToMinutes(form.hora_inicio_programa);
+    const finVentana = timeToMinutes(form.hora_fin_programa);
+    if (inicioVentana === null || finVentana === null) return 'La ventana horaria del programa es inválida.';
+    if (finVentana <= inicioVentana) return 'La hora fin del programa debe ser mayor que la hora inicio.';
+
+    const totalDuracion = (form.actividades || []).reduce((sum, act) => {
+      const mins = Number(act.duracion_minutos);
+      return sum + (Number.isFinite(mins) && mins > 0 ? mins : 0);
+    }, 0);
+
+    const capacidadVentana = finVentana - inicioVentana;
+    if (totalDuracion > capacidadVentana) {
+      return `La suma de duraciones (${totalDuracion} min) excede la ventana disponible (${capacidadVentana} min).`;
+    }
+
+    return null;
   };
 
   // ============= FUNCIONES DE FILTRADO =============
@@ -633,6 +775,30 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora Inicio (Programa)
+                  </label>
+                  <input
+                    type="time"
+                    value={createForm.hora_inicio_programa}
+                    onChange={(e) => updateHorarioPrograma('hora_inicio_programa', e.target.value, setCreateForm)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora Fin (Programa)
+                  </label>
+                  <input
+                    type="time"
+                    value={createForm.hora_fin_programa}
+                    onChange={(e) => updateHorarioPrograma('hora_fin_programa', e.target.value, setCreateForm)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tema Central *
                   </label>
                   <input
@@ -745,6 +911,11 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     </button>
                   </div>
                 </div>
+                {getVentanaHorariaError(createForm) && (
+                  <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                    {getVentanaHorariaError(createForm)}
+                  </div>
+                )}
                 <div className="space-y-4">
                   {createForm.actividades.map((actividad, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -803,8 +974,12 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                             type="time"
                             value={actividad.hora_inicio}
                             onChange={(e) => updateActividad(index, 'hora_inicio', e.target.value, setCreateForm)}
+                            disabled={index > 0}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
+                          {index > 0 && (
+                            <p className="text-[11px] text-gray-500 mt-1">Se calcula automáticamente según la actividad anterior.</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
@@ -944,6 +1119,30 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora Inicio (Programa)
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.hora_inicio_programa}
+                    onChange={(e) => updateHorarioPrograma('hora_inicio_programa', e.target.value, setEditForm)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora Fin (Programa)
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.hora_fin_programa}
+                    onChange={(e) => updateHorarioPrograma('hora_fin_programa', e.target.value, setEditForm)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tema Central *
                   </label>
                   <input
@@ -1060,6 +1259,11 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     </button>
                   </div>
                 </div>
+                {getVentanaHorariaError(editForm) && (
+                  <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                    {getVentanaHorariaError(editForm)}
+                  </div>
+                )}
                 <div className="space-y-4">
                   {editForm.actividades.map((actividad, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -1120,8 +1324,12 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                               type="time"
                               value={actividad.hora_inicio}
                               onChange={(e) => updateActividad(index, 'hora_inicio', e.target.value, setEditForm)}
+                              disabled={index > 0}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
+                            {index > 0 && (
+                              <p className="text-[11px] text-gray-500 mt-1">Se calcula automáticamente según la actividad anterior.</p>
+                            )}
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Duración (minutos)</label>
