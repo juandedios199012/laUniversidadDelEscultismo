@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import ProgresionService, { 
   Objetivo, 
+  GrupoObjetivo,
   Etapa, 
   AreaCrecimiento 
 } from '../services/progresionService';
@@ -19,7 +20,7 @@ import type { ObjetivoEducativoFormData } from '../schemas/objetivoEducativoSche
 
 export interface FiltrosObjetivos {
   busqueda: string;
-  etapa: string;
+  grupo: string;  // código del grupo: PISTA_SENDA | RUMBO_TRAVESIA
   area: string;
 }
 
@@ -33,6 +34,7 @@ export interface UseObjetivosAdminReturn {
   // Datos
   objetivos: Objetivo[];
   objetivosFiltrados: Objetivo[];
+  grupos: GrupoObjetivo[];
   etapas: Etapa[];
   areas: AreaCrecimiento[];
   
@@ -43,7 +45,7 @@ export interface UseObjetivosAdminReturn {
   // Estadísticas
   estadisticas: {
     total: number;
-    porEtapa: Record<string, number>;
+    porGrupo: Record<string, number>;
     porArea: Record<string, number>;
   };
   
@@ -65,6 +67,7 @@ export interface UseObjetivosAdminReturn {
 export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   // Estado de datos
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
+  const [grupos, setGrupos] = useState<GrupoObjetivo[]>([]);
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [areas, setAreas] = useState<AreaCrecimiento[]>([]);
   
@@ -78,7 +81,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosObjetivos>({
     busqueda: '',
-    etapa: '',
+    grupo: '',
     area: '',
   });
 
@@ -90,13 +93,15 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
     setEstado(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const [objetivosData, etapasData, areasData] = await Promise.all([
+      const [objetivosData, gruposData, etapasData, areasData] = await Promise.all([
         ProgresionService.obtenerObjetivosAdmin(),
+        ProgresionService.obtenerGruposObjetivo(),
         ProgresionService.obtenerEtapas(),
         ProgresionService.obtenerAreas(),
       ]);
       
       setObjetivos(objetivosData);
+      setGrupos(gruposData);
       setEtapas(etapasData);
       setAreas(areasData);
     } catch (err) {
@@ -123,18 +128,18 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
         obj.descripcion.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
         obj.codigo.toLowerCase().includes(filtros.busqueda.toLowerCase());
       
-      // Filtro por etapa
-      const matchEtapa = !filtros.etapa || obj.etapa_codigo === filtros.etapa;
+      // Filtro por grupo
+      const matchGrupo = !filtros.grupo || obj.grupo_codigo === filtros.grupo;
       
       // Filtro por área
       const matchArea = !filtros.area || obj.area_codigo === filtros.area;
       
-      return matchBusqueda && matchEtapa && matchArea;
+      return matchBusqueda && matchGrupo && matchArea;
     });
   }, [objetivos, filtros]);
 
   const limpiarFiltros = useCallback(() => {
-    setFiltros({ busqueda: '', etapa: '', area: '' });
+    setFiltros({ busqueda: '', grupo: '', area: '' });
   }, []);
 
   // ==========================================================================
@@ -142,17 +147,19 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   // ==========================================================================
 
   const estadisticas = useMemo(() => {
-    const porEtapa: Record<string, number> = {};
+    const porGrupo: Record<string, number> = {};
     const porArea: Record<string, number> = {};
     
     objetivos.forEach(obj => {
-      porEtapa[obj.etapa_codigo] = (porEtapa[obj.etapa_codigo] || 0) + 1;
+      if (obj.grupo_codigo) {
+        porGrupo[obj.grupo_codigo] = (porGrupo[obj.grupo_codigo] || 0) + 1;
+      }
       porArea[obj.area_codigo] = (porArea[obj.area_codigo] || 0) + 1;
     });
     
     return {
       total: objetivos.length,
-      porEtapa,
+      porGrupo,
       porArea,
     };
   }, [objetivos]);
@@ -166,7 +173,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
     
     try {
       const resultado = await ProgresionService.crearObjetivo({
-        etapa_id: datos.etapa_id,
+        etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id,
         area_id: datos.area_id,
         titulo: datos.titulo,
         descripcion: datos.descripcion,
@@ -231,6 +238,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
     // Datos
     objetivos,
     objetivosFiltrados,
+    grupos,
     etapas,
     areas,
     

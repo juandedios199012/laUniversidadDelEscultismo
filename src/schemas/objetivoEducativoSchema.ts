@@ -22,10 +22,10 @@ export const indicadorSchema = z
  * Schema para el Paso 1: Información básica
  */
 export const paso1Schema = z.object({
-  etapa_id: z
+  etapa_objetivo_grupo_id: z
     .string()
-    .uuid('Selecciona una etapa válida')
-    .min(1, 'La etapa es requerida'),
+    .uuid('Selecciona un grupo válido')
+    .min(1, 'El grupo de etapa es requerido'),
   area_id: z
     .string()
     .uuid('Selecciona un área válida')
@@ -61,7 +61,7 @@ export const paso3Schema = z.object({
  */
 export const objetivoEducativoSchema = z.object({
   // Paso 1
-  etapa_id: paso1Schema.shape.etapa_id,
+  etapa_objetivo_grupo_id: paso1Schema.shape.etapa_objetivo_grupo_id,
   area_id: paso1Schema.shape.area_id,
   // Paso 2
   titulo: paso2Schema.shape.titulo,
@@ -87,7 +87,7 @@ export type ObjetivoEducativoFormData = z.infer<typeof objetivoEducativoSchema>;
 // ============================================================================
 
 export const defaultObjetivoValues: ObjetivoEducativoFormData = {
-  etapa_id: '',
+  etapa_objetivo_grupo_id: '',
   area_id: '',
   titulo: '',
   descripcion: '',

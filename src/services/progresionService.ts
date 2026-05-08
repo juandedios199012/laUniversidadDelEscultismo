@@ -43,6 +43,12 @@ export interface Objetivo {
   descripcion: string;
   indicadores: string[];
   orden: number;
+  // Grupo de objetivo (nuevo)
+  grupo_id?: string;
+  grupo_codigo?: string;  // 'PISTA_SENDA' | 'RUMBO_TRAVESIA'
+  grupo_nombre?: string;
+  etapa_objetivo_grupo_id?: string;
+  // Etapa legacy
   etapa_id: string;
   etapa_codigo: string;
   etapa_nombre: string;
@@ -82,6 +88,8 @@ export interface ProgresoCompletoScout {
   etapa_actual_icono: string;
   etapa_actual_color: string;
   fecha_inicio_etapa: string;
+  grupo_objetivo_codigo?: string;
+  grupo_objetivo_nombre?: string;
   areas: ProgresoArea[];
   progreso_general: number;
   total_objetivos: number;
@@ -98,9 +106,18 @@ export interface ResumenProgresoScout {
   etapa_actual_nombre: string;
   etapa_actual_icono: string;
   etapa_actual_color: string;
+  grupo_objetivo_codigo?: string;
   progreso_general: number;
   total_objetivos: number;
   objetivos_completados: number;
+}
+
+export interface GrupoObjetivo {
+  id: string;
+  codigo: string;  // 'PISTA_SENDA' | 'RUMBO_TRAVESIA'
+  nombre: string;
+  descripcion: string;
+  orden: number;
 }
 
 export interface EstadisticaEtapa {
@@ -145,6 +162,24 @@ export class ProgresionService {
     return etapas.find(e => e.codigo === codigo) || null;
   }
   
+  // ==========================================================================
+  // GRUPOS DE OBJETIVO (PISTA_SENDA / RUMBO_TRAVESIA)
+  // ==========================================================================
+
+  /**
+   * Obtiene los 2 grupos de objetivo para selectores de formulario
+   */
+  static async obtenerGruposObjetivo(): Promise<GrupoObjetivo[]> {
+    const { data, error } = await supabase.rpc('obtener_grupos_objetivo');
+
+    if (error) {
+      console.error('Error al obtener grupos de objetivo:', error);
+      throw new Error('No se pudieron cargar los grupos de objetivo');
+    }
+
+    return data || [];
+  }
+
   // ==========================================================================
   // ÁREAS DE CRECIMIENTO
   // ==========================================================================
@@ -195,71 +230,39 @@ export class ProgresionService {
    * Obtiene todos los objetivos para administración
    */
   static async obtenerObjetivosAdmin(): Promise<Objetivo[]> {
-    const { data, error } = await supabase
-      .from('objetivos_educativos')
-      .select(`
-        id,
-        codigo,
-        titulo,
-        descripcion,
-        indicadores,
-        orden,
-        estado,
-        etapa_id,
-        area_id,
-        etapas_progresion!inner (
-          codigo,
-          nombre,
-          icono,
-          color,
-          orden
-        ),
-        areas_crecimiento!inner (
-          codigo,
-          nombre,
-          icono,
-          color,
-          orden
-        )
-      `)
-      .eq('estado', 'ACTIVO')
-      .order('etapas_progresion(orden)', { ascending: true })
-      .order('areas_crecimiento(orden)', { ascending: true })
-      .order('orden', { ascending: true });
+    const { data, error } = await supabase.rpc('obtener_objetivos_admin');
 
     if (error) {
       console.error('Error al obtener objetivos admin:', error);
       throw new Error('No se pudieron cargar los objetivos');
     }
 
-    // Mapear datos al tipo Objetivo
-    return (data || []).map((o: Record<string, unknown>) => {
-      const etapa = o.etapas_progresion as Record<string, string>;
-      const area = o.areas_crecimiento as Record<string, string>;
-      return {
-        id: o.id as string,
-        codigo: o.codigo as string,
-        titulo: o.titulo as string,
-        descripcion: o.descripcion as string,
-        indicadores: (o.indicadores as string[]) || [],
-        orden: o.orden as number,
-        etapa_id: o.etapa_id as string,
-        etapa_codigo: etapa.codigo,
-        etapa_nombre: etapa.nombre,
-        area_id: o.area_id as string,
-        area_codigo: area.codigo,
-        area_nombre: area.nombre,
-        area_icono: area.icono,
-        area_color: area.color,
-      };
-    });
+    return (data || []).map((o: Record<string, unknown>) => ({
+      id: o.id as string,
+      codigo: o.codigo as string,
+      titulo: o.titulo as string,
+      descripcion: o.descripcion as string,
+      indicadores: (o.indicadores as string[]) || [],
+      orden: o.orden as number,
+      etapa_objetivo_grupo_id: o.etapa_objetivo_grupo_id as string,
+      grupo_codigo: o.grupo_codigo as string,
+      grupo_nombre: o.grupo_nombre as string,
+      etapa_id: o.etapa_id as string,
+      etapa_codigo: o.etapa_codigo as string,
+      etapa_nombre: o.etapa_nombre as string,
+      area_id: o.area_id as string,
+      area_codigo: o.area_codigo as string,
+      area_nombre: o.area_nombre as string,
+      area_icono: o.area_icono as string,
+      area_color: o.area_color as string,
+    }));
   }
 
   /**
    * Crea un nuevo objetivo educativo
    */
   static async crearObjetivo(datos: {
-    etapa_id: string;
+    etapa_objetivo_grupo_id: string;
     area_id: string;
     titulo: string;
     descripcion: string;
@@ -267,60 +270,15 @@ export class ProgresionService {
     codigo?: string;
     orden?: number;
   }): Promise<{ id: string; codigo: string }> {
-    // Si no se proporciona código, generarlo automáticamente
-    let codigo = datos.codigo;
-    if (!codigo) {
-      // Obtener información de etapa y área para generar código
-      const [etapa, area] = await Promise.all([
-        supabase.from('etapas_progresion').select('codigo').eq('id', datos.etapa_id).single(),
-        supabase.from('areas_crecimiento').select('codigo').eq('id', datos.area_id).single()
-      ]);
-
-      if (etapa.error || area.error) {
-        throw new Error('Error al obtener etapa o área');
-      }
-
-      // Contar objetivos existentes para determinar el siguiente número
-      const { count } = await supabase
-        .from('objetivos_educativos')
-        .select('id', { count: 'exact', head: true })
-        .eq('etapa_id', datos.etapa_id)
-        .eq('area_id', datos.area_id);
-
-      const nextNum = (count || 0) + 1;
-      const areaCod = (area.data.codigo as string).substring(0, 4).toUpperCase();
-      codigo = `${etapa.data.codigo}-${areaCod}-${String(nextNum).padStart(2, '0')}`;
-    }
-
-    // Determinar orden si no se proporciona
-    let orden = datos.orden;
-    if (!orden) {
-      const { data: maxOrden } = await supabase
-        .from('objetivos_educativos')
-        .select('orden')
-        .eq('etapa_id', datos.etapa_id)
-        .eq('area_id', datos.area_id)
-        .order('orden', { ascending: false })
-        .limit(1)
-        .single();
-
-      orden = (maxOrden?.orden || 0) + 1;
-    }
-
-    const { data, error } = await supabase
-      .from('objetivos_educativos')
-      .insert({
-        codigo,
-        etapa_id: datos.etapa_id,
-        area_id: datos.area_id,
-        titulo: datos.titulo,
-        descripcion: datos.descripcion,
-        indicadores: datos.indicadores,
-        orden,
-        estado: 'ACTIVO'
-      })
-      .select('id, codigo')
-      .single();
+    const { data, error } = await supabase.rpc('crear_objetivo_educativo', {
+      p_etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id,
+      p_area_id:                 datos.area_id,
+      p_titulo:                  datos.titulo,
+      p_descripcion:             datos.descripcion,
+      p_indicadores:             datos.indicadores,
+      p_codigo:                  datos.codigo ?? null,
+      p_orden:                   datos.orden ?? null,
+    });
 
     if (error) {
       console.error('Error al crear objetivo:', error);
@@ -330,7 +288,8 @@ export class ProgresionService {
       throw new Error('No se pudo crear el objetivo');
     }
 
-    return data;
+    const row = data?.[0];
+    return { id: row.id as string, codigo: row.codigo as string };
   }
 
   /**
@@ -339,6 +298,7 @@ export class ProgresionService {
   static async actualizarObjetivo(
     id: string,
     datos: {
+      etapa_objetivo_grupo_id?: string;
       etapa_id?: string;
       area_id?: string;
       titulo?: string;
@@ -347,17 +307,19 @@ export class ProgresionService {
       orden?: number;
     }
   ): Promise<void> {
-    const { error } = await supabase
-      .from('objetivos_educativos')
-      .update({
-        ...datos,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id);
+    const { error } = await supabase.rpc('actualizar_objetivo_educativo', {
+      p_id:                      id,
+      p_etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id ?? null,
+      p_area_id:                 datos.area_id ?? null,
+      p_titulo:                  datos.titulo ?? null,
+      p_descripcion:             datos.descripcion ?? null,
+      p_indicadores:             datos.indicadores ?? null,
+      p_orden:                   datos.orden ?? null,
+    });
 
     if (error) {
-      console.error('Error al actualizar objetivo:', error);
-      throw new Error('No se pudo actualizar el objetivo');
+      console.error('Error al actualizar objetivo [RPC]:', error.code, error.message, error.details);
+      throw new Error(`No se pudo actualizar el objetivo: ${error.message}`);
     }
   }
 
@@ -383,56 +345,34 @@ export class ProgresionService {
    * Obtiene un objetivo por su ID
    */
   static async obtenerObjetivoPorId(id: string): Promise<Objetivo | null> {
-    const { data, error } = await supabase
-      .from('objetivos_educativos')
-      .select(`
-        id,
-        codigo,
-        titulo,
-        descripcion,
-        indicadores,
-        orden,
-        etapa_id,
-        area_id,
-        etapas_progresion!inner (
-          codigo,
-          nombre,
-          icono,
-          color
-        ),
-        areas_crecimiento!inner (
-          codigo,
-          nombre,
-          icono,
-          color
-        )
-      `)
-      .eq('id', id)
-      .single();
+    const { data, error } = await supabase.rpc('obtener_objetivo_por_id', { p_id: id });
 
     if (error) {
       console.error('Error al obtener objetivo:', error);
       return null;
     }
 
-    const etapa = data.etapas_progresion as Record<string, string>;
-    const area = data.areas_crecimiento as Record<string, string>;
+    const row = data?.[0];
+    if (!row) return null;
 
     return {
-      id: data.id,
-      codigo: data.codigo,
-      titulo: data.titulo,
-      descripcion: data.descripcion,
-      indicadores: data.indicadores || [],
-      orden: data.orden,
-      etapa_id: data.etapa_id,
-      etapa_codigo: etapa.codigo,
-      etapa_nombre: etapa.nombre,
-      area_id: data.area_id,
-      area_codigo: area.codigo,
-      area_nombre: area.nombre,
-      area_icono: area.icono,
-      area_color: area.color,
+      id: row.id,
+      codigo: row.codigo,
+      titulo: row.titulo,
+      descripcion: row.descripcion,
+      indicadores: row.indicadores || [],
+      orden: row.orden,
+      etapa_objetivo_grupo_id: row.etapa_objetivo_grupo_id,
+      grupo_codigo: row.grupo_codigo,
+      grupo_nombre: row.grupo_nombre,
+      etapa_id: row.etapa_id,
+      etapa_codigo: row.etapa_codigo,
+      etapa_nombre: row.etapa_nombre,
+      area_id: row.area_id,
+      area_codigo: row.area_codigo,
+      area_nombre: row.area_nombre,
+      area_icono: row.area_icono,
+      area_color: row.area_color,
     };
   }
   

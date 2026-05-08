@@ -12,7 +12,7 @@ import {
   X, ChevronLeft, ChevronRight, Check, Plus, Trash2,
   Layers, FileText, ListChecks, AlertCircle
 } from 'lucide-react';
-import { Objetivo, Etapa, AreaCrecimiento } from '../../services/progresionService';
+import { Objetivo, GrupoObjetivo, AreaCrecimiento } from '../../services/progresionService';
 import { 
   objetivoEducativoSchema, 
   ObjetivoEducativoFormData,
@@ -25,7 +25,7 @@ import {
 
 interface ObjetivoFormDialogProps {
   objetivo: Objetivo | null;
-  etapas: Etapa[];
+  grupos: GrupoObjetivo[];
   areas: AreaCrecimiento[];
   onGuardar: (datos: ObjetivoEducativoFormData) => Promise<void>;
   onCerrar: () => void;
@@ -134,7 +134,7 @@ const Stepper: React.FC<StepperProps> = ({ pasoActual, modoEdicion, onIrAPaso })
 
 const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
   objetivo,
-  etapas,
+  grupos,
   areas,
   onGuardar,
   onCerrar,
@@ -155,7 +155,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
   } = useForm<ObjetivoEducativoFormData>({
     resolver: zodResolver(objetivoEducativoSchema),
     defaultValues: objetivo ? {
-      etapa_id: objetivo.etapa_id,
+      etapa_objetivo_grupo_id: objetivo.etapa_objetivo_grupo_id || objetivo.grupo_id || '',
       area_id: objetivo.area_id,
       titulo: objetivo.titulo,
       descripcion: objetivo.descripcion,
@@ -178,11 +178,11 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
   }, [fields.length, append]);
 
   // Valores actuales
-  const etapaSeleccionada = watch('etapa_id');
+  const grupoSeleccionado = watch('etapa_objetivo_grupo_id');
   const areaSeleccionada = watch('area_id');
 
-  // Obtener info de etapa/área seleccionadas
-  const etapaInfo = etapas.find(e => e.id === etapaSeleccionada);
+  // Obtener info de grupo/área seleccionados
+  const grupoInfo = grupos.find(g => g.id === grupoSeleccionado);
   const areaInfo = areas.find(a => a.id === areaSeleccionada);
 
   // Navegación entre pasos
@@ -201,7 +201,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
     
     switch (pasoActual) {
       case 1:
-        camposAValidar = ['etapa_id', 'area_id'];
+        camposAValidar = ['etapa_objetivo_grupo_id', 'area_id'];
         break;
       case 2:
         camposAValidar = ['titulo', 'descripcion'];
@@ -253,7 +253,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
     
     if (!valido) {
       // Navegar al paso con el primer error
-      if (errors.etapa_id || errors.area_id) {
+      if (errors.etapa_objetivo_grupo_id || errors.area_id) {
         setPasoActual(1);
       } else if (errors.titulo || errors.descripcion) {
         setPasoActual(2);
@@ -320,19 +320,19 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
                 </p>
               </div>
 
-              {/* Etapa */}
+              {/* Grupo de etapa */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Etapa de Progresión <span className="text-red-500">*</span>
+                  Grupo de Etapa <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {etapas.map(etapa => (
+                <div className="grid grid-cols-1 gap-3">
+                  {grupos.map(grupo => (
                     <label
-                      key={etapa.id}
+                      key={grupo.id}
                       className={`
-                        relative flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer
+                        relative flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer
                         transition-all hover:shadow-md
-                        ${etapaSeleccionada === etapa.id 
+                        ${grupoSeleccionado === grupo.id 
                           ? 'border-blue-500 bg-blue-50' 
                           : 'border-gray-200 hover:border-gray-300'
                         }
@@ -340,25 +340,24 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
                     >
                       <input
                         type="radio"
-                        {...register('etapa_id')}
-                        value={etapa.id}
+                        {...register('etapa_objetivo_grupo_id')}
+                        value={grupo.id}
                         className="sr-only"
                       />
-                      <span className="text-2xl">{etapa.icono}</span>
-                      <div>
-                        <p className="font-medium text-gray-800">{etapa.nombre}</p>
-                        <p className="text-xs text-gray-500">Edad típica: {etapa.edad_tipica} años</p>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{grupo.nombre}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{grupo.descripcion}</p>
                       </div>
-                      {etapaSeleccionada === etapa.id && (
-                        <Check className="absolute top-2 right-2 w-5 h-5 text-blue-500" />
+                      {grupoSeleccionado === grupo.id && (
+                        <Check className="w-5 h-5 text-blue-500 shrink-0" />
                       )}
                     </label>
                   ))}
                 </div>
-                {errors.etapa_id && (
+                {errors.etapa_objetivo_grupo_id && (
                   <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
-                    {errors.etapa_id.message}
+                    {errors.etapa_objetivo_grupo_id.message}
                   </p>
                 )}
               </div>
@@ -417,10 +416,10 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
                 </p>
                 
                 {/* Preview de clasificación */}
-                {etapaInfo && areaInfo && (
+                {grupoInfo && areaInfo && (
                   <div className="flex gap-2 mb-4">
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      {etapaInfo.icono} {etapaInfo.nombre}
+                      {grupoInfo.nombre}
                     </span>
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
                       {areaInfo.icono} {areaInfo.nombre}

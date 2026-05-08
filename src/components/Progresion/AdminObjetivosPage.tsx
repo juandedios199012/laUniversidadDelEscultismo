@@ -60,7 +60,7 @@ const ObjetivoCard: React.FC<ObjetivoCardProps> = ({ objetivo, onEdit, onDelete 
             {/* Badges */}
             <div className="flex flex-wrap gap-2 mb-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                {objetivo.etapa_nombre}
+                {objetivo.grupo_nombre || objetivo.etapa_nombre}
               </span>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                 {objetivo.area_icono} {objetivo.area_nombre}
@@ -155,7 +155,7 @@ const AdminObjetivosPage: React.FC = () => {
   // Hook de gestión
   const {
     objetivosFiltrados,
-    etapas,
+    grupos,
     areas,
     estado,
     filtros,
@@ -274,19 +274,19 @@ const AdminObjetivosPage: React.FC = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <KPICard
           titulo="Total Objetivos"
           valor={estadisticas.total}
           icono={<Target className="w-5 h-5 text-blue-600" />}
           colorClase="bg-blue-100"
         />
-        {etapas.slice(0, 3).map(etapa => (
+        {grupos.map(grupo => (
           <KPICard
-            key={etapa.codigo}
-            titulo={etapa.nombre}
-            valor={estadisticas.porEtapa[etapa.codigo] || 0}
-            icono={<span className="text-lg">{etapa.icono}</span>}
+            key={grupo.codigo}
+            titulo={grupo.nombre}
+            valor={estadisticas.porGrupo[grupo.codigo] || 0}
+            icono={<Target className="w-5 h-5 text-gray-600" />}
             colorClase="bg-gray-100"
           />
         ))}
@@ -308,18 +308,18 @@ const AdminObjetivosPage: React.FC = () => {
             />
           </div>
           
-          {/* Filtro por etapa */}
-          <div className="w-full md:w-40">
+          {/* Filtro por grupo */}
+          <div className="w-full md:w-52">
             <select
-              value={filtros.etapa}
-              onChange={(e) => setFiltros(f => ({ ...f, etapa: e.target.value }))}
+              value={filtros.grupo}
+              onChange={(e) => setFiltros(f => ({ ...f, grupo: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg 
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">Todas las etapas</option>
-              {etapas.map(e => (
-                <option key={e.codigo} value={e.codigo}>
-                  {e.icono} {e.nombre}
+              <option value="">Todos los grupos</option>
+              {grupos.map(g => (
+                <option key={g.codigo} value={g.codigo}>
+                  {g.nombre}
                 </option>
               ))}
             </select>
@@ -343,7 +343,7 @@ const AdminObjetivosPage: React.FC = () => {
           </div>
           
           {/* Limpiar filtros */}
-          {(filtros.busqueda || filtros.etapa || filtros.area) && (
+          {(filtros.busqueda || filtros.grupo || filtros.area) && (
             <button
               onClick={limpiarFiltros}
               className="flex items-center gap-1 px-3 py-2 text-gray-600 hover:text-gray-800 
@@ -361,16 +361,16 @@ const AdminObjetivosPage: React.FC = () => {
         <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
           <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-700 mb-2">
-            {filtros.busqueda || filtros.etapa || filtros.area 
+            {filtros.busqueda || filtros.grupo || filtros.area 
               ? 'No se encontraron objetivos'
               : 'No hay objetivos educativos'}
           </h3>
           <p className="text-gray-500 mb-4">
-            {filtros.busqueda || filtros.etapa || filtros.area 
+            {filtros.busqueda || filtros.grupo || filtros.area 
               ? 'Intenta ajustar los filtros de búsqueda'
               : 'Comienza creando el primer objetivo educativo'}
           </p>
-          {!filtros.busqueda && !filtros.etapa && !filtros.area && (
+          {!filtros.busqueda && !filtros.grupo && !filtros.area && (
             <button
               onClick={handleNuevoObjetivo}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white 
@@ -404,7 +404,7 @@ const AdminObjetivosPage: React.FC = () => {
       {dialogAbierto && (
         <ObjetivoFormDialog
           objetivo={objetivoEditar}
-          etapas={etapas}
+          grupos={grupos}
           areas={areas}
           onGuardar={handleGuardarObjetivo}
           onCerrar={() => {
