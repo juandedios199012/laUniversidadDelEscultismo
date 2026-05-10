@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
 import InscripcionAnualMejorada from './components/Inscripcion/InscripcionAnualMejorada';
+import ConfigDocumentosInscripcion from './components/Inscripcion/ConfigDocumentosInscripcion';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
@@ -71,6 +72,8 @@ function AppContent() {
         return <ScoutsPage />;
       case 'inscripcion-anual':
         return <InscripcionAnualMejorada />;
+      case 'config-documentos-inscripcion':
+        return <ConfigDocumentosInscripcion />;
       case 'progresion':
         return <ProgresionPage />;
       case 'admin-objetivos':
