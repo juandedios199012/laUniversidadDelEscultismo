@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ChevronRight, ChevronLeft, Check, AlertCircle, Loader } from 'lucide-react';
-import InscripcionService, { type PersonaInscribible } from '../../services/inscripcionService';
+import InscripcionService, { type PersonaInscribible, type TipoDocumentoInscripcion } from '../../services/inscripcionService';
 
 // ================================================================
 // SCHEMA ZODA
@@ -14,17 +14,7 @@ const filtrosSchema = z.object({
   rama: z.string().optional(),
 });
 
-const seleccionSchema = z.object({
-  personas: z.record(
-    z.object({
-      seleccionado: z.boolean(),
-      monto: z.number().positive('El monto debe ser mayor a 0'),
-    })
-  ).optional().default({}),
-});
-
 type FiltrosForm = z.infer<typeof filtrosSchema>;
-type SeleccionForm = z.infer<typeof seleccionSchema>;
 
 // ================================================================
 // COMPONENTE PRINCIPAL
@@ -43,17 +33,15 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
   // Datos
   const [periodos, setPeriodos] = useState<{ id: string; label: string }[]>([]);
   const [personas, setPersonas] = useState<PersonaInscribible[]>([]);
-  const [personasSeleccionadas, setPersonasSeleccionadas] = useState<Map<string, { monto: number }>>(new Map());
+  const [personasSeleccionadas, setPersonasSeleccionadas] = useState<Map<string, { monto: number | null }>>(new Map());
+  const [tiposDocumento, setTiposDocumento] = useState<TipoDocumentoInscripcion[]>([]);
+  const [docsSeleccionados, setDocsSeleccionados] = useState<Set<string>>(new Set());
+  const [loadingDocs, setLoadingDocs] = useState(false);
 
   // Formularios
   const filtrosForm = useForm<FiltrosForm>({
     resolver: zodResolver(filtrosSchema),
     defaultValues: { periodoId: '', rama: '' },
-  });
-
-  const seleccionForm = useForm<SeleccionForm>({
-    resolver: zodResolver(seleccionSchema),
-    defaultValues: { personas: {} },
   });
 
   // ================================================================
@@ -62,6 +50,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
 
   useEffect(() => {
     cargarPeriodos();
+    cargarTiposDocumento();
   }, []);
 
   // ================================================================
@@ -86,6 +75,21 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
     }
   };
 
+  const cargarTiposDocumento = async () => {
+    setLoadingDocs(true);
+    try {
+      const resultado = await InscripcionService.listarTiposDocumentoInscripcion(true);
+      if (resultado.success) {
+        const tipos = (resultado.tipos || []).slice().sort((a, b) => a.orden - b.orden);
+        setTiposDocumento(tipos);
+      }
+    } catch {
+      setTiposDocumento([]);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
   const cargarPersonas = useCallback(async (periodoId: string) => {
     if (!periodoId) return;
     setLoading(true);
@@ -94,12 +98,8 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
       const resultado = await InscripcionService.listarPersonasInscribibles(periodoId);
       if (resultado.success && resultado.personas) {
         setPersonas(resultado.personas);
-        // Inicializar formulario de selección
-        const personasMap: Record<string, any> = {};
-        resultado.personas.forEach(p => {
-          personasMap[p.id] = { seleccionado: false, monto: 100 }; // Monto temporal
-        });
-        seleccionForm.reset({ personas: personasMap });
+        setPersonasSeleccionadas(new Map());
+        setDocsSeleccionados(new Set());
       } else {
         setError(resultado.error || 'Error al cargar personas');
       }
@@ -108,7 +108,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
     } finally {
       setLoading(false);
     }
-  }, [filtrosForm, seleccionForm]);
+  }, []);
 
   const onFiltrosSubmit = async (data: FiltrosForm) => {
     setError(null);
@@ -116,27 +116,43 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
     setPaso(2);
   };
 
-  const actualizarSeleccion = (personaId: string, seleccionado: boolean, monto?: number) => {
+  const actualizarSeleccion = (personaId: string, seleccionado: boolean) => {
     const nuevaSeleccion = new Map(personasSeleccionadas);
     if (seleccionado) {
-      nuevaSeleccion.set(personaId, { monto: monto || 100 });
+      nuevaSeleccion.set(personaId, { monto: null });
     } else {
       nuevaSeleccion.delete(personaId);
     }
     setPersonasSeleccionadas(nuevaSeleccion);
   };
 
-  const actualizarMonto = (personaId: string, monto: number) => {
+  const actualizarMonto = (personaId: string, montoTexto: string) => {
     if (personasSeleccionadas.has(personaId)) {
+      const valorNormalizado = montoTexto.replace(',', '.').trim();
+      const monto = valorNormalizado === '' ? null : parseFloat(valorNormalizado);
       const nuevaSeleccion = new Map(personasSeleccionadas);
-      nuevaSeleccion.set(personaId, { monto });
+      nuevaSeleccion.set(personaId, { monto: Number.isNaN(monto as number) ? null : monto });
       setPersonasSeleccionadas(nuevaSeleccion);
     }
   };
 
+  const montosInvalidos = Array.from(personasSeleccionadas.values()).some(
+    p => p.monto === null || p.monto <= 0
+  );
+
+  const totalMonto = Array.from(personasSeleccionadas.values()).reduce(
+    (sum, p) => sum + (p.monto || 0),
+    0
+  );
+
   const procedeConfirmacion = () => {
+    setError(null);
     if (personasSeleccionadas.size === 0) {
       setError('Selecciona al menos una persona');
+      return;
+    }
+    if (montosInvalidos) {
+      setError('Completa un monto válido mayor a 0 para cada persona seleccionada');
       return;
     }
     setPaso(3);
@@ -151,6 +167,11 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
       return;
     }
 
+    if (montosInvalidos) {
+      setError('Hay montos pendientes o inválidos. Revísalos antes de confirmar');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -161,6 +182,22 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
       );
 
       if (resultado.success) {
+        if (docsSeleccionados.size > 0) {
+          const docsIds = Array.from(docsSeleccionados);
+          const inscripcionesPeriodo = await InscripcionService.obtenerInscripciones(periodoId);
+          const nuevasInscripciones = (inscripcionesPeriodo.inscripciones || []).filter(i =>
+            personaIds.includes(i.persona_id)
+          );
+
+          const operacionesDocs = nuevasInscripciones.flatMap(inscripcion =>
+            docsIds.map(tipoId =>
+              InscripcionService.marcarDocumento(inscripcion.inscripcion_id, tipoId, true)
+            )
+          );
+
+          await Promise.allSettled(operacionesDocs);
+        }
+
         setSuccess(`✅ ${resultado.total_inscritos} inscripciones registradas exitosamente`);
         setTimeout(() => {
           onComplete?.();
@@ -175,10 +212,21 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
     }
   };
 
-  const filtrosRamas = ['', ...new Set(personas.map(p => p.rama_actual).filter(Boolean))];
+  const obtenerCategoriaPersona = (persona: PersonaInscribible): string => {
+    const rama = (persona.rama_actual || '').trim();
+    if (rama) return rama;
+
+    const tipo = (persona.tipo_registro || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (tipo === 'dirigente') return 'Dirigente';
+    if (tipo === 'comite') return 'Comite';
+
+    return '';
+  };
+
+  const filtrosRamas = ['', ...new Set(personas.map(obtenerCategoriaPersona).filter(Boolean))];
   const ramaFiltro = filtrosForm.watch('rama');
   const personasFiltradas = personas.filter(
-    p => !ramaFiltro || p.rama_actual === ramaFiltro
+    p => !ramaFiltro || obtenerCategoriaPersona(p) === ramaFiltro
   );
 
   // ================================================================
@@ -293,8 +341,8 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
               >
                 <option value="">Todas las ramas</option>
                 {filtrosRamas.map(rama => (
-                  <option key={rama || 'empty'} value={rama}>
-                    {rama || '(Sin rama)'}
+                  <option key={rama} value={rama}>
+                    {rama}
                   </option>
                 ))}
               </select>
@@ -328,7 +376,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                           </p>
                           <div className="flex gap-2 mt-1">
                             <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">
-                              {persona.rama_actual || persona.tipo_registro}
+                              {obtenerCategoriaPersona(persona) || persona.tipo_registro}
                             </span>
                             {persona.tipo_registro !== 'Scout' && (
                               <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
@@ -345,10 +393,12 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                           <label className="text-xs font-medium text-gray-700">Monto (S/.)</label>
                           <input
                             type="number"
-                            min="0"
+                            min="0.01"
                             step="0.01"
-                            value={personasSeleccionadas.get(persona.id)?.monto || 100}
-                            onChange={(e) => actualizarMonto(persona.id, parseFloat(e.target.value) || 0)}
+                            inputMode="decimal"
+                            placeholder="Ej. 120.50"
+                            value={personasSeleccionadas.get(persona.id)?.monto ?? ''}
+                            onChange={(e) => actualizarMonto(persona.id, e.target.value)}
                             className="w-full mt-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
@@ -366,7 +416,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                   {personasSeleccionadas.size} seleccionado{personasSeleccionadas.size !== 1 ? 's' : ''}
                 </p>
                 <p className="text-xs text-blue-700 mt-1">
-                  Total: S/ {Array.from(personasSeleccionadas.values()).reduce((sum, p) => sum + p.monto, 0).toFixed(2)}
+                  Total: S/ {totalMonto.toFixed(2)}
                 </p>
               </div>
             )}
@@ -407,10 +457,64 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                 <div>
                   <p className="text-xs text-gray-600">Monto Total</p>
                   <p className="text-lg font-bold text-blue-900">
-                    S/ {Array.from(personasSeleccionadas.values()).reduce((sum, p) => sum + p.monto, 0).toFixed(2)}
+                    S/ {totalMonto.toFixed(2)}
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Selección de DOCS */}
+            <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-900">DOCS Entregados</p>
+                {tiposDocumento.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (docsSeleccionados.size === tiposDocumento.length) {
+                        setDocsSeleccionados(new Set());
+                      } else {
+                        setDocsSeleccionados(new Set(tiposDocumento.map(t => t.id)));
+                      }
+                    }}
+                    className="text-xs text-blue-600 font-medium"
+                  >
+                    {docsSeleccionados.size === tiposDocumento.length ? 'Limpiar' : 'Seleccionar todos'}
+                  </button>
+                )}
+              </div>
+
+              {loadingDocs ? (
+                <p className="text-xs text-gray-500">Cargando documentos...</p>
+              ) : tiposDocumento.length === 0 ? (
+                <p className="text-xs text-gray-500">No hay tipos de documento configurados</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {tiposDocumento.map((doc) => {
+                    const marcado = docsSeleccionados.has(doc.id);
+                    return (
+                      <label key={doc.id} className="flex items-start gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={marcado}
+                          onChange={(e) => {
+                            const nuevos = new Set(docsSeleccionados);
+                            if (e.target.checked) nuevos.add(doc.id);
+                            else nuevos.delete(doc.id);
+                            setDocsSeleccionados(nuevos);
+                          }}
+                          className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600"
+                        />
+                        <span className="text-gray-700">
+                          {doc.nombre}
+                          {doc.requerido && <span className="ml-1 text-red-500">*</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-gray-500">Los DOCS seleccionados se marcarán para todos los inscritos en esta operación.</p>
             </div>
 
             {/* Lista Resumen */}
@@ -422,9 +526,9 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                   <div key={p.id} className="flex justify-between items-center text-sm bg-white p-2 rounded border border-gray-200">
                     <div>
                       <p className="font-medium text-gray-900 truncate">{p.nombres}</p>
-                      <p className="text-xs text-gray-500">{p.rama_actual}</p>
+                      <p className="text-xs text-gray-500">{obtenerCategoriaPersona(p) || p.tipo_registro}</p>
                     </div>
-                    <p className="font-bold text-gray-900">S/ {personasSeleccionadas.get(p.id)?.monto || 0}</p>
+                    <p className="font-bold text-gray-900">S/ {(personasSeleccionadas.get(p.id)?.monto || 0).toFixed(2)}</p>
                   </div>
                 ))}
             </div>

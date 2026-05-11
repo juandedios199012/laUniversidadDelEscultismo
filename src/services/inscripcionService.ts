@@ -161,6 +161,16 @@ export class InscripcionService {
     return data;
   }
 
+  static async listarTiposDocumentoInscripcion(
+    soloActivos = true
+  ): Promise<{ success: boolean; tipos?: TipoDocumentoInscripcion[]; error?: string }> {
+    const { data, error } = await supabase.rpc('api_listar_tipos_documento_inscripcion', {
+      p_solo_activos: soloActivos,
+    });
+    if (error) throw error;
+    return data;
+  }
+
   // ============= 📝 GESTIÓN DE INSCRIPCIONES ANUALES (Legacy) =============
   
   /**
@@ -448,6 +458,16 @@ export interface ResumenChecklist {
   entregados: number;
   requeridos: number;
   req_ok: number;
+}
+
+export interface TipoDocumentoInscripcion {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  requerido: boolean;
+  activo: boolean;
+  orden: number;
+  total_uso?: number;
 }
 
 export default InscripcionService;
