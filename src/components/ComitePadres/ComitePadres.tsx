@@ -23,6 +23,10 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
   const [createForm, setCreateForm] = useState({
     nombres: '',
     apellidos: '',
+    numero_documento: '',
+    tipo_documento: 'DNI' as 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE',
+    fecha_nacimiento: '',
+    sexo: 'MASCULINO' as 'MASCULINO' | 'FEMENINO',
     email: '',
     telefono: '',
     cargo: 'VOCAL' as 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE',
@@ -186,6 +190,10 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
     setCreateForm({
       nombres: '',
       apellidos: '',
+      numero_documento: '',
+      tipo_documento: 'DNI',
+      fecha_nacimiento: '',
+      sexo: 'MASCULINO',
       email: '',
       telefono: '',
       cargo: 'VOCAL',
@@ -203,18 +211,22 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
   const openEditModal = (miembro: ComitePadresEntry) => {
     setSelectedMiembro(miembro);
     setEditForm({
-      nombres: miembro.nombres,
-      apellidos: miembro.apellidos,
-      email: miembro.email,
-      telefono: miembro.telefono || '',
-      cargo: miembro.cargo,
-      fecha_inicio: miembro.fecha_inicio,
-      fecha_fin: miembro.fecha_fin || '',
-      scout_hijo_id: miembro.scout_hijo_id || '',
+      nombres:          miembro.nombres,
+      apellidos:        miembro.apellidos,
+      numero_documento: miembro.numero_documento || '',
+      tipo_documento:   miembro.tipo_documento || 'DNI',
+      fecha_nacimiento: miembro.fecha_nacimiento && miembro.fecha_nacimiento !== '1900-01-01' ? miembro.fecha_nacimiento : '',
+      sexo:             miembro.sexo || 'MASCULINO',
+      email:            miembro.email || miembro.correo || '',
+      telefono:         miembro.telefono || miembro.celular || '',
+      cargo:            miembro.cargo,
+      fecha_inicio:     miembro.fecha_inicio,
+      fecha_fin:        miembro.fecha_fin || '',
+      scout_hijo_id:    miembro.scout_hijo_id || '',
       experiencia_previa: miembro.experiencia_previa || '',
-      habilidades: miembro.habilidades || [''],
-      disponibilidad: miembro.disponibilidad || '',
-      observaciones: miembro.observaciones || ''
+      habilidades:      miembro.habilidades || [''],
+      disponibilidad:   miembro.disponibilidad || '',
+      observaciones:    miembro.observaciones || ''
     });
     setIsEditModalOpen(true);
   };
@@ -596,12 +608,28 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
+                      Tipo de Documento *
+                    </label>
+                    <select
+                      value={createForm.tipo_documento}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, tipo_documento: e.target.value as any }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="DNI">DNI</option>
+                      <option value="CARNET_EXTRANJERIA">Carnet de Extranjería</option>
+                      <option value="PASAPORTE">Pasaporte</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Número de Documento *
                     </label>
                     <input
-                      type="email"
-                      value={createForm.email}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                      type="text"
+                      value={createForm.numero_documento}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, numero_documento: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     />
@@ -609,7 +637,46 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono
+                      Fecha de Nacimiento
+                    </label>
+                    <input
+                      type="date"
+                      value={createForm.fecha_nacimiento}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sexo *
+                    </label>
+                    <select
+                      value={createForm.sexo}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, sexo: e.target.value as any }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMENINO">Femenino</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Teléfono / Celular
                     </label>
                     <input
                       type="tel"
@@ -836,12 +903,28 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
+                      Tipo de Documento *
+                    </label>
+                    <select
+                      value={editForm.tipo_documento}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, tipo_documento: e.target.value as any }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="DNI">DNI</option>
+                      <option value="CARNET_EXTRANJERIA">Carnet de Extranjería</option>
+                      <option value="PASAPORTE">Pasaporte</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Número de Documento *
                     </label>
                     <input
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                      type="text"
+                      value={editForm.numero_documento}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, numero_documento: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     />
@@ -849,7 +932,46 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono
+                      Fecha de Nacimiento
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.fecha_nacimiento}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sexo *
+                    </label>
+                    <select
+                      value={editForm.sexo}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, sexo: e.target.value as any }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMENINO">Femenino</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Teléfono / Celular
                     </label>
                     <input
                       type="tel"

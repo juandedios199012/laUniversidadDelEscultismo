@@ -11,7 +11,157 @@ import { supabase } from '../lib/supabase';
  */
 export class InscripcionService {
 
-  // ============= 📝 GESTIÓN DE INSCRIPCIONES ANUALES =============
+  // ============= � PERÍODOS =============
+
+  static async listarPeriodos(): Promise<{
+    success: boolean;
+    periodos?: PeriodoDisponible[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_periodos_inscripcion');
+    if (error) throw error;
+    return data;
+  }
+
+  static async upsertPeriodo(
+    periodoId: string,
+    montoBase: number,
+    montoHermano?: number | null,
+    fechaApertura?: string | null,
+    fechaCierre?: string | null,
+    observaciones?: string | null
+  ): Promise<{ success: boolean; fecha_cierre?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_periodo_inscripcion', {
+      p_periodo_id:     periodoId,
+      p_monto_base:     montoBase,
+      p_monto_hermano:  montoHermano ?? null,
+      p_fecha_apertura: fechaApertura ?? null,
+      p_fecha_cierre:   fechaCierre ?? null,
+      p_observaciones:  observaciones ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 📋 INSCRIPCIONES =============
+
+  static async obtenerInscripciones(
+    periodoId?: string,
+    estado?: string,
+    personaId?: string
+  ): Promise<{ success: boolean; inscripciones?: Inscripcion[]; config?: ConfiguracionPeriodo; error?: string }> {
+    const { data, error } = await supabase.rpc('api_obtener_inscripciones', {
+      p_periodo_id: periodoId ?? null,
+      p_estado:     estado     ?? null,
+      p_persona_id: personaId  ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async inscribirMasivo(
+    scoutIds: string[],
+    periodoId: string,
+    monto?: number | null,
+    perfilOverride?: string | null
+  ): Promise<{ success: boolean; total_inscritos?: number; total_omitidos?: number; error?: string }> {
+    const { data, error } = await supabase.rpc('api_inscribir_masivo', {
+      p_scout_ids:          scoutIds,
+      p_periodo_id:         periodoId,
+      p_monto_inscripcion:  monto         ?? null,
+      p_perfil_override:    perfilOverride ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Lista TODAS las personas inscribibles (scouts + dirigentes externos + comité) */
+  static async listarPersonasInscribibles(
+    periodoId: string
+  ): Promise<{ success: boolean; personas?: PersonaInscribible[]; error?: string }> {
+    const { data, error } = await supabase.rpc('api_listar_personas_inscribibles', {
+      p_periodo_id: periodoId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /** Inscribe por persona_id — soporta dirigentes externos y comité */
+  static async inscribirPersonasMasivo(
+    personaIds: string[],
+    periodoId: string,
+    perfilOverride?: string | null
+  ): Promise<{ success: boolean; total_inscritos?: number; total_omitidos?: number; errores?: string[]; error?: string }> {
+    const { data, error } = await supabase.rpc('api_inscribir_personas_masivo', {
+      p_persona_ids:      personaIds,
+      p_periodo_id:       periodoId,
+      p_perfil_override:  perfilOverride ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarInscripcion(
+    inscripcionId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_inscripcion', {
+      p_inscripcion_id: inscripcionId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async registrarPago(
+    inscripcionId: string,
+    monto: number,
+    observaciones?: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_registrar_pago_inscripcion', {
+      p_inscripcion_id: inscripcionId,
+      p_monto_pago:     monto,
+      p_observaciones:  observaciones ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async detectarHermanos(
+    scoutIds: string[]
+  ): Promise<{ success: boolean; hermanos?: string[]; error?: string }> {
+    const { data, error } = await supabase.rpc('api_detectar_hermanos', {
+      p_scout_ids: scoutIds,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 📄 DOCUMENTOS =============
+
+  static async obtenerChecklist(
+    inscripcionId: string
+  ): Promise<{ success: boolean; checklist?: ChecklistItem[]; resumen?: ResumenChecklist; error?: string }> {
+    const { data, error } = await supabase.rpc('api_obtener_checklist_inscripcion', {
+      p_inscripcion_id: inscripcionId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async marcarDocumento(
+    inscripcionId: string,
+    tipoDocumentoId: string,
+    entregado: boolean
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.rpc('api_marcar_documento_inscripcion', {
+      p_inscripcion_id:    inscripcionId,
+      p_tipo_documento_id: tipoDocumentoId,
+      p_entregado:         entregado,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 📝 GESTIÓN DE INSCRIPCIONES ANUALES (Legacy) =============
   
   /**
    * 📝 Iniciar proceso de inscripción
@@ -101,6 +251,203 @@ export class InscripcionService {
       throw error;
     }
   }
+
+  // ============= 🏷️ PERFILES DE TARIFA =============
+
+  static async listarPerfilesTarifa(): Promise<{
+    success: boolean;
+    perfiles?: PerfilTarifa[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_perfiles_tarifa');
+    if (error) throw error;
+    return data;
+  }
+
+  static async upsertPerfilTarifa(perfil: {
+    codigo: string;
+    nombre: string;
+    descripcion?: string;
+    orden?: number;
+    activo?: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_perfil_tarifa', {
+      p_codigo:      perfil.codigo,
+      p_nombre:      perfil.nombre,
+      p_descripcion: perfil.descripcion ?? null,
+      p_orden:       perfil.orden ?? 0,
+      p_activo:      perfil.activo ?? true,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 💰 TARIFAS POR PERÍODO =============
+
+  static async listarTarifasPeriodo(periodoId: string): Promise<{
+    success: boolean;
+    periodo_id?: string;
+    tarifas?: TarifaPeriodo[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_tarifas_periodo', {
+      p_periodo_id: periodoId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async upsertTarifaPeriodo(
+    periodoId: string,
+    perfilTarifaId: string,
+    monto: number
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_tarifa_periodo', {
+      p_periodo_id:       periodoId,
+      p_perfil_tarifa_id: perfilTarifaId,
+      p_monto:            monto,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async actualizarTarifasPeriodo(periodoId: string): Promise<{
+    success: boolean;
+    filas_actualizadas?: number;
+    message?: string;
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_actualizar_tarifas_periodo', {
+      p_periodo_id: periodoId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 🎯 SUGERENCIA DE PERFIL =============
+
+  static async sugerirPerfilPersona(
+    personaId: string,
+    periodoId?: string
+  ): Promise<{
+    success: boolean;
+    perfil_tarifa_id?: string;
+    codigo?: string;
+    nombre?: string;
+    monto?: number | null;
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_sugerir_perfil_persona', {
+      p_persona_id: personaId,
+      p_periodo_id: periodoId ?? null,
+    });
+    if (error) throw error;
+    return data;
+  }
+}
+
+// ============= 📐 TIPOS EXPORTADOS =============
+
+export interface PerfilTarifa {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+  orden: number;
+}
+
+export interface TarifaPeriodo {
+  perfil_tarifa_id: string;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  orden: number;
+  monto: number | null;
+  configurado: boolean;
+}
+
+export interface PeriodoDisponible {
+  periodo_id: string;
+  monto_base: number;
+  monto_hermano: number | null;
+  fecha_apertura: string;
+  fecha_cierre: string;
+  vigente: boolean;
+  total_inscritos: number;
+}
+
+export interface ConfiguracionPeriodo {
+  monto_base: number;
+  monto_hermano: number | null;
+  fecha_apertura: string;
+  fecha_cierre: string;
+  vigente: boolean;
+}
+
+export interface Scout {
+  id: string;
+  codigo_scout: string;
+  nombres: string;
+  apellidos: string;
+  rama_actual: string;
+  numero_documento?: string;
+  celular?: string;
+  correo?: string;
+  estado: string;
+}
+
+export interface PersonaInscribible {
+  persona_id: string;
+  scout_id: string | null;
+  id: string;                    // = scout_id ?? persona_id (compatibilidad)
+  nombres: string;
+  apellidos: string;
+  tipo_registro: 'Scout' | 'Dirigente' | 'Comité';
+  rama_actual: string | null;
+  codigo_scout: string | null;
+  numero_documento?: string;
+}
+
+export interface Inscripcion {
+  inscripcion_id: string;
+  scout_id: string;
+  persona_id: string;
+  periodo_id: string;
+  fecha_inscripcion: string;
+  monto_inscripcion: number;
+  monto_pagado: number;
+  perfil_tarifa_id: string;
+  perfil_codigo: string;
+  perfil_nombre: string;
+  es_tarifa_hermano: boolean;
+  estado: 'PENDIENTE' | 'PARCIAL' | 'PAGADO' | 'VENCIDO';
+  observaciones?: string;
+  scout: Scout;
+  created_at: string;
+  docs_total: number;
+  docs_entregados: number;
+  docs_requeridos: number;
+  docs_req_ok: number;
+}
+
+export interface ChecklistItem {
+  tipo_id: string;
+  nombre: string;
+  descripcion: string | null;
+  requerido: boolean;
+  orden: number;
+  entregado: boolean;
+  fecha_entrega: string | null;
+  observaciones: string | null;
+  doc_id: string | null;
+}
+
+export interface ResumenChecklist {
+  total: number;
+  entregados: number;
+  requeridos: number;
+  req_ok: number;
 }
 
 export default InscripcionService;

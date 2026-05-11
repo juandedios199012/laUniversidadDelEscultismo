@@ -230,11 +230,21 @@ export interface ProgramaActividad {
 }
 
 export interface ComitePadresEntry {
+  // Identificadores
   id: string;
+  persona_id?: string;
+  // Datos personales (fuente de verdad: tabla personas)
   nombres: string;
   apellidos: string;
-  email?: string;
-  telefono?: string;
+  email?: string;       // alias de correo (retrocompatibilidad)
+  correo?: string;
+  telefono?: string;    // alias de celular (retrocompatibilidad)
+  celular?: string;
+  numero_documento?: string;
+  tipo_documento?: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  fecha_nacimiento?: string;
+  sexo?: 'MASCULINO' | 'FEMENINO';
+  // Datos del cargo (tabla comite_padres)
   cargo: 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
   fecha_inicio: string;
   fecha_fin?: string;

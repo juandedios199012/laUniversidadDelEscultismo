@@ -3,8 +3,9 @@ import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
-import InscripcionAnualMejorada from './components/Inscripcion/InscripcionAnualMejorada';
+import InscripcionAnual from './components/Inscripcion/InscripcionAnual';
 import ConfigDocumentosInscripcion from './components/Inscripcion/ConfigDocumentosInscripcion';
+import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
@@ -71,9 +72,11 @@ function AppContent() {
       case 'registro-scout-v2':
         return <ScoutsPage />;
       case 'inscripcion-anual':
-        return <InscripcionAnualMejorada />;
+        return <InscripcionAnual />;
       case 'config-documentos-inscripcion':
         return <ConfigDocumentosInscripcion />;
+      case 'config-tarifas-inscripcion':
+        return <ConfiguracionTarifasInscripcion />;
       case 'progresion':
         return <ProgresionPage />;
       case 'admin-objetivos':

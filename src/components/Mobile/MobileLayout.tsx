@@ -1,12 +1,12 @@
 import React from 'react';
-import { Home, Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield } from 'lucide-react';
+import { Home, Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
-  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion';
-  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion') => void;
+  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'inscripcion-anual';
+  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'inscripcion-anual') => void;
 }
 
 export default function MobileLayout({ children, currentTab, onTabChange }: MobileLayoutProps) {
@@ -23,6 +23,7 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
   const tabs = [
     { id: 'scouts' as const, icon: Users, label: 'Scouts', modulo: 'scouts' as const },
     { id: 'asistencia' as const, icon: ClipboardCheck, label: 'Asistencia', modulo: 'asistencia' as const },
+    { id: 'inscripcion-anual' as const, icon: FileText, label: 'Inscripción', modulo: 'inscripciones' as const },
     { id: 'puntajes' as const, icon: Award, label: 'Puntajes', modulo: 'programa_semanal' as const },
     { id: 'progresion' as const, icon: TrendingUp, label: 'Progresión', modulo: 'progresion' as const },
   ];

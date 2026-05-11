@@ -42,8 +42,9 @@ const menuGroups: MenuGroup[] = [
     icon: Star,
     gradient: 'from-teal-500 to-cyan-500',
     items: [
-      { id: 'inscripcion-anual',               label: 'Inscripción Anual',   icon: Star,     gradient: 'from-teal-500 to-cyan-500',  modulo: 'inscripciones' },
-      { id: 'config-documentos-inscripcion',   label: 'Tipos de Documento',  icon: FileText, gradient: 'from-teal-400 to-cyan-400',  modulo: 'inscripciones' },
+      { id: 'inscripcion-anual',             label: 'Inscripción Anual',   icon: Star,     gradient: 'from-teal-500 to-cyan-500',  modulo: 'inscripciones' },
+      { id: 'config-documentos-inscripcion', label: 'Tipos de Documento',  icon: FileText, gradient: 'from-teal-400 to-cyan-400',  modulo: 'inscripciones' },
+      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',             icon: Settings, gradient: 'from-teal-600 to-cyan-600',  modulo: 'inscripciones' },
     ],
   },
   {

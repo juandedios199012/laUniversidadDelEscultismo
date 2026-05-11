@@ -4,9 +4,10 @@ import ScoutsScreen from './ScoutsScreen';
 import AsistenciaScreen from './AsistenciaScreen';
 import PuntajesScreen from './PuntajesScreen';
 import ProgresionScreen from './ProgresionScreen';
+import InscripcionAnualMobile from '../Inscripcion/InscripcionAnualMobile';
 
 export default function MobileApp() {
-  const [currentTab, setCurrentTab] = useState<'scouts' | 'asistencia' | 'puntajes' | 'progresion'>('scouts');
+  const [currentTab, setCurrentTab] = useState<'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'inscripcion-anual'>('scouts');
 
   const renderScreen = () => {
     switch (currentTab) {
@@ -18,6 +19,8 @@ export default function MobileApp() {
         return <PuntajesScreen />;
       case 'progresion':
         return <ProgresionScreen />;
+      case 'inscripcion-anual':
+        return <InscripcionAnualMobile onComplete={() => setCurrentTab('scouts')} />;
       default:
         return <ScoutsScreen />;
     }

@@ -1,5 +1,32 @@
 import { supabase } from '../lib/supabase';
 
+// ----------------------------------------------------------------
+// Tipo para el resultado de registrar/actualizar miembro comité
+// ----------------------------------------------------------------
+export interface MiembroComiteInput {
+  // Datos de persona (van a tabla personas)
+  nombres: string;
+  apellidos: string;
+  numero_documento: string;
+  tipo_documento?: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  fecha_nacimiento?: string;
+  sexo?: 'MASCULINO' | 'FEMENINO';
+  correo?: string;
+  email?: string;   // alias de correo (retrocompatibilidad)
+  celular?: string;
+  telefono?: string; // alias de celular (retrocompatibilidad)
+  // Datos del cargo (van a tabla comite_padres)
+  cargo: 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
+  fecha_inicio: string;
+  fecha_fin?: string;
+  scout_hijo_id?: string;
+  scout_hijo_nombre?: string;
+  experiencia_previa?: string;
+  habilidades?: string[];
+  disponibilidad?: string;
+  observaciones?: string;
+}
+
 /**
  * ======================================================================
  * 👨‍👩‍👧‍👦 COMITE PADRES SERVICE - CLIENTE DE MICROSERVICIO/API
@@ -15,175 +42,144 @@ export class ComitePadresService {
   
   /**
    * 👤 Registrar miembro del comité
-   * Endpoint: POST /api/comite-padres/miembros
+   * Crea el registro en personas + comite_padres (transacción única en backend).
    */
-  static async registrarMiembro(miembro: {
-    nombres: string;
-    apellidos: string;
-    email: string;
-    telefono?: string;
-    cargo: string;
-    fecha_inicio: string;
-    fecha_fin?: string;
-    scout_hijo_id?: string;
-    experiencia_previa?: string;
-    habilidades?: string[];
-    disponibilidad?: string;
-    observaciones?: string;
-  }): Promise<{ success: boolean; miembro_id?: string; error?: string }> {
+  static async registrarMiembro(miembro: MiembroComiteInput): Promise<{ success: boolean; miembro_id?: string; comite_id?: string; error?: string }> {
     try {
-      const { data, error } = await supabase
-        .from('comite_padres')
-        .insert({
-          nombres: miembro.nombres,
-          apellidos: miembro.apellidos,
-          email: miembro.email,
-          telefono: miembro.telefono,
-          cargo: miembro.cargo,
-          fecha_inicio: miembro.fecha_inicio,
-          fecha_fin: miembro.fecha_fin,
-          scout_hijo_id: miembro.scout_hijo_id,
-          experiencia_previa: miembro.experiencia_previa,
-          habilidades: miembro.habilidades || [],
-          disponibilidad: miembro.disponibilidad,
-          observaciones: miembro.observaciones,
-          activo: true,
-          created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
+      const datos_persona = {
+        nombres:          miembro.nombres,
+        apellidos:        miembro.apellidos,
+        numero_documento: miembro.numero_documento,
+        tipo_documento:   miembro.tipo_documento || 'DNI',
+        fecha_nacimiento: miembro.fecha_nacimiento || '',
+        sexo:             miembro.sexo || 'MASCULINO',
+        correo:           miembro.correo || miembro.email || '',
+        celular:          miembro.celular || miembro.telefono || '',
+      };
+      const datos_comite = {
+        cargo:             miembro.cargo,
+        fecha_inicio:      miembro.fecha_inicio,
+        fecha_fin:         miembro.fecha_fin || '',
+        scout_hijo_id:     miembro.scout_hijo_id || '',
+        scout_hijo_nombre: miembro.scout_hijo_nombre || '',
+        experiencia_previa:miembro.experiencia_previa || '',
+        habilidades:       miembro.habilidades || [],
+        disponibilidad:    miembro.disponibilidad || '',
+        observaciones:     miembro.observaciones || '',
+      };
+
+      const { data, error } = await supabase.rpc('api_registrar_miembro_comite', {
+        p_datos_persona: datos_persona,
+        p_datos_comite:  datos_comite,
+      });
 
       if (error) throw error;
-      return { success: true, miembro_id: data.id };
-    } catch (error) {
-      console.error('❌ Error al registrar miembro:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+      const result = data as { success: boolean; comite_id?: string; persona_id?: string; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return { success: true, comite_id: result.comite_id, miembro_id: result.comite_id };
+    } catch (err) {
+      console.error('❌ Error al registrar miembro comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
     }
   }
 
   /**
    * 📋 Obtener miembros del comité
-   * Endpoint: GET /api/comite-padres/miembros
+   * Datos personales vienen de tabla personas (fuente de verdad).
    */
   static async getMiembrosComite(filtros?: {
     cargo?: string;
     activos_solo?: boolean;
-    año?: number;
   }): Promise<any[]> {
     try {
-      let query = supabase
-        .from('comite_padres')
-        .select('*');
-
-      if (filtros?.cargo) {
-        query = query.eq('cargo', filtros.cargo);
-      }
-
-      if (filtros?.activos_solo !== false) {
-        query = query.eq('activo', true);
-      }
-
-      if (filtros?.año) {
-        const inicioAño = `${filtros.año}-01-01`;
-        const finAño = `${filtros.año}-12-31`;
-        query = query.gte('fecha_inicio', inicioAño).lte('fecha_inicio', finAño);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('api_listar_comite_padres', {
+        p_activos_solo: filtros?.activos_solo !== false,
+        p_cargo:        filtros?.cargo || null,
+      });
 
       if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener miembros:', error);
+      const result = data as { success: boolean; miembros?: any[]; error?: string };
+      return result?.miembros || [];
+    } catch (err) {
+      console.error('❌ Error al obtener miembros comité:', err);
       return [];
     }
   }
 
   /**
    * 🎯 Obtener miembro por ID
-   * Endpoint: GET /api/comite-padres/miembros/{id}
+   * Filtra el listado completo por id (evita crear un RPC extra).
    */
   static async getMiembroById(id: string): Promise<any | null> {
     try {
-      const { data, error } = await supabase
-        .from('comite_padres')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al obtener miembro:', error);
+      const todos = await ComitePadresService.getMiembrosComite({ activos_solo: false });
+      return todos.find((m: any) => m.id === id) || null;
+    } catch (err) {
+      console.error('❌ Error al obtener miembro comité:', err);
       return null;
     }
   }
 
   /**
    * ✏️ Actualizar miembro del comité
-   * Endpoint: PUT /api/comite-padres/miembros/{id}
+   * Actualiza datos en personas + comite_padres (transacción en backend).
    */
-  static async updateMiembro(id: string, miembro: {
-    nombres?: string;
-    apellidos?: string;
-    email?: string;
-    telefono?: string;
-    cargo?: string;
-    fecha_inicio?: string;
-    fecha_fin?: string;
-    scout_hijo_id?: string;
-    experiencia_previa?: string;
-    habilidades?: string[];
-    disponibilidad?: string;
-    observaciones?: string;
-  }): Promise<{ success: boolean; error?: string }> {
+  static async updateMiembro(id: string, miembro: Partial<MiembroComiteInput>): Promise<{ success: boolean; error?: string }> {
     try {
-      const updateData: any = {
-        updated_at: new Date().toISOString()
+      const datos_persona = {
+        nombres:          miembro.nombres,
+        apellidos:        miembro.apellidos,
+        numero_documento: miembro.numero_documento,
+        fecha_nacimiento: miembro.fecha_nacimiento,
+        sexo:             miembro.sexo,
+        correo:           miembro.correo || miembro.email,
+        celular:          miembro.celular || miembro.telefono,
+      };
+      const datos_comite = {
+        cargo:             miembro.cargo,
+        fecha_inicio:      miembro.fecha_inicio,
+        fecha_fin:         miembro.fecha_fin,
+        scout_hijo_id:     miembro.scout_hijo_id,
+        scout_hijo_nombre: miembro.scout_hijo_nombre,
+        experiencia_previa:miembro.experiencia_previa,
+        habilidades:       miembro.habilidades,
+        disponibilidad:    miembro.disponibilidad,
+        observaciones:     miembro.observaciones,
       };
 
-      if (miembro.nombres) updateData.nombres = miembro.nombres;
-      if (miembro.apellidos) updateData.apellidos = miembro.apellidos;
-      if (miembro.email) updateData.email = miembro.email;
-      if (miembro.telefono) updateData.telefono = miembro.telefono;
-      if (miembro.cargo) updateData.cargo = miembro.cargo;
-      if (miembro.fecha_inicio) updateData.fecha_inicio = miembro.fecha_inicio;
-      if (miembro.fecha_fin) updateData.fecha_fin = miembro.fecha_fin;
-      if (miembro.scout_hijo_id) updateData.scout_hijo_id = miembro.scout_hijo_id;
-      if (miembro.experiencia_previa) updateData.experiencia_previa = miembro.experiencia_previa;
-      if (miembro.habilidades) updateData.habilidades = miembro.habilidades;
-      if (miembro.disponibilidad) updateData.disponibilidad = miembro.disponibilidad;
-      if (miembro.observaciones) updateData.observaciones = miembro.observaciones;
-
-      const { error } = await supabase
-        .from('comite_padres')
-        .update(updateData)
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('api_actualizar_miembro_comite', {
+        p_comite_id:     id,
+        p_datos_persona: datos_persona,
+        p_datos_comite:  datos_comite,
+      });
 
       if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
       return { success: true };
-    } catch (error) {
-      console.error('❌ Error al actualizar miembro:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    } catch (err) {
+      console.error('❌ Error al actualizar miembro comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
     }
   }
 
   /**
-   * 🗑️ Eliminar miembro del comité
-   * Endpoint: DELETE /api/comite-padres/miembros/{id}
+   * 🗑️ Desactivar miembro del comité (soft delete)
+   * La persona en la tabla personas persiste.
    */
   static async deleteMiembro(id: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
-        .from('comite_padres')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('api_eliminar_miembro_comite', {
+        p_comite_id: id,
+      });
 
       if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
       return { success: true };
-    } catch (error) {
-      console.error('❌ Error al eliminar miembro:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    } catch (err) {
+      console.error('❌ Error al eliminar miembro comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
     }
   }
 
