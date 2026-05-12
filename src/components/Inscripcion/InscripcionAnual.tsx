@@ -83,6 +83,7 @@ const InscripcionAnual: React.FC = () => {
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroRama, setFiltroRama] = useState('');
+  const [filtroTipoPersona, setFiltroTipoPersona] = useState('');
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
   // ================================================================
@@ -420,7 +421,7 @@ const InscripcionAnual: React.FC = () => {
       } else if (filtroRamaModal === 'Comité') {
         if (!esTipoRegistro(s.tipo_registro, 'Comité')) return false;
       } else {
-        // Es una rama específica (Manada, Scout, Caminante, Clan)
+        // Es una rama específica (Manada, Tropa, Comunidad, Clan)
         if (s.rama_actual !== filtroRamaModal) return false;
       }
     }
@@ -437,14 +438,33 @@ const InscripcionAnual: React.FC = () => {
   });
 
   const inscripcionesFiltradas = inscripciones.filter(i => {
+    // Filtro de estado
     if (filtroEstado && i.estado !== filtroEstado) return false;
-    if (filtroRama && i.scout.rama_actual !== filtroRama) return false;
+    
+    // Filtro de tipo de persona (perfil_codigo: scout, dirigente, comite, hermano)
+    if (filtroTipoPersona && i.perfil_codigo !== filtroTipoPersona) return false;
+    
+    // Filtro de rama: solo aplica a scouts, dirigentes/comité no tienen rama
+    if (filtroRama) {
+      if (i.scout.rama_actual) {
+        if (i.scout.rama_actual !== filtroRama) return false;
+      } else {
+        // Si no tiene rama (es dirigente/comité), rechazar si se busca una rama específica
+        return false;
+      }
+    }
+    
+    // Filtro de búsqueda
     if (filtroBusqueda) {
       const busqueda = filtroBusqueda.toLowerCase();
+      const nombres = (i.scout.nombres || '').toLowerCase();
+      const apellidos = (i.scout.apellidos || '').toLowerCase();
+      const codigo = (i.scout.codigo_scout || '').toLowerCase();
+      
       return (
-        i.scout.nombres.toLowerCase().includes(busqueda) ||
-        i.scout.apellidos.toLowerCase().includes(busqueda) ||
-        i.scout.codigo_scout.toLowerCase().includes(busqueda)
+        nombres.includes(busqueda) ||
+        apellidos.includes(busqueda) ||
+        codigo.includes(busqueda)
       );
     }
     return true;
@@ -616,7 +636,7 @@ const InscripcionAnual: React.FC = () => {
 
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
@@ -626,6 +646,18 @@ const InscripcionAnual: React.FC = () => {
               <option value="PENDIENTE">Pendientes</option>
               <option value="PARCIAL">Parcial</option>
               <option value="PAGADO">Pagados</option>
+            </select>
+
+            <select
+              value={filtroTipoPersona}
+              onChange={(e) => setFiltroTipoPersona(e.target.value)}
+              className="px-4 py-2 border rounded-lg"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="scout">Scout</option>
+              <option value="hermano">Hermano (Scout)</option>
+              <option value="dirigente">Dirigente</option>
+              <option value="comite">Comité</option>
             </select>
 
             <select
@@ -856,7 +888,7 @@ const InscripcionAnual: React.FC = () => {
                 </div>
               ) : (
                 <div className="px-6 py-3 bg-yellow-50 border-b">
-                  <span className="text-sm text-yellow-800">⚠ Sin tarifas configuradas — ve a Inscripción → Tarifas</span>
+                  <span className="text-sm text-yellow-800">⚠ Sin tarifas configuradas — ve a Config Inscripción → Tarifas</span>
                 </div>
               )}
 
@@ -1006,7 +1038,7 @@ const InscripcionAnual: React.FC = () => {
                   <div className="text-center py-10">
                     <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
                     <p className="text-gray-500 text-sm">No hay tipos de documento configurados</p>
-                    <p className="text-gray-400 text-xs mt-1">Ve a Inscripción &rsaquo; Tipos de Documento para agregar</p>
+                    <p className="text-gray-400 text-xs mt-1">Ve a Config Inscripción &rsaquo; Tipos Documento para agregar</p>
                   </div>
                 ) : (
                   <div className="space-y-2">

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { 
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
-  Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight
+  Tent, Wallet, Lock, Trophy, Medal, Settings,
+  ChevronDown, ChevronRight, FileText
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -43,8 +43,16 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-teal-500 to-cyan-500',
     items: [
       { id: 'inscripcion-anual',             label: 'Inscripción Anual',   icon: Star,     gradient: 'from-teal-500 to-cyan-500',  modulo: 'inscripciones' },
-      { id: 'config-documentos-inscripcion', label: 'Tipos de Documento',  icon: FileText, gradient: 'from-teal-400 to-cyan-400',  modulo: 'inscripciones' },
-      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',             icon: Settings, gradient: 'from-teal-600 to-cyan-600',  modulo: 'inscripciones' },
+    ],
+  },
+  {
+    id: 'configuracion-inscripcion',
+    label: 'Config Inscripción',
+    icon: Settings,
+    gradient: 'from-cyan-600 to-sky-600',
+    items: [
+      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',         icon: Settings, gradient: 'from-teal-600 to-cyan-600', modulo: 'inscripciones' },
+      { id: 'config-documentos-inscripcion', label: 'Tipos Documento', icon: FileText, gradient: 'from-cyan-600 to-sky-600',  modulo: 'inscripciones' },
     ],
   },
   {
