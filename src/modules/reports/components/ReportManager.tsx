@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
 import {
   ReportType,
   ExportFormat,
@@ -13,7 +14,7 @@ import {
   ReportGenerationResult,
 } from '../types/reportTypes';
 import { ReportExportButton } from './ReportExportButton';
-import { generateAndDownloadPDF, generateReportMetadata } from '../services/pdfService';
+import { generateAndDownloadPDF, generatePDF, generateReportMetadata } from '../services/pdfService';
 import { generateAndDownloadDOCX, createScoutReportDOCX, createAttendanceReportDOCX, createProgressReportDOCX } from '../services/docxService';
 import { ScoutsExcelReport } from './ScoutsExcelReport';
 import { EspecialidadesExcelReport } from './EspecialidadesExcelReport';
@@ -27,13 +28,33 @@ import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
 import AttendanceReportTemplate from '../templates/pdf/AttendanceReportTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
+import InscripcionesReportTemplate from '../templates/pdf/InscripcionesReportTemplate';
+import ContactosEmergenciaReportTemplate from '../templates/pdf/ContactosEmergenciaReportTemplate';
+import DocumentacionPendienteReportTemplate from '../templates/pdf/DocumentacionPendienteReportTemplate';
+import RankingPatrullasReportTemplate from '../templates/pdf/RankingPatrullasReportTemplate';
+import GenericSummaryReportTemplate from '../templates/pdf/GenericSummaryReportTemplate';
 import { getEspecialidadesReportData } from '../services/especialidadesDataService';
 import { supabase } from '../../../lib/supabase';
+import ScoutService from '../../../services/scoutService';
+import ReportsService from '../../../services/reportsService';
+import FinanzasService from '../../../services/finanzasService';
+import { ActividadesExteriorService } from '../../../services/actividadesExteriorService';
+import InventarioService from '../../../services/inventarioService';
+import {
+  getInscripcionesAnuales,
+  getRankingPatrullas,
+  getContactosEmergencia,
+  getDocumentacionPendiente,
+} from '../services/reportDataService';
 // Imports para reportes masivos
 import DniCollectionTemplate from '../templates/pdf/DniCollectionTemplate';
+import DniScoutApoderadoTemplate from '../templates/pdf/DniScoutApoderadoTemplate';
+import { createDNGI03WordDocument } from '../templates/word/DNGI03WordTemplate';
 import {
+  getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
   getAllFamiliaresWithDni,
+  getScoutsWithApoderadoDni,
   generateMasiveReportMetadata,
   getAvailableRamas,
   splitPersonasForPdf,
@@ -69,6 +90,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Estado para filtro de rama en reportes masivos
   const [ramaFilter, setRamaFilter] = useState<string>('TODAS');
   const [availableRamas, setAvailableRamas] = useState<string[]>([]);
+  const [selectedMassiveScoutId, setSelectedMassiveScoutId] = useState<string>('');
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -105,6 +127,82 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     } finally {
       setLoadingScouts(false);
     }
+  };
+
+  const filteredScoutsForMassive = scouts.filter((s) =>
+    ramaFilter === 'TODAS' ? true : s.rama_actual === ramaFilter
+  );
+
+  useEffect(() => {
+    if (!selectedMassiveScoutId) return;
+    const exists = filteredScoutsForMassive.some((s) => s.id === selectedMassiveScoutId);
+    if (!exists) {
+      setSelectedMassiveScoutId('');
+    }
+  }, [ramaFilter, selectedMassiveScoutId, scouts]);
+
+  const sanitizeFilePart = (value: string): string => {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  };
+
+  const getFirstSurname = (apellidos: string): string => {
+    return (apellidos || '').trim().split(/\s+/)[0] || '';
+  };
+
+  const compressDataUrlImage = async (
+    dataUrl: string,
+    maxWidth: number,
+    quality: number
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width > maxWidth ? maxWidth / img.width : 1;
+        const width = Math.max(1, Math.round(img.width * ratio));
+        const height = Math.max(1, Math.round(img.height * ratio));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
+  const compressPairForPdf = async (scout: any, apoderado: any, quality: number, maxWidth = 980) => {
+    const [sAnv, sRev, aAnv, aRev] = await Promise.all([
+      scout.dniAnversoUrl ? compressDataUrlImage(scout.dniAnversoUrl, maxWidth, quality) : undefined,
+      scout.dniReversoUrl ? compressDataUrlImage(scout.dniReversoUrl, maxWidth, quality) : undefined,
+      apoderado.dniAnversoUrl ? compressDataUrlImage(apoderado.dniAnversoUrl, maxWidth, quality) : undefined,
+      apoderado.dniReversoUrl ? compressDataUrlImage(apoderado.dniReversoUrl, maxWidth, quality) : undefined,
+    ]);
+
+    return {
+      scout: {
+        ...scout,
+        dniAnversoUrl: sAnv,
+        dniReversoUrl: sRev,
+      },
+      apoderado: {
+        ...apoderado,
+        dniAnversoUrl: aAnv,
+        dniReversoUrl: aRev,
+      },
+    };
   };
 
   // Definir tipos de reportes disponibles (agrupados por categoría)
@@ -162,7 +260,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: '¡Nuevo!'
         },
         {
-          type: 'INSCRIPCIONES_ANUALES' as ReportType,
+          type: ReportType.INSCRIPCIONES_ANUALES,
           title: 'Inscripciones Anuales',
           description: 'Estado de pagos y documentación',
           icon: <FileText className="w-6 h-6" />,
@@ -170,7 +268,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: 'CONTACTOS_EMERGENCIA' as ReportType,
+          type: ReportType.CONTACTOS_EMERGENCIA,
           title: 'Contactos de Emergencia',
           description: 'Datos médicos y contactos familiares',
           icon: <Users className="w-6 h-6" />,
@@ -178,7 +276,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: 'DOCUMENTACION_PENDIENTE' as ReportType,
+          type: ReportType.DOCUMENTACION_PENDIENTE,
           title: 'Documentación Pendiente',
           description: 'Scouts con docs o pagos incompletos',
           icon: <FileText className="w-6 h-6" />,
@@ -186,7 +284,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: 'RANKING_PATRULLAS' as ReportType,
+          type: ReportType.RANKING_PATRULLAS,
           title: 'Ranking de Patrullas',
           description: 'Puntajes y posiciones por rama',
           icon: <TrendingUp className="w-6 h-6" />,
@@ -199,7 +297,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       name: 'Reportes Estratégicos',
       reports: [
         {
-          type: 'DASHBOARD_EJECUTIVO' as ReportType,
+          type: ReportType.DASHBOARD_EJECUTIVO,
           title: 'Dashboard Ejecutivo',
           description: 'KPIs, tendencias y alertas del grupo',
           icon: <TrendingUp className="w-6 h-6" />,
@@ -207,15 +305,23 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: 'REPORTE_FINANCIERO' as ReportType,
-          title: 'Reporte Financiero',
-          description: 'Ingresos, gastos y balance general',
+          type: ReportType.REPORTE_FINANCIERO_INSCRIPCION,
+          title: 'Finanzas de Inscripción (Grupo)',
+          description: 'Ingresos por Inscripción Anual del grupo scout',
           icon: <FileText className="w-6 h-6" />,
           color: 'teal',
           badge: 'Nuevo'
         },
         {
-          type: 'REPORTE_ACTIVIDADES' as ReportType,
+          type: ReportType.REPORTE_FINANCIERO_RAMA,
+          title: 'Finanzas Operativas (Rama)',
+          description: 'Ingresos/egresos del módulo Finanzas por período',
+          icon: <FileText className="w-6 h-6" />,
+          color: 'cyan',
+          badge: 'Nuevo'
+        },
+        {
+          type: ReportType.REPORTE_ACTIVIDADES,
           title: 'Reporte de Actividades',
           description: 'Programas ejecutados y participación',
           icon: <Calendar className="w-6 h-6" />,
@@ -223,7 +329,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: 'REPORTE_INVENTARIO' as ReportType,
+          type: ReportType.REPORTE_INVENTARIO,
           title: 'Reporte de Inventario',
           description: 'Stock, préstamos y movimientos',
           icon: <FileText className="w-6 h-6" />,
@@ -267,6 +373,22 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           color: 'purple',
           badge: '¡Nuevo!'
         },
+        {
+          type: ReportType.DNGI03_WORD_POR_SCOUT,
+          title: 'DNGI-03 Word por Scout',
+          description: 'Exporta 1 archivo Word por scout activo',
+          icon: <FileText className="w-6 h-6" />,
+          color: 'blue',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.DNI_SCOUT_APODERADO_POR_SCOUT,
+          title: 'DNI Scout + Apoderado (por scout)',
+          description: '1 PDF por scout con scout primero y apoderado',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'emerald',
+          badge: '¡Nuevo!'
+        },
       ]
     }
   ];
@@ -299,6 +421,39 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.ESPECIALIDADES:
           return await exportEspecialidadesReport(format, metadata);
 
+        case ReportType.ESPECIALIDADES_DETALLE:
+          return await exportEspecialidadesDetalleReport(format, metadata);
+
+        case ReportType.INSCRIPCIONES_ANUALES:
+          return await exportInscripcionesAnualesReport(format, metadata);
+
+        case ReportType.CONTACTOS_EMERGENCIA:
+          return await exportContactosEmergenciaReport(format, metadata);
+
+        case ReportType.DOCUMENTACION_PENDIENTE:
+          return await exportDocumentacionPendienteReport(format, metadata);
+
+        case ReportType.RANKING_PATRULLAS:
+          return await exportRankingPatrullasReport(format, metadata);
+
+        case ReportType.DASHBOARD_EJECUTIVO:
+          return await exportDashboardEjecutivoReport(format, metadata);
+
+        case ReportType.REPORTE_FINANCIERO_INSCRIPCION:
+          return await exportFinancieroInscripcionReport(format, metadata);
+
+        case ReportType.REPORTE_FINANCIERO_RAMA:
+          return await exportFinancieroRamaReport(format, metadata);
+
+        case ReportType.REPORTE_FINANCIERO:
+          return await exportFinancieroRamaReport(format, metadata);
+
+        case ReportType.REPORTE_ACTIVIDADES:
+          return await exportActividadesReport(format, metadata);
+
+        case ReportType.REPORTE_INVENTARIO:
+          return await exportInventarioReport(format, metadata);
+
         case ReportType.DNI_SCOUTS:
           return await exportDniScouts(format);
           
@@ -310,6 +465,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           
         case ReportType.DNI_FAMILIARES_SPLIT:
           return await exportDniFamiliaresSplit(format);
+
+        case ReportType.DNGI03_WORD_POR_SCOUT:
+          return await exportDngi03WordPorScout(format);
+
+        case ReportType.DNI_SCOUT_APODERADO_POR_SCOUT:
+          return await exportDniScoutApoderadoPorScout(format);
 
         default:
           return {
@@ -612,6 +773,451 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
   };
 
+  const exportEspecialidadesDetalleReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const { data, error } = await supabase.rpc('api_reporte_especialidades_detalle', {
+      p_rama: especialidadesRama || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) {
+      return { status: 'error' as any, fileName: 'error', error: data?.error || 'No se pudo obtener el detalle' };
+    }
+
+    const detalle = data.detalle || [];
+    const resumen = data.resumen || [];
+    if (detalle.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron datos de especialidades detalladas' };
+    }
+
+    const fileName = `reporte_especialidades_detalle${especialidadesRama ? `_${especialidadesRama.toLowerCase()}` : ''}`;
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Reporte Detallado de Especialidades"
+          subtitle={especialidadesRama ? `Rama: ${especialidadesRama}` : 'Todas las ramas'}
+          metadata={metadata}
+          summary={[
+            { label: 'Asignaciones', value: detalle.length },
+            { label: 'Scouts con especialidades', value: resumen.length },
+            { label: 'Completadas', value: detalle.filter((d: any) => d.esta_completada).length },
+          ]}
+          rows={detalle.slice(0, 25).map((d: any) => ({
+            label: `${d.nombre_scout} - ${d.especialidad_nombre}`,
+            value: d.esta_completada ? 'Completada' : 'En progreso',
+          }))}
+        />,
+        fileName
+      );
+    }
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Reporte Detallado de Especialidades', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Rama: ${especialidadesRama || 'Todas'}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Total asignaciones: ${detalle.length}` })] }),
+          new Paragraph({ children: [] }),
+          ...detalle.slice(0, 100).map((d: any) => new Paragraph({
+            children: [new TextRun({ text: `${d.nombre_scout} | ${d.especialidad_nombre} | ${d.esta_completada ? 'Completada' : 'En progreso'}` })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, fileName);
+  };
+
+  const exportInscripcionesAnualesReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const ano = filters.year || new Date().getFullYear();
+    const data = await getInscripcionesAnuales(ano, filters.rama || undefined);
+    if (data.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron inscripciones para el filtro seleccionado' };
+    }
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <InscripcionesReportTemplate data={data} metadata={metadata} ano={ano} />,
+        `reporte_inscripciones_${ano}`
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: `Reporte de Inscripciones ${ano}`, bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        ...data.slice(0, 120).map((i: any) => new Paragraph({
+          children: [new TextRun({ text: `${i.codigoScout} | ${i.nombreCompleto} | ${i.rama} | ${i.estadoPago}` })],
+        })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, `reporte_inscripciones_${ano}`);
+  };
+
+  const exportContactosEmergenciaReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const data = await getContactosEmergencia(filters.rama || undefined);
+    if (data.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron contactos de emergencia' };
+    }
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <ContactosEmergenciaReportTemplate data={data} metadata={metadata} rama={filters.rama} />,
+        'reporte_contactos_emergencia'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Reporte de Contactos de Emergencia', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        ...data.slice(0, 100).map((s: any) => new Paragraph({
+          children: [new TextRun({ text: `${s.codigoScout} | ${s.nombreScout} ${s.apellidoScout}` })],
+        })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'reporte_contactos_emergencia');
+  };
+
+  const exportDocumentacionPendienteReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const ano = filters.year || new Date().getFullYear();
+    const data = await getDocumentacionPendiente(ano);
+    if (data.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron pendientes para el período seleccionado' };
+    }
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <DocumentacionPendienteReportTemplate data={data} metadata={metadata} ano={ano} />,
+        `reporte_documentacion_pendiente_${ano}`
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: `Documentación Pendiente ${ano}`, bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        ...data.slice(0, 120).map((d: any) => new Paragraph({
+          children: [new TextRun({ text: `${d.codigoScout} | ${d.nombreCompleto} | ${d.documentosFaltantes?.join(', ') || 'Sin detalle'}` })],
+        })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, `reporte_documentacion_pendiente_${ano}`);
+  };
+
+  const exportRankingPatrullasReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const data = await getRankingPatrullas(filters.rama || undefined, filters.dateFrom, filters.dateTo);
+    if (data.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No hay datos de ranking para los filtros seleccionados' };
+    }
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <RankingPatrullasReportTemplate
+          data={data}
+          metadata={metadata}
+          dateRange={filters.dateFrom && filters.dateTo ? { from: filters.dateFrom, to: filters.dateTo } : undefined}
+        />,
+        'reporte_ranking_patrullas'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Ranking de Patrullas', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        ...data.slice(0, 50).map((r: any) => new Paragraph({
+          children: [new TextRun({ text: `#${r.posicion} ${r.patrullaNombre} (${r.rama}) - ${r.totalPuntos} pts` })],
+        })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'reporte_ranking_patrullas');
+  };
+
+  const exportDashboardEjecutivoReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const dashboard = await ReportsService.getDashboardEjecutivo();
+    const kpis = dashboard?.kpis_principales || {};
+    const tendencias = dashboard?.tendencias || {};
+    const comparativo = dashboard?.comparativo_periodo_anterior || {};
+    const alertas = dashboard?.alertas || [];
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Dashboard Ejecutivo"
+          subtitle="KPIs Gerenciales para Toma de Decisiones"
+          metadata={metadata}
+          summary={[
+            { label: 'Scouts Activos', value: kpis.scouts_activos ?? 0 },
+            { label: 'Dirigentes Activos', value: kpis.dirigentes_activos ?? 0 },
+            { label: 'Asistencia Promedio', value: `${kpis.asistencia_promedio ?? 0}%` },
+            { label: 'Balance Financiero', value: `S/ ${(kpis.balance_financiero ?? 0).toFixed(2)}` },
+            { label: 'Tasa de Retencion', value: `${kpis.tasa_retencion ?? 0}%` },
+            { label: 'Satisfaccion Actividades', value: `${kpis.satisfaccion_actividades ?? 0}/5` },
+            { label: '', value: '' },
+            { label: 'TENDENCIAS', value: '' },
+            { label: 'Crecimiento Scouts', value: `${tendencias.crecimiento_scouts ?? 0} (${comparativo.scouts?.variacion ?? 0}%)` },
+            { label: 'Actividades del Mes', value: tendencias.actividades_mes ?? 0 },
+            { label: 'Variacion Asistencia', value: `${comparativo.asistencia?.variacion ?? 0}%` },
+            { label: 'Variacion Ingresos', value: `${comparativo.ingresos?.variacion ?? 0}%` },
+            { label: '', value: '' },
+            { label: 'ALERTAS ACTIVAS', value: alertas.length },
+            ...alertas.slice(0, 5).map((a: any) => ({
+              label: `${a.tipo.toUpperCase()}`,
+              value: a.mensaje
+            }))
+          ]}
+        />,
+        'dashboard_ejecutivo'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Dashboard Ejecutivo - KPIs Gerenciales', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'KPIs PRINCIPALES', bold: true, size: 24 })] }),
+        new Paragraph({ children: [new TextRun({ text: `Scouts Activos: ${kpis.scouts_activos ?? 0}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Dirigentes Activos: ${kpis.dirigentes_activos ?? 0}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Asistencia Promedio: ${kpis.asistencia_promedio ?? 0}%` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Balance Financiero: S/ ${(kpis.balance_financiero ?? 0).toFixed(2)}` })] }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'TENDENCIAS', bold: true, size: 24 })] }),
+        new Paragraph({ children: [new TextRun({ text: `Crecimiento Scouts: ${tendencias.crecimiento_scouts ?? 0} (${comparativo.scouts?.variacion ?? 0}%)` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Actividades Mes: ${tendencias.actividades_mes ?? 0}` })] }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: `ALERTAS (${alertas.length})`, bold: true, size: 24 })] }),
+        ...alertas.map((a: any) => new Paragraph({ children: [new TextRun({ text: `[${a.tipo.toUpperCase()}] ${a.mensaje}` })] })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'dashboard_ejecutivo');
+  };
+
+  const exportFinancieroInscripcionReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const ano = filters.year || new Date().getFullYear();
+    const data = await getInscripcionesAnuales(ano, filters.rama || undefined);
+
+    const totalInscritos = data.length;
+    const pagados = data.filter((d: any) => d.estadoPago === 'PAGADO');
+    const pendientes = data.filter((d: any) => d.estadoPago !== 'PAGADO');
+    const totalPagado = pagados.reduce((sum: number, d: any) => sum + Number(d.montoInscripcion || 0), 0);
+    const totalPendiente = pendientes.reduce((sum: number, d: any) => sum + Number(d.montoInscripcion || 0), 0);
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Finanzas de Inscripción (Grupo)"
+          subtitle={`Año ${ano}${filters.rama ? ` • Rama: ${filters.rama}` : ''}`}
+          metadata={metadata}
+          summary={[
+            { label: 'Inscritos', value: totalInscritos },
+            { label: 'Pagados', value: pagados.length },
+            { label: 'Pendientes', value: pendientes.length },
+            { label: 'Ingresos cobrados', value: `S/ ${totalPagado.toFixed(2)}` },
+            { label: 'Por cobrar', value: `S/ ${totalPendiente.toFixed(2)}` },
+          ]}
+          rows={data.slice(0, 40).map((d: any) => ({
+            label: `${d.codigoScout} | ${d.nombreCompleto}`,
+            value: `${d.estadoPago} • S/ ${Number(d.montoInscripcion || 0).toFixed(2)}`,
+          }))}
+        />,
+        `reporte_financiero_inscripcion_${ano}`
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Finanzas de Inscripción (Grupo)', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [new TextRun({ text: `Año: ${ano}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Inscritos: ${totalInscritos} | Pagados: ${pagados.length} | Pendientes: ${pendientes.length}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Cobrado: S/ ${totalPagado.toFixed(2)} | Por cobrar: S/ ${totalPendiente.toFixed(2)}` })] }),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, `reporte_financiero_inscripcion_${ano}`);
+  };
+
+  const exportFinancieroRamaReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const year = filters.year || new Date().getFullYear();
+    const monthFrom = Number(filters.monthFrom || 1);
+    const monthTo = Number(filters.monthTo || 12);
+    const fechaInicio = `${year}-${String(monthFrom).padStart(2, '0')}-01`;
+    const fechaFin = new Date(year, monthTo, 0).toISOString().split('T')[0];
+    const { transacciones, total } = await FinanzasService.listarTransacciones({ fechaInicio, fechaFin, limite: 500, offset: 0 });
+
+    const ingresos = transacciones.filter(t => t.tipo === 'INGRESO');
+    const egresos = transacciones.filter(t => t.tipo === 'EGRESO');
+    const totalIngresos = ingresos.reduce((sum, t) => sum + Number(t.monto || 0), 0);
+    const totalEgresos = egresos.reduce((sum, t) => sum + Number(t.monto || 0), 0);
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Reporte Financiero"
+          subtitle={`Periodo: ${fechaInicio} a ${fechaFin}`}
+          metadata={metadata}
+          summary={[
+            { label: 'Transacciones', value: total },
+            { label: 'Ingresos', value: `S/ ${totalIngresos.toFixed(2)}` },
+            { label: 'Egresos', value: `S/ ${totalEgresos.toFixed(2)}` },
+            { label: 'Balance', value: `S/ ${(totalIngresos - totalEgresos).toFixed(2)}` },
+          ]}
+          rows={transacciones.slice(0, 40).map(t => ({
+            label: `${t.fecha_transaccion} | ${t.descripcion || t.categoria}`,
+            value: `${t.tipo} S/ ${Number(t.monto || 0).toFixed(2)}`,
+          }))}
+        />,
+        'reporte_financiero'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Reporte Financiero', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [new TextRun({ text: `Periodo: ${fechaInicio} - ${fechaFin}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Balance: S/ ${(totalIngresos - totalEgresos).toFixed(2)}` })] }),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'reporte_financiero');
+  };
+
+  const exportActividadesReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const anio = filters.year || new Date().getFullYear();
+    const rama = filters.rama || undefined;
+    
+    const reporte = await ReportsService.getReporteActividadesGerencial({
+      ano: anio,
+      rama: rama
+    });
+
+    const operacionales = reporte?.kpis_operacionales || {};
+    const financieros = reporte?.kpis_financieros || {};
+    const impacto = reporte?.kpis_impacto || {};
+    const topActividades = impacto?.top_actividades || [];
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Reporte de Actividades - Metricas Gerenciales"
+          subtitle={`Año ${anio}${rama ? ` - Rama: ${rama}` : ''}`}
+          metadata={metadata}
+          summary={[
+            { label: 'Total Actividades', value: operacionales.total_actividades ?? 0 },
+            { label: 'Participacion Promedio', value: `${operacionales.participacion_promedio ?? 0} scouts` },
+            { label: 'Tasa de Asistencia', value: `${operacionales.tasa_asistencia ?? 0}%` },
+            { label: '', value: '' },
+            { label: 'FINANCIERO', value: '' },
+            { label: 'Presupuesto Planificado', value: `S/ ${(financieros.presupuesto_planificado ?? 0).toFixed(2)}` },
+            { label: 'Presupuesto Ejecutado', value: `S/ ${(financieros.presupuesto_ejecutado ?? 0).toFixed(2)}` },
+            { label: 'Eficiencia Presupuestal', value: `${financieros.eficiencia_presupuestal ?? 0}%` },
+            { label: 'Costo Promedio/Scout', value: `S/ ${(financieros.costo_promedio_scout ?? 0).toFixed(2)}` },
+            { label: '', value: '' },
+            { label: 'IMPACTO', value: '' },
+            { label: 'Objetivos Cumplidos', value: `${impacto.objetivos_cumplidos ?? 0}/${impacto.objetivos_total ?? 0}` },
+            { label: 'Tasa Cumplimiento', value: `${impacto.tasa_cumplimiento ?? 0}%` },
+            { label: 'Satisfaccion Promedio', value: `${impacto.satisfaccion_promedio ?? 0}/5` },
+            { label: '', value: '' },
+            { label: 'TOP 5 ACTIVIDADES MAS EXITOSAS', value: '' },
+            ...topActividades.map((a: any) => ({
+              label: a.nombre,
+              value: `${a.tasa_asistencia}% asistencia - Calif: ${a.calificacion}/5`
+            }))
+          ]}
+        />,
+        'reporte_actividades_gerencial'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Reporte de Actividades - Metricas Gerenciales', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [new TextRun({ text: `Año ${anio}${rama ? ` - Rama: ${rama}` : ''}`, size: 24 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'KPIs OPERACIONALES', bold: true, size: 24 })] }),
+        new Paragraph({ children: [new TextRun({ text: `Total Actividades: ${operacionales.total_actividades ?? 0}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Participacion Promedio: ${operacionales.participacion_promedio ?? 0} scouts` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Tasa de Asistencia: ${operacionales.tasa_asistencia ?? 0}%` })] }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'KPIs FINANCIEROS', bold: true, size: 24 })] }),
+        new Paragraph({ children: [new TextRun({ text: `Presupuesto Planificado: S/ ${(financieros.presupuesto_planificado ?? 0).toFixed(2)}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Presupuesto Ejecutado: S/ ${(financieros.presupuesto_ejecutado ?? 0).toFixed(2)}` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Eficiencia Presupuestal: ${financieros.eficiencia_presupuestal ?? 0}%` })] }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'KPIs DE IMPACTO', bold: true, size: 24 })] }),
+        new Paragraph({ children: [new TextRun({ text: `Objetivos Cumplidos: ${impacto.objetivos_cumplidos ?? 0}/${impacto.objetivos_total ?? 0} (${impacto.tasa_cumplimiento ?? 0}%)` })] }),
+        new Paragraph({ children: [new TextRun({ text: `Satisfaccion Promedio: ${impacto.satisfaccion_promedio ?? 0}/5` })] }),
+        new Paragraph({ children: [] }),
+        new Paragraph({ children: [new TextRun({ text: 'TOP 5 ACTIVIDADES MAS EXITOSAS', bold: true, size: 24 })] }),
+        ...topActividades.map((a: any) => new Paragraph({
+          children: [new TextRun({ text: `${a.nombre} - ${a.tasa_asistencia}% asist. - Calif: ${a.calificacion}/5` })]
+        })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'reporte_actividades_gerencial');
+  };
+
+  const exportInventarioReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const items = await InventarioService.getAllItems();
+    const total = items.length;
+    const disponibles = items.filter((i: any) => i.estado === 'DISPONIBLE').length;
+    const prestados = items.filter((i: any) => i.estado === 'PRESTADO').length;
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <GenericSummaryReportTemplate
+          title="Reporte de Inventario"
+          metadata={metadata}
+          summary={[
+            { label: 'Items totales', value: total },
+            { label: 'Disponibles', value: disponibles },
+            { label: 'Prestados', value: prestados },
+          ]}
+          rows={items.slice(0, 40).map((i: any) => ({
+            label: `${i.codigo || ''} ${i.nombre || 'Item'}`,
+            value: `${i.categoria || ''} | ${i.estado || ''}`,
+          }))}
+        />,
+        'reporte_inventario'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{ children: [
+        new Paragraph({ children: [new TextRun({ text: 'Reporte de Inventario', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
+        ...items.slice(0, 120).map((i: any) => new Paragraph({ children: [new TextRun({ text: `${i.codigo || ''} | ${i.nombre || 'Item'} | ${i.categoria || '-'} | ${i.estado || '-'}` })] })),
+      ]}],
+    });
+    return await generateAndDownloadDOCX(doc, 'reporte_inventario');
+  };
+
   // =====================================================
   // FUNCIONES DE EXPORTACIÓN - REPORTES MASIVOS
   // =====================================================
@@ -853,6 +1459,173 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
   };
 
+  const exportDngi03WordPorScout = async (format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      if (format !== ExportFormat.DOCX) {
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: 'Este reporte se exporta solo en formato Word',
+        };
+      }
+
+      if (!selectedMassiveScoutId) {
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: 'Selecciona un scout para exportar uno por uno',
+        };
+      }
+
+      const { scouts } = await getAllScoutsForMasiveDNGI03(ramaFilter, selectedMassiveScoutId);
+      if (scouts.length === 0) {
+        showError('No hay scout para exportar con los filtros seleccionados');
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      info(`Se generará ${scouts.length} archivo Word para el scout seleccionado.`);
+
+      for (let i = 0; i < scouts.length; i++) {
+        const scout = scouts[i];
+        const doc = createDNGI03WordDocument(scout);
+        const blob = await Packer.toBlob(doc);
+
+        const nombre = sanitizeFilePart(scout.nombre || 'Scout') || 'Scout';
+        const apellido = sanitizeFilePart(getFirstSurname(scout.apellido || '')) || 'Apellido';
+        const fileName = `Ficha_Tropa_${nombre}${apellido}.docx`;
+        saveAs(blob, fileName);
+
+        if (i < scouts.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 450));
+        }
+      }
+
+      return {
+        status: 'success' as any,
+        fileName: `Ficha_Tropa_${scouts.length}_archivos.docx`,
+      };
+    } catch (error) {
+      console.error('Error exportando DNGI-03 Word por scout:', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
+  const exportDniScoutApoderadoPorScout = async (format: ExportFormat): Promise<ReportGenerationResult> => {
+    try {
+      if (format !== ExportFormat.PDF) {
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: 'Este reporte se exporta solo en formato PDF',
+        };
+      }
+
+      if (!selectedMassiveScoutId) {
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: 'Selecciona un scout para exportar uno por uno',
+        };
+      }
+
+      const { pares, scoutsSinApoderado } = await getScoutsWithApoderadoDni(ramaFilter, selectedMassiveScoutId);
+      if (pares.length === 0) {
+        showError('No hay scout con apoderado para exportar con los filtros seleccionados');
+        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+      }
+
+      if (scoutsSinApoderado > 0) {
+        info(`${scoutsSinApoderado} scout(s) fueron omitidos por no tener familiar marcado como apoderado.`);
+      }
+
+      const metadata = generateMasiveReportMetadata();
+      const maxBytes = 600 * 1024;
+      let excedidos = 0;
+
+      for (let i = 0; i < pares.length; i++) {
+        const par = pares[i];
+        const nombre = sanitizeFilePart(par.scout.nombres || 'Scout') || 'Scout';
+        const apellido = sanitizeFilePart(getFirstSurname(par.scout.apellidos || '')) || 'Apellido';
+        const fileName = `DNI_Tropa_${nombre}${apellido}`;
+
+        let bestResult: ReportGenerationResult | null = null;
+        const qualities = [0.72, 0.58, 0.45, 0.33];
+
+        for (const quality of qualities) {
+          const compressed = await compressPairForPdf(par.scout, par.apoderado, quality);
+          const result = await generatePDF(
+            <DniScoutApoderadoTemplate
+              scout={compressed.scout}
+              apoderado={compressed.apoderado}
+              metadata={metadata}
+            />,
+            fileName
+          );
+
+          if (!result.blob) {
+            bestResult = result;
+            break;
+          }
+
+          bestResult = result;
+          if (result.blob.size <= maxBytes) {
+            break;
+          }
+        }
+
+        if (!bestResult || !bestResult.blob) {
+          return {
+            status: 'error' as any,
+            fileName: 'error',
+            error: bestResult?.error || 'No se pudo generar uno de los PDFs',
+          };
+        }
+
+        if (bestResult.blob.size > maxBytes) {
+          excedidos++;
+        }
+
+        saveAs(bestResult.blob, `${fileName}.pdf`);
+
+        if (i < pares.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 450));
+        }
+      }
+
+      if (excedidos > 0) {
+        info(`${excedidos} archivo(s) no pudieron bajar de 600KB incluso con compresión máxima.`);
+      }
+
+      return {
+        status: 'success' as any,
+        fileName: `DNI_Tropa_${pares.length}_archivos.pdf`,
+      };
+    } catch (error) {
+      console.error('Error exportando DNI scout + apoderado por scout:', error);
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  };
+
+  const getExportFormatsForReport = (reportType: ReportType | null): ExportFormat[] => {
+    if (reportType === ReportType.DNGI03_WORD_POR_SCOUT) {
+      return [ExportFormat.DOCX];
+    }
+
+    if (reportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) {
+      return [ExportFormat.PDF];
+    }
+
+    return [ExportFormat.PDF, ExportFormat.DOCX];
+  };
+
   return (
     <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
       <div className="flex items-center gap-3 mb-6">
@@ -1007,7 +1780,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           {(selectedReportType === ReportType.DNI_SCOUTS || 
             selectedReportType === ReportType.DNI_SCOUTS_SPLIT ||
             selectedReportType === ReportType.DNI_FAMILIARES ||
-            selectedReportType === ReportType.DNI_FAMILIARES_SPLIT) && (
+            selectedReportType === ReportType.DNI_FAMILIARES_SPLIT ||
+            selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
+            selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
             <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-4">
               <label className="block text-sm font-medium text-sky-800 mb-2">
                 Filtrar por Rama
@@ -1025,6 +1800,30 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               <p className="text-xs text-sky-600 mt-2">
                 Selecciona una rama para filtrar los documentos de identidad.
               </p>
+
+              {(selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
+                selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Buscar Scout (según rama)
+                  </label>
+                  <select
+                    value={selectedMassiveScoutId}
+                    onChange={(e) => setSelectedMassiveScoutId(e.target.value)}
+                    className="w-full md:w-[520px] px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  >
+                    <option value="">Selecciona un scout</option>
+                    {filteredScoutsForMassive.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.codigo_scout} - {s.persona?.nombres} {s.persona?.apellidos}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-sky-600 mt-2">
+                    Para reducir carga en base de datos, este reporte se exporta scout por scout.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -1060,7 +1859,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'INSCRIPCIONES_ANUALES' && (
+          {selectedReportType === ReportType.INSCRIPCIONES_ANUALES && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1079,7 +1878,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rama (opcional)
+                  Rama/Perfil (opcional)
                 </label>
                 <select
                   value={filters.rama || ''}
@@ -1089,15 +1888,18 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todas las ramas</option>
-                  <option value="Lobatos">Lobatos</option>
-                  <option value="Scouts">Scouts</option>
-                  <option value="Rovers">Rovers</option>
+                  <option value="Manada">Manada</option>
+                  <option value="Tropa">Tropa</option>
+                  <option value="Comunidad">Comunidad</option>
+                  <option value="Clan">Clan</option>
+                  <option value="Dirigentes">Dirigentes</option>
+                  <option value="Comite">Comite</option>
                 </select>
               </div>
             </div>
           )}
 
-          {selectedReportType === 'CONTACTOS_EMERGENCIA' && (
+          {selectedReportType === ReportType.CONTACTOS_EMERGENCIA && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Rama (opcional)
@@ -1110,14 +1912,15 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Todas las ramas</option>
-                <option value="Lobatos">Lobatos</option>
-                <option value="Scouts">Scouts</option>
-                <option value="Rovers">Rovers</option>
+                <option value="Manada">Manada</option>
+                <option value="Tropa">Tropa</option>
+                <option value="Comunidad">Comunidad</option>
+                <option value="Clan">Clan</option>
               </select>
             </div>
           )}
 
-          {selectedReportType === 'DOCUMENTACION_PENDIENTE' && (
+          {selectedReportType === ReportType.DOCUMENTACION_PENDIENTE && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Año
@@ -1138,7 +1941,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'RANKING_PATRULLAS' && (
+          {selectedReportType === ReportType.RANKING_PATRULLAS && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1152,9 +1955,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todas las ramas</option>
-                  <option value="Lobatos">Lobatos</option>
-                  <option value="Scouts">Scouts</option>
-                  <option value="Rovers">Rovers</option>
+                  <option value="Manada">Manada</option>
+                  <option value="Tropa">Tropa</option>
+                  <option value="Comunidad">Comunidad</option>
+                  <option value="Clan">Clan</option>
                 </select>
               </div>
               <div>
@@ -1186,7 +1990,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'DASHBOARD_EJECUTIVO' && (
+          {selectedReportType === ReportType.DASHBOARD_EJECUTIVO && (
             <div className="bg-blue-50 p-3 rounded-lg">
               <p className="text-sm text-blue-800">
                 📊 Este reporte mostrará KPIs generales del grupo (scouts activos, asistencia promedio, tendencias) sin filtros adicionales.
@@ -1194,7 +1998,45 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'REPORTE_FINANCIERO' && (
+          {selectedReportType === ReportType.REPORTE_FINANCIERO_INSCRIPCION && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Año
+                </label>
+                <input
+                  type="number"
+                  min="2020"
+                  max="2030"
+                  value={filters.year || new Date().getFullYear()}
+                  onChange={(e) =>
+                    setFilters({ ...filters, year: parseInt(e.target.value) })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rama (opcional)
+                </label>
+                <select
+                  value={filters.rama || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, rama: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Todas las ramas</option>
+                  <option value="Manada">Manada</option>
+                  <option value="Tropa">Tropa</option>
+                  <option value="Comunidad">Comunidad</option>
+                  <option value="Clan">Clan</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.REPORTE_FINANCIERO_RAMA && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1250,7 +2092,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'REPORTE_ACTIVIDADES' && (
+          {selectedReportType === ReportType.REPORTE_ACTIVIDADES && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1281,7 +2123,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === 'REPORTE_INVENTARIO' && (
+          {selectedReportType === ReportType.REPORTE_INVENTARIO && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1332,7 +2174,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         <div className="flex justify-end gap-3">
           <ReportExportButton
             onExport={handleExportReport}
-            formats={[ExportFormat.PDF, ExportFormat.DOCX]}
+            formats={getExportFormatsForReport(selectedReportType)}
             label="Descargar"
           />
         </div>

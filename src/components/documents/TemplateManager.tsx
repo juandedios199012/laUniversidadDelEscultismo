@@ -38,31 +38,31 @@ export const BUILT_IN_TEMPLATES: TableDesign[] = [
     defaultRowHeight: 40,
     borderWidth: 1,
     borderColor: '#000000',
-    font: { family: 'Calibri', size: 10 },
+    font: { family: 'Calibri', size: 11 },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     rows: [
       {
         id: 'row_1',
         cells: [
-          { id: 'cell_1_1', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_1_2', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' }
+          { id: 'cell_1_1', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_1_2', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' }
         ]
       },
       {
         id: 'row_2',
         cells: [
-          { id: 'cell_2_1', content: '', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_2_2', content: '', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' }
+          { id: 'cell_2_1', content: '', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_2_2', content: '', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' }
         ]
       },
       {
         id: 'row_3',
         cells: [
-          { id: 'cell_3_1', content: 'SEXO', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_3_2', content: 'FECHA DE NACIMIENTO', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_3_3', content: 'TIPO DE DOCUMENTO', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_3_4', content: 'NÚMERO DE DOCUMENTO', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' }
+          { id: 'cell_3_1', content: 'SEXO', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_3_2', content: 'FECHA DE NACIMIENTO', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_3_3', content: 'TIPO DE DOCUMENTO', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_3_4', content: 'NÚMERO DE DOCUMENTO', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' }
         ]
       }
     ]
@@ -78,40 +78,40 @@ export const BUILT_IN_TEMPLATES: TableDesign[] = [
     defaultRowHeight: 40,
     borderWidth: 1,
     borderColor: '#000000',
-    font: { family: 'Calibri', size: 10 },
+    font: { family: 'Calibri', size: 11 },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     rows: [
       {
         id: 'row_1',
         cells: [
-          { id: 'cell_1_1', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_1_2', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' }
+          { id: 'cell_1_1', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_1_2', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' }
         ]
       },
       {
         id: 'row_2',
         cells: [
-          { id: 'cell_2_1', content: 'SEXO', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_2_2', content: 'FECHA DE NACIMIENTO', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_2_3', content: 'TIPO DE DOCUMENTO', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_2_4', content: 'NÚMERO DE DOCUMENTO', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' }
+          { id: 'cell_2_1', content: 'SEXO', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_2_2', content: 'FECHA DE NACIMIENTO', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_2_3', content: 'TIPO DE DOCUMENTO', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_2_4', content: 'NÚMERO DE DOCUMENTO', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' }
         ]
       },
       {
         id: 'row_3',
         cells: [
-          { id: 'cell_3_1', content: '', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_3_2', content: '', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' }
+          { id: 'cell_3_1', content: '', fieldKey: 'apellidos', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_3_2', content: '', fieldKey: 'nombres', colspan: 2, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' }
         ]
       },
       {
         id: 'row_4',
         cells: [
-          { id: 'cell_4_1', content: '', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_4_2', content: '', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_4_3', content: '', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_4_4', content: '', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' }
+          { id: 'cell_4_1', content: '', fieldKey: 'sexo', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_4_2', content: '', fieldKey: 'fecha_nacimiento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_4_3', content: '', fieldKey: 'tipo_documento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_4_4', content: '', fieldKey: 'numero_documento', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' }
         ]
       }
     ]
@@ -127,7 +127,7 @@ export const BUILT_IN_TEMPLATES: TableDesign[] = [
     defaultRowHeight: 40,
     borderWidth: 1,
     borderColor: '#000000',
-    font: { family: 'Calibri', size: 10 },
+    font: { family: 'Calibri', size: 11 },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     rows: [
@@ -140,15 +140,15 @@ export const BUILT_IN_TEMPLATES: TableDesign[] = [
       {
         id: 'row_2',
         cells: [
-          { id: 'cell_2_1', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-          { id: 'cell_2_2', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' }
+          { id: 'cell_2_1', content: 'NOMBRES COMPLETOS', fieldKey: 'nombres', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+          { id: 'cell_2_2', content: 'APELLIDOS COMPLETOS', fieldKey: 'apellidos', colspan: 1, rowspan: 1, isHeader: true, backgroundColor: '#808080', textColor: '#FFFFFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center' }
         ]
       },
       {
         id: 'row_3',
         cells: [
-          { id: 'cell_3_1', content: '', fieldKey: 'nombres', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' },
-          { id: 'cell_3_2', content: '', fieldKey: 'apellidos', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 10, fontWeight: 'normal', textAlign: 'left' }
+          { id: 'cell_3_1', content: '', fieldKey: 'nombres', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' },
+          { id: 'cell_3_2', content: '', fieldKey: 'apellidos', colspan: 1, rowspan: 1, isHeader: false, backgroundColor: '#FFFFFF', textColor: '#000000', fontSize: 11, fontWeight: 'normal', textAlign: 'left' }
         ]
       }
     ]

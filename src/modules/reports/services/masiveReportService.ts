@@ -14,6 +14,12 @@ import { DniPersonData } from '../templates/pdf/DniCollectionTemplate';
 const MAX_FILE_SIZE_KB = 600;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024;
 
+export interface DniScoutApoderadoPair {
+  scoutId: string;
+  scout: DniPersonData;
+  apoderado: DniPersonData;
+}
+
 /**
  * Calcula la edad a partir de la fecha de nacimiento
  */
@@ -32,14 +38,14 @@ const calculateAge = (birthDate: string | null | undefined): number => {
 /**
  * Obtiene todos los scouts activos con sus datos completos para DNGI-03 masivo
  */
-export async function getAllScoutsForMasiveDNGI03(): Promise<{
+export async function getAllScoutsForMasiveDNGI03(ramaFilter?: string, scoutId?: string): Promise<{
   scouts: ScoutReportData[];
   showAlert: boolean;
   alertMessage: string;
 }> {
   try {
     // Obtener todos los scouts activos con sus datos
-    const { data: scoutsData, error } = await supabase
+    let query = supabase
       .from('scouts')
       .select(`
         id,
@@ -81,7 +87,17 @@ export async function getAllScoutsForMasiveDNGI03(): Promise<{
           descripcion_discapacidad
         )
       `)
-      .eq('estado', 'ACTIVO')
+      .eq('estado', 'ACTIVO');
+
+    if (ramaFilter && ramaFilter !== 'TODAS') {
+      query = query.eq('rama_actual', ramaFilter);
+    }
+
+    if (scoutId) {
+      query = query.eq('id', scoutId);
+    }
+
+    const { data: scoutsData, error } = await query
       .order('rama_actual', { ascending: true })
       .order('codigo_scout', { ascending: true });
 
@@ -324,6 +340,7 @@ export async function getAllFamiliaresWithDni(ramaFilter?: string): Promise<{
         id,
         parentesco,
         scout_id,
+        es_autorizado_recoger,
         persona:personas!familiares_scout_persona_id_fkey (
           id,
           nombres,
@@ -367,6 +384,7 @@ export async function getAllFamiliaresWithDni(ramaFilter?: string): Promise<{
           parentesco: familiar.parentesco || '',
           scoutAsociado: `${scoutPersona.nombres || ''} ${scoutPersona.apellidos || ''}`.trim(),
           rama: scout?.rama_actual || '',
+          esApoderado: familiar.es_autorizado_recoger || false,
           dniAnversoUrl,
           dniReversoUrl,
         };
@@ -458,4 +476,144 @@ export function splitPersonasForPdf(personas: DniPersonData[]): DniPersonData[][
   }
   
   return grupos.length > 0 ? grupos : [[]];
+}
+
+/**
+ * Obtiene pares Scout + Apoderado con DNI para exportación individual.
+ * El scout va siempre primero y el familiar debe estar marcado como apoderado.
+ */
+export async function getScoutsWithApoderadoDni(ramaFilter?: string, scoutId?: string): Promise<{
+  pares: DniScoutApoderadoPair[];
+  scoutsSinApoderado: number;
+}> {
+  try {
+    let scoutsQuery = supabase
+      .from('scouts')
+      .select(`
+        id,
+        codigo_scout,
+        rama_actual,
+        persona:personas!scouts_persona_id_fkey (
+          nombres,
+          apellidos,
+          tipo_documento,
+          numero_documento
+        )
+      `)
+      .eq('estado', 'ACTIVO');
+
+    if (ramaFilter && ramaFilter !== 'TODAS') {
+      scoutsQuery = scoutsQuery.eq('rama_actual', ramaFilter);
+    }
+
+    if (scoutId) {
+      scoutsQuery = scoutsQuery.eq('id', scoutId);
+    }
+
+    const { data: scoutsData, error: scoutsError } = await scoutsQuery
+      .order('rama_actual', { ascending: true })
+      .order('codigo_scout', { ascending: true });
+
+    if (scoutsError) throw scoutsError;
+    if (!scoutsData || scoutsData.length === 0) {
+      return { pares: [], scoutsSinApoderado: 0 };
+    }
+
+    const scoutIds = scoutsData.map((s: any) => s.id);
+    const { data: familiaresData, error: familiaresError } = await supabase
+      .from('familiares_scout')
+      .select(`
+        id,
+        scout_id,
+        parentesco,
+        es_autorizado_recoger,
+        persona:personas!familiares_scout_persona_id_fkey (
+          nombres,
+          apellidos,
+          tipo_documento,
+          numero_documento
+        )
+      `)
+      .in('scout_id', scoutIds);
+
+    if (familiaresError) throw familiaresError;
+
+    const familiaresPorScout = new Map<string, any[]>();
+    (familiaresData || []).forEach((fam: any) => {
+      const current = familiaresPorScout.get(fam.scout_id) || [];
+      current.push(fam);
+      familiaresPorScout.set(fam.scout_id, current);
+    });
+
+    const pares: DniScoutApoderadoPair[] = [];
+    let scoutsSinApoderado = 0;
+
+    for (const scout of scoutsData) {
+      const personaScout: any = scout.persona || {};
+      const familiaresScout = familiaresPorScout.get(scout.id) || [];
+      const apoderado = familiaresScout.find((fam: any) => fam.es_autorizado_recoger || false);
+
+      if (!apoderado) {
+        scoutsSinApoderado++;
+        continue;
+      }
+
+      const personaApoderado: any = apoderado.persona || {};
+
+      let scoutDniAnversoUrl: string | undefined;
+      let scoutDniReversoUrl: string | undefined;
+      let apoderadoDniAnversoUrl: string | undefined;
+      let apoderadoDniReversoUrl: string | undefined;
+
+      try {
+        const scoutDni = await scoutDocumentsService.getIdentityDocumentsForPdf('scout', scout.id);
+        scoutDniAnversoUrl = scoutDni.anverso;
+        scoutDniReversoUrl = scoutDni.reverso;
+      } catch (err) {
+        console.warn(`Error obteniendo DNI del scout ${scout.id}:`, err);
+      }
+
+      try {
+        const apoderadoDni = await scoutDocumentsService.getIdentityDocumentsForPdf('familiar', apoderado.id);
+        apoderadoDniAnversoUrl = apoderadoDni.anverso;
+        apoderadoDniReversoUrl = apoderadoDni.reverso;
+      } catch (err) {
+        console.warn(`Error obteniendo DNI del apoderado ${apoderado.id}:`, err);
+      }
+
+      pares.push({
+        scoutId: scout.id,
+        scout: {
+          id: scout.id,
+          nombres: personaScout.nombres || '',
+          apellidos: personaScout.apellidos || '',
+          tipoDocumento: personaScout.tipo_documento || '',
+          numeroDocumento: personaScout.numero_documento || '',
+          rama: scout.rama_actual || '',
+          codigoScout: scout.codigo_scout || '',
+          parentesco: 'SCOUT',
+          dniAnversoUrl: scoutDniAnversoUrl,
+          dniReversoUrl: scoutDniReversoUrl,
+        },
+        apoderado: {
+          id: apoderado.id,
+          nombres: personaApoderado.nombres || '',
+          apellidos: personaApoderado.apellidos || '',
+          tipoDocumento: personaApoderado.tipo_documento || '',
+          numeroDocumento: personaApoderado.numero_documento || '',
+          parentesco: apoderado.parentesco || 'APODERADO',
+          scoutAsociado: `${personaScout.nombres || ''} ${personaScout.apellidos || ''}`.trim(),
+          rama: scout.rama_actual || '',
+          esApoderado: true,
+          dniAnversoUrl: apoderadoDniAnversoUrl,
+          dniReversoUrl: apoderadoDniReversoUrl,
+        },
+      });
+    }
+
+    return { pares, scoutsSinApoderado };
+  } catch (error) {
+    console.error('Error obteniendo pares scout/apoderado con DNI:', error);
+    throw error;
+  }
 }

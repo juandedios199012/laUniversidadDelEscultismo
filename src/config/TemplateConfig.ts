@@ -66,7 +66,7 @@ export interface ColorConfig {
 export class DNGI03TemplateConfig implements ITemplateConfig {
   public readonly font: FontConfig = {
     family: 'Calibri',
-    size: 10,
+    size: 11,
     weight: 'normal'
   };
 

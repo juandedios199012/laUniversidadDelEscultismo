@@ -94,12 +94,6 @@ const ObjetivoCard: React.FC<ObjetivoCardProps> = ({ objetivo, onEdit, onDelete 
       {/* Contenido expandido */}
       {expandido && (
         <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
-          {/* Descripción */}
-          <div>
-            <p className="text-sm text-gray-500 font-medium mb-1">Descripción</p>
-            <p className="text-sm text-gray-700">{objetivo.descripcion}</p>
-          </div>
-          
           {/* Indicadores */}
           {objetivo.indicadores && objetivo.indicadores.length > 0 && (
             <div>

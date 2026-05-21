@@ -19,6 +19,7 @@ export class DynamicWordGenerator {
    */
   async generateDocument(scout: StrategyScout): Promise<Uint8Array> {
     const scoutData = this.mapScoutToData(scout);
+    const baseFontSize = Math.max(this.design.font?.size || 11, 11);
 
     const doc = new Document({
       sections: [{
@@ -39,7 +40,7 @@ export class DynamicWordGenerator {
               new TextRun({
                 text: "Datos del Miembro Juvenil (menor de edad)",
                 bold: true,
-                size: (this.design.font.size + 4) * 2 // Convertir a half-points
+                size: (baseFontSize + 4) * 2 // Convertir a half-points
               })
             ],
             alignment: AlignmentType.CENTER,
@@ -52,8 +53,9 @@ export class DynamicWordGenerator {
       }]
     });
 
-    const buffer = await Packer.toBuffer(doc);
-    return new Uint8Array(buffer instanceof ArrayBuffer ? buffer : buffer.buffer);
+    const blob = await Packer.toBlob(doc);
+    const arrayBuffer = await blob.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
   }
 
   /**
@@ -91,6 +93,7 @@ export class DynamicWordGenerator {
    */
   private createTableCell(cell: DesignCell, scoutData: Record<string, string>): TableCell {
     const cellContent = this.resolveCellContent(cell, scoutData);
+    const resolvedFontSize = Math.max(cell.fontSize || this.design.font?.size || 11, 11);
     
     return new TableCell({
       children: [
@@ -99,7 +102,7 @@ export class DynamicWordGenerator {
             new TextRun({
               text: cellContent,
               bold: cell.fontWeight === 'bold',
-              size: (cell.fontSize || 10) * 2, // Convertir a half-points
+              size: resolvedFontSize * 2, // Convertir a half-points
               color: (cell.textColor || '#000000').replace('#', '')
             })
           ],

@@ -307,7 +307,7 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
       },
       font: {
         family: 'Calibri',
-        size: 10,
+        size: 11,
         weight: 'normal',
         style: 'normal'
       },
@@ -378,7 +378,7 @@ export const TableDesigner: React.FC<TableDesignerProps> = ({
       isHeader,
       backgroundColor: isHeader ? '#808080' : '#FFFFFF',
       textColor: isHeader ? '#FFFFFF' : '#000000',
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: isHeader ? 'bold' : 'normal',
       textAlign: isHeader ? 'center' : 'left'
     };

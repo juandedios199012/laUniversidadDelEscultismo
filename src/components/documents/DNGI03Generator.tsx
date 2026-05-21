@@ -212,7 +212,7 @@ const DNGI03Generator: React.FC<DNGI03GeneratorProps> = ({ userRole, userName })
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="html">HTML (.html) - Diseño Perfecto</option>
-              <option value="word">Word (.docx) - Calibri 10pt</option>
+              <option value="word">Word (.docx) - Calibri 11pt</option>
               <option value="pdf">PDF (.pdf) - Archivo Portable</option>
             </select>
           </div>

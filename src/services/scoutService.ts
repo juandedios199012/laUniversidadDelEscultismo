@@ -56,10 +56,10 @@ class ScoutService {
   private static mapRamaToDb(rama?: string): string | null {
     if (!rama) return null;
     const r = rama.trim().toLowerCase();
-    if (['manada', 'lobatos', 'lobato', 'lobata'].includes(r)) return 'Manada';
-    if (['tropa', 'scouts', 'scout'].includes(r)) return 'Tropa';
-    if (['caminantes', 'caminante'].includes(r)) return 'Caminantes';
-    if (['comunidad', 'rovers', 'rover', 'clan'].includes(r)) return 'Clan';
+    if (r === 'manada') return 'Manada';
+    if (r === 'tropa') return 'Tropa';
+    if (r === 'comunidad') return 'Comunidad';
+    if (r === 'clan') return 'Clan';
     if (['dirigente', 'dirigentes', 'dirigencia'].includes(r)) return 'Dirigentes';
     // default to Tropa to avoid enum errors
     return 'Tropa';
@@ -330,9 +330,6 @@ class ScoutService {
     familiar_telefono?: string;
     familiar_email?: string;
   }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
-    let ramaDb: string | null = null;
-    let tipoDocDb: string = 'DNI';
-
     try {
       // Map frontend values to DB enum tokens and payload keys
       const ramaDb = ScoutService.mapRamaToDb(scoutData.rama);

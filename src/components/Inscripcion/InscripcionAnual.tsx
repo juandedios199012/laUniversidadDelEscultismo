@@ -12,6 +12,9 @@ import InscripcionService, {
   type PersonaInscribible,
 } from '../../services/inscripcionService';
 
+// Ramas estáticas del sistema
+const RAMAS_SISTEMA = ['Manada', 'Scout', 'Caminante', 'Clan'] as const;
+
 // ================================================================
 // INTERFACES LOCALES
 // ================================================================
@@ -30,17 +33,6 @@ interface MetricCardProps {
   color: 'blue' | 'green' | 'yellow' | 'emerald';
 }
 
-const normalizarTexto = (valor?: string | null) =>
-  (valor ?? '')
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .trim();
-
-const esTipoRegistro = (valor: string | undefined, esperado: string) =>
-  normalizarTexto(valor) === normalizarTexto(esperado);
-
 // ================================================================
 // COMPONENTE PRINCIPAL
 // ================================================================
@@ -52,6 +44,7 @@ const InscripcionAnual: React.FC = () => {
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [scoutsActivos, setScoutsActivos] = useState<Scout[]>([]);
   const [personasInscribibles, setPersonasInscribibles] = useState<PersonaInscribible[]>([]);
+  const [filtroTipoModal, setFiltroTipoModal] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -83,7 +76,6 @@ const InscripcionAnual: React.FC = () => {
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroRama, setFiltroRama] = useState('');
-  const [filtroTipoPersona, setFiltroTipoPersona] = useState('');
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
   // ================================================================
@@ -185,6 +177,23 @@ const InscripcionAnual: React.FC = () => {
     setMostrarModal(true);
   };
 
+  // Detectar hermanos entre los scouts pendientes de inscribir
+  const detectarHermanosModal = async (pendientesIds: string[]) => {
+    const tienePerfilHermano = tarifasPeriodo.some(t => t.codigo === 'hermano' && t.configurado);
+    if (pendientesIds.length === 0 || !tienePerfilHermano) {
+      setHermanosEnModal(new Set());
+      return;
+    }
+    try {
+      const resultado = await InscripcionService.detectarHermanos(pendientesIds);
+      if (resultado.success) {
+        setHermanosEnModal(new Set(resultado.hermanos ?? []));
+      }
+    } catch {
+      setHermanosEnModal(new Set());
+    }
+  };
+
   const inscribirTodos = async () => {
     await cargarScoutsActivos();
 
@@ -229,6 +238,7 @@ const InscripcionAnual: React.FC = () => {
         setScoutsSeleccionados(new Set());
         setBusquedaModal('');
         setFiltroRamaModal('');
+        setFiltroTipoModal('');
         await cargarInscripciones();
         setTimeout(() => setSuccess(null), 5000);
       } else {
@@ -409,23 +419,18 @@ const InscripcionAnual: React.FC = () => {
     pagados: inscripciones.filter(i => i.estado === 'PAGADO').length
   };
 
+  const scoutsInscritos = new Set(inscripciones.map(i => i.scout_id));
   // Para inscripción masiva de scouts (botón "Inscribir Todos")
+  const scoutsPendientes = scoutsActivos.filter(s => !scoutsInscritos.has(s.id));
+
   // Para el modal selectivo: todas las personas no inscritas (ya filtradas por la RPC)
   const personasPendientesModal = personasInscribibles;
 
+  const ramasDisponiblesModal = RAMAS_SISTEMA;
+
   const scoutsPendientesFiltrados = personasPendientesModal.filter(s => {
-    // Filtro unificado por rama/tipo
-    if (filtroRamaModal) {
-      if (filtroRamaModal === 'Dirigentes') {
-        if (!esTipoRegistro(s.tipo_registro, 'Dirigente')) return false;
-      } else if (filtroRamaModal === 'Comité') {
-        if (!esTipoRegistro(s.tipo_registro, 'Comité')) return false;
-      } else {
-        // Es una rama específica (Manada, Tropa, Comunidad, Clan)
-        if (s.rama_actual !== filtroRamaModal) return false;
-      }
-    }
-    // Filtro de búsqueda por texto
+    if (filtroTipoModal && s.tipo_registro !== filtroTipoModal) return false;
+    if (filtroRamaModal && s.rama_actual !== filtroRamaModal) return false;
     if (busquedaModal) {
       const q = busquedaModal.toLowerCase();
       return (
@@ -438,33 +443,14 @@ const InscripcionAnual: React.FC = () => {
   });
 
   const inscripcionesFiltradas = inscripciones.filter(i => {
-    // Filtro de estado
     if (filtroEstado && i.estado !== filtroEstado) return false;
-    
-    // Filtro de tipo de persona (perfil_codigo: scout, dirigente, comite, hermano)
-    if (filtroTipoPersona && i.perfil_codigo !== filtroTipoPersona) return false;
-    
-    // Filtro de rama: solo aplica a scouts, dirigentes/comité no tienen rama
-    if (filtroRama) {
-      if (i.scout.rama_actual) {
-        if (i.scout.rama_actual !== filtroRama) return false;
-      } else {
-        // Si no tiene rama (es dirigente/comité), rechazar si se busca una rama específica
-        return false;
-      }
-    }
-    
-    // Filtro de búsqueda
+    if (filtroRama && i.scout.rama_actual !== filtroRama) return false;
     if (filtroBusqueda) {
       const busqueda = filtroBusqueda.toLowerCase();
-      const nombres = (i.scout.nombres || '').toLowerCase();
-      const apellidos = (i.scout.apellidos || '').toLowerCase();
-      const codigo = (i.scout.codigo_scout || '').toLowerCase();
-      
       return (
-        nombres.includes(busqueda) ||
-        apellidos.includes(busqueda) ||
-        codigo.includes(busqueda)
+        i.scout.nombres.toLowerCase().includes(busqueda) ||
+        i.scout.apellidos.toLowerCase().includes(busqueda) ||
+        i.scout.codigo_scout.toLowerCase().includes(busqueda)
       );
     }
     return true;
@@ -636,7 +622,7 @@ const InscripcionAnual: React.FC = () => {
 
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
@@ -646,18 +632,6 @@ const InscripcionAnual: React.FC = () => {
               <option value="PENDIENTE">Pendientes</option>
               <option value="PARCIAL">Parcial</option>
               <option value="PAGADO">Pagados</option>
-            </select>
-
-            <select
-              value={filtroTipoPersona}
-              onChange={(e) => setFiltroTipoPersona(e.target.value)}
-              className="px-4 py-2 border rounded-lg"
-            >
-              <option value="">Todos los tipos</option>
-              <option value="scout">Scout</option>
-              <option value="hermano">Hermano (Scout)</option>
-              <option value="dirigente">Dirigente</option>
-              <option value="comite">Comité</option>
             </select>
 
             <select
@@ -841,6 +815,7 @@ const InscripcionAnual: React.FC = () => {
                       setHermanosEnModal(new Set());
                       setBusquedaModal('');
                       setFiltroRamaModal('');
+                      setFiltroTipoModal('');
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
@@ -861,17 +836,23 @@ const InscripcionAnual: React.FC = () => {
                     />
                   </div>
                   <select
+                    value={filtroTipoModal}
+                    onChange={e => setFiltroTipoModal(e.target.value)}
+                    className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">Todos</option>
+                    <option value="Scout">Scout</option>
+                    <option value="Dirigente">Dirigente</option>
+                  </select>
+                  <select
                     value={filtroRamaModal}
                     onChange={e => setFiltroRamaModal(e.target.value)}
                     className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   >
-                    <option value="">Todos</option>
-                    <option value="Manada">Manada</option>
-                    <option value="Scout">Tropa Scout</option>
-                    <option value="Caminante">Comunidad Caminante</option>
-                    <option value="Clan">Clan</option>
-                    <option value="Dirigentes">Dirigentes</option>
-                    <option value="Comité">Comité</option>
+                    <option value="">Todas las ramas</option>
+                    {ramasDisponiblesModal.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -888,7 +869,7 @@ const InscripcionAnual: React.FC = () => {
                 </div>
               ) : (
                 <div className="px-6 py-3 bg-yellow-50 border-b">
-                  <span className="text-sm text-yellow-800">⚠ Sin tarifas configuradas — ve a Config Inscripción → Tarifas</span>
+                  <span className="text-sm text-yellow-800">⚠ Sin tarifas configuradas — ve a Inscripción → Tarifas</span>
                 </div>
               )}
 
@@ -896,7 +877,7 @@ const InscripcionAnual: React.FC = () => {
               <div className="px-6 py-3 bg-gray-50 border-b flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">
                   {scoutsSeleccionados.size} seleccionados
-                  {busquedaModal || filtroRamaModal
+                  {busquedaModal || filtroRamaModal || filtroTipoModal
                     ? ` · ${scoutsPendientesFiltrados.length} de ${personasPendientesModal.length} mostrados`
                     : ` de ${personasPendientesModal.length} pendientes`}
                 </span>
@@ -954,9 +935,9 @@ const InscripcionAnual: React.FC = () => {
                                   👨‍👩‍👧 Hermano
                                 </span>
                               )}
-                              {(scout as PersonaInscribible).tipo_registro && !esTipoRegistro((scout as PersonaInscribible).tipo_registro, 'Scout') && (
+                              {(scout as PersonaInscribible).tipo_registro && (scout as PersonaInscribible).tipo_registro !== 'Scout' && (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                  esTipoRegistro((scout as PersonaInscribible).tipo_registro, 'Dirigente')
+                                  (scout as PersonaInscribible).tipo_registro === 'Dirigente'
                                     ? 'bg-indigo-100 text-indigo-700'
                                     : 'bg-orange-100 text-orange-700'
                                 }`}>
@@ -1038,7 +1019,7 @@ const InscripcionAnual: React.FC = () => {
                   <div className="text-center py-10">
                     <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
                     <p className="text-gray-500 text-sm">No hay tipos de documento configurados</p>
-                    <p className="text-gray-400 text-xs mt-1">Ve a Config Inscripción &rsaquo; Tipos Documento para agregar</p>
+                    <p className="text-gray-400 text-xs mt-1">Ve a Inscripción &rsaquo; Tipos de Documento para agregar</p>
                   </div>
                 ) : (
                   <div className="space-y-2">

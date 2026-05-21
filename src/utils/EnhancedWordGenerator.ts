@@ -36,7 +36,7 @@ export interface Scout {
 }
 
 export interface IDocumentGenerator {
-  generateDocument(scout: Scout): Promise<Buffer>;
+  generateDocument(scout: Scout): Promise<Uint8Array>;
 }
 
 export class EnhancedWordGenerator implements IDocumentGenerator {
@@ -46,7 +46,11 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
     this.config = config || new DNGI03TemplateConfig();
   }
 
-  async generateDocument(scout: Scout): Promise<Buffer> {
+  private getBaseFontSize(): number {
+    return Math.max(this.config.font.size || 11, 11);
+  }
+
+  async generateDocument(scout: Scout): Promise<Uint8Array> {
     const doc = new Document({
       sections: [{
         properties: {
@@ -67,16 +71,19 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
       }]
     });
 
-    return await Packer.toBuffer(doc);
+    const blob = await Packer.toBlob(doc);
+    const arrayBuffer = await blob.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
   }
 
   private createSectionTitle(): Paragraph {
+    const baseFontSize = this.getBaseFontSize();
     return new Paragraph({
       children: [
         new TextRun({
           text: "Datos del Miembro Juvenil (menor de edad)",
           font: this.config.font.family,
-          size: Math.round(this.config.font.size * 2), // docx usa half-points
+          size: Math.round(baseFontSize * 2), // docx usa half-points
           bold: true,
         }),
       ],
@@ -278,6 +285,7 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
   }
 
   private createHeaderCell(text: string, colspan: number, fontFamily: string): TableCell {
+    const baseFontSize = this.getBaseFontSize();
     return new TableCell({
       children: [
         new Paragraph({
@@ -285,7 +293,7 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
             new TextRun({
               text: text,
               font: fontFamily,
-              size: this.config.font.size * 2 - 2, // Ligeramente más pequeño para headers
+              size: baseFontSize * 2,
               bold: true,
               color: this.config.colors.headerText.replace('#', ''),
             }),
@@ -311,6 +319,7 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
   }
 
   private createDataCell(text: string, colspan: number, fontFamily: string, height?: number): TableCell {
+    const baseFontSize = this.getBaseFontSize();
     return new TableCell({
       children: [
         new Paragraph({
@@ -318,7 +327,7 @@ export class EnhancedWordGenerator implements IDocumentGenerator {
             new TextRun({
               text: text,
               font: fontFamily,
-              size: this.config.font.size * 2,
+              size: baseFontSize * 2,
               color: this.config.colors.cellText.replace('#', ''),
             }),
           ],

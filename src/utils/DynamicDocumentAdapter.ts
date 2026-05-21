@@ -147,6 +147,7 @@ export class DynamicDocumentAdapter {
    */
   private createHTMLDocument(design: TableDesign, scout: StrategyScout): string {
     const scoutData = this.mapScoutToData(scout);
+    const baseFontSize = Math.max(design.font?.size || 11, 11);
 
     return `<!DOCTYPE html>
 <html lang="es">
@@ -163,7 +164,7 @@ export class DynamicDocumentAdapter {
         
         body {
             font-family: ${design.font.family}, Arial, sans-serif;
-            font-size: ${design.font.size}px;
+          font-size: ${baseFontSize}px;
             line-height: 1.2;
             color: #000;
             padding: 20px;
@@ -171,7 +172,7 @@ export class DynamicDocumentAdapter {
         
         .document-title {
             font-weight: bold;
-            font-size: ${design.font.size + 4}px;
+          font-size: ${baseFontSize + 4}px;
             margin: 15px 0;
             text-align: center;
         }
@@ -197,7 +198,7 @@ export class DynamicDocumentAdapter {
             color: white;
             font-weight: bold;
             text-align: center;
-            font-size: ${design.font.size - 1}px;
+          font-size: ${baseFontSize}px;
             padding: 3px;
             vertical-align: middle;
         }
@@ -205,7 +206,7 @@ export class DynamicDocumentAdapter {
         .data-cell {
             min-height: 20px;
             background-color: white;
-            font-size: ${design.font.size}px;
+          font-size: ${baseFontSize}px;
             padding: 3px;
         }
     </style>
@@ -244,7 +245,7 @@ export class DynamicDocumentAdapter {
                     color: ${cell.textColor || '#000000'};
                     font-weight: ${cell.fontWeight || 'normal'};
                     text-align: ${cell.textAlign || 'left'};
-                    font-size: ${cell.fontSize || 10}px;
+                    font-size: ${Math.max(cell.fontSize || 11, 11)}px;
                 "
             >${cellContent}</td>`;
   }

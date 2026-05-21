@@ -158,7 +158,6 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
       etapa_objetivo_grupo_id: objetivo.etapa_objetivo_grupo_id || objetivo.grupo_id || '',
       area_id: objetivo.area_id,
       titulo: objetivo.titulo,
-      descripcion: objetivo.descripcion,
       indicadores: objetivo.indicadores.length > 0 ? objetivo.indicadores : [''],
     } : defaultObjetivoValues,
     mode: 'onBlur',
@@ -204,7 +203,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
         camposAValidar = ['etapa_objetivo_grupo_id', 'area_id'];
         break;
       case 2:
-        camposAValidar = ['titulo', 'descripcion'];
+        camposAValidar = ['titulo'];
         break;
       case 3:
         camposAValidar = ['indicadores'];
@@ -255,7 +254,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
       // Navegar al paso con el primer error
       if (errors.etapa_objetivo_grupo_id || errors.area_id) {
         setPasoActual(1);
-      } else if (errors.titulo || errors.descripcion) {
+      } else if (errors.titulo) {
         setPasoActual(2);
       } else if (errors.indicadores) {
         setPasoActual(3);
@@ -412,7 +411,7 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
                   Define el contenido del objetivo
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Escribe un título claro y una descripción detallada
+                  Escribe un título claro para el objetivo
                 </p>
                 
                 {/* Preview de clasificación */}
@@ -447,29 +446,6 @@ const ObjetivoFormDialog: React.FC<ObjetivoFormDialogProps> = ({
                   <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     {errors.titulo.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Descripción */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  {...register('descripcion')}
-                  rows={4}
-                  placeholder="Describe en detalle qué se espera que el scout logre con este objetivo..."
-                  className={`
-                    w-full px-4 py-3 border rounded-lg transition-colors resize-none
-                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    ${errors.descripcion ? 'border-red-300 bg-red-50' : 'border-gray-200'}
-                  `}
-                />
-                {errors.descripcion && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.descripcion.message}
                   </p>
                 )}
               </div>

@@ -309,7 +309,91 @@ export class ReportsService {
   }
 
   /**
-   * 📄 Exportar reporte personalizado
+   * � Reporte de Actividades Gerencial
+   * Endpoint: GET /api/reports/actividades-gerencial
+   */
+  static async getReporteActividadesGerencial(filtros?: {
+    ano?: number;
+    rama?: string;
+    fecha_desde?: string;
+    fecha_hasta?: string;
+  }): Promise<{
+    success: boolean;
+    periodo: {
+      fecha_desde: string;
+      fecha_hasta: string;
+      ano?: number;
+      rama?: string;
+    };
+    kpis_operacionales: {
+      total_actividades: number;
+      por_tipo: Record<string, number>;
+      participacion_promedio: number;
+      participacion_total: number;
+      tasa_asistencia: number;
+    };
+    kpis_financieros: {
+      presupuesto_planificado: number;
+      presupuesto_ejecutado: number;
+      eficiencia_presupuestal: number;
+      costo_promedio_scout: number;
+    };
+    kpis_logisticos: {
+      distribucion_geografica: Array<{
+        ubicacion: string;
+        cantidad: number;
+        actividades: any[];
+      }>;
+      inventario_mas_utilizado: Array<{
+        item: string;
+        categoria: string;
+        veces_usado: number;
+        cantidad_total: number;
+      }>;
+    };
+    kpis_impacto: {
+      objetivos_cumplidos: number;
+      objetivos_total: number;
+      tasa_cumplimiento: number;
+      satisfaccion_promedio: number;
+      top_actividades: Array<{
+        nombre: string;
+        fecha: string;
+        tipo: string;
+        rama: string;
+        participantes: number;
+        asistieron: number;
+        tasa_asistencia: number;
+        calificacion: number;
+        costo: number;
+      }>;
+    };
+    tendencias: {
+      actividades_por_mes: Array<{
+        mes: string;
+        cantidad: number;
+      }>;
+    };
+  }> {
+    try {
+      const { data, error } = await supabase
+        .rpc('api_reporte_actividades_gerencial', {
+          p_ano: filtros?.ano || null,
+          p_rama: filtros?.rama || null,
+          p_fecha_desde: filtros?.fecha_desde || null,
+          p_fecha_hasta: filtros?.fecha_hasta || null
+        });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al generar reporte de actividades gerencial:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * �📄 Exportar reporte personalizado
    * Endpoint: POST /api/reports/custom
    */
   static async exportarReportePersonalizado(configuracion: {

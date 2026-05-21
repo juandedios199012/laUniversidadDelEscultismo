@@ -40,7 +40,6 @@ export interface Objetivo {
   id: string;
   codigo: string;
   titulo: string;
-  descripcion: string;
   indicadores: string[];
   orden: number;
   // Grupo de objetivo (nuevo)
@@ -241,7 +240,6 @@ export class ProgresionService {
       id: o.id as string,
       codigo: o.codigo as string,
       titulo: o.titulo as string,
-      descripcion: o.descripcion as string,
       indicadores: (o.indicadores as string[]) || [],
       orden: o.orden as number,
       etapa_objetivo_grupo_id: o.etapa_objetivo_grupo_id as string,
@@ -265,7 +263,6 @@ export class ProgresionService {
     etapa_objetivo_grupo_id: string;
     area_id: string;
     titulo: string;
-    descripcion: string;
     indicadores: string[];
     codigo?: string;
     orden?: number;
@@ -274,7 +271,6 @@ export class ProgresionService {
       p_etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id,
       p_area_id:                 datos.area_id,
       p_titulo:                  datos.titulo,
-      p_descripcion:             datos.descripcion,
       p_indicadores:             datos.indicadores,
       p_codigo:                  datos.codigo ?? null,
       p_orden:                   datos.orden ?? null,
@@ -302,7 +298,6 @@ export class ProgresionService {
       etapa_id?: string;
       area_id?: string;
       titulo?: string;
-      descripcion?: string;
       indicadores?: string[];
       orden?: number;
     }
@@ -312,7 +307,6 @@ export class ProgresionService {
       p_etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id ?? null,
       p_area_id:                 datos.area_id ?? null,
       p_titulo:                  datos.titulo ?? null,
-      p_descripcion:             datos.descripcion ?? null,
       p_indicadores:             datos.indicadores ?? null,
       p_orden:                   datos.orden ?? null,
     });
@@ -359,7 +353,6 @@ export class ProgresionService {
       id: row.id,
       codigo: row.codigo,
       titulo: row.titulo,
-      descripcion: row.descripcion,
       indicadores: row.indicadores || [],
       orden: row.orden,
       etapa_objetivo_grupo_id: row.etapa_objetivo_grupo_id,
@@ -399,7 +392,6 @@ export class ProgresionService {
       id: o.objetivo_id,
       codigo: o.objetivo_codigo,
       titulo: o.titulo,
-      descripcion: o.descripcion,
       indicadores: o.indicadores || [],
       orden: 0,
       etapa_id: '',

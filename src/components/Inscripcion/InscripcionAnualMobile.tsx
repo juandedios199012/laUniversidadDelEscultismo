@@ -223,7 +223,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
     return '';
   };
 
-  const filtrosRamas = ['', ...new Set(personas.map(obtenerCategoriaPersona).filter(Boolean))];
+  const filtrosRamas = [...new Set(personas.map(obtenerCategoriaPersona).filter(Boolean))];
   const ramaFiltro = filtrosForm.watch('rama');
   const personasFiltradas = personas.filter(
     p => !ramaFiltro || obtenerCategoriaPersona(p) === ramaFiltro
@@ -356,10 +356,11 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                 </div>
               ) : (
                 personasFiltradas.map((persona) => {
-                  const seleccionado = personasSeleccionadas.has(persona.id);
+                  const personaId = persona.persona_id;
+                  const seleccionado = personasSeleccionadas.has(personaId);
                   return (
                     <div
-                      key={persona.id}
+                      key={personaId}
                       className="bg-white border border-gray-200 rounded-lg p-3 space-y-2"
                     >
                       {/* Fila 1: Checkbox + Nombre */}
@@ -367,7 +368,7 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                         <input
                           type="checkbox"
                           checked={seleccionado}
-                          onChange={(e) => actualizarSeleccion(persona.id, e.target.checked)}
+                          onChange={(e) => actualizarSeleccion(personaId, e.target.checked)}
                           className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                         />
                         <div className="flex-1 min-w-0">
@@ -397,8 +398,8 @@ export default function InscripcionAnualMobile({ onComplete }: InscripcionAnualM
                             step="0.01"
                             inputMode="decimal"
                             placeholder="Ej. 120.50"
-                            value={personasSeleccionadas.get(persona.id)?.monto ?? ''}
-                            onChange={(e) => actualizarMonto(persona.id, e.target.value)}
+                            value={personasSeleccionadas.get(personaId)?.monto ?? ''}
+                            onChange={(e) => actualizarMonto(personaId, e.target.value)}
                             className="w-full mt-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>

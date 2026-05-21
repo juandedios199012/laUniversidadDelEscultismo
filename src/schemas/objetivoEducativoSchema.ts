@@ -40,10 +40,6 @@ export const paso2Schema = z.object({
     .string()
     .min(10, 'El título debe tener al menos 10 caracteres')
     .max(255, 'El título no puede exceder 255 caracteres'),
-  descripcion: z
-    .string()
-    .min(20, 'La descripción debe tener al menos 20 caracteres')
-    .max(1000, 'La descripción no puede exceder 1000 caracteres'),
 });
 
 /**
@@ -65,7 +61,6 @@ export const objetivoEducativoSchema = z.object({
   area_id: paso1Schema.shape.area_id,
   // Paso 2
   titulo: paso2Schema.shape.titulo,
-  descripcion: paso2Schema.shape.descripcion,
   // Paso 3
   indicadores: paso3Schema.shape.indicadores,
   // Campos opcionales
@@ -90,7 +85,6 @@ export const defaultObjetivoValues: ObjetivoEducativoFormData = {
   etapa_objetivo_grupo_id: '',
   area_id: '',
   titulo: '',
-  descripcion: '',
   indicadores: [''],
 };
 

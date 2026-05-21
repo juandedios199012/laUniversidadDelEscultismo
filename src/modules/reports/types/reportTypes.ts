@@ -15,6 +15,12 @@ export enum ReportType {
   RANKING_PATRULLAS = 'ranking_patrullas',
   CONTACTOS_EMERGENCIA = 'contactos_emergencia',
   DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
+  DASHBOARD_EJECUTIVO = 'dashboard_ejecutivo',
+  REPORTE_FINANCIERO = 'reporte_financiero',
+  REPORTE_FINANCIERO_INSCRIPCION = 'reporte_financiero_inscripcion',
+  REPORTE_FINANCIERO_RAMA = 'reporte_financiero_rama',
+  REPORTE_ACTIVIDADES = 'reporte_actividades',
+  REPORTE_INVENTARIO = 'reporte_inventario',
   // Reporte Excel con todos los campos
   SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
   // Reporte de Especialidades (migrado desde módulo)
@@ -28,6 +34,8 @@ export enum ReportType {
   DNI_SCOUTS_SPLIT = 'dni_scouts_split',
   DNI_FAMILIARES = 'dni_familiares',
   DNI_FAMILIARES_SPLIT = 'dni_familiares_split',
+  DNGI03_WORD_POR_SCOUT = 'dngi03_word_por_scout',
+  DNI_SCOUT_APODERADO_POR_SCOUT = 'dni_scout_apoderado_por_scout',
 }
 
 // Formatos de exportación
@@ -231,6 +239,11 @@ export interface ReportFilters {
   rama?: string;
   patrulla?: string;
   scoutIds?: string[];
+  year?: number;
+  monthFrom?: string;
+  monthTo?: string;
+  categoria?: string;
+  estado?: string;
 }
 
 // Resultado de generación de reporte

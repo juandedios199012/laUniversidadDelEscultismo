@@ -153,6 +153,7 @@ export interface DniPersonData {
   // Para familiares
   parentesco?: string;
   scoutAsociado?: string;
+  esApoderado?: boolean;
   // URLs de los documentos
   dniAnversoUrl?: string;
   dniReversoUrl?: string;

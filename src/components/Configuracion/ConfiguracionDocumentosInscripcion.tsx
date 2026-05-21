@@ -156,8 +156,14 @@ const ModalTipoDocumento: React.FC<ModalTipoDocumentoProps> = ({ tipoEditar, onC
   );
 };
 
-const ConfiguracionDocumentosInscripcion: React.FC = () => {
-  const [vista, setVista] = useState<'catalogo' | 'aplicabilidad'>('catalogo');
+interface ConfiguracionDocumentosInscripcionProps {
+  initialVista?: 'catalogo' | 'aplicabilidad';
+}
+
+const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscripcionProps> = ({
+  initialVista = 'catalogo',
+}) => {
+  const [vista, setVista] = useState<'catalogo' | 'aplicabilidad'>(initialVista);
   const [tipos, setTipos] = useState<TipoDocumentoInscripcion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -232,6 +238,10 @@ const ConfiguracionDocumentosInscripcion: React.FC = () => {
       setTipoSeleccionadoId(tipos[0].id);
     }
   }, [tipos, tipoSeleccionadoId]);
+
+  useEffect(() => {
+    setVista(initialVista);
+  }, [initialVista]);
 
   useEffect(() => {
     if (vista === 'aplicabilidad') {

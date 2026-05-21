@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Search, Edit, Eye, Plus, Users, Heart, FileText, UserMinus, UserCheck, Trash2 } from "lucide-react";
+import { Search, Edit, Eye, Plus, Users, Heart, FileText, FileType2, UserMinus, UserCheck, Trash2 } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { getScoutData } from "@/modules/reports/services/reportDataService";
 import { generateReportMetadata } from "@/modules/reports/services/pdfService";
 import { scoutDocumentsService } from "@/services/scoutDocumentsService";
 import DNGI03Template from "@/modules/reports/templates/pdf/DNGI03Template";
+import { downloadDNGI03Word } from "@/modules/reports/templates/word/DNGI03WordTemplate";
 import type { Scout } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,26 @@ export function ScoutList({
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+  const [generatingWord, setGeneratingWord] = useState<string | null>(null);
+
+  // Handler para generar Word
+  const handleGenerarWord = async (scout: Scout, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setGeneratingWord(scout.id);
+      const scoutData = await getScoutData(scout.id);
+      if (!scoutData) {
+        alert('No se pudieron obtener los datos del scout');
+        return;
+      }
+      await downloadDNGI03Word(scoutData);
+    } catch (error) {
+      console.error('❌ Error generando Word:', error);
+      alert('Error al generar el Word. Revisa la consola para más detalles.');
+    } finally {
+      setGeneratingWord(null);
+    }
+  };
 
   // Handler para generar PDF
   const handleGenerarPDF = async (scout: Scout, e: React.MouseEvent) => {
@@ -268,16 +289,28 @@ export function ScoutList({
                       </Button>
                     )}
                     {puedeExportar('scouts') && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => handleGenerarPDF(scout, e)}
-                        disabled={generatingPdf === scout.id}
-                        title="Generar PDF DNGI-03"
-                        className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
-                      >
-                        <FileText className={`h-4 w-4 ${generatingPdf === scout.id ? 'animate-pulse' : ''}`} />
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleGenerarPDF(scout, e)}
+                          disabled={generatingPdf === scout.id}
+                          title="Generar PDF DNGI-03"
+                          className="text-purple-500 hover:text-purple-600 hover:bg-purple-50"
+                        >
+                          <FileText className={`h-4 w-4 ${generatingPdf === scout.id ? 'animate-pulse' : ''}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleGenerarWord(scout, e)}
+                          disabled={generatingWord === scout.id}
+                          title="Generar Word DNGI-03"
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                        >
+                          <FileType2 className={`h-4 w-4 ${generatingWord === scout.id ? 'animate-pulse' : ''}`} />
+                        </Button>
+                      </>
                     )}
                     {onDeactivate && puedeEditar('scouts') && scout.estado === "ACTIVO" && (
                       <Button

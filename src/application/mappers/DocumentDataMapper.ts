@@ -117,9 +117,9 @@ export class DocumentDataMapperImpl implements DocumentDataMapper {
       estadisticas: {
         totalScouts: estadisticas.total_scouts,
         scoutsPorRama: {
-          Lobatos: estadisticas.scouts_lobatos,
-          Scouts: estadisticas.scouts_scouts,
-          Rovers: estadisticas.scouts_rovers,
+          Manada: estadisticas.scouts_lobatos,
+          Tropa: estadisticas.scouts_scouts,
+          Comunidad: estadisticas.scouts_rovers,
           Dirigentes: estadisticas.scouts_dirigentes
         },
         totalDirigentes: estadisticas.total_dirigentes,

@@ -8,6 +8,7 @@ import { usePermissions } from '../../contexts/PermissionsContext';
 import { getScoutData } from '../../modules/reports/services/reportDataService';
 import { generateReportMetadata } from '../../modules/reports/services/pdfService';
 import DNGI03Template from '../../modules/reports/templates/pdf/DNGI03Template';
+import { downloadDNGI03Word } from '../../modules/reports/templates/word/DNGI03WordTemplate';
 
 interface ListaScoutsProps {
   onVerScout?: (scout: Scout) => void;
@@ -203,6 +204,26 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
     } catch (error) {
       console.error('❌ Error generando PDF:', error);
       alert('Error al generar el PDF. Revisa la consola para más detalles.');
+    }
+  };
+
+  const handleGenerarWord = async (scout: Scout) => {
+    try {
+      console.log('📝 Generando Word para scout:', scout.id);
+
+      const scoutData = await getScoutData(scout.id);
+
+      if (!scoutData) {
+        alert('No se pudieron obtener los datos del scout');
+        return;
+      }
+
+      await downloadDNGI03Word(scoutData);
+
+      console.log('✅ Word generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error generando Word:', error);
+      alert('Error al generar el Word. Revisa la consola para más detalles.');
     }
   };
 
@@ -440,13 +461,22 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                         👁️
                       </button>
                       {puedeExportar('scouts') && (
-                        <button
-                          onClick={() => handleGenerarPDF(scout)}
-                          className="text-purple-600 hover:text-purple-900 px-2 py-1 rounded transition-colors"
-                          title="Generar PDF DNGI-03"
-                        >
-                          📄
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleGenerarPDF(scout)}
+                            className="text-purple-600 hover:text-purple-900 px-2 py-1 rounded transition-colors"
+                            title="Generar PDF DNGI-03"
+                          >
+                            📄
+                          </button>
+                          <button
+                            onClick={() => handleGenerarWord(scout)}
+                            className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded transition-colors"
+                            title="Generar Word DNGI-03"
+                          >
+                            📝
+                          </button>
+                        </>
                       )}
                       {puedeEditar('scouts') && (
                         <button

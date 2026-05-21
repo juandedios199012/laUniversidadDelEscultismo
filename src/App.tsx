@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
 import InscripcionAnual from './components/Inscripcion/InscripcionAnual';
-import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
 import ConfiguracionDocumentosInscripcion from './components/Configuracion/ConfiguracionDocumentosInscripcion';
+import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
@@ -23,6 +23,10 @@ import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
 import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
 // Módulo de Especialidades Scout
 import { EspecialidadesModule } from './components/Especialidades';
+// Módulo Progresión V2 (propuesta visual)
+import { ProgresionV2Module } from './components/ProgresionV2';
+import { ProgresionV3Module } from './components/ProgresionV3';
+import { ProgresionV4Module } from './components/ProgresionV4';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
@@ -73,10 +77,10 @@ function AppContent() {
         return <ScoutsPage />;
       case 'inscripcion-anual':
         return <InscripcionAnual />;
-      case 'config-tarifas-inscripcion':
-        return <ConfiguracionTarifasInscripcion />;
       case 'config-documentos-inscripcion':
         return <ConfiguracionDocumentosInscripcion />;
+      case 'config-tarifas-inscripcion':
+        return <ConfiguracionTarifasInscripcion />;
       case 'progresion':
         return <ProgresionPage />;
       case 'admin-objetivos':
@@ -109,6 +113,12 @@ function AppContent() {
         return <SeguridadDashboard />;
       case 'especialidades':
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
+      case 'progresion-v2':
+        return <ProgresionV2Module />;
+      case 'progresion-v3':
+        return <ProgresionV3Module />;
+      case 'progresion-v4':
+        return <ProgresionV4Module />;
       default:
         return <Dashboard onNavigate={setActiveModule} />;
     }

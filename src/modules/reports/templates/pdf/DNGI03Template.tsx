@@ -113,12 +113,16 @@ const styles = StyleSheet.create({
   },
   
   // INSTRUCCIONES
+    justifyContent: 'center',
+    alignItems: 'center',
   instructions: {
     fontSize: 10,
     marginBottom: 10,
     lineHeight: 1.4,
   },
   
+    boxSizing: 'border-box',
+    justifyContent: 'center',
   boldText: {
     fontWeight: 'bold',
   },
@@ -127,16 +131,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: 'bold',
+    boxSizing: 'border-box',
     textAlign: 'left',
     marginBottom: 10,
     textDecoration: 'underline',
   },
   
   // TABLAS
+    alignItems: 'stretch',
   table: {
     width: '100%',
     borderWidth: 1,
     borderColor: '#000',
+    alignItems: 'stretch',
     marginBottom: 10,
   },
   

@@ -125,7 +125,6 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
       // Filtro por búsqueda (título, descripción, código)
       const matchBusqueda = !filtros.busqueda || 
         obj.titulo.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-        obj.descripcion.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
         obj.codigo.toLowerCase().includes(filtros.busqueda.toLowerCase());
       
       // Filtro por grupo

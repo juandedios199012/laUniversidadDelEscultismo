@@ -161,127 +161,6 @@ export class InscripcionService {
     return data;
   }
 
-  static async listarTiposDocumentoInscripcion(
-    soloActivos = true
-  ): Promise<{ success: boolean; tipos?: TipoDocumentoInscripcion[]; error?: string }> {
-    const { data, error } = await supabase.rpc('api_listar_tipos_documento_inscripcion', {
-      p_solo_activos: soloActivos,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async upsertTipoDocumentoInscripcion(params: {
-    id?: string | null;
-    nombre: string;
-    descripcion?: string | null;
-    requerido?: boolean;
-    activo?: boolean;
-    orden?: number;
-  }): Promise<{ success: boolean; id?: string; error?: string }> {
-    const { data, error } = await supabase.rpc('api_upsert_tipo_documento_inscripcion', {
-      p_id:          params.id ?? null,
-      p_nombre:      params.nombre,
-      p_descripcion: params.descripcion ?? null,
-      p_requerido:   params.requerido ?? false,
-      p_activo:      params.activo ?? true,
-      p_orden:       params.orden ?? 0,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async eliminarTipoDocumentoInscripcion(
-    id: string
-  ): Promise<{ success: boolean; message?: string; error?: string }> {
-    const { data, error } = await supabase.rpc('api_eliminar_tipo_documento_inscripcion', {
-      p_id: id,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async listarCatalogoAplicabilidad(): Promise<{
-    success: boolean;
-    criterios?: AplicabilidadCriterio[];
-    operadores?: AplicabilidadOperador[];
-    error?: string;
-  }> {
-    const { data, error } = await supabase.rpc('api_listar_catalogo_aplicabilidad');
-    if (error) throw error;
-    return data;
-  }
-
-  static async listarReglasDocumentoInscripcion(
-    tipoDocumentoId: string
-  ): Promise<{ success: boolean; reglas?: DocumentoReglaGrupo[]; error?: string }> {
-    const { data, error } = await supabase.rpc('api_listar_reglas_documento_inscripcion', {
-      p_tipo_documento_id: tipoDocumentoId,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async crearGrupoReglaDocumentoInscripcion(params: {
-    tipo_documento_id: string;
-    nombre?: string | null;
-    prioridad?: number;
-    activo?: boolean;
-  }): Promise<{ success: boolean; id?: string; error?: string }> {
-    const { data, error } = await supabase.rpc('api_crear_grupo_regla_documento_inscripcion', {
-      p_tipo_documento_id: params.tipo_documento_id,
-      p_nombre: params.nombre ?? null,
-      p_prioridad: params.prioridad ?? 0,
-      p_activo: params.activo ?? true,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async eliminarGrupoReglaDocumentoInscripcion(
-    grupoId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const { data, error } = await supabase.rpc('api_eliminar_grupo_regla_documento_inscripcion', {
-      p_grupo_id: grupoId,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async upsertCondicionReglaDocumentoInscripcion(params: {
-    id?: string | null;
-    grupo_id: string;
-    criterio_codigo: string;
-    operador_codigo: string;
-    valor_texto?: string | null;
-    valor_numero_min?: number | null;
-    valor_numero_max?: number | null;
-    valor_json?: string[] | null;
-  }): Promise<{ success: boolean; id?: string; error?: string }> {
-    const { data, error } = await supabase.rpc('api_upsert_condicion_regla_documento_inscripcion', {
-      p_id: params.id ?? null,
-      p_grupo_id: params.grupo_id,
-      p_criterio_codigo: params.criterio_codigo,
-      p_operador_codigo: params.operador_codigo,
-      p_valor_texto: params.valor_texto ?? null,
-      p_valor_numero_min: params.valor_numero_min ?? null,
-      p_valor_numero_max: params.valor_numero_max ?? null,
-      p_valor_json: params.valor_json ?? null,
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  static async eliminarCondicionReglaDocumentoInscripcion(
-    condicionId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const { data, error } = await supabase.rpc('api_eliminar_condicion_regla_documento_inscripcion', {
-      p_id: condicionId,
-    });
-    if (error) throw error;
-    return data;
-  }
-
   // ============= 📝 GESTIÓN DE INSCRIPCIONES ANUALES (Legacy) =============
   
   /**
@@ -465,6 +344,137 @@ export class InscripcionService {
     if (error) throw error;
     return data;
   }
+
+  // ============= 📋 TIPOS DE DOCUMENTO =============
+
+  static async listarTiposDocumentoInscripcion(soloActivos: boolean): Promise<{
+    success: boolean;
+    tipos?: TipoDocumentoInscripcion[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_tipos_documento_inscripcion', {
+      p_solo_activos: soloActivos,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async upsertTipoDocumentoInscripcion(tipo: {
+    id: string | null;
+    nombre: string;
+    descripcion: string | null;
+    requerido: boolean;
+    activo: boolean;
+    orden: number;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_tipo_documento_inscripcion', {
+      p_id: tipo.id,
+      p_nombre: tipo.nombre,
+      p_descripcion: tipo.descripcion,
+      p_requerido: tipo.requerido,
+      p_activo: tipo.activo,
+      p_orden: tipo.orden,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarTipoDocumentoInscripcion(id: string): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_eliminar_tipo_documento_inscripcion', {
+      p_id: id,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // ============= 🎯 APLICABILIDAD =============
+
+  static async listarCatalogoAplicabilidad(): Promise<{
+    success: boolean;
+    criterios?: AplicabilidadCriterio[];
+    operadores?: AplicabilidadOperador[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_catalogo_aplicabilidad');
+    if (error) throw error;
+    return data;
+  }
+
+  static async listarReglasDocumentoInscripcion(tipoDocumentoId: string): Promise<{
+    success: boolean;
+    reglas?: DocumentoReglaGrupo[];
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_reglas_documento_inscripcion', {
+      p_tipo_documento_id: tipoDocumentoId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async crearGrupoReglaDocumentoInscripcion(grupo: {
+    tipo_documento_id: string;
+    nombre: string | null;
+    prioridad: number;
+    activo: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_crear_grupo_regla_documento_inscripcion', {
+      p_tipo_documento_id: grupo.tipo_documento_id,
+      p_nombre: grupo.nombre,
+      p_prioridad: grupo.prioridad,
+      p_activo: grupo.activo,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarGrupoReglaDocumentoInscripcion(grupoId: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_eliminar_grupo_regla_documento_inscripcion', {
+      p_grupo_id: grupoId,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async upsertCondicionReglaDocumentoInscripcion(condicion: {
+    grupo_id: string;
+    criterio_codigo: string;
+    operador_codigo: string;
+    valor_texto?: string | null;
+    valor_numero_min?: number | null;
+    valor_numero_max?: number | null;
+    valor_json?: string[] | null;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_condicion_regla_documento_inscripcion', {
+      p_grupo_id: condicion.grupo_id,
+      p_criterio_codigo: condicion.criterio_codigo,
+      p_operador_codigo: condicion.operador_codigo,
+      p_valor_texto: condicion.valor_texto ?? null,
+      p_valor_numero_min: condicion.valor_numero_min ?? null,
+      p_valor_numero_max: condicion.valor_numero_max ?? null,
+      p_valor_json: condicion.valor_json ? JSON.stringify(condicion.valor_json) : null,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarCondicionReglaDocumentoInscripcion(condicionId: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    const { data, error } = await supabase.rpc('api_eliminar_condicion_regla_documento_inscripcion', {
+      p_condicion_id: condicionId,
+    });
+    if (error) throw error;
+    return data;
+  }
 }
 
 // ============= 📐 TIPOS EXPORTADOS =============
@@ -584,18 +594,21 @@ export interface TipoDocumentoInscripcion {
 export interface AplicabilidadCriterio {
   codigo: string;
   nombre: string;
-  tipo_dato: 'number' | 'string' | 'array_string';
+  tipo_dato: 'string' | 'number' | 'array_string';
+  valores_posibles?: string[] | null;
 }
 
 export interface AplicabilidadOperador {
-  codigo: 'eq' | 'neq' | 'gte' | 'lte' | 'between' | 'in' | 'not_in' | string;
+  codigo: string;
   nombre: string;
 }
 
-export interface DocumentoReglaCondicion {
+export interface DocumentoCondicion {
   id: string;
   criterio_codigo: string;
+  criterio_nombre: string;
   operador_codigo: string;
+  operador_nombre: string;
   valor_texto: string | null;
   valor_numero_min: number | null;
   valor_numero_max: number | null;
@@ -603,11 +616,11 @@ export interface DocumentoReglaCondicion {
 }
 
 export interface DocumentoReglaGrupo {
-  grupo_id: string;
+  id: string;
   nombre: string | null;
   prioridad: number;
   activo: boolean;
-  condiciones: DocumentoReglaCondicion[];
+  condiciones: DocumentoCondicion[];
 }
 
 export default InscripcionService;

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { 
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
-  Tent, Wallet, Lock, Trophy, Medal, Settings,
-  ChevronDown, ChevronRight, FileText
+  Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
+  ChevronDown, ChevronRight, Rocket
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -43,16 +43,8 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-teal-500 to-cyan-500',
     items: [
       { id: 'inscripcion-anual',             label: 'Inscripción Anual',   icon: Star,     gradient: 'from-teal-500 to-cyan-500',  modulo: 'inscripciones' },
-    ],
-  },
-  {
-    id: 'configuracion-inscripcion',
-    label: 'Config Inscripción',
-    icon: Settings,
-    gradient: 'from-cyan-600 to-sky-600',
-    items: [
-      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',         icon: Settings, gradient: 'from-teal-600 to-cyan-600', modulo: 'inscripciones' },
-      { id: 'config-documentos-inscripcion', label: 'Tipos Documento', icon: FileText, gradient: 'from-cyan-600 to-sky-600',  modulo: 'inscripciones' },
+      { id: 'config-documentos-inscripcion', label: 'Tipos de Documento',  icon: FileText, gradient: 'from-teal-400 to-cyan-400',  modulo: 'inscripciones' },
+      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',             icon: Settings, gradient: 'from-teal-600 to-cyan-600',  modulo: 'inscripciones' },
     ],
   },
   {
@@ -64,6 +56,9 @@ const menuGroups: MenuGroup[] = [
       { id: 'progresion',      label: 'Progresión',          icon: TrendingUp, gradient: 'from-amber-500 to-orange-500',  modulo: 'progresion' },
       { id: 'especialidades',  label: 'Especialidades',       icon: Medal,      gradient: 'from-yellow-500 to-amber-500',  modulo: 'progresion' },
       { id: 'admin-objetivos', label: 'Objetivos Educativos', icon: Settings,   gradient: 'from-orange-400 to-amber-500',  modulo: 'progresion' },
+      { id: 'progresion-v2',   label: '✨ Progresión V2',     icon: Trophy,     gradient: 'from-cyan-500 to-teal-500',     modulo: 'progresion' },
+      { id: 'progresion-v3',   label: '🧭 Progresión V3',     icon: Map,    gradient: 'from-emerald-600 to-lime-500',  modulo: 'progresion' },
+      { id: 'progresion-v4',   label: '🚀 Progresión V4',     icon: Rocket, gradient: 'from-blue-500 to-violet-500',   modulo: 'progresion' },
     ],
   },
   {
