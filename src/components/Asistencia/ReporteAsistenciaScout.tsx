@@ -46,7 +46,6 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
         .from('scouts')
         .select(`
           id,
-          codigo_asociado,
           rama_actual,
           personas!inner(nombres, apellidos, fecha_ingreso)
         `)
@@ -63,7 +62,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
 
           return {
             id: scout.id,
-            codigo_scout: scout.codigo_asociado || 'S/C',
+            codigo_scout: 'S/C',
             nombres: scout.personas.nombres,
             apellidos: scout.personas.apellidos,
             rama_actual: scout.rama_actual,

@@ -199,7 +199,6 @@ interface FormData {
 
 interface Scout {
   id: string;
-  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;
@@ -833,7 +832,7 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
           </div>
           
           <div className="text-sm text-amber-100 mb-2">
-            {scout.codigo_asociado} - {PASOS[paso - 1].titulo}
+            {PASOS[paso - 1].titulo}
           </div>
           
           {/* Stepper Visual */}
@@ -1068,15 +1067,6 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
                   )}
                 </>
               )}
-
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 rounded">
-                <p className="text-sm text-amber-800">
-                  <strong>Código:</strong> {scout.codigo_asociado}
-                </p>
-                <p className="text-xs text-amber-600 mt-1">
-                  El código asociado no se puede modificar.
-                </p>
-              </div>
             </div>
           )}
 

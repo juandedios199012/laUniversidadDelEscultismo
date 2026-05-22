@@ -9,7 +9,7 @@ export type Modulo =
   | 'asistencia' | 'actividades' | 'progresion' | 'inscripciones'
   | 'finanzas' | 'inventario' | 'presupuestos' | 'reportes'
   | 'mapas' | 'libro_oro' | 'programa_semanal' | 'comite_padres'
-  | 'actividades_exterior' | 'seguridad' | 'configuracion';
+  | 'actividades_exterior' | 'seguridad' | 'configuracion' | 'portal_padres';
 
 // Acciones básicas (CRUD + extras)
 export type Accion = 'crear' | 'leer' | 'ver_detalle' | 'editar' | 'eliminar' | 'exportar' | 'aprobar';

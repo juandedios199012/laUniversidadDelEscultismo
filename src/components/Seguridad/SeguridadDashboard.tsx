@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
+import { shouldSkipAuth } from '../../config/dev';
+import { supabase } from '../../lib/supabase';
 import { 
   PermissionsService, 
   Rol, 
@@ -177,11 +179,49 @@ function TabRoles() {
   };
 
   const guardarCambios = async () => {
-    if (!user?.id || !expandedRole || cambiosPendientes.size === 0) return;
+    if (!expandedRole || cambiosPendientes.size === 0) return;
 
     setGuardando(true);
     const permisos = Array.from(cambiosPendientes.values());
-    
+
+    // En modo dev no hay un UUID real de usuario — manipular rol_permisos directamente
+    if (shouldSkipAuth() || !user?.id) {
+      try {
+        let agregados = 0;
+        let eliminados = 0;
+        for (const permiso of permisos) {
+          const { data: permisoRow } = await supabase
+            .from('permisos')
+            .select('id')
+            .eq('modulo', permiso.modulo)
+            .eq('accion', permiso.accion)
+            .single();
+
+          if (!permisoRow) continue;
+
+          if (permiso.tiene) {
+            await supabase.from('rol_permisos')
+              .upsert({ rol_id: expandedRole, permiso_id: permisoRow.id }, { onConflict: 'rol_id,permiso_id' });
+            agregados++;
+          } else {
+            await supabase.from('rol_permisos')
+              .delete()
+              .eq('rol_id', expandedRole)
+              .eq('permiso_id', permisoRow.id);
+            eliminados++;
+          }
+        }
+        setMensaje({ tipo: 'exito', texto: `Permisos actualizados: ${agregados} agregados, ${eliminados} eliminados` });
+        setCambiosPendientes(new Map());
+        await cargarPermisosRol(expandedRole);
+      } catch {
+        setMensaje({ tipo: 'error', texto: 'Error al guardar permisos en modo dev' });
+      }
+      setGuardando(false);
+      setTimeout(() => setMensaje(null), 4000);
+      return;
+    }
+
     const resultado = await PermissionsService.actualizarPermisosRol(
       user.id,
       expandedRole,
@@ -216,6 +256,7 @@ function TabRoles() {
     { modulo: 'inventario', label: 'Inventario', icon: '📦' },
     { modulo: 'actividades_exterior', label: 'Actividades Exterior', icon: '🏔️' },
     { modulo: 'reportes', label: 'Reportes', icon: '📋' },
+    { modulo: 'portal_padres', label: 'Portal Padres', icon: '👪' },
     { modulo: 'seguridad', label: 'Seguridad', icon: '🔐' },
     { modulo: 'configuracion', label: 'Configuración', icon: '⚙️' },
   ];

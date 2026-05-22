@@ -65,8 +65,7 @@ const ProgresionPage: React.FC = () => {
   // Filtrar scouts
   const scoutsFiltrados = scouts.filter(scout => {
     const matchBusqueda = !busqueda || 
-      scout.scout_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      scout.scout_codigo?.toLowerCase().includes(busqueda.toLowerCase());
+      scout.scout_nombre.toLowerCase().includes(busqueda.toLowerCase());
     
     const matchEtapa = !filtroEtapa || scout.etapa_actual_codigo === filtroEtapa;
     const matchRama = !filtroRama || scout.rama === filtroRama;
@@ -310,8 +309,7 @@ const ProgresionPage: React.FC = () => {
                     />
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                    {scout.scout_codigo && <span>{scout.scout_codigo}</span>}
-                    {scout.rama && <span>• {scout.rama}</span>}
+                    {scout.rama && <span>{scout.rama}</span>}
                     {scout.patrulla_nombre && <span>• {scout.patrulla_nombre}</span>}
                   </div>
                 </div>

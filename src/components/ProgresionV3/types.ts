@@ -2,7 +2,6 @@ import type { ProgresoArea } from '../../services/progresionService';
 
 export interface V3ScoutSummary {
   id: string;
-  code: string;
   fullName: string;
   firstName: string;
   age: number;

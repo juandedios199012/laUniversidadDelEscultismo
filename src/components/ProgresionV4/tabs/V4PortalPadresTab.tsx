@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Circle,
   Download,
+  FileText,
   Search,
   Star,
   Trophy,
@@ -241,7 +242,6 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
         { label: 'Progreso', value: `${scout.progreso}%` },
         { label: 'Etapa', value: scout.etapaNombre },
         { label: 'Patrulla', value: scout.patrulla || '—' },
-        { label: 'Código', value: scout.codigo || '—' },
       ];
       const kpiW = contentW / kpis.length;
       kpis.forEach((kpi, idx) => {
@@ -628,7 +628,6 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                 {[
                   { label: 'Objetivos', value: `${scout.objetivosCompletados}/${scout.totalObjetivos}` },
                   { label: 'Progreso', value: `${scout.progreso}%` },
-                  { label: 'Código', value: scout.codigo || '—' },
                   { label: 'Patrulla', value: scout.patrulla },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
@@ -812,24 +811,118 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                     <p className="text-sm text-gray-400">Aún no hay especialidades completadas</p>
                   </div>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-4">
                     {especialidades.especialidades
                       .filter((e) => e.fase_desafio === 'completada')
-                      .map((e) => (
-                        <div key={e.progreso_id} className="flex items-center gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
-                            style={{ background: `${e.area.color}22` }}>
-                            {e.area.icono ?? '⭐'}
+                      .map((e) => {
+                        const evidenciasImg = e.evidencias.filter((ev) => ev.tipo === 'imagen');
+                        const evidenciasDoc = e.evidencias.filter((ev) => ev.tipo !== 'imagen');
+                        return (
+                          <div key={e.progreso_id} className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                            {/* Cabecera */}
+                            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100"
+                              style={{ background: `${e.area.color}0d` }}>
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
+                                style={{ background: `${e.area.color}22` }}>
+                                {e.area.icono ?? '⭐'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-black text-gray-800 text-sm leading-tight">{e.especialidad.nombre}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {e.area.nombre}
+                                  {e.fecha_fin && ` · Completada el ${new Date(e.fecha_fin).toLocaleDateString('es-PE')}`}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Award className="h-4 w-4 text-yellow-500" />
+                                <span className="text-xs font-bold text-yellow-600">Completada</span>
+                              </div>
+                            </div>
+
+                            <div className="p-4 space-y-3">
+                              {/* Fases */}
+                              <div className="flex flex-wrap gap-2">
+                                {([
+                                  { label: 'Exploración', estado: e.fase_exploracion },
+                                  { label: 'Taller', estado: e.fase_taller },
+                                  { label: 'Desafío', estado: e.fase_desafio },
+                                ] as const).map((fase) => (
+                                  <span key={fase.label}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                                      fase.estado === 'completada'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-gray-100 text-gray-400'
+                                    }`}>
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    {fase.label}
+                                  </span>
+                                ))}
+                              </div>
+
+                              {/* Descripción */}
+                              {e.especialidad.descripcion && (
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {e.especialidad.descripcion}
+                                </p>
+                              )}
+
+                              {/* Notas del asesor */}
+                              {e.notas && (
+                                <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                                  <p className="text-xs font-bold text-blue-600 mb-1">Notas del Asesor</p>
+                                  <p className="text-sm text-blue-800">{e.notas}</p>
+                                </div>
+                              )}
+                              {e.asesor_nombre && (
+                                <p className="text-xs text-gray-400">Asesor: <span className="font-semibold">{e.asesor_nombre}</span></p>
+                              )}
+
+                              {/* Evidencias */}
+                              {e.evidencias.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                    Evidencias ({e.evidencias.length})
+                                  </p>
+                                  {/* Imágenes */}
+                                  {evidenciasImg.length > 0 && (
+                                    <div className="flex gap-2 overflow-x-auto pb-1">
+                                      {evidenciasImg.map((ev) => (
+                                        <a key={ev.id} href={ev.url} target="_blank" rel="noopener noreferrer"
+                                          className="flex-none relative group" title={ev.descripcion || ev.nombre_archivo || 'Evidencia'}>
+                                          <img
+                                            src={ev.url}
+                                            alt={ev.descripcion || ev.nombre_archivo || 'Evidencia'}
+                                            className="h-28 w-28 object-cover rounded-xl border border-gray-100 group-hover:opacity-90 transition-opacity"
+                                          />
+                                          {(ev.descripcion || ev.nombre_archivo) && (
+                                            <div className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-black/50 px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <p className="text-xs text-white truncate">
+                                                {ev.descripcion || ev.nombre_archivo}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Documentos */}
+                                  {evidenciasDoc.length > 0 && (
+                                    <div className="mt-2 space-y-1">
+                                      {evidenciasDoc.map((ev) => (
+                                        <a key={ev.id} href={ev.url} target="_blank" rel="noopener noreferrer"
+                                          className="flex items-center gap-2 text-xs text-blue-600 hover:underline">
+                                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                                          {ev.nombre_archivo || ev.descripcion || 'Ver documento'}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-gray-800 truncate">{e.especialidad.nombre}</p>
-                            <p className="text-xs text-gray-500">{e.area.nombre}
-                              {e.fecha_fin && ` · ${new Date(e.fecha_fin).toLocaleDateString('es-PE')}`}
-                            </p>
-                          </div>
-                          <Award className="h-4 w-4 shrink-0 text-yellow-500" />
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>

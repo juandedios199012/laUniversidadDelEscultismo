@@ -363,29 +363,28 @@ const V4ScoutsTab: React.FC<V4ScoutsTabProps> = ({ loading, scouts, onReload }) 
       </div>
 
       {/* Grid of cards */}
-      <div className="rounded-2xl bg-gray-900 p-4">
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-36 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-white/40">No se encontraron scouts con los filtros seleccionados</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((scout) => (
-              <ScoutCard
-                key={scout.id}
-                scout={scout}
-                onClick={() => setSelectedId(scout.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-36 animate-pulse rounded-2xl border border-gray-100 bg-gray-50" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-16 text-center">
+          <p className="text-sm font-semibold text-gray-500">No se encontraron scouts</p>
+          <p className="mt-1 text-xs text-gray-400">Intenta ajustar los filtros de búsqueda</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((scout) => (
+            <ScoutCard
+              key={scout.id}
+              scout={scout}
+              onClick={() => setSelectedId(scout.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -123,7 +123,6 @@ export function useProgresionV3Data() {
 
         return {
           id: item.scout_id,
-          code: item.scout_codigo,
           fullName,
           firstName: fullName.split(' ')[0] || fullName,
           age: profile?.edad ?? stage.edadMin,

@@ -13,7 +13,6 @@ interface Programa {
 
 interface Scout {
   id: string;
-  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;
@@ -387,9 +386,6 @@ export default function AsistenciaScreen() {
                         <div className="text-left">
                           <div className="font-semibold text-gray-800">
                             {scout.nombres} {scout.apellidos}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {scout.codigo_asociado}
                           </div>
                         </div>
                       </div>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Target, Users } from 'lucide-react';
 import { ProgressRing } from '../ProgresionV2/ui/ProgressRing';
-import { GlassCard } from '../ProgresionV2/ui/GlassCard';
 import {
   AREA_COLORS,
   AREA_ICONS,
@@ -127,7 +126,7 @@ export const AreaCard: React.FC<AreaCardProps> = ({ area }) => (
   </div>
 );
 
-// ─── Scout Card (diseño V2 glassmorphism) ─────────────────────────────────────
+// ─── Scout Card (tema claro V4) ──────────────────────────────────────────────
 const MAX_AREAS_CARD = 3;
 
 interface ScoutCardProps {
@@ -137,10 +136,9 @@ interface ScoutCardProps {
 }
 
 export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }) => {
-  const color = STAGE_COLORS[scout.etapaCodigo] ?? '#00e5ff';
+  const color = STAGE_COLORS[scout.etapaCodigo] ?? '#2563eb';
   const etapaIcon = STAGE_ICONS[scout.etapaCodigo] ?? '●';
 
-  // Top areas: those with at least 1 objective, sorted by completados desc
   const areasVisibles = (scout.areas ?? [])
     .filter((a) => a.total_objetivos > 0)
     .sort((a, b) => b.objetivos_completados - a.objetivos_completados)
@@ -150,77 +148,91 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
 
   return (
     <div
-      className={`transition-transform duration-200 ${selected ? 'scale-[1.02]' : ''}`}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
+      className={`group cursor-pointer rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+        selected ? 'ring-2 shadow-md -translate-y-0.5' : 'border-gray-100'
+      }`}
+      style={selected ? { borderColor: color, ringColor: color } : undefined}
     >
-      <GlassCard hoverable glowColor={color} className="relative overflow-hidden cursor-pointer">
-        {/* Decorative glow */}
-        <div
-          className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full blur-3xl opacity-5"
-          style={{ background: color }}
-        />
+      {/* Banda de color superior (etapa) */}
+      <div
+        className="h-1.5 w-full rounded-t-2xl"
+        style={{ background: color }}
+      />
 
-        <div className="relative z-10 flex gap-4">
-          {/* ── Anillo de progreso ────────────────────────────────── */}
-          <div className="flex-shrink-0 self-center">
-            <ProgressRing
-              percentage={scout.progreso}
-              size={88}
-              strokeWidth={6}
-              color={color}
+      <div className="flex gap-4 p-4">
+        {/* Anillo de progreso */}
+        <div className="flex-shrink-0 self-center">
+          <ProgressRing
+            percentage={scout.progreso}
+            size={80}
+            strokeWidth={6}
+            color={color}
+          >
+            <span className="text-sm font-black" style={{ color }}>
+              {scout.progreso}%
+            </span>
+          </ProgressRing>
+        </div>
+
+        {/* Columna derecha */}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {/* Nombre + badges */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate text-sm font-black leading-tight text-gray-800">
+              {scout.nombre}
+            </h3>
+            <span
+              className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold"
+              style={{ background: `${color}18`, color }}
             >
-              <span className="text-base font-black" style={{ color }}>
-                {scout.progreso}%
-              </span>
-            </ProgressRing>
+              {etapaIcon} {scout.etapaNombre}
+            </span>
           </div>
 
-          {/* ── Columna derecha ───────────────────────────────────── */}
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            {/* Nombre + etapa */}
-            <div>
-              <h3 className="truncate text-base font-bold leading-tight text-white">
-                {scout.nombre}
-              </h3>
-              <p className="mt-0.5 text-sm text-white/50">
-                {etapaIcon} {scout.etapaNombre}
-              </p>
-            </div>
+          {/* Patrulla */}
+          {scout.patrulla && (
+            <p className="text-xs text-gray-400">
+              <span>{scout.patrulla}</span>
+            </p>
+          )}
 
-            {/* Barras de áreas */}
-            {areasLoading ? (
-              <div className="space-y-1.5">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="h-4 w-5 animate-pulse rounded bg-white/10" />
-                    <div className="h-2 flex-1 animate-pulse rounded-full bg-white/10" />
-                    <div className="h-3 w-8 animate-pulse rounded bg-white/10" />
-                  </div>
-                ))}
-              </div>
-            ) : areasVisibles.length > 0 ? (
-              <div className="space-y-1.5">
-                {areasVisibles.map((area) => {
-                  const areaColor = AREA_COLORS[area.area_codigo] ?? area.area_color;
-                  const areaIcon = AREA_ICONS[area.area_codigo] ?? area.area_icono;
-                  const pct =
-                    area.total_objetivos > 0
-                      ? (area.objetivos_completados / area.total_objetivos) * 100
-                      : 0;
-                  return (
-                    <div key={area.area_id} className="flex items-center gap-2">
-                      <span className="w-5 flex-shrink-0 text-center text-sm">{areaIcon}</span>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{
-                            width: `${pct}%`,
-                            background: areaColor,
-                            boxShadow: `0 0 5px ${areaColor}80`,
-                          }}
+          {/* Barras de áreas */}
+          {areasLoading ? (
+            <div className="space-y-1.5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-4 w-5 animate-pulse rounded bg-gray-100" />
+                  <div className="h-1.5 flex-1 animate-pulse rounded-full bg-gray-100" />
+                  <div className="h-3 w-8 animate-pulse rounded bg-gray-100" />
+                </div>
+              ))}
+            </div>
+          ) : areasVisibles.length > 0 ? (
+            <div className="space-y-1.5">
+              {areasVisibles.map((area) => {
+                const areaColor = AREA_COLORS[area.area_codigo] ?? area.area_color;
+                const areaIcon = AREA_ICONS[area.area_codigo] ?? area.area_icono;
+                const pct =
+                  area.total_objetivos > 0
+                    ? (area.objetivos_completados / area.total_objetivos) * 100
+                    : 0;
+                return (
+                  <div key={area.area_id} className="flex items-center gap-2">
+                    <span className="w-5 flex-shrink-0 text-center text-sm">{areaIcon}</span>
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${pct}%`,
+                          background: areaColor,
+                        }}
                         />
                       </div>
-                      <span className="w-8 flex-shrink-0 text-right font-mono text-xs text-white/40">
+                      <span className="w-8 flex-shrink-0 text-right font-mono text-xs text-gray-400">
                         {area.objetivos_completados}/{area.total_objetivos}
                       </span>
                     </div>
@@ -228,24 +240,23 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
                 })}
               </div>
             ) : (
-              <p className="text-xs text-white/30">Sin datos de áreas</p>
+              <p className="text-xs text-gray-400">Sin datos de áreas</p>
             )}
 
-            {/* Footer */}
-            <div className="mt-auto flex items-center justify-between pt-1">
-              <span className="text-xs text-white/40">
-                {scout.objetivosCompletados} de {scout.totalObjetivos} objetivos
-              </span>
-              <span
-                className="text-xs font-semibold hover:opacity-80"
-                style={{ color }}
-              >
-                Ver detalles →
-              </span>
-            </div>
+          {/* Footer */}
+          <div className="mt-auto flex items-center justify-between pt-1">
+            <span className="text-xs text-gray-400">
+              {scout.objetivosCompletados}/{scout.totalObjetivos} objetivos
+            </span>
+            <span
+              className="text-xs font-semibold opacity-0 transition-opacity group-hover:opacity-100"
+              style={{ color }}
+            >
+              Ver detalle →
+            </span>
           </div>
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 };

@@ -89,7 +89,6 @@ export class AsistenciaService {
         .from('scouts')
         .select(`
           id,
-          codigo_asociado,
           rama_actual,
           estado,
           personas!inner(
@@ -109,7 +108,6 @@ export class AsistenciaService {
       
       const scouts = (data || []).map(s => ({
         id: s.id,
-        codigo_asociado: s.codigo_asociado,
         nombres: (s.personas as any)?.nombres || '',
         apellidos: (s.personas as any)?.apellidos || '',
         rama_actual: s.rama_actual

@@ -12,7 +12,6 @@ import type { ProgresoArea } from '../../../services/progresionService';
 export interface ScoutCardData {
   scout_id: string;
   scout_nombre: string;
-  scout_codigo?: string;
   rama: string;
   etapa_actual_codigo: string;
   porcentaje_completado: number;

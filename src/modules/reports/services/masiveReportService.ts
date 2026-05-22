@@ -50,7 +50,6 @@ export async function getAllScoutsForMasiveDNGI03(ramaFilter?: string, scoutId?:
       .select(`
         id,
         codigo_scout,
-        codigo_asociado,
         rama_actual,
         centro_estudio,
         anio_estudios,

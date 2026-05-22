@@ -83,7 +83,6 @@ export interface ScoutExcelData {
   patrulla?: string;
   cargo_patrulla?: string;
   fecha_ingreso?: string;
-  codigo_asociado?: string;
   
   // Familiares (array dinámico) (Step 3)
   familiares?: FamiliarExcelData[];
@@ -828,7 +827,6 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
     { header: 'Patrulla', key: 'patrulla', width: 18 },
     { header: 'Cargo en Patrulla', key: 'cargo_patrulla', width: 15 },
     { header: 'Fecha Ingreso', key: 'fecha_ingreso', width: 14 },
-    { header: 'Código Asociado', key: 'codigo_asociado', width: 18 },
     // Antigüedad
     { header: 'Años Scout', key: 'anios_scout', width: 12 },
   ];
@@ -863,7 +861,6 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
       patrulla: scout.patrulla || 'Sin patrulla',
       cargo_patrulla: scout.cargo_patrulla || 'MIEMBRO',
       fecha_ingreso: formatDate(scout.fecha_ingreso),
-      codigo_asociado: scout.codigo_asociado,
       anios_scout: aniosScout > 0 ? aniosScout : '',
     });
     

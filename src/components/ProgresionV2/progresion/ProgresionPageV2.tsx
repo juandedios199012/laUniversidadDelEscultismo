@@ -91,8 +91,7 @@ const ProgresionPageV2: React.FC = () => {
     .filter((s) => {
       const matchQ =
         !busqueda ||
-        s.scout_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (s.scout_codigo ?? '').toLowerCase().includes(busqueda.toLowerCase());
+        s.scout_nombre.toLowerCase().includes(busqueda.toLowerCase());
       const matchEtapa = !filtroEtapa || s.etapa_actual_codigo === filtroEtapa;
       const matchRama = !filtroRama || s.rama === filtroRama;
       return matchQ && matchEtapa && matchRama;
@@ -100,7 +99,6 @@ const ProgresionPageV2: React.FC = () => {
     .map((s) => ({
       scout_id: s.scout_id,
       scout_nombre: s.scout_nombre,
-      scout_codigo: s.scout_codigo,
       rama: s.rama,
       etapa_actual_codigo: s.etapa_actual_codigo ?? 'PISTA',
       porcentaje_completado: s.progreso_general ?? 0,

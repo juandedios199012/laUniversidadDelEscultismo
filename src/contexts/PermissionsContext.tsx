@@ -85,7 +85,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
           'dashboard', 'scouts', 'dirigentes', 'patrullas', 'progresion',
           'programa_semanal', 'asistencia', 'actividades_exterior', 'finanzas',
           'inventario', 'reportes', 'configuracion', 'seguridad', 'comite_padres',
-          'libro_oro', 'mapas', 'inscripciones'
+          'libro_oro', 'mapas', 'inscripciones', 'portal_padres'
         ] as Modulo[]
       });
       setLoading(false);
@@ -154,24 +154,32 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   // Datos derivados (DEBEN estar antes de usarlos en permisos)
   const rolPrincipal = seguridad?.rol_principal || null;
   const modulosAccesibles = seguridad?.modulos_accesibles || [];
-  const esAdmin = rolPrincipal?.nivel_jerarquia ? rolPrincipal.nivel_jerarquia >= 70 : false;
+  // NOTA: Las funciones SQL obtener_rol_principal y obtener_roles_usuario devuelven la
+  // clave 'nivel' en lugar de 'nivel_jerarquia'. Manejamos ambas para compatibilidad.
+  const nivelRolPrincipal = rolPrincipal
+    ? (rolPrincipal.nivel_jerarquia ?? (rolPrincipal as unknown as { nivel?: number }).nivel ?? 0)
+    : 0;
+  const esAdmin = nivelRolPrincipal >= 70;
   const esSuperAdmin = rolPrincipal?.nombre === 'super_admin';
 
   // Verificar si tiene un permiso específico
   const tienePermiso = useCallback((modulo: Modulo, accion: Accion): boolean => {
-    // Super admin tiene todos los permisos
-    if (esSuperAdmin) return true;
+    // Super admin y admin tienen todos los permisos
+    if (esSuperAdmin || esAdmin) return true;
     if (!seguridad?.permisos) return false;
     return seguridad.permisos.some(p => p.modulo === modulo && p.accion === accion);
-  }, [seguridad?.permisos, esSuperAdmin]);
+  }, [seguridad?.permisos, esSuperAdmin, esAdmin]);
 
   // Helpers para acciones comunes
-  const puedeAcceder = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'leer'), [tienePermiso, esSuperAdmin]);
-  const puedeVerDetalle = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'ver_detalle'), [tienePermiso, esSuperAdmin]);
-  const puedeCrear = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'crear'), [tienePermiso, esSuperAdmin]);
-  const puedeEditar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'editar'), [tienePermiso, esSuperAdmin]);
-  const puedeEliminar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'eliminar'), [tienePermiso, esSuperAdmin]);
-  const puedeExportar = useCallback((modulo: Modulo) => esSuperAdmin || tienePermiso(modulo, 'exportar'), [tienePermiso, esSuperAdmin]);
+  // puedeAcceder considera AMBAS configuraciones:
+  //   1. Rol con nivel >= 70 (asignado vía pestaña Usuarios/Configuración) → esAdmin bypass
+  //   2. Permiso explícito 'leer' en rol_permisos (configurado en Roles y Permisos)
+  const puedeAcceder = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'leer'), [tienePermiso, esSuperAdmin, esAdmin]);
+  const puedeVerDetalle = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'ver_detalle'), [tienePermiso, esSuperAdmin, esAdmin]);
+  const puedeCrear = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'crear'), [tienePermiso, esSuperAdmin, esAdmin]);
+  const puedeEditar = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'editar'), [tienePermiso, esSuperAdmin, esAdmin]);
+  const puedeEliminar = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'eliminar'), [tienePermiso, esSuperAdmin, esAdmin]);
+  const puedeExportar = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'exportar'), [tienePermiso, esSuperAdmin, esAdmin]);
 
   // ================================================================
   // PERMISOS GRANULARES DE AIRE LIBRE (DESDE BD)

@@ -97,7 +97,6 @@ export interface ProgresoCompletoScout {
 
 export interface ResumenProgresoScout {
   scout_id: string;
-  scout_codigo: string;
   scout_nombre: string;
   rama: string;
   patrulla_nombre: string | null;

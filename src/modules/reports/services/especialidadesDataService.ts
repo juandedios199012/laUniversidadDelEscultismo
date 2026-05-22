@@ -36,7 +36,6 @@ export async function getEspecialidadesReportData(
       fecha_completado,
       scouts (
         id,
-        codigo_asociado,
         rama_actual,
         patrulla_id,
         persona:personas!scouts_persona_id_fkey (

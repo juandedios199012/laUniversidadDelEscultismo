@@ -16,7 +16,6 @@ import ProgresionService, {
 interface ScoutProgreso {
   scout_id: string;
   scout_nombre: string;
-  scout_codigo?: string;
   rama?: string;
   etapa_actual_nombre?: string;
   etapa_actual_codigo?: string;
@@ -67,8 +66,7 @@ export default function ProgresionScreen() {
   // Filtrar scouts
   const scoutsFiltrados = scouts.filter(scout => {
     const matchBusqueda = !busqueda || 
-      scout.scout_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      scout.scout_codigo?.toLowerCase().includes(busqueda.toLowerCase());
+      scout.scout_nombre.toLowerCase().includes(busqueda.toLowerCase());
     
     const matchRama = !filtroRama || filtroRama === 'Todas' || scout.rama === filtroRama;
     
@@ -319,7 +317,7 @@ function ScoutDetalleModal({ scout, onClose }: ScoutDetalleModalProps) {
                 {scout.scout_nombre}
               </h2>
               <p className="text-sm text-gray-500">
-                {scout.scout_codigo} • {scout.rama}
+                {scout.rama}
               </p>
             </div>
             <div className={`text-3xl font-bold ${getProgresoColor(scout.progreso_general)}`}>

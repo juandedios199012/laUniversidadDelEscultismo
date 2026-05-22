@@ -135,9 +135,6 @@ export interface ScoutReportData {
   fotoUrl?: string;
   codigoPostal?: string;
   ocupacion?: string;
-  centroLaboral?: string;
-  fechaUltimoPago?: string;
-  codigoAsociado?: string;
   observacionesScout?: string;
   estadoScout?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
   // Array dinámico de familiares
