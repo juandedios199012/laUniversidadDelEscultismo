@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Circle, RefreshCw, Search, X } from 'lucide-react';
-import ProgresionService, { ProgresoCompletoScout, ObjetivoScout } from '../../../services/progresionService';
+import ProgresionService, { ProgresoCompletoScout, ObjetivoScout, ProgresoArea } from '../../../services/progresionService';
 import { ProgressRing } from '../../ProgresionV2/ui/ProgressRing';
 import { CardSkeleton, ScoutCard } from '../V4Components';
 import { AREA_COLORS, AREA_ICONS, STAGE_COLORS, STAGE_ICONS, type V4Scout } from '../useProgresionV4Data';
@@ -19,7 +19,6 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [areaActiva, setAreaActiva] = useState('');
   const [toggling, setToggling] = useState<string | null>(null);
-  const [dirty, setDirty] = useState(false);
 
   React.useEffect(() => { load(); }, [scoutId]);
 
@@ -33,7 +32,8 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
       ]);
       setProgreso(p);
       setObjetivos(objs);
-      if (p?.areas?.[0]) setAreaActiva(p.areas[0].area_codigo);
+      // Use first area from objectives (reliable) or from SQL areas as fallback
+      setAreaActiva(prev => prev || (objs[0]?.area_codigo ?? p?.areas?.[0]?.area_codigo ?? ''));
     } catch {
       setError('No se pudo cargar el detalle del scout');
     } finally {
@@ -48,10 +48,11 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
       if (obj.completado) {
         await ProgresionService.desmarcarObjetivo(scoutId, obj.id);
       } else {
-        await ProgresionService.completarObjetivo(scoutId, obj.id);
+        const ok = await ProgresionService.completarObjetivo(scoutId, obj.id);
+        if (!ok) throw new Error('La BD no confirmó el marcado del objetivo');
       }
-      setDirty(true);
       await load();
+      onDataChanged();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar el objetivo';
       setToggleError(msg);
@@ -63,12 +64,56 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
   const etapaColor = STAGE_COLORS[progreso?.etapa_actual_codigo ?? 'PISTA'] ?? '#888';
   const objetivosArea = objetivos.filter((o) => !areaActiva || o.area_codigo === areaActiva);
 
+  // Compute areas from loaded objectives (fallback when obtener_progreso_completo_scout returns 0/0)
+  const computedAreas = React.useMemo((): ProgresoArea[] => {
+    // If SQL returned real area data, use it
+    if (progreso?.areas?.some((a) => a.total_objetivos > 0)) return progreso.areas;
+    // Otherwise compute from objectives (uses etapa_id path which works)
+    if (!objetivos.length) return progreso?.areas ?? [];
+    const areaMap = new Map<string, ProgresoArea>();
+    objetivos.forEach((obj) => {
+      if (!areaMap.has(obj.area_codigo)) {
+        areaMap.set(obj.area_codigo, {
+          area_id: obj.area_codigo,
+          area_codigo: obj.area_codigo,
+          area_nombre: obj.area_nombre,
+          area_icono: obj.area_icono,
+          area_color: obj.area_color,
+          area_orden: 0,
+          total_objetivos: 0,
+          objetivos_completados: 0,
+          porcentaje: 0,
+        });
+      }
+      const a = areaMap.get(obj.area_codigo)!;
+      a.total_objetivos++;
+      if (obj.completado) a.objetivos_completados++;
+      a.porcentaje = a.total_objetivos > 0
+        ? parseFloat(((a.objetivos_completados / a.total_objetivos) * 100).toFixed(1))
+        : 0;
+    });
+    return Array.from(areaMap.values());
+  }, [objetivos, progreso?.areas]);
+
+  // Computed totals (fallback to objectives-based count when SQL returns 0)
+  const computedCompletados = React.useMemo(
+    () => (progreso?.total_objetivos ?? 0) > 0 ? (progreso!.objetivos_completados) : objetivos.filter((o) => o.completado).length,
+    [progreso, objetivos],
+  );
+  const computedTotal = React.useMemo(
+    () => (progreso?.total_objetivos ?? 0) > 0 ? progreso!.total_objetivos : objetivos.length,
+    [progreso, objetivos],
+  );
+  const computedProgreso = computedTotal > 0
+    ? parseFloat(((computedCompletados / computedTotal) * 100).toFixed(1))
+    : (progreso?.progreso_general ?? 0);
+
   return (
     <div className="space-y-6">
       {/* Back header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => { if (dirty) onDataChanged(); onBack(); }}
+          onClick={onBack}
           className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm transition hover:bg-gray-50"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -109,17 +154,17 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
         <>
           {/* Resumen general */}
           <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <ProgressRing percentage={progreso.progreso_general} size={100} strokeWidth={7} color={etapaColor}>
+            <ProgressRing percentage={computedProgreso} size={100} strokeWidth={7} color={etapaColor}>
               <div className="text-center">
                 <div className="text-lg font-black" style={{ color: etapaColor }}>
-                  {Math.round(progreso.progreso_general)}%
+                  {computedProgreso}%
                 </div>
               </div>
             </ProgressRing>
             <div>
               <p className="text-3xl font-black text-gray-800">
-                {progreso.objetivos_completados}
-                <span className="text-lg font-normal text-gray-400"> / {progreso.total_objetivos}</span>
+                {computedCompletados}
+                <span className="text-lg font-normal text-gray-400"> / {computedTotal}</span>
               </p>
               <p className="text-sm text-gray-500">objetivos completados</p>
               {progreso.grupo_objetivo_nombre && (
@@ -134,7 +179,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
               Áreas de Crecimiento
             </h3>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {progreso.areas.map((area) => {
+              {computedAreas.map((area) => {
                 const isActive = areaActiva === area.area_codigo;
                 const color = AREA_COLORS[area.area_codigo] ?? area.area_color;
                 const icon = AREA_ICONS[area.area_codigo] ?? area.area_icono;
@@ -146,7 +191,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
                     className={`flex items-center gap-3 rounded-xl border p-3 text-left transition hover:shadow-md ${
                       isActive ? 'shadow-md ring-1' : 'border-gray-100 bg-white shadow-sm'
                     }`}
-                    style={isActive ? { borderColor: `${color}50`, ringColor: color } : undefined}
+                    style={isActive ? { borderColor: `${color}50` } : undefined}
                   >
                     <ProgressRing percentage={area.porcentaje} size={48} strokeWidth={4} color={color}>
                       <span className="text-sm">{icon}</span>
@@ -165,7 +210,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
           {areaActiva && (
             <section>
               <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-gray-400">
-                Objetivos · {progreso.areas.find((a) => a.area_codigo === areaActiva)?.area_nombre ?? areaActiva}
+                Objetivos · {computedAreas.find((a) => a.area_codigo === areaActiva)?.area_nombre ?? areaActiva}
               </h3>
               <div className="space-y-2">
                 {objetivosArea.length === 0 ? (

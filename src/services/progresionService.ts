@@ -129,6 +129,25 @@ export interface EstadisticaEtapa {
   promedio_progreso: number;
 }
 
+export interface TendenciaProgresionMensual {
+  mes: string;
+  mes_label: string;
+  etapa_codigo: string;
+  etapa_nombre: string;
+  promedio_progreso: number;
+  total_scouts: number;
+}
+
+export interface ProximoEventoScout {
+  id: string;
+  nombre: string;
+  tipo: string;
+  fecha_inicio: string;
+  fecha_fin: string | null;
+  lugar: string | null;
+  estado: string | null;
+}
+
 // ============================================================================
 // SERVICIO DE PROGRESIÓN
 // ============================================================================
@@ -461,6 +480,39 @@ export class ProgresionService {
     
     return data || [];
   }
+
+  /**
+   * Obtiene la tendencia mensual real de progreso para Progresion v4.
+   */
+  static async obtenerTendenciasProgresionMensual(periodoMeses: number = 8): Promise<TendenciaProgresionMensual[]> {
+    const { data, error } = await supabase.rpc('api_obtener_tendencias_progresion_v4', {
+      p_periodo_meses: periodoMeses,
+    });
+
+    if (error) {
+      console.error('Error al obtener tendencias de progresion v4:', error);
+      throw new Error('No se pudieron cargar las tendencias de progresion');
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Obtiene proximos eventos del scout para el Portal Padres de Progresion v4.
+   */
+  static async obtenerProximosEventosScout(scoutId: string, limite: number = 5): Promise<ProximoEventoScout[]> {
+    const { data, error } = await supabase.rpc('api_obtener_proximos_eventos_scout_v4', {
+      p_scout_id: scoutId,
+      p_limite: limite,
+    });
+
+    if (error) {
+      console.error('Error al obtener proximos eventos del scout:', error);
+      throw new Error('No se pudieron cargar los proximos eventos');
+    }
+
+    return data || [];
+  }
   
   // ==========================================================================
   // ACCIONES
@@ -486,8 +538,14 @@ export class ProgresionService {
       console.error('Error al completar objetivo:', error);
       throw new Error('No se pudo registrar el objetivo como completado');
     }
-    
-    return data === true;
+
+    // Compatibilidad: la RPC puede devolver boolean (legacy) u objeto con success.
+    if (data === true) return true;
+    if (typeof data === 'object' && data !== null && 'success' in data) {
+      return Boolean((data as { success?: unknown }).success);
+    }
+
+    return false;
   }
   
   /**

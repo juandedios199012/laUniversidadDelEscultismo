@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import { BarChart, DonutChart, LineChart } from '@tremor/react';
+import React, { useEffect, useState } from 'react';
+import { BarChart, LineChart } from '@tremor/react';
+import {
+  PieChart as RechartsPieChart, Pie, Cell,
+  Tooltip as RechartsTooltip, ResponsiveContainer, Label,
+} from 'recharts';
 import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import ProgresionService, { type TendenciaProgresionMensual } from '../../../services/progresionService';
 import { CardSkeleton, KpiCard } from '../V4Components';
-import { AREA_COLORS, TREND_MONTHS, type V4AreaData, type V4StageBar } from '../useProgresionV4Data';
+import { AREA_COLORS, type V4AreaData, type V4StageBar } from '../useProgresionV4Data';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
@@ -13,7 +18,7 @@ const STAGE_HEX: Record<string, string> = { PISTA: '#3b82f6', SENDA: '#22c55e', 
 // Grupos de objetivo — dos etapas comparten los mismos objetivos
 const STAGE_GRUPO: Record<string, string> = { PISTA: 'PISTA_SENDA', SENDA: 'PISTA_SENDA', RUMBO: 'RUMBO_TRAVESIA', TRAVESIA: 'RUMBO_TRAVESIA' };
 
-const AREA_ORDER = ['CORP', 'CREA', 'CARA', 'AFEC', 'SOCI', 'ESPI'];
+const AREA_ORDER = ['CORPORALIDAD', 'CREATIVIDAD', 'CARACTER', 'AFECTIVIDAD', 'SOCIABILIDAD', 'ESPIRITUALIDAD'];
 
 const PERIODS = [
   { value: 3,  label: '3 meses' },
@@ -43,6 +48,31 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
   const [subTab, setSubTab] = useState<SubTab>('general');
   const [selectedEtapas, setSelectedEtapas] = useState<Set<string>>(new Set(STAGE_ORDER));
   const [period, setPeriod] = useState(8);
+  const [trendRows, setTrendRows] = useState<TendenciaProgresionMensual[]>([]);
+  const [loadingTrends, setLoadingTrends] = useState(false);
+
+  useEffect(() => {
+    if (subTab !== 'tendencias') return;
+    let mounted = true;
+    setLoadingTrends(true);
+    ProgresionService.obtenerTendenciasProgresionMensual(period)
+      .then((rows) => {
+        if (!mounted) return;
+        setTrendRows(rows);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setTrendRows([]);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingTrends(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [period, subTab]);
 
   const toggleEtapa = (code: string) => {
     setSelectedEtapas((prev) => {
@@ -62,10 +92,6 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
     name: STAGE_LABEL[code],
     value: stageBars.find((s) => s.etapaCodigo === code)?.totalScouts ?? 0,
   })).filter((d) => d.value > 0);
-  const donutColors = donutData.map((d) => {
-    const code = STAGE_ORDER.find((c) => STAGE_LABEL[c] === d.name);
-    return STAGE_TREMOR[code ?? ''] ?? 'gray';
-  });
 
   // ── Bar data – always show all 6 areas ──────────────────────────────────
   const orderedAreas = AREA_ORDER
@@ -78,23 +104,24 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
     total: area.total,
   }));
 
-  // ── Trend data ───────────────────────────────────────────────────────────
-  const months = TREND_MONTHS.slice(-period);
-  const startIdx = TREND_MONTHS.length - period;
-  const trendData = months.map((mes, i) => {
-    const factor = 0.42 + (startIdx + i) * 0.072;
-    const row: Record<string, string | number> = { mes };
-    STAGE_ORDER.filter((c) => selectedEtapas.has(c)).forEach((code) => {
-      const base = stageBars.find((s) => s.etapaCodigo === code)?.promedioProgreso ?? 0;
-      row[STAGE_LABEL[code]] = Math.max(0, Math.min(100, Math.round(base * factor)));
-    });
-    return row;
+  // ── Trend data (RPC real) ────────────────────────────────────────────────
+  const monthMap = new Map<string, Record<string, string | number>>();
+  trendRows.forEach((row) => {
+    if (!selectedEtapas.has(row.etapa_codigo)) return;
+    const key = row.mes;
+    const item = monthMap.get(key) ?? { mes: row.mes_label };
+    item[STAGE_LABEL[row.etapa_codigo] ?? row.etapa_nombre] = Math.round(row.promedio_progreso ?? 0);
+    monthMap.set(key, item);
   });
+
+  const trendData = Array.from(monthMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, value]) => value);
+
   const activeSeries = STAGE_ORDER.filter((c) => selectedEtapas.has(c)).map((c) => STAGE_LABEL[c]);
   const activeColors = STAGE_ORDER.filter((c) => selectedEtapas.has(c)).map((c) => STAGE_TREMOR[c] ?? 'gray');
 
   const pctFmt = (v: number) => `${v}%`;
-  const countFmt = (v: number) => `${v} scouts`;
 
   return (
     <div className="space-y-8">
@@ -141,19 +168,61 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
             <p className="mb-4 text-xs text-gray-400">Cantidad de scouts por etapa de progresión</p>
             {loading ? <CardSkeleton className="h-72" /> : (
               <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start">
-                {/* Donut */}
+                {/* Donut (recharts — tooltip cerca del cursor, sin solapamiento) */}
                 <div className="w-full max-w-sm shrink-0">
-                  <DonutChart
-                    data={donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1 }]}
-                    category="value"
-                    index="name"
-                    colors={(donutData.length > 0 ? donutColors : ['gray']) as any}
-                    valueFormatter={countFmt}
-                    className="h-72"
-                    showAnimation
-                    showLabel
-                    label={`${totalScouts} scouts`}
-                  />
+                  <ResponsiveContainer width="100%" height={288}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1 }]}
+                        cx="50%" cy="50%"
+                        innerRadius={72} outerRadius={110}
+                        paddingAngle={2}
+                        dataKey="value"
+                        animationBegin={0}
+                        animationDuration={700}
+                      >
+                        {(donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1 }]).map((entry) => {
+                          const code = STAGE_ORDER.find((c) => STAGE_LABEL[c] === entry.name);
+                          return <Cell key={entry.name} fill={code ? STAGE_HEX[code] : '#d1d5db'} />;
+                        })}
+                        <Label
+                          content={({ viewBox }: any) => {
+                            const { cx, cy } = viewBox;
+                            return (
+                              <g>
+                                <text x={cx} y={cy - 6} textAnchor="middle" fill="#111827"
+                                  fontSize={24} fontWeight={800} fontFamily="sans-serif">
+                                  {totalScouts}
+                                </text>
+                                <text x={cx} y={cy + 16} textAnchor="middle" fill="#9ca3af"
+                                  fontSize={11} fontFamily="sans-serif">
+                                  scouts
+                                </text>
+                              </g>
+                            );
+                          }}
+                          position="center"
+                        />
+                      </Pie>
+                      <RechartsTooltip
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0];
+                          const code = STAGE_ORDER.find((c) => STAGE_LABEL[c] === d.name);
+                          const hex = code ? STAGE_HEX[code] : '#888';
+                          return (
+                            <div className="rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-lg text-xs min-w-[140px]">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: hex }} />
+                                <span className="font-bold text-gray-700">{d.name}</span>
+                              </div>
+                              <p className="mt-1 pl-4 text-gray-500">{d.value} scouts</p>
+                            </div>
+                          );
+                        }}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
                 </div>
                 {/* Custom legend with bars */}
                 <div className="flex-1 space-y-4 self-center w-full">
@@ -209,7 +278,7 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
                   showAnimation
                   showLegend={false}
                   maxValue={100}
-                  yAxisWidth={40}
+                  yAxisWidth={55}
                   customTooltipContent={({ payload, active }: any) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload;
@@ -291,16 +360,17 @@ const V4AnalisisTab: React.FC<V4AnalisisTabProps> = ({
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
               <h3 className="text-base font-black text-gray-800">Tendencia de Progresión Mensual</h3>
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                ⚠ Datos proyectados — no históricos reales
-              </span>
             </div>
             <p className="mb-4 text-xs text-gray-400">
-              Proyección basada en el promedio actual por etapa ·{' '}
+              Historial real de progresion por etapa desde la base de datos ·{' '}
               {PERIODS.find((p) => p.value === period)?.label} ·{' '}
               {activeSeries.join(', ')}
             </p>
-            {loading ? <CardSkeleton className="h-80" /> : (
+            {(loading || loadingTrends) ? <CardSkeleton className="h-80" /> : trendData.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-16 text-center text-sm text-gray-400">
+                No hay historial mensual disponible para los filtros seleccionados
+              </div>
+            ) : (
               <LineChart
                 data={trendData}
                 index="mes"

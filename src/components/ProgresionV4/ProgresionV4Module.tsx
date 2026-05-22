@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { BarChart3, Shield, TrendingUp, Users, Eye } from 'lucide-react';
+import { BarChart3, LayoutDashboard, Shield, TrendingUp, Users, Eye } from 'lucide-react';
 import { useProgresionV4Data } from './useProgresionV4Data';
 import V4ProgresionTab from './tabs/V4ProgresionTab';
 import V4ScoutsTab from './tabs/V4ScoutsTab';
 import V4AnalisisTab from './tabs/V4AnalisisTab';
 import V4PortalPadresTab from './tabs/V4PortalPadresTab';
+import V4DashboardTab from './tabs/V4DashboardTab';
 
-type TabId = 'progresion' | 'scouts' | 'analisis' | 'portal-padres';
+type TabId = 'progresion' | 'scouts' | 'analisis' | 'dashboard' | 'portal-padres';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'progresion',    label: 'Progresión',    icon: TrendingUp },
   { id: 'scouts',        label: 'Scouts',        icon: Users },
   { id: 'analisis',      label: 'Análisis',      icon: BarChart3 },
+  { id: 'dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
   { id: 'portal-padres', label: 'Portal Padres', icon: Eye },
 ];
 
@@ -103,6 +105,19 @@ const ProgresionV4Module: React.FC = () => {
             globalAreas={data.globalAreas}
             totalScouts={data.totalScouts}
             promedioGlobal={data.promedioGlobal}
+          />
+        )}
+
+        {activeTab === 'dashboard' && (
+          <V4DashboardTab
+            loading={data.loading}
+            scouts={data.scouts}
+            globalAreas={data.globalAreas}
+            stageBars={data.stageBars}
+            totalScouts={data.totalScouts}
+            promedioGlobal={data.promedioGlobal}
+            totalCompletados={data.totalCompletados}
+            totalObj={data.totalObj}
           />
         )}
 

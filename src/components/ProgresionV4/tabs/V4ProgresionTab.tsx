@@ -12,23 +12,8 @@ const ETAPAS_META: Record<string, { edad: number; nombre: string }> = {
   TRAVESIA: { edad: 14, nombre: 'Travesía' },
 };
 
-// Grupos de objetivo: PISTA+SENDA comparten objetivos, RUMBO+TRAVESIA también
-const GRUPOS_OBJETIVO = [
-  {
-    codigo: 'PISTA_SENDA',
-    nombre: 'Grupo Pista & Senda',
-    edades: '11–12 años',
-    etapas: ['PISTA', 'SENDA'],
-    color: '#4f8ddb',
-  },
-  {
-    codigo: 'RUMBO_TRAVESIA',
-    nombre: 'Grupo Rumbo & Travesía',
-    edades: '13–14 años',
-    etapas: ['RUMBO', 'TRAVESIA'],
-    color: '#a855f7',
-  },
-];
+// Etapas en orden canónico para layout plano
+const ETAPAS_ORDEN = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'] as const;
 
 interface V4ProgresionTabProps {
   loading: boolean;
@@ -114,68 +99,32 @@ const V4ProgresionTab: React.FC<V4ProgresionTabProps> = ({
         )}
       </div>
 
-      {/* Grupos de Objetivo — Etapas agrupadas */}
+      {/* Etapas de Progresión — 4 cards horizontales */}
       <section>
         <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-400">
           Etapas de Progresión
         </h3>
         <p className="mb-5 text-xs text-gray-400">
-          Las etapas se agrupan de a dos: cada grupo comparte el mismo conjunto de objetivos educativos.
+          Cada etapa corresponde a una edad. PISTA &amp; SENDA comparten objetivos; RUMBO &amp; TRAVESÍA también.
         </p>
         {loading ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <CardSkeleton className="h-44" />
-              <CardSkeleton className="h-44" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <CardSkeleton className="h-44" />
-              <CardSkeleton className="h-44" />
-            </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => <CardSkeleton key={i} className="h-44" />)}
           </div>
         ) : (
-          <div className="space-y-6">
-            {GRUPOS_OBJETIVO.map((grupo) => {
-              const totalGrupo = grupo.etapas.reduce(
-                (sum, cod) => sum + (stageBars.find((b) => b.etapaCodigo === cod)?.totalScouts ?? 0),
-                0,
-              );
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {ETAPAS_ORDEN.map((codigo) => {
+              const meta = ETAPAS_META[codigo];
+              const stats = stageBars.find((b) => b.etapaCodigo === codigo);
               return (
-                <div key={grupo.codigo}>
-                  {/* Group divider */}
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gray-100" />
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-black uppercase tracking-wider text-gray-500">
-                        {grupo.nombre}
-                      </span>
-                      <span
-                        className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-                        style={{ background: grupo.color }}
-                      >
-                        Objetivos compartidos · {grupo.edades}
-                      </span>
-                      <span className="text-xs text-gray-400">{totalGrupo} scouts</span>
-                    </div>
-                    <div className="h-px flex-1 bg-gray-100" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {grupo.etapas.map((codigo) => {
-                      const meta = ETAPAS_META[codigo];
-                      const stats = stageBars.find((b) => b.etapaCodigo === codigo);
-                      return (
-                        <StageCard
-                          key={codigo}
-                          etapaCodigo={codigo}
-                          etapaNombre={meta.nombre}
-                          edad={meta.edad}
-                          totalScouts={stats?.totalScouts ?? 0}
-                          promedioProgreso={stats?.promedioProgreso ?? 0}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                <StageCard
+                  key={codigo}
+                  etapaCodigo={codigo}
+                  etapaNombre={meta.nombre}
+                  edad={meta.edad}
+                  totalScouts={stats?.totalScouts ?? 0}
+                  promedioProgreso={stats?.promedioProgreso ?? 0}
+                />
               );
             })}
           </div>

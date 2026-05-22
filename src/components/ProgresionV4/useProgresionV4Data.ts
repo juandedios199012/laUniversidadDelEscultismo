@@ -1,37 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ProgresionService, {
   EstadisticaEtapa,
   ResumenProgresoScout,
   ProgresoArea,
 } from '../../services/progresionService';
-import ScoutService from '../../services/scoutService';
+import { supabase } from '../../lib/supabase';
 
 // ─── Colores oficiales de áreas de crecimiento ────────────────────────────────
+// Claves = codigo real en BD (areas_crecimiento.codigo)
 export const AREA_COLORS: Record<string, string> = {
-  CORP: '#E31E24',  // Corporalidad – Rojo
-  CREA: '#F5C800',  // Creatividad – Amarillo
-  CARA: '#0054A6',  // Carácter – Azul
-  AFEC: '#808285',  // Afectividad – Gris/Plateado
-  SOCI: '#00A651',  // Sociabilidad – Verde
-  ESPI: '#D1D3D4',  // Espiritualidad – Blanco/Gris claro
+  CORPORALIDAD:   '#E31E24',
+  CREATIVIDAD:    '#F5C800',
+  CARACTER:       '#0054A6',
+  AFECTIVIDAD:    '#808285',
+  SOCIABILIDAD:   '#00A651',
+  ESPIRITUALIDAD: '#D1D3D4',
 };
 
 export const AREA_NAMES: Record<string, string> = {
-  CORP: 'Corporalidad',
-  CREA: 'Creatividad',
-  CARA: 'Carácter',
-  AFEC: 'Afectividad',
-  SOCI: 'Sociabilidad',
-  ESPI: 'Espiritualidad',
+  CORPORALIDAD:   'Corporalidad',
+  CREATIVIDAD:    'Creatividad',
+  CARACTER:       'Carácter',
+  AFECTIVIDAD:    'Afectividad',
+  SOCIABILIDAD:   'Sociabilidad',
+  ESPIRITUALIDAD: 'Espiritualidad',
 };
 
 export const AREA_ICONS: Record<string, string> = {
-  CORP: '💪',
-  CREA: '🎨',
-  CARA: '🦁',
-  AFEC: '❤️',
-  SOCI: '🤝',
-  ESPI: '✨',
+  CORPORALIDAD:   '💪',
+  CREATIVIDAD:    '🎨',
+  CARACTER:       '🦁',
+  AFECTIVIDAD:    '❤️',
+  SOCIABILIDAD:   '🤝',
+  ESPIRITUALIDAD: '✨',
 };
 
 // ─── Colores de etapas ────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ export interface V4AreaData {
 export const TREND_MONTHS = ['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene', 'Feb', 'Mar'];
 
 export function useProgresionV4Data() {
+  const requestIdRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scouts, setScouts] = useState<V4Scout[]>([]);
@@ -92,9 +94,8 @@ export function useProgresionV4Data() {
   const [areasMap, setAreasMap] = useState<Record<string, ProgresoArea[]>>({});
   const [estadisticas, setEstadisticas] = useState<EstadisticaEtapa[]>([]);
 
-  useEffect(() => { load(); }, []);
-
-  const load = async () => {
+  const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -102,8 +103,6 @@ export function useProgresionV4Data() {
         ProgresionService.obtenerResumenProgresion(),
         ProgresionService.obtenerEstadisticasEtapas(),
       ]);
-
-      setEstadisticas(estadis);
 
       const mapped: V4Scout[] = rawScouts.map((s: ResumenProgresoScout) => ({
         id: s.scout_id,
@@ -113,50 +112,110 @@ export function useProgresionV4Data() {
         patrulla: s.patrulla_nombre ?? 'Sin patrulla',
         etapaCodigo: s.etapa_actual_codigo ?? 'PISTA',
         etapaNombre: s.etapa_actual_nombre ?? 'Pista',
-        progreso: Math.round(s.progreso_general ?? 0),
+        progreso: parseFloat((s.progreso_general ?? 0).toFixed(1)),
         objetivosCompletados: s.objetivos_completados ?? 0,
         totalObjetivos: s.total_objetivos ?? 0,
       }));
-      setScouts(mapped);
 
-      // Build stage bars
       const bars: V4StageBar[] = estadis.map((e) => ({
         etapaCodigo: e.etapa_codigo,
         etapaNombre: e.etapa_nombre,
         totalScouts: e.total_scouts,
         promedioProgreso: Math.round(e.promedio_progreso ?? 0),
       }));
-      setStageBars(bars);
 
-      // Load areas for all scouts in parallel (batches of 6)
       const ids = mapped.map((s) => s.id);
+      // Use obtenerObjetivosScout (reliable, uses etapa_id) instead of
+      // obtenerProgresoScout which depends on etapa_objetivo_grupo_id (NULL → 0/0)
       const results = await Promise.allSettled(
-        ids.map((id) => ProgresionService.obtenerProgresoScout(id)),
+        ids.map((id) => ProgresionService.obtenerObjetivosScout(id)),
       );
       const map: Record<string, ProgresoArea[]> = {};
       results.forEach((r, idx) => {
-        if (r.status === 'fulfilled' && r.value) {
-          map[ids[idx]] = r.value.areas ?? [];
+        if (r.status === 'fulfilled' && r.value.length > 0) {
+          const objs = r.value;
+          const areaMap = new Map<string, ProgresoArea>();
+          objs.forEach((obj) => {
+            if (!areaMap.has(obj.area_codigo)) {
+              areaMap.set(obj.area_codigo, {
+                area_id: obj.area_codigo,
+                area_codigo: obj.area_codigo,
+                area_nombre: obj.area_nombre,
+                area_icono: obj.area_icono,
+                area_color: obj.area_color,
+                area_orden: 0,
+                total_objetivos: 0,
+                objetivos_completados: 0,
+                porcentaje: 0,
+              });
+            }
+            const a = areaMap.get(obj.area_codigo)!;
+            a.total_objetivos++;
+            if (obj.completado) a.objetivos_completados++;
+            a.porcentaje = a.total_objetivos > 0
+              ? parseFloat(((a.objetivos_completados / a.total_objetivos) * 100).toFixed(1))
+              : 0;
+          });
+          map[ids[idx]] = Array.from(areaMap.values());
         }
       });
+
+      // Diagnóstico temporal — áreas cargadas por scout
+      const totalAreasEntries = Object.keys(map).length;
+      const sampleAreas = Object.values(map)[0];
+      console.log('[ProgresionV4] areasMap:', totalAreasEntries, 'scouts. area_codigos BD:',
+        sampleAreas?.map(a => `${a.area_codigo}(total:${a.total_objetivos}, comp:${a.objetivos_completados})`));
+
+      // Keep all sections in sync: ignore stale responses from previous reloads.
+      if (requestId !== requestIdRef.current) return;
+
+      setEstadisticas(estadis);
+      setScouts(mapped);
+      setStageBars(bars);
       setAreasMap(map);
     } catch (e) {
+      if (requestId !== requestIdRef.current) return;
       setError('No se pudo cargar la información de progresión');
       console.error(e);
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        load();
+      }, 250);
+    };
+
+    const channel = supabase
+      .channel('progresion-v4-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'progreso_scout' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scout_etapa' }, scheduleReload)
+      .subscribe();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const totalScouts = scouts.length;
   const totalCompletados = scouts.reduce((a, s) => a + s.objetivosCompletados, 0);
   const totalObj = scouts.reduce((a, s) => a + s.totalObjetivos, 0);
-  const promedioGlobal = totalObj > 0 ? Math.round((totalCompletados / totalObj) * 100) : 0;
+  const promedioGlobal = totalObj > 0 ? parseFloat(((totalCompletados / totalObj) * 100).toFixed(1)) : 0;
   const etapasActivas = [...new Set(scouts.map((s) => s.etapaCodigo))].length;
 
   // Global areas (always show all 6 areas, sum across scouts that have data)
-  const AREA_ORDER_LIST = ['CORP', 'CREA', 'CARA', 'AFEC', 'SOCI', 'ESPI'];
+  // Orden según areas_crecimiento.orden en BD
+  const AREA_ORDER_LIST = ['CORPORALIDAD', 'CREATIVIDAD', 'CARACTER', 'AFECTIVIDAD', 'SOCIABILIDAD', 'ESPIRITUALIDAD'];
   const globalAreas: V4AreaData[] = (() => {
     const agg: Record<string, { completados: number; total: number }> = {};
     Object.values(areasMap).forEach((areas) => {
@@ -166,6 +225,8 @@ export function useProgresionV4Data() {
         agg[a.area_codigo].total += a.total_objetivos;
       });
     });
+    // Log para diagnóstico — muestra qué claves hay en agg vs AREA_ORDER_LIST
+    console.log('[ProgresionV4] agg keys (claves BD):', Object.keys(agg), '| esperadas:', AREA_ORDER_LIST);
     // Always return all 6 canonical areas, even with 0 data
     return AREA_ORDER_LIST.map((codigo) => {
       const d = agg[codigo] ?? { completados: 0, total: 0 };
@@ -176,7 +237,7 @@ export function useProgresionV4Data() {
         icon: AREA_ICONS[codigo] ?? '●',
         completados: d.completados,
         total: d.total,
-        porcentaje: d.total > 0 ? Math.round((d.completados / d.total) * 100) : 0,
+        porcentaje: d.total > 0 ? parseFloat(((d.completados / d.total) * 100).toFixed(1)) : 0,
       };
     });
   })();
