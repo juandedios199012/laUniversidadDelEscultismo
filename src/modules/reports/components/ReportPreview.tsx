@@ -261,7 +261,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ className = '' }) 
                 </option>
                 {scouts.map((scout) => (
                   <option key={scout.id} value={scout.id}>
-                    {scout.nombres} {scout.apellidos} - {scout.codigo_scout || scout.numero_documento}
+                    {scout.nombres} {scout.apellidos} - {scout.codigo_asociado || scout.numero_documento}
                   </option>
                 ))}
               </select>

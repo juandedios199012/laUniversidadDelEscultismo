@@ -154,9 +154,7 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
                           {scoutMostrar.rama_actual}
                         </Badge>
                       )}
-                      <span className="text-sm text-muted-foreground">
-                        {scoutMostrar.codigo_scout}
-                      </span>
+
                     </div>
                   </div>
                 </div>
@@ -172,10 +170,6 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Código Scout:</span>
-                      <p className="font-medium">{scoutMostrar.codigo_scout}</p>
-                    </div>
                     <div>
                       <span className="text-muted-foreground">Fecha de Nacimiento:</span>
                       <p className="font-medium">{formatearFecha(scoutMostrar.fecha_nacimiento)}</p>

@@ -193,10 +193,12 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
             </span>
           </div>
 
-          {/* Patrulla */}
-          {scout.patrulla && (
+          {/* Patrulla + código */}
+          {(scout.patrulla || scout.codigo) && (
             <p className="text-xs text-gray-400">
-              <span>{scout.patrulla}</span>
+              {scout.patrulla && <span>{scout.patrulla}</span>}
+              {scout.patrulla && scout.codigo && <span className="mx-1">·</span>}
+              {scout.codigo && <span className="font-mono">{scout.codigo}</span>}
             </p>
           )}
 

@@ -40,7 +40,8 @@ export async function getEspecialidadesReportData(
         patrulla_id,
         persona:personas!scouts_persona_id_fkey (
           nombres,
-          apellidos
+          apellidos,
+          codigo_asociado
         )
       ),
       especialidades (
@@ -153,7 +154,7 @@ export async function getEspecialidadesReportData(
     
     return {
       scoutId: r.scout_id,
-      codigoScout: r.codigo_scout || '-',
+      codigoScout: r.codigo_asociado || '-',
       nombreCompleto: r.nombre,
       rama: r.rama || 'Sin rama',
       patrulla: r.patrulla || undefined,

@@ -23,7 +23,7 @@ interface AsistenciaDetalle {
 interface ScoutInfo {
   nombres: string;
   apellidos: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   rama_actual: string;
 }
 
@@ -266,7 +266,7 @@ export const AttendanceByScoutTemplate: React.FC<AttendanceByScoutTemplateProps>
           <Text style={styles.scoutName}>{scout.nombres} {scout.apellidos}</Text>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Código:</Text>
-            <Text style={styles.infoValue}>{scout.codigo_scout}</Text>
+            <Text style={styles.infoValue}>{scout.codigo_asociado}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Rama:</Text>

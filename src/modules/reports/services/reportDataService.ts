@@ -550,7 +550,7 @@ export async function getHistoriaMedicaData(
 
     const result: HistoriaMedicaReportData = {
       scoutId: scoutData.id || scoutId,
-      codigoScout: scoutData.codigo_scout || '',
+      codigoScout: scoutData.codigo_asociado || '',
       numeroDocumento: scoutData.numero_documento || '',
       nombreCompleto: scoutData.nombre_completo || `${scoutData.nombres || ''} ${scoutData.apellidos || ''}`.trim(),
       fechaNacimiento: scoutData.fecha_nacimiento || '',

@@ -231,7 +231,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
     const coincideBusqueda = !filtros.busqueda || 
       `${scout.nombres} ${scout.apellidos}`.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
       scout.numero_documento.includes(filtros.busqueda) ||
-      scout.codigo_scout.toLowerCase().includes(filtros.busqueda.toLowerCase());
+      (scout.codigo_asociado || '').toLowerCase().includes(filtros.busqueda.toLowerCase());
     
     const coincideRama = !filtros.rama || scout.rama_actual === filtros.rama;
     const coincideEstado = !filtros.estado || scout.estado === filtros.estado;
@@ -380,9 +380,6 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                   Scout
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Código
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Edad
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -420,9 +417,6 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
                         </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {scout.codigo_scout}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {calcularEdad(scout.fecha_nacimiento)} años

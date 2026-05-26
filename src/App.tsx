@@ -20,6 +20,7 @@ import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
+import { SeguridadV2Dashboard } from './components/SeguridadV2';
 import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
 // Módulo de Especialidades Scout
 import { EspecialidadesModule } from './components/Especialidades';
@@ -111,6 +112,8 @@ function AppContent() {
         return <Reports />;
       case 'seguridad':
         return <SeguridadDashboard />;
+      case 'seguridad-v2':
+        return <SeguridadV2Dashboard />;
       case 'especialidades':
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
       case 'progresion-v2':

@@ -30,61 +30,14 @@ export async function getAllScoutsForExcel(options?: {
   } = options || {};
 
   try {
-    // Query principal de scouts con personas
-    let query = supabase
-      .from('scouts')
-      .select(`
-        id,
-        codigo_scout,
-        rama_actual,
-        estado,
-        fecha_ingreso,
-        centro_estudio,
-        anio_estudios,
-        ocupacion,
-        centro_laboral,
-        persona:personas!scouts_persona_id_fkey (
-          id,
-          nombres,
-          apellidos,
-          fecha_nacimiento,
-          sexo,
-          tipo_documento,
-          numero_documento,
-          celular,
-          celular_secundario,
-          telefono,
-          correo,
-          correo_secundario,
-          correo_institucional,
-          departamento,
-          provincia,
-          distrito,
-          direccion,
-          direccion_completa,
-          codigo_postal,
-          ubicacion_latitud,
-          ubicacion_longitud,
-          religion,
-          grupo_sanguineo,
-          factor_sanguineo,
-          seguro_medico,
-          tipo_discapacidad,
-          carnet_conadis,
-          descripcion_discapacidad
-        )
-      `)
-      .order('codigo_scout', { ascending: true });
-
-    // Filtros
-    if (rama) {
-      query = query.eq('rama_actual', rama);
-    }
-    if (estado !== 'TODOS') {
-      query = query.eq('estado', estado);
-    }
-
-    const { data: scoutsData, error: scoutsError } = await query;
+    // Query principal de scouts con personas (vía RPC)
+    const { data: scoutsData, error: scoutsError } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      {
+        p_rama: rama || null,
+        p_estado: estado === 'TODOS' ? null : (estado || 'ACTIVO')
+      }
+    );
 
     if (scoutsError) {
       console.error('Error obteniendo scouts:', scoutsError);
@@ -198,7 +151,7 @@ export async function getAllScoutsForExcel(options?: {
       return {
         // Identificación
         id: scout.id,
-        codigo_scout: scout.codigo_scout || '',
+        codigo_scout: persona.codigo_asociado || '',
         estado: scout.estado || 'ACTIVO',
         
         // Datos Personales
@@ -233,6 +186,7 @@ export async function getAllScoutsForExcel(options?: {
         patrulla: patrulla?.nombre || '',
         cargo_patrulla: patrulla?.cargo || '',
         fecha_ingreso: scout.fecha_ingreso || '',
+        codigo_asociado: persona.codigo_asociado || '',
         centro_estudio: scout.centro_estudio || '',
         anio_estudios: scout.anio_estudios || '',
         ocupacion: scout.ocupacion || '',

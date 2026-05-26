@@ -51,7 +51,7 @@ interface SeguimientoEspecialidadesProps {
 
 interface Scout {
   id: string;
-  codigo_scout?: string;
+  codigo_asociado?: string;
   nombres: string;
   apellidos: string;
   rama_actual?: string;
@@ -180,7 +180,7 @@ export default function SeguimientoEspecialidades({
     return (
       s.nombres.toLowerCase().includes(query) ||
       s.apellidos.toLowerCase().includes(query) ||
-      (s.codigo_scout?.toLowerCase().includes(query) ?? false) ||
+      (s.codigo_asociado?.toLowerCase().includes(query) ?? false) ||
       (s.rama_actual?.toLowerCase().includes(query) ?? false)
     );
   });
@@ -265,9 +265,6 @@ export default function SeguimientoEspecialidades({
                     {scoutSeleccionado.nombres} {scoutSeleccionado.apellidos}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {scoutSeleccionado.codigo_scout && (
-                      <span className="text-xs text-gray-500">{scoutSeleccionado.codigo_scout}</span>
-                    )}
                     {scoutSeleccionado.rama_actual && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         getRamaColor(scoutSeleccionado.rama_actual).bg
@@ -342,9 +339,6 @@ export default function SeguimientoEspecialidades({
                             {scout.nombres} {scout.apellidos}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            {scout.codigo_scout && (
-                              <span className="text-xs text-gray-500">{scout.codigo_scout}</span>
-                            )}
                             {scout.rama_actual && (
                               <span className={`text-xs px-2 py-0.5 rounded-full ${ramaColor.bg} ${ramaColor.text}`}>
                                 {scout.rama_actual}
@@ -383,7 +377,7 @@ export default function SeguimientoEspecialidades({
                 {scoutSeleccionado.nombres} {scoutSeleccionado.apellidos}
               </h2>
               <p className="text-blue-100">
-                {scoutSeleccionado.rama_actual} • Código: {scoutSeleccionado.codigo_scout}
+                {scoutSeleccionado.rama_actual}
               </p>
             </div>
             <div className="flex gap-6">

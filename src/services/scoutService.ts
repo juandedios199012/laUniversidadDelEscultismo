@@ -436,6 +436,7 @@ class ScoutService {
     carnet_conadis?: string;
     descripcion_discapacidad?: string;
     rama_actual?: string;
+    codigo_asociado?: string;
     fecha_ingreso?: string;
     // Array de familiares
     familiares?: Array<{
@@ -493,6 +494,7 @@ class ScoutService {
         carnet_conadis: scoutData.carnet_conadis,
         descripcion_discapacidad: scoutData.descripcion_discapacidad,
         rama_actual: ramaDb,
+        codigo_asociado: scoutData.codigo_asociado,
         fecha_ingreso: scoutData.fecha_ingreso || null,
         // Array de familiares para insertar en familiares_scout
         familiares: scoutData.familiares?.map(f => ({
@@ -577,6 +579,7 @@ class ScoutService {
     ocupacion?: string;
     centro_laboral?: string;
     rama_actual?: string;
+    codigo_asociado?: string;
     religion?: string;
     grupo_sanguineo?: string;
     factor_sanguineo?: string;
@@ -646,6 +649,7 @@ class ScoutService {
             ocupacion: updates.ocupacion,
             centro_laboral: updates.centro_laboral,
             rama_actual: updates.rama_actual,
+            codigo_asociado: updates.codigo_asociado,
             religion: updates.religion,
             grupo_sanguineo: updates.grupo_sanguineo,
             factor_sanguineo: updates.factor_sanguineo,

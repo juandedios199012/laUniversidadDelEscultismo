@@ -23,6 +23,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 export interface Scout {
   id: string;
   codigo_scout: string;
+  codigo_asociado?: string;
   nombres: string;
   apellidos: string;
   fecha_nacimiento: string;

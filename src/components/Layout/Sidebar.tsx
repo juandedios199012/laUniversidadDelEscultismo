@@ -3,7 +3,7 @@ import {
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight, Rocket
+  ChevronDown, ChevronRight, Rocket, ShieldCheck
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -103,7 +103,8 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-blue-600 to-indigo-600',
     items: [
       { id: 'reportes',  label: 'Reportes',  icon: BarChart, gradient: 'from-blue-600 to-indigo-600', modulo: 'reportes'  },
-      { id: 'seguridad', label: 'Seguridad', icon: Lock,     gradient: 'from-red-600 to-rose-600',    modulo: 'seguridad' },
+      { id: 'seguridad',    label: 'Seguridad',    icon: Lock,         gradient: 'from-red-600 to-rose-600',       modulo: 'seguridad' },
+      { id: 'seguridad-v2', label: 'Seguridad V2', icon: ShieldCheck,  gradient: 'from-violet-600 to-purple-600',  modulo: 'seguridad' },
     ],
   },
 ];

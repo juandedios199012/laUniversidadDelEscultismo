@@ -142,7 +142,7 @@ export function ScoutList({
       (scout) =>
         scout.nombres?.toLowerCase().includes(term) ||
         scout.apellidos?.toLowerCase().includes(term) ||
-        scout.codigo_scout?.toLowerCase().includes(term) ||
+        scout.codigo_asociado?.toLowerCase().includes(term) ||
         scout.numero_documento?.includes(term)
     );
   }, [scouts, searchTerm]);
@@ -237,7 +237,7 @@ export function ScoutList({
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-muted-foreground">
-                        {scout.codigo_scout}
+                        {scout.codigo_asociado}
                       </span>
                       {scout.rama_actual && (
                         <Badge

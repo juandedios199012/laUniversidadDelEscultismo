@@ -28,7 +28,7 @@ interface Scout {
   nombres: string;
   apellidos: string;
   rama_actual: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   estado?: string;
 }
 
@@ -205,9 +205,9 @@ export default function AsistenciaNew() {
       console.error('Error cargando datos:', error);
       // Datos demo para desarrollo
       setScouts([
-        { id: '1', nombres: 'Juan', apellidos: 'Pérez', rama_actual: 'TROPA', codigo_scout: 'TR2401' },
-        { id: '2', nombres: 'María', apellidos: 'González', rama_actual: 'TROPA', codigo_scout: 'TR2402' },
-        { id: '3', nombres: 'Carlos', apellidos: 'López', rama_actual: 'MANADA', codigo_scout: 'MA2401' }
+        { id: '1', nombres: 'Juan', apellidos: 'Pérez', rama_actual: 'TROPA', codigo_asociado: 'TR2401' },
+        { id: '2', nombres: 'María', apellidos: 'González', rama_actual: 'TROPA', codigo_asociado: 'TR2402' },
+        { id: '3', nombres: 'Carlos', apellidos: 'López', rama_actual: 'MANADA', codigo_asociado: 'MA2401' }
       ]);
       setReuniones([
         {
@@ -732,7 +732,7 @@ export default function AsistenciaNew() {
                       .filter(scout => !selectedReunion.rama || scout.rama_actual === selectedReunion.rama)
                       .map(scout => (
                         <option key={scout.id} value={scout.id}>
-                          {scout.nombres} {scout.apellidos} ({scout.codigo_scout})
+                          {scout.nombres} {scout.apellidos} ({scout.codigo_asociado})
                         </option>
                       ))}
                   </select>

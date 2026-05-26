@@ -6,6 +6,7 @@ import EditarScoutMobile from './EditarScoutMobile';
 
 interface Scout {
   id: string;
+  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;
@@ -64,7 +65,8 @@ export default function ScoutsScreen() {
       const termino = busqueda.toLowerCase();
       resultado = resultado.filter(s => 
         (s.nombres || '').toLowerCase().includes(termino) ||
-        (s.apellidos || '').toLowerCase().includes(termino)
+        (s.apellidos || '').toLowerCase().includes(termino) ||
+        (s.codigo_asociado || '').toLowerCase().includes(termino)
       );
     }
 
@@ -185,6 +187,7 @@ export default function ScoutsScreen() {
                 <h3 className="font-semibold text-gray-800 text-lg">
                   {scout.nombres} {scout.apellidos}
                 </h3>
+                <p className="text-sm text-gray-500">{scout.codigo_asociado}</p>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRamaBadgeColor(scout.rama_actual)}`}>
                 {scout.rama_actual}
@@ -235,6 +238,7 @@ export default function ScoutsScreen() {
               <h2 className="text-2xl font-bold text-gray-800">
                 {scoutSeleccionado.nombres} {scoutSeleccionado.apellidos}
               </h2>
+              <p className="text-gray-500">{scoutSeleccionado.codigo_asociado}</p>
             </div>
 
             <div className="space-y-4">

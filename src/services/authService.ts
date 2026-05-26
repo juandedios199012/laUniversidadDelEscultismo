@@ -2,6 +2,18 @@ import { supabase } from '../lib/supabase';
 
 export type AuthProvider = 'google' | 'magic-link' | 'email-password';
 
+/**
+ * Devuelve la URL de redirección para auth callbacks.
+ * Usa VITE_APP_URL cuando está configurado (recomendado en producción y cuando
+ * los magic links deben apuntar a una URL pública, no a localhost).
+ * Fallback a window.location.origin para desarrollo local.
+ */
+function getRedirectUrl(): string {
+  const appUrl = import.meta.env.VITE_APP_URL;
+  const base = appUrl ? appUrl.replace(/\/$/, '') : window.location.origin;
+  return `${base}/auth/callback`;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -38,7 +50,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: getRedirectUrl(),
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -92,7 +104,7 @@ export class AuthService {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getRedirectUrl(),
           data: {
             grupo_scout_id: isAuthorized.grupo_scout_id
           }
@@ -260,7 +272,7 @@ export class AuthService {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getRedirectUrl(),
           data: {
             full_name: fullName,
             grupo_scout_id: isAuthorized.grupo_scout_id

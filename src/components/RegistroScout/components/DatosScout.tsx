@@ -61,6 +61,14 @@ export function DatosScout({ form, isOpen, onToggle, errorCount = 0, scoutId }: 
               label="Fecha de Ingreso al Grupo"
             />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <TextField
+              control={form.control}
+              name="codigo_asociado"
+              label="Código de Asociado ASP"
+              placeholder="Código nacional"
+            />
+          </div>
         </div>
 
         {/* Patrol Info - Usando componentes inteligentes */}

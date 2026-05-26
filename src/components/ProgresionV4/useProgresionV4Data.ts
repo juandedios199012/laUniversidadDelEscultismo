@@ -54,6 +54,7 @@ export const STAGE_ICONS: Record<string, string> = {
 export interface V4Scout {
   id: string;
   nombre: string;
+  codigo: string;
   rama: string;
   patrulla: string;
   etapaCodigo: string;
@@ -106,6 +107,7 @@ export function useProgresionV4Data() {
       const mapped: V4Scout[] = rawScouts.map((s: ResumenProgresoScout) => ({
         id: s.scout_id,
         nombre: s.scout_nombre,
+        codigo: s.scout_codigo ?? '',
         rama: s.rama ?? '',
         patrulla: s.patrulla_nombre ?? 'Sin patrulla',
         etapaCodigo: s.etapa_actual_codigo ?? 'PISTA',

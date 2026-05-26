@@ -44,61 +44,15 @@ export async function getAllScoutsForMasiveDNGI03(ramaFilter?: string, scoutId?:
   alertMessage: string;
 }> {
   try {
-    // Obtener todos los scouts activos con sus datos
-    let query = supabase
-      .from('scouts')
-      .select(`
-        id,
-        codigo_scout,
-        rama_actual,
-        centro_estudio,
-        anio_estudios,
-        ocupacion,
-        centro_laboral,
-        fecha_ingreso,
-        estado,
-        persona:personas!scouts_persona_id_fkey (
-          id,
-          nombres,
-          apellidos,
-          fecha_nacimiento,
-          sexo,
-          tipo_documento,
-          numero_documento,
-          celular,
-          celular_secundario,
-          telefono,
-          correo,
-          correo_secundario,
-          correo_institucional,
-          direccion,
-          direccion_completa,
-          departamento,
-          provincia,
-          distrito,
-          codigo_postal,
-          religion,
-          grupo_sanguineo,
-          factor_sanguineo,
-          seguro_medico,
-          tipo_discapacidad,
-          carnet_conadis,
-          descripcion_discapacidad
-        )
-      `)
-      .eq('estado', 'ACTIVO');
-
-    if (ramaFilter && ramaFilter !== 'TODAS') {
-      query = query.eq('rama_actual', ramaFilter);
-    }
-
-    if (scoutId) {
-      query = query.eq('id', scoutId);
-    }
-
-    const { data: scoutsData, error } = await query
-      .order('rama_actual', { ascending: true })
-      .order('codigo_scout', { ascending: true });
+    // Obtener todos los scouts activos con sus datos (vía RPC)
+    const { data: scoutsData, error } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      {
+        p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
+        p_estado: 'ACTIVO',
+        p_scout_id: scoutId || null
+      }
+    );
 
     if (error) throw error;
     if (!scoutsData || scoutsData.length === 0) {
@@ -225,31 +179,14 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
   alertMessage: string;
 }> {
   try {
-    // Obtener todos los scouts activos
-    let query = supabase
-      .from('scouts')
-      .select(`
-        id,
-        codigo_scout,
-        rama_actual,
-        persona:personas!scouts_persona_id_fkey (
-          id,
-          nombres,
-          apellidos,
-          tipo_documento,
-          numero_documento
-        )
-      `)
-      .eq('estado', 'ACTIVO');
-    
-    // Aplicar filtro de rama si se especifica
-    if (ramaFilter && ramaFilter !== 'TODAS') {
-      query = query.eq('rama_actual', ramaFilter);
-    }
-    
-    const { data: scoutsData, error } = await query
-      .order('rama_actual', { ascending: true })
-      .order('codigo_scout', { ascending: true });
+    // Obtener scouts activos con datos de persona (vía RPC)
+    const { data: scoutsData, error } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      {
+        p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
+        p_estado: 'ACTIVO'
+      }
+    );
 
     if (error) throw error;
     if (!scoutsData || scoutsData.length === 0) {
@@ -280,7 +217,7 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
           tipoDocumento: personaData.tipo_documento || '',
           numeroDocumento: personaData.numero_documento || '',
           rama: scout.rama_actual || '',
-          codigoScout: scout.codigo_scout || '',
+          codigoScout: personaData.codigo_asociado || '',
           dniAnversoUrl,
           dniReversoUrl,
         };
@@ -312,17 +249,11 @@ export async function getAllFamiliaresWithDni(ramaFilter?: string): Promise<{
   alertMessage: string;
 }> {
   try {
-    // Primero obtener los scouts activos (opcionalmente filtrados por rama)
-    let scoutsQuery = supabase
-      .from('scouts')
-      .select('id, codigo_scout, rama_actual, persona:personas!scouts_persona_id_fkey(nombres, apellidos)')
-      .eq('estado', 'ACTIVO');
-    
-    if (ramaFilter && ramaFilter !== 'TODAS') {
-      scoutsQuery = scoutsQuery.eq('rama_actual', ramaFilter);
-    }
-    
-    const { data: scoutsActivos, error: scoutsError } = await scoutsQuery;
+    // Obtener scouts activos para familiares (vía RPC)
+    const { data: scoutsActivos, error: scoutsError } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      { p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null, p_estado: 'ACTIVO' }
+    );
     
     if (scoutsError) throw scoutsError;
     if (!scoutsActivos || scoutsActivos.length === 0) {
@@ -486,32 +417,15 @@ export async function getScoutsWithApoderadoDni(ramaFilter?: string, scoutId?: s
   scoutsSinApoderado: number;
 }> {
   try {
-    let scoutsQuery = supabase
-      .from('scouts')
-      .select(`
-        id,
-        codigo_scout,
-        rama_actual,
-        persona:personas!scouts_persona_id_fkey (
-          nombres,
-          apellidos,
-          tipo_documento,
-          numero_documento
-        )
-      `)
-      .eq('estado', 'ACTIVO');
-
-    if (ramaFilter && ramaFilter !== 'TODAS') {
-      scoutsQuery = scoutsQuery.eq('rama_actual', ramaFilter);
-    }
-
-    if (scoutId) {
-      scoutsQuery = scoutsQuery.eq('id', scoutId);
-    }
-
-    const { data: scoutsData, error: scoutsError } = await scoutsQuery
-      .order('rama_actual', { ascending: true })
-      .order('codigo_scout', { ascending: true });
+    // Obtener scouts activos para pares DNI (vía RPC)
+    const { data: scoutsData, error: scoutsError } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      {
+        p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
+        p_estado: 'ACTIVO',
+        p_scout_id: scoutId || null
+      }
+    );
 
     if (scoutsError) throw scoutsError;
     if (!scoutsData || scoutsData.length === 0) {
@@ -589,7 +503,7 @@ export async function getScoutsWithApoderadoDni(ramaFilter?: string, scoutId?: s
           tipoDocumento: personaScout.tipo_documento || '',
           numeroDocumento: personaScout.numero_documento || '',
           rama: scout.rama_actual || '',
-          codigoScout: scout.codigo_scout || '',
+          codigoScout: personaScout.codigo_asociado || '',
           parentesco: 'SCOUT',
           dniAnversoUrl: scoutDniAnversoUrl,
           dniReversoUrl: scoutDniReversoUrl,

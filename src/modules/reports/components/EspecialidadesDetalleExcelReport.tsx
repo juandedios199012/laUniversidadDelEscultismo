@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 interface DetalleEspecialidad {
   scout_id: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   nombre_scout: string;
   rama: string;
   patrulla: string | null;
@@ -34,7 +34,7 @@ interface DetalleEspecialidad {
 
 interface ResumenScout {
   scout_id: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   nombre: string;
   rama: string;
   patrulla: string | null;
@@ -125,7 +125,7 @@ export const EspecialidadesDetalleExcelReport: React.FC<EspecialidadesDetalleExc
       // Definir columnas
       wsDetalle.columns = [
         { header: '#', key: 'num', width: 6 },
-        { header: 'Código Scout', key: 'codigo_scout', width: 14 },
+        { header: 'Código Asociado', key: 'codigo_scout', width: 14 },
         { header: 'Nombre Scout', key: 'nombre_scout', width: 30 },
         { header: 'Rama', key: 'rama', width: 12 },
         { header: 'Patrulla', key: 'patrulla', width: 15 },
@@ -159,7 +159,7 @@ export const EspecialidadesDetalleExcelReport: React.FC<EspecialidadesDetalleExc
       detalle.forEach((d, index) => {
         const row = wsDetalle.addRow({
           num: index + 1,
-          codigo_scout: d.codigo_scout || '-',
+          codigo_scout: d.codigo_asociado || '-',
           nombre_scout: d.nombre_scout,
           rama: d.rama || '-',
           patrulla: d.patrulla || '-',
@@ -244,7 +244,7 @@ export const EspecialidadesDetalleExcelReport: React.FC<EspecialidadesDetalleExc
         
         wsResumen.addRow({
           num: index + 1,
-          codigo: r.codigo_scout || '-',
+          codigo: r.codigo_asociado || '-',
           nombre: r.nombre,
           rama: r.rama || '-',
           patrulla: r.patrulla || '-',
@@ -289,7 +289,7 @@ export const EspecialidadesDetalleExcelReport: React.FC<EspecialidadesDetalleExc
       const especialidadesUnicas = [...new Set(detalle.map(d => d.especialidad_nombre))].sort();
       const scoutsUnicos = [...new Map(detalle.map(d => [d.scout_id, { 
         id: d.scout_id, 
-        codigo: d.codigo_scout, 
+        codigo: d.codigo_asociado, 
         nombre: d.nombre_scout,
         rama: d.rama 
       }])).values()].sort((a, b) => a.nombre.localeCompare(b.nombre));

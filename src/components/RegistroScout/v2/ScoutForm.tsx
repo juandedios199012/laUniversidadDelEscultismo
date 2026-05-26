@@ -66,7 +66,7 @@ const SECTION_FIELDS: Record<SectionKey, string[]> = {
   datosEducacion: ["centro_estudio", "anio_estudios", "ocupacion", "centro_laboral"],
   datosReligiosos: ["religion"],
   datosSalud: ["grupo_sanguineo", "factor_sanguineo", "seguro_medico", "tipo_discapacidad", "carnet_conadis", "descripcion_discapacidad"],
-  datosScout: ["rama_actual", "fecha_ingreso", "patrulla_id", "cargo_patrulla"],
+  datosScout: ["rama_actual", "fecha_ingreso", "codigo_asociado", "patrulla_id", "cargo_patrulla"],
 };
 
 // ============================================
@@ -181,6 +181,7 @@ export function ScoutForm({ scout, onSuccess, onCancel }: ScoutFormProps) {
           carnet_conadis: data.carnet_conadis,
           descripcion_discapacidad: data.descripcion_discapacidad,
           rama_actual: data.rama_actual,
+          codigo_asociado: data.codigo_asociado,
           fecha_ingreso: data.fecha_ingreso,
         });
 
@@ -237,7 +238,7 @@ export function ScoutForm({ scout, onSuccess, onCancel }: ScoutFormProps) {
     const educationFields = ["centro_estudio", "anio_estudios", "ocupacion", "centro_laboral"];
     const religiousFields = ["religion"];
     const healthFields = ["grupo_sanguineo", "factor_sanguineo", "seguro_medico", "tipo_discapacidad"];
-    const scoutFields = ["rama_actual", "fecha_ingreso"];
+    const scoutFields = ["rama_actual", "fecha_ingreso", "codigo_asociado"];
 
     if (errorKeys.some((k) => personalFields.includes(k))) sectionsWithErrors.push("datosPersonales");
     if (errorKeys.some((k) => contactFields.includes(k))) sectionsWithErrors.push("datosContacto");
@@ -386,6 +387,7 @@ function mapScoutToFormData(scout: Scout): ScoutFormData {
     descripcion_discapacidad: scout.descripcion_discapacidad || "",
     rama_actual: scout.rama_actual || "",
     rama: scout.rama_actual || "",
+    codigo_asociado: scout.codigo_asociado || "",
     fecha_ingreso: scout.fecha_ingreso || new Date().toISOString().split("T")[0],
     patrulla_id: null,
     cargo_patrulla: "MIEMBRO",

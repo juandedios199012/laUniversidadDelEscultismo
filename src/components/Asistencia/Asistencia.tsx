@@ -30,7 +30,7 @@ interface Scout {
 	nombres: string;
 	apellidos: string;
 	rama_actual: string;
-	codigo_scout: string;
+	codigo_asociado?: string;
 	estado?: string;
 }
 
@@ -257,9 +257,9 @@ export default function Asistencia() {
 			console.error('Error cargando datos:', error);
 			// Datos demo para desarrollo
 			setScouts([
-				{ id: '1', nombres: 'Juan', apellidos: 'Pérez', rama_actual: 'TROPA', codigo_scout: 'TR2401' },
-				{ id: '2', nombres: 'María', apellidos: 'González', rama_actual: 'TROPA', codigo_scout: 'TR2402' },
-				{ id: '3', nombres: 'Carlos', apellidos: 'López', rama_actual: 'MANADA', codigo_scout: 'MA2401' }
+				{ id: '1', nombres: 'Juan', apellidos: 'Pérez', rama_actual: 'TROPA', codigo_asociado: 'TR2401' },
+				{ id: '2', nombres: 'María', apellidos: 'González', rama_actual: 'TROPA', codigo_asociado: 'TR2402' },
+				{ id: '3', nombres: 'Carlos', apellidos: 'López', rama_actual: 'MANADA', codigo_asociado: 'MA2401' }
 			]);
 			setReuniones([
 				{
@@ -430,7 +430,7 @@ export default function Asistencia() {
 				return {
 					...asist,
 					scout_nombre: scout ? `${scout.nombres} ${scout.apellidos}` : 'Desconocido',
-					scout_codigo: scout?.codigo_scout || 'N/A',
+					scout_codigo: scout?.codigo_asociado || 'N/A',
 					scout_rama: scout?.rama_actual || 'N/A'
 				};
 			});
@@ -811,7 +811,7 @@ export default function Asistencia() {
 														</div>
 													</div>
 												</td>
-												<td className="px-6 py-4 text-sm text-gray-500">{scout.codigo_scout}</td>
+												<td className="px-6 py-4 text-sm text-gray-500">{scout.codigo_asociado}</td>
 												<td className="px-6 py-4">
 													<div className="flex items-center justify-center gap-2">
 														{estadosAsistencia.map(estado => {

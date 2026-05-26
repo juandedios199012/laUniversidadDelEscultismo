@@ -559,7 +559,6 @@ export default function ReportsDashboard() {
                                 <td className="py-3">
                                   <div>
                                     <p className="font-medium text-white">{cambio.nombres} {cambio.apellidos}</p>
-                                    <p className="text-xs text-white/60">{cambio.codigo_scout}</p>
                                   </div>
                                 </td>
                                 <td className="py-3 text-center">

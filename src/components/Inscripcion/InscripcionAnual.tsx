@@ -436,7 +436,7 @@ const InscripcionAnual: React.FC = () => {
       return (
         s.nombres.toLowerCase().includes(q) ||
         s.apellidos.toLowerCase().includes(q) ||
-        s.codigo_scout?.toLowerCase().includes(q)
+        s.codigo_asociado?.toLowerCase().includes(q)
       );
     }
     return true;
@@ -450,7 +450,7 @@ const InscripcionAnual: React.FC = () => {
       return (
         i.scout.nombres.toLowerCase().includes(busqueda) ||
         i.scout.apellidos.toLowerCase().includes(busqueda) ||
-        i.scout.codigo_scout.toLowerCase().includes(busqueda)
+        (i.scout.codigo_asociado || '').toLowerCase().includes(busqueda)
       );
     }
     return true;
@@ -672,7 +672,6 @@ const InscripcionAnual: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scout</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rama</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Perfil</th>
@@ -685,9 +684,6 @@ const InscripcionAnual: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {inscripcionesFiltradas.map((inscripcion) => (
                     <tr key={inscripcion.inscripcion_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {inscripcion.scout.codigo_scout}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {inscripcion.scout.nombres} {inscripcion.scout.apellidos}
@@ -951,7 +947,6 @@ const InscripcionAnual: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <span className="text-xs text-gray-400">{scout.codigo_scout}</span>
                         </div>
                       </label>
                     ))}

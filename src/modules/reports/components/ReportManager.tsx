@@ -62,7 +62,7 @@ import {
 
 interface Scout {
   id: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   rama_actual: string;
   persona: {
     nombres: string;
@@ -106,22 +106,15 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const loadScouts = async () => {
     setLoadingScouts(true);
     try {
-      const { data, error } = await supabase
-        .from('scouts')
-        .select(`
-          id,
-          codigo_scout,
-          rama_actual,
-          persona:personas!scouts_persona_id_fkey (
-            nombres,
-            apellidos
-          )
-        `)
-        .eq('estado', 'ACTIVO')
-        .order('codigo_scout', { ascending: true });
+      const { data, error } = await supabase.rpc('api_listar_scouts_para_reportes', {
+        p_estado: 'ACTIVO'
+      });
 
       if (error) throw error;
-      setScouts(data || []);
+      setScouts((data || []).map((s: any) => ({
+        ...s,
+        codigo_asociado: s.persona?.codigo_asociado || ''
+      })));
     } catch (error) {
       console.error('Error cargando scouts:', error);
     } finally {
@@ -1712,7 +1705,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   <option value="">-- Selecciona un scout --</option>
                   {scouts.map((scout) => (
                     <option key={scout.id} value={scout.id}>
-                      {scout.codigo_scout} - {scout.persona?.nombres} {scout.persona?.apellidos} ({scout.rama_actual})
+                      {scout.codigo_asociado ? `${scout.codigo_asociado} - ` : ''}{scout.persona?.nombres} {scout.persona?.apellidos} ({scout.rama_actual})
                     </option>
                   ))}
                 </select>
@@ -1815,7 +1808,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                     <option value="">Selecciona un scout</option>
                     {filteredScoutsForMassive.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.codigo_scout} - {s.persona?.nombres} {s.persona?.apellidos}
+                        {s.codigo_asociado ? `${s.codigo_asociado} - ` : ''}{s.persona?.nombres} {s.persona?.apellidos}
                       </option>
                     ))}
                   </select>

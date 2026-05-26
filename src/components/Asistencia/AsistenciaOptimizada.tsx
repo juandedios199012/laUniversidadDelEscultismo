@@ -23,7 +23,7 @@ interface Scout {
   nombres: string;
   apellidos: string;
   rama_actual: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   estado: string;
 }
 
@@ -190,7 +190,7 @@ export default function AsistenciaOptimizada() {
     const matchRama = !ramaFiltro || scout.rama_actual === ramaFiltro;
     const matchBusqueda = !busqueda || 
       `${scout.nombres} ${scout.apellidos}`.toLowerCase().includes(busqueda.toLowerCase()) ||
-      scout.codigo_scout.toLowerCase().includes(busqueda.toLowerCase());
+      (scout.codigo_asociado || '').toLowerCase().includes(busqueda.toLowerCase());
     const matchPrograma = !programaSeleccionado || scout.rama_actual === programaSeleccionado.rama;
     
     return matchRama && matchBusqueda && matchPrograma;
@@ -491,7 +491,7 @@ export default function AsistenciaOptimizada() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
-                              {scout.codigo_scout}
+                              {scout.codigo_asociado}
                             </td>
                             <td className="px-6 py-4 text-center">
                               {estadoActual ? (

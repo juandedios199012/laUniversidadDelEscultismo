@@ -155,7 +155,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       // Scouts solo tiene referencia a personas, no campos directos
       const { data: scoutsRecientes, error: scoutsError } = await supabase
         .from('scouts')
-        .select('id, created_at, codigo_scout')
+        .select('id, created_at')
         .order('created_at', { ascending: false })
         .limit(2);
 
@@ -167,7 +167,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         actividades.push({
           id: `scout-${scout.id}`,
           type: 'scout',
-          message: `Scout ${scout.codigo_scout} se registró en el sistema`,
+          message: `Nuevo scout registrado en el sistema`,
           time: calcularTiempoTranscurrido(scout.created_at),
           created_at: scout.created_at
         });

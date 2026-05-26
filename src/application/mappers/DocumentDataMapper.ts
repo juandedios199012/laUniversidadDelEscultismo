@@ -33,7 +33,7 @@ export class DocumentDataMapperImpl implements DocumentDataMapper {
     // Mapear a estructura de documento
     return {
       id: scout.id,
-      codigoScout: scout.codigo_scout,
+      codigoScout: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       nombreCompleto: `${scout.nombres} ${scout.apellidos}`,

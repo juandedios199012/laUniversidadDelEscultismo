@@ -91,12 +91,12 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
         .from('scouts')
         .select(`
           id,
-          codigo_scout,
+          codigo_asociado,
           rama_actual,
           persona:personas(nombres, apellidos)
         `)
         .eq('estado', 'ACTIVO')
-        .order('codigo_scout');
+        .order('codigo_asociado');
 
       if (error) throw error;
 
@@ -105,7 +105,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
         const personaData = Array.isArray(s.persona) ? s.persona[0] : s.persona;
         return {
           id: s.id,
-          codigo: s.codigo_scout || '',
+          codigo: s.codigo_asociado || '',
           nombre: personaData ? `${personaData.nombres} ${personaData.apellidos}` : 'Sin nombre',
           rama: s.rama_actual || 'Sin rama',
           inscrito: participantesActuales.includes(s.id),

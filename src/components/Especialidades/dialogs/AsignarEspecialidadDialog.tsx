@@ -54,7 +54,7 @@ type AsignarEspecialidadForm = z.infer<typeof asignarEspecialidadSchema>;
 
 interface Scout {
   id: string;
-  codigo_scout?: string;
+  codigo_asociado?: string;
   nombres: string;
   apellidos: string;
   rama_actual?: string;
@@ -248,7 +248,7 @@ export default function AsignarEspecialidadDialog({
   const scoutsFiltrados = scouts.filter(s => 
     !busquedaScout || 
     `${s.nombres} ${s.apellidos}`.toLowerCase().includes(busquedaScout.toLowerCase()) ||
-    (s.codigo_scout?.toLowerCase().includes(busquedaScout.toLowerCase()) ?? false)
+    (s.codigo_asociado?.toLowerCase().includes(busquedaScout.toLowerCase()) ?? false)
   );
 
   // Filtrar especialidades
@@ -381,7 +381,7 @@ export default function AsignarEspecialidadDialog({
                                 {scout.nombres} {scout.apellidos}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {scout.rama_actual} • {scout.codigo_scout}
+                                {scout.rama_actual} • {scout.codigo_asociado}
                               </p>
                             </div>
                             {scoutId === scout.id && (

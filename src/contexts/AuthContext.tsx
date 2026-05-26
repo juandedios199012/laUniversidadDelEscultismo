@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
 import { supabase } from '../lib/supabase';
-import { shouldSkipAuth, DEV_USER } from '../config/dev';
+import { shouldSkipAuth, DEV_USER, shouldAutoLogin, DEV_AUTO_EMAIL, DEV_AUTO_PASSWORD } from '../config/dev';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -44,6 +44,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initAuth = async () => {
       try {
         console.log('🔍 Verificando sesión existente...');
+
+        // ── Modo 2: auto-login silencioso en localhost ───────────────────
+        // Activo cuando VITE_DEV_EMAIL + VITE_DEV_PASSWORD están en .env.local.
+        // Crea una sesión Supabase real → todas las RPC funcionan.
+        if (shouldAutoLogin() && DEV_AUTO_EMAIL && DEV_AUTO_PASSWORD) {
+          console.log('🔓 DEV: Auto-login silencioso con cuenta dev...');
+          const { data: loginData, error: loginError } =
+            await supabase.auth.signInWithPassword({
+              email:    DEV_AUTO_EMAIL,
+              password: DEV_AUTO_PASSWORD,
+            });
+          if (loginError) {
+            console.warn('⚠️ DEV: Auto-login falló:', loginError.message);
+            // Continúa el flujo normal (getSession / onAuthStateChange)
+          } else if (loginData.user) {
+            console.log('✅ DEV: Auto-login exitoso →', loginData.user.email);
+            if (mounted) setLoading(false);
+            return; // onAuthStateChange actualizará user automáticamente
+          }
+        }
+        // ────────────────────────────────────────────────────────────────
         
         // Detectar si venimos de un magic link o OAuth callback
         // El hash contiene el token cuando se redirige desde email/OAuth

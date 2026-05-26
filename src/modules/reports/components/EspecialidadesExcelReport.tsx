@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 interface ReporteEspecialidad {
   scout_id: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   nombre: string;
   rama: string;
   patrulla: string | null;
@@ -118,7 +118,7 @@ export const EspecialidadesExcelReport: React.FC<EspecialidadesExcelReportProps>
         
         wsEspecialidades.addRow({
           num: index + 1,
-          codigo: r.codigo_scout || '-',
+          codigo: r.codigo_asociado || '-',
           nombre: r.nombre,
           rama: r.rama || '-',
           patrulla: r.patrulla || '-',

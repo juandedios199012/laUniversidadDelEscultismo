@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 interface Scout {
   id: string;
   persona_id: string;
-  codigo_scout: string;
+  codigo_asociado?: string;
   nombres: string;
   apellidos: string;
   fecha_nacimiento: string;
@@ -118,7 +118,7 @@ export default function RegistroDirigente() {
         .select(`
           id,
           persona_id,
-          codigo_scout,
+          codigo_asociado,
           rama_actual,
           personas!inner (
             nombres,
@@ -137,7 +137,7 @@ export default function RegistroDirigente() {
       const scoutsFormateados = data?.map((s: any) => ({
         id: s.id,
         persona_id: s.persona_id,
-        codigo_scout: s.codigo_scout,
+        codigo_asociado: s.codigo_asociado,
         nombres: s.personas.nombres,
         apellidos: s.personas.apellidos,
         fecha_nacimiento: s.personas.fecha_nacimiento,
@@ -436,7 +436,7 @@ export default function RegistroDirigente() {
                     <option value="">Seleccionar scout...</option>
                     {scouts.map((scout) => (
                       <option key={scout.id} value={scout.id}>
-                        {scout.nombres} {scout.apellidos} - {scout.codigo_scout} ({scout.rama_actual})
+                        {scout.nombres} {scout.apellidos} ({scout.rama_actual})
                       </option>
                     ))}
                   </select>
