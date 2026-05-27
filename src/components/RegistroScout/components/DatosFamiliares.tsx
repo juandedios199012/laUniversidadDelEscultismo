@@ -322,6 +322,12 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Campo oculto: id del familiar (necesario para que RHF lo incluya en onSubmit) */}
+                <FormField
+                  control={control}
+                  name={`familiares.${index}.id`}
+                  render={({ field }) => <input type="hidden" {...field} />}
+                />
                 {/* Nombres y Apellidos */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <FormField

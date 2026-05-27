@@ -1,31 +1,26 @@
 import React, { useState } from 'react';
-import { BarChart3, LayoutDashboard, Lock, Shield, TrendingUp, Users, Eye } from 'lucide-react';
+import { BarChart3, LayoutDashboard, Shield, TrendingUp, Users } from 'lucide-react';
 import { useProgresionV4Data } from './useProgresionV4Data';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import V4ProgresionTab from './tabs/V4ProgresionTab';
 import V4ScoutsTab from './tabs/V4ScoutsTab';
 import V4AnalisisTab from './tabs/V4AnalisisTab';
-import V4PortalPadresTab from './tabs/V4PortalPadresTab';
 import V4DashboardTab from './tabs/V4DashboardTab';
 
-type TabId = 'progresion' | 'scouts' | 'analisis' | 'dashboard' | 'portal-padres';
+type TabId = 'progresion' | 'scouts' | 'analisis' | 'dashboard';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'progresion',    label: 'Progresión',    icon: TrendingUp },
-  { id: 'scouts',        label: 'Scouts',        icon: Users },
-  { id: 'analisis',      label: 'Análisis',      icon: BarChart3 },
-  { id: 'dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
-  { id: 'portal-padres', label: 'Portal Padres', icon: Eye },
+  { id: 'progresion', label: 'Progresión',  icon: TrendingUp },
+  { id: 'scouts',     label: 'Scouts',      icon: Users },
+  { id: 'analisis',   label: 'Análisis',    icon: BarChart3 },
+  { id: 'dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
 ];
 
 const ProgresionV4Module: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('progresion');
   const data = useProgresionV4Data();
-  const { puedeAcceder } = usePermissions();
 
-  const visibleTabs = TABS.filter(
-    (tab) => tab.id !== 'portal-padres' || puedeAcceder('portal_padres'),
-  );
+  const visibleTabs = TABS;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,20 +122,7 @@ const ProgresionV4Module: React.FC = () => {
           />
         )}
 
-        {activeTab === 'portal-padres' && (
-          puedeAcceder('portal_padres') ? (
-            <V4PortalPadresTab
-              loading={data.loading}
-              scouts={data.scouts}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <Lock className="h-12 w-12 text-gray-300 mb-4" />
-              <h3 className="text-lg font-bold text-gray-700 mb-1">Acceso Restringido</h3>
-              <p className="text-sm text-gray-400">No tienes permiso para ver el Portal de Padres.</p>
-            </div>
-          )
-        )}
+
       </div>
     </div>
   );
