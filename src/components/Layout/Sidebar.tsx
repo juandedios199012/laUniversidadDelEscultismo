@@ -3,7 +3,7 @@ import {
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight, Rocket, ShieldCheck
+  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -31,8 +31,9 @@ interface MenuGroup {
 
 // Ítems independientes (sin grupo)
 const standaloneItems: MenuItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', modulo: 'dashboard' },
-  { id: 'scouts',    label: 'Scouts',    icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts' },
+  { id: 'dashboard',    label: 'Dashboard',       icon: Home,  gradient: 'from-blue-500 to-cyan-500',     modulo: 'dashboard'    },
+  { id: 'scouts',       label: 'Scouts',          icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts'       },
+  { id: 'portal-padres', label: 'Portal de Padres', icon: Heart, gradient: 'from-pink-500 to-rose-500',   modulo: 'portal_padres' },
 ];
 
 const menuGroups: MenuGroup[] = [

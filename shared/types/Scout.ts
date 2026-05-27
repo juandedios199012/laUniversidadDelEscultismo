@@ -5,7 +5,7 @@
 
 export interface Scout {
   id: string;
-  codigo_scout: string;
+  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;

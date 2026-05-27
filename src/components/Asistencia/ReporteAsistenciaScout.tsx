@@ -7,7 +7,7 @@ import AsistenciaService from '../../services/asistenciaService';
 
 interface ScoutAsistencia {
   id: string;
-  codigo_scout: string;
+  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;
@@ -63,7 +63,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
 
           return {
             id: scout.id,
-            codigo_scout: scout.codigo_asociado || 'S/C',
+            codigo_asociado: scout.codigo_asociado || 'S/C',
             nombres: scout.personas.nombres,
             apellidos: scout.personas.apellidos,
             rama_actual: scout.rama_actual,
@@ -93,7 +93,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
     const matchBusqueda = !busqueda || 
       scout.nombres.toLowerCase().includes(busqueda.toLowerCase()) ||
       scout.apellidos.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (scout.codigo_scout || '').toLowerCase().includes(busqueda.toLowerCase());
+      (scout.codigo_asociado || '').toLowerCase().includes(busqueda.toLowerCase());
     
     let matchPorcentaje = true;
     if (filtroPorcentaje === 'excelente') {

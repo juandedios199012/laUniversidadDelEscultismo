@@ -33,7 +33,6 @@ export interface Scout {
   descripcion_discapacidad?: string;
   fecha_ingreso?: string;
   activo: boolean;
-  codigo_scout?: string;
   codigo_asociado?: string;
   rama_actual?: 'Manada' | 'Tropa' | 'Comunidad' | 'Caminantes' | 'Clan' | 'Dirigentes';
   estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';

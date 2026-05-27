@@ -28,6 +28,7 @@ import { EspecialidadesModule } from './components/Especialidades';
 import { ProgresionV2Module } from './components/ProgresionV2';
 import { ProgresionV3Module } from './components/ProgresionV3';
 import { ProgresionV4Module } from './components/ProgresionV4';
+import { PortalPadresDashboard } from './components/PortalPadres';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
@@ -122,6 +123,8 @@ function AppContent() {
         return <ProgresionV3Module />;
       case 'progresion-v4':
         return <ProgresionV4Module />;
+      case 'portal-padres':
+        return <PortalPadresDashboard />;
       default:
         return <Dashboard onNavigate={setActiveModule} />;
     }

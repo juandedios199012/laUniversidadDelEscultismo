@@ -16,7 +16,7 @@ export interface HistorialRamaItem {
 export interface CambioRamaReciente {
   id: string;
   scout_id: string;
-  codigo_scout: string;
+  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_anterior: string;
@@ -290,7 +290,7 @@ class ScoutService {
     parentesco?: string;
     familiar_telefono?: string;
     familiar_email?: string;
-  }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
+  }): Promise<{ success: boolean; scout_id?: string; error?: string }> {
     // Normalizar sexo a formato DB
     let sexoNormalizado: 'MASCULINO' | 'FEMENINO' = 'MASCULINO';
     if (scoutData.sexo === 'F' || scoutData.sexo === 'FEMENINO') {
@@ -329,7 +329,7 @@ class ScoutService {
     parentesco?: string;
     familiar_telefono?: string;
     familiar_email?: string;
-  }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
+  }): Promise<{ success: boolean; scout_id?: string; error?: string }> {
     try {
       // Map frontend values to DB enum tokens and payload keys
       const ramaDb = ScoutService.mapRamaToDb(scoutData.rama);
@@ -389,7 +389,6 @@ class ScoutService {
         return {
           success: true,
           scout_id: data.data?.scout_id,
-          codigo_scout: data.data?.codigo_scout
         };
       }
       
@@ -459,7 +458,7 @@ class ScoutService {
       es_contacto_emergencia?: boolean;
       es_apoderado?: boolean;
     }>;
-  }): Promise<{ success: boolean; scout_id?: string; codigo_scout?: string; error?: string }> {
+  }): Promise<{ success: boolean; scout_id?: string; error?: string }> {
     try {
       const ramaDb = ScoutService.mapRamaToDb(scoutData.rama_actual);
       const tipoDocDb = ScoutService.mapTipoDocumentoToDb(scoutData.tipo_documento);
@@ -534,7 +533,6 @@ class ScoutService {
         return {
           success: true,
           scout_id: data.data?.scout_id,
-          codigo_scout: data.data?.codigo_scout
         };
       }
 

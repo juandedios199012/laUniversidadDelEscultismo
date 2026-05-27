@@ -151,7 +151,6 @@ export async function getAllScoutsForExcel(options?: {
       return {
         // Identificación
         id: scout.id,
-        codigo_scout: persona.codigo_asociado || '',
         estado: scout.estado || 'ACTIVO',
         
         // Datos Personales

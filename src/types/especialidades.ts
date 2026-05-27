@@ -130,7 +130,7 @@ export interface DashboardEspecialidades {
 
 export interface ReporteScoutEspecialidades {
   scout_id: string;
-  codigo_scout: string;
+  codigo_asociado: string;
   nombre: string;
   rama: string;
   patrulla?: string;

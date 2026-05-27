@@ -518,7 +518,7 @@ export interface ConfiguracionPeriodo {
 
 export interface Scout {
   id: string;
-  codigo_scout: string;
+  codigo_asociado: string;
   nombres: string;
   apellidos: string;
   rama_actual: string;
@@ -536,7 +536,7 @@ export interface PersonaInscribible {
   apellidos: string;
   tipo_registro: 'Scout' | 'Dirigente' | 'Comité';
   rama_actual: string | null;
-  codigo_scout: string | null;
+  codigo_asociado: string | null;
   numero_documento?: string;
 }
 

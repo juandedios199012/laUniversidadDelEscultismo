@@ -8,7 +8,7 @@ interface ReporteAsistenciaResponse {
     id: string;
     nombres: string;
     apellidos: string;
-    codigo_scout: string;
+    codigo_asociado: string;
     rama_actual: string;
     foto_url?: string;
   };
@@ -77,7 +77,7 @@ class ReporteAsistenciaService {
       id: string;
       nombres: string;
       apellidos: string;
-      codigo_scout: string;
+      codigo_asociado: string;
       rama_actual: string;
     }> | null;
     error: string | null;
@@ -103,7 +103,7 @@ class ReporteAsistenciaService {
         id: scout.id,
         nombres: scout.personas.nombres,
         apellidos: scout.personas.apellidos,
-        codigo_scout: scout.codigo_asociado || 'S/C',
+        codigo_asociado: scout.codigo_asociado || 'S/C',
         rama_actual: scout.rama_actual
       }));
 

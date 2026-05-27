@@ -31,7 +31,6 @@ import { saveAs } from 'file-saver';
 export interface ScoutExcelData {
   // Identificación
   id: string;
-  codigo_scout: string;
   estado: string;
   
   // Datos Personales (Step 1)
@@ -83,7 +82,7 @@ export interface ScoutExcelData {
   patrulla?: string;
   cargo_patrulla?: string;
   fecha_ingreso?: string;
-  codigo_asociado?: string;
+  codigo_asociado: string;
   
   // Familiares (array dinámico) (Step 3)
   familiares?: FamiliarExcelData[];
@@ -405,7 +404,7 @@ function createDatosPersonalesSheet(workbook: ExcelJS.Workbook, scouts: ScoutExc
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Estado', key: 'estado', width: 10 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
@@ -426,7 +425,7 @@ function createDatosPersonalesSheet(workbook: ExcelJS.Workbook, scouts: ScoutExc
   // Agregar datos
   scouts.forEach((scout, rowIndex) => {
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       estado: scout.estado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
@@ -460,7 +459,7 @@ function createContactoSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
     // Teléfonos
@@ -493,7 +492,7 @@ function createContactoSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   // Agregar datos
   scouts.forEach((scout, rowIndex) => {
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       celular: scout.celular,
@@ -537,7 +536,7 @@ function createFamiliarSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   // Columnas
   sheet.columns = [
     // Identificación del Scout
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Scout', key: 'nombre_scout', width: 28 },
     { header: 'Rama', key: 'rama', width: 12 },
     // Nro de familiar (FAM1, FAM2, etc.)
@@ -579,7 +578,7 @@ function createFamiliarSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   scouts.forEach(scout => {
     (scout.familiares || []).forEach((fam, famIndex) => {
       const row = sheet.addRow({
-        codigo_scout: scout.codigo_scout,
+        codigo_asociado: scout.codigo_asociado,
         nombre_scout: `${scout.nombres} ${scout.apellidos}`,
         rama: scout.rama_actual,
         num_familiar: famIndex + 1,
@@ -630,7 +629,7 @@ function createEducacionSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
     { header: 'Rama', key: 'rama_actual', width: 12 },
@@ -652,7 +651,7 @@ function createEducacionSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData
   // Agregar datos
   scouts.forEach((scout, rowIndex) => {
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       rama_actual: scout.rama_actual,
@@ -685,7 +684,7 @@ function createReligionSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
     { header: 'Rama', key: 'rama_actual', width: 12 },
@@ -702,7 +701,7 @@ function createReligionSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[
   // Agregar datos
   scouts.forEach((scout, rowIndex) => {
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       rama_actual: scout.rama_actual,
@@ -751,7 +750,7 @@ function createSaludSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
     { header: 'Edad', key: 'edad', width: 6 },
@@ -782,7 +781,7 @@ function createSaludSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
       : '';
     
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       edad: scout.edad || calculateAge(scout.fecha_nacimiento),
@@ -819,7 +818,7 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
   
   // Columnas
   sheet.columns = [
-    { header: 'Código Asociado', key: 'codigo_scout', width: 12 },
+    { header: 'Código Asociado', key: 'codigo_asociado', width: 12 },
     { header: 'Nombres', key: 'nombres', width: 20 },
     { header: 'Apellidos', key: 'apellidos', width: 20 },
     { header: 'Estado', key: 'estado', width: 10 },
@@ -828,7 +827,6 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
     { header: 'Patrulla', key: 'patrulla', width: 18 },
     { header: 'Cargo en Patrulla', key: 'cargo_patrulla', width: 15 },
     { header: 'Fecha Ingreso', key: 'fecha_ingreso', width: 14 },
-    { header: 'Código Asociado', key: 'codigo_asociado', width: 18 },
     // Antigüedad
     { header: 'Años Scout', key: 'anios_scout', width: 12 },
   ];
@@ -855,7 +853,7 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
     }
     
     const row = sheet.addRow({
-      codigo_scout: scout.codigo_scout,
+      codigo_asociado: scout.codigo_asociado,
       nombres: scout.nombres,
       apellidos: scout.apellidos,
       estado: scout.estado,
@@ -863,7 +861,6 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
       patrulla: scout.patrulla || 'Sin patrulla',
       cargo_patrulla: scout.cargo_patrulla || 'MIEMBRO',
       fecha_ingreso: formatDate(scout.fecha_ingreso),
-      codigo_asociado: scout.codigo_asociado,
       anios_scout: aniosScout > 0 ? aniosScout : '',
     });
     
@@ -875,7 +872,7 @@ function createScoutSheet(workbook: ExcelJS.Workbook, scouts: ScoutExcelData[]):
   // Filtros
   sheet.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: scouts.length + 1, column: 10 },
+    to: { row: scouts.length + 1, column: 9 },
   };
 }
 

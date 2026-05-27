@@ -459,10 +459,10 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
       const result = await ScoutService.registrarScoutConFamiliares(datosCompletos);
       console.log('📥 Respuesta de registrarScoutConFamiliares:', JSON.stringify(result, null, 2));
 
-      // Nota: registrarScoutConFamiliares retorna { success, scout_id, codigo_scout, error }
+      // Nota: registrarScoutConFamiliares retorna { success, scout_id, error }
       if (result.success && result.scout_id) {
         const scoutId = result.scout_id;
-        console.log('✅ Scout creado con ID:', scoutId, 'Código:', result.codigo_scout);
+        console.log('✅ Scout creado con ID:', scoutId);
         
         // Guardar patrulla si se seleccionó
         if (data.patrulla_id) {
