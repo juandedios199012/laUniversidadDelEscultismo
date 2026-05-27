@@ -571,23 +571,29 @@ function TabUsuarios() {
 
   const getRolBadge = (role: string) => {
     switch (role) {
-      case 'super_admin':
-        return 'bg-red-100 text-red-700';
-      case 'grupo_admin':
-        return 'bg-purple-100 text-purple-700';
-      default:
-        return 'bg-blue-100 text-blue-700';
+      case 'super_admin':    return 'bg-red-100 text-red-700';
+      case 'jefe_grupo':     return 'bg-purple-100 text-purple-700';
+      case 'grupo_admin':    return 'bg-purple-100 text-purple-700';
+      case 'coordinador':    return 'bg-indigo-100 text-indigo-700';
+      case 'dirigente':      return 'bg-blue-100 text-blue-700';
+      case 'asistente':      return 'bg-cyan-100 text-cyan-700';
+      case 'padre_familia':  return 'bg-pink-100 text-pink-700';
+      case 'scout':          return 'bg-green-100 text-green-700';
+      default:               return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getRolLabel = (role: string) => {
     switch (role) {
-      case 'super_admin':
-        return 'Super Admin';
-      case 'grupo_admin':
-        return 'Admin Grupo';
-      default:
-        return 'Dirigente';
+      case 'super_admin':    return 'Super Admin';
+      case 'jefe_grupo':     return 'Jefe de Grupo';
+      case 'grupo_admin':    return 'Admin Grupo';
+      case 'coordinador':    return 'Coordinador';
+      case 'dirigente':      return 'Dirigente';
+      case 'asistente':      return 'Asistente';
+      case 'padre_familia':  return 'Padre/Familia';
+      case 'scout':          return 'Scout';
+      default:               return role;
     }
   };
 

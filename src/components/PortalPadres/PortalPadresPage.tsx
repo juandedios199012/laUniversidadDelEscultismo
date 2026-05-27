@@ -15,12 +15,12 @@ type TabId = 'mi-familia' | 'consultar-scout';
 // ─────────────────────────────────────────────────────────────
 
 const PortalPadresPage: React.FC = () => {
-  const { esAdmin, esSuperAdmin, puedeAcceder } = usePermissions();
+  const { esAdmin, esSuperAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState<TabId>('mi-familia');
 
-  // Solo admins, superadmins y usuarios con permiso de progresión
-  // pueden ver la vista de consulta de scouts
-  const puedeConsultar = esAdmin || esSuperAdmin || puedeAcceder('progresion');
+  // Solo admins y superadmins pueden consultar cualquier scout de la BD.
+  // Los padres (portal_padres) solo ven sus propios hijos en "Mi Familia".
+  const puedeConsultar = esAdmin || esSuperAdmin;
 
   // Carga diferida: solo carga scouts cuando se abre la pestaña de consulta
   const { scouts, loading } = useScoutsParaPortal(
