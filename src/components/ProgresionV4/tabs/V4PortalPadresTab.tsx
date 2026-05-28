@@ -812,24 +812,98 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                     <p className="text-sm text-gray-400">Aún no hay especialidades completadas</p>
                   </div>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {especialidades.especialidades
                       .filter((e) => e.fase_desafio === 'completada')
-                      .map((e) => (
-                        <div key={e.progreso_id} className="flex items-center gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
-                            style={{ background: `${e.area.color}22` }}>
-                            {e.area.icono ?? '⭐'}
+                      .map((e) => {
+                        // Primera evidencia de tipo imagen (si existe)
+                        const fotoEvidencia = e.evidencias?.find(
+                          (ev) => ev.tipo === 'imagen' && ev.url,
+                        );
+                        const fotoUrl = fotoEvidencia?.url ?? null;
+
+                        return (
+                          <div
+                            key={e.progreso_id}
+                            className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm
+                                       hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                          >
+                            {/* ── Imagen / Placeholder ── */}
+                            {/* Mobile: cuadrado (1:1) · sm+: 4:3 */}
+                            <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden">
+                              {fotoUrl ? (
+                                <img
+                                  src={fotoUrl}
+                                  alt={e.especialidad.nombre}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                /* Placeholder con gradiente y emoji del área */
+                                <div
+                                  className="w-full h-full flex flex-col items-center justify-center gap-2"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${e.area.color}18 0%, ${e.area.color}38 100%)`,
+                                  }}
+                                >
+                                  <span className="text-5xl select-none">{e.area.icono ?? '⭐'}</span>
+                                  <span className="text-xs font-semibold text-gray-400 px-3 text-center line-clamp-1">
+                                    Sin foto de evidencia
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Badge área — esquina superior izquierda */}
+                              <span
+                                className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white
+                                           backdrop-blur-sm shadow-sm"
+                                style={{ background: `${e.area.color}cc` }}
+                              >
+                                {e.area.nombre}
+                              </span>
+
+                              {/* Award icon — esquina superior derecha */}
+                              <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center
+                                               rounded-full bg-white/90 backdrop-blur-sm shadow-sm">
+                                <Award className="h-3.5 w-3.5 text-yellow-500" />
+                              </span>
+                            </div>
+
+                            {/* ── Contenido de texto ── */}
+                            <div className="p-4">
+                              <p className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug">
+                                {e.especialidad.nombre}
+                              </p>
+                              {e.especialidad.descripcion && (
+                                <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-snug">
+                                  {e.especialidad.descripcion}
+                                </p>
+                              )}
+                              {e.asesor_nombre && (
+                                <p className="mt-1.5 text-xs text-gray-400">
+                                  Asesor: {e.asesor_nombre}
+                                </p>
+                              )}
+                              {e.fecha_fin && (
+                                <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-green-600">
+                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                  {new Date(e.fecha_fin).toLocaleDateString('es-PE', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </p>
+                              )}
+                              {/* Contador de evidencias */}
+                              {(e.evidencias?.length ?? 0) > 0 && (
+                                <p className="mt-1 text-[10px] text-gray-400">
+                                  {e.evidencias.length} evidencia{e.evidencias.length !== 1 ? 's' : ''}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-gray-800 truncate">{e.especialidad.nombre}</p>
-                            <p className="text-xs text-gray-500">{e.area.nombre}
-                              {e.fecha_fin && ` · ${new Date(e.fecha_fin).toLocaleDateString('es-PE')}`}
-                            </p>
-                          </div>
-                          <Award className="h-4 w-4 shrink-0 text-yellow-500" />
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>
