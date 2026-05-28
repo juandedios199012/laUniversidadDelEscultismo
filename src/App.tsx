@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
@@ -30,7 +30,7 @@ import { ProgresionV3Module } from './components/ProgresionV3';
 import { ProgresionV4Module } from './components/ProgresionV4';
 import PortalPadresPage from './components/PortalPadres/PortalPadresPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { PermissionsProvider } from './contexts/PermissionsContext';
+import { PermissionsProvider, usePermissions } from './contexts/PermissionsContext';
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 import LoginScreen from './components/Auth/LoginScreen';
 import { useMobileDetect } from './hooks/useMobileDetect';
@@ -42,10 +42,20 @@ function AppContent() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { isMobile } = useMobileDetect();
   const { user, loading } = useAuth();
+  const { puedeAcceder, loading: loadingPermisos } = usePermissions();
 
   // En desarrollo local, permitir acceso sin login
   const skipAuth = shouldSkipAuth();
   const effectiveUser = skipAuth ? DEV_USER : user;
+
+  // Redirigir a portal-padres al iniciar si el usuario no tiene acceso a scouts
+  // (detecta roles tipo padre_familia que no deben ver el módulo de administración)
+  useEffect(() => {
+    if (skipAuth || loadingPermisos || isMobile) return;
+    if (activeModule === 'dashboard' && !puedeAcceder('scouts') && puedeAcceder('portal_padres')) {
+      setActiveModule('portal-padres');
+    }
+  }, [loadingPermisos]);
 
   // Mostrar loading mientras verifica sesión (solo si no estamos saltando auth)
   if (loading && !skipAuth) {

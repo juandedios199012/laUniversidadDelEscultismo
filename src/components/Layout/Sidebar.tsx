@@ -252,23 +252,27 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — visibles solo si el usuario tiene acceso al módulo */}
         <div className="mt-6 space-y-2">
           <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
             Acciones Rápidas
           </h4>
-          <button
-            onClick={() => onTabChange('scouts')}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            ➕ Nuevo Scout
-          </button>
-          <button
-            onClick={() => onTabChange('dashboard')}
-            className="w-full p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            📊 Ver Dashboard
-          </button>
+          {(esSuperAdmin || esAdmin || puedeAcceder('scouts')) && (
+            <button
+              onClick={() => onTabChange('scouts')}
+              className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              ➕ Nuevo Scout
+            </button>
+          )}
+          {(esSuperAdmin || esAdmin || puedeAcceder('dashboard')) && (
+            <button
+              onClick={() => onTabChange('dashboard')}
+              className="w-full p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              📊 Ver Dashboard
+            </button>
+          )}
         </div>
       </nav>
     </div>

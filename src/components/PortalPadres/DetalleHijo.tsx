@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
-import { ArrowLeft, User, Calendar, Hash, Shield, Users, Info, TrendingUp, Pencil } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Hash, Info, TrendingUp, Pencil } from 'lucide-react';
 import DetalleHijoProgresion from './DetalleHijoProgresion';
 import EditarPerfilHijoDialog from './EditarPerfilHijoDialog';
 
@@ -120,17 +120,9 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
             )}
             <div>
               <h2 className="text-2xl font-black tracking-tight">{hijo.nombre_completo}</h2>
-              <p className="text-blue-100 text-sm capitalize mt-1">{hijo.parentesco}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className={`px-3 py-0.5 rounded-full text-xs font-bold border capitalize ${ramaColor(hijo.rama_actual)} bg-white/20 text-white border-white/30`}>
                   {hijo.rama_actual}
-                </span>
-                <span className={`px-3 py-0.5 rounded-full text-xs font-bold border ${
-                  hijo.estado?.toUpperCase() === 'ACTIVO'
-                    ? 'bg-green-500/20 text-green-100 border-green-400/40'
-                    : 'bg-red-500/20 text-red-100 border-red-400/40'
-                }`}>
-                  {hijo.estado?.toUpperCase() === 'ACTIVO' ? 'Activo' : hijo.estado}
                 </span>
               </div>
             </div>
@@ -165,17 +157,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
               value={calcularEdad(hijo.fecha_nacimiento)}
             />
 
-            <DataRow
-              icon={<Shield className="w-4 h-4 text-orange-500" />}
-              label="Rama actual"
-              value={<span className="capitalize">{hijo.rama_actual}</span>}
-            />
 
-            <DataRow
-              icon={<Users className="w-4 h-4 text-teal-500" />}
-              label="Relación"
-              value={<span className="capitalize">{hijo.parentesco}</span>}
-            />
           </div>
         </div>
 

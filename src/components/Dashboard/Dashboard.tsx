@@ -9,12 +9,14 @@ import {
   Book
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { usePermissions } from '../../contexts/PermissionsContext';
+import type { Modulo } from '../../services/permissionsService';
 
-const quickActions = [
-  { title: 'Nuevo Scout', description: 'Registrar un nuevo miembro', icon: Users, action: 'scouts' }, // Módulo unificado
-  { title: 'Programa Semanal', description: 'Crear programa de actividades', icon: Calendar, action: 'programa-semanal' },
-  { title: 'Tomar Asistencia', description: 'Registrar asistencia del día', icon: Clock, action: 'asistencia' },
-  { title: 'Libro de Oro', description: 'Agregar nueva entrada', icon: Book, action: 'libro-oro' }
+const quickActions: Array<{ title: string; description: string; icon: React.ElementType; action: string; modulo: Modulo }> = [
+  { title: 'Nuevo Scout',       description: 'Registrar un nuevo miembro',         icon: Users,    action: 'scouts',           modulo: 'scouts'           },
+  { title: 'Programa Semanal', description: 'Crear programa de actividades',       icon: Calendar, action: 'programa-semanal', modulo: 'programa_semanal' },
+  { title: 'Tomar Asistencia', description: 'Registrar asistencia del día',         icon: Clock,    action: 'asistencia',       modulo: 'asistencia'       },
+  { title: 'Libro de Oro',     description: 'Agregar nueva entrada',               icon: Book,     action: 'libro-oro',        modulo: 'libro_oro'        },
 ];
 
 interface DashboardProps {
@@ -41,6 +43,7 @@ interface RecentActivity {
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
+  const { puedeAcceder, esSuperAdmin, esAdmin } = usePermissions();
   const [stats, setStats] = useState<DashboardStats>({
     scoutsActivos: 0,
     dirigentes: 0,
@@ -346,7 +349,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="lg:col-span-2">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quickActions.map((action, index) => {
+            {quickActions
+              .filter(action => esSuperAdmin || esAdmin || puedeAcceder(action.modulo))
+              .map((action, index) => {
               const Icon = action.icon;
               return (
                 <button

@@ -79,7 +79,6 @@ const MisHijosGrid: React.FC<MisHijosGridProps> = ({ hijos, onSeleccionar }) => 
             <ChildAvatar fotoUrl={hijo.foto_url} nombre={hijo.nombre_completo} />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-gray-800 truncate">{hijo.nombre_completo}</h3>
-              <p className="text-xs text-gray-500 capitalize">{hijo.parentesco}</p>
             </div>
           </div>
 
@@ -88,15 +87,6 @@ const MisHijosGrid: React.FC<MisHijosGridProps> = ({ hijos, onSeleccionar }) => 
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${ramaColor(hijo.rama_actual)}`}>
               {hijo.rama_actual}
             </span>
-            {hijo.estado?.toUpperCase() === 'ACTIVO' ? (
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                Activo
-              </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                {hijo.estado}
-              </span>
-            )}
           </div>
 
           {/* Info rápida */}
