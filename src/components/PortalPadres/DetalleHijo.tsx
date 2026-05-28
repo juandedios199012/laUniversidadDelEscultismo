@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
-import { ArrowLeft, User, Calendar, Hash, Shield, Users, Info, TrendingUp } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Hash, Shield, Users, Info, TrendingUp, Pencil } from 'lucide-react';
 import DetalleHijoProgresion from './DetalleHijoProgresion';
+import EditarPerfilHijoDialog from './EditarPerfilHijoDialog';
 
 type TabDetalle = 'basica' | 'progresion';
 
@@ -52,6 +53,7 @@ interface DetalleHijoProps {
 
 const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
   const [tab, setTab] = useState<TabDetalle>('basica');
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -177,14 +179,29 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
           </div>
         </div>
 
-        {/* Nota informativa */}
-        <div className="mx-8 mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <p className="text-xs text-blue-700">
-            Esta es una vista de solo lectura. Para actualizar datos de tu scout, contacta
-            al dirigente de su rama.
+        {/* Botón editar datos de contacto */}
+        <div className="mx-8 mb-6 flex items-center justify-between gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+          <p className="text-xs text-blue-700 flex-1">
+            Puedes actualizar los datos de contacto y estudios de tu scout.
           </p>
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shrink-0"
+          >
+            <Pencil className="w-4 h-4" />
+            Editar contacto
+          </button>
         </div>
       </div>}
+
+      {/* Diálogo de edición de datos de contacto */}
+      <EditarPerfilHijoDialog
+        scoutId={hijo.scout_id}
+        scoutNombre={hijo.nombre_completo}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+      />
     </div>
   );
 };

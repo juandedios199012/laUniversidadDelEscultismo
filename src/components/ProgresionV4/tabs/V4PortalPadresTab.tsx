@@ -28,7 +28,6 @@ import { supabase } from '../../../lib/supabase';
 import { ProgressRing } from '../../ProgresionV2/ui/ProgressRing';
 import { CardSkeleton } from '../V4Components';
 import { STAGE_COLORS, AREA_COLORS, AREA_ICONS, type V4Scout } from '../useProgresionV4Data';
-import { useAbility } from '../../../hooks/useAbility';
 import EditarPerfilHijoDialog from '../../PortalPadres/EditarPerfilHijoDialog';
 import type { EspecialidadesScoutResponse, ProgresoEspecialidad } from '../../../types/especialidades';
 
@@ -66,7 +65,6 @@ interface V4PortalPadresTabProps {
 }
 
 const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts, onActualizado }) => {
-  const { can } = useAbility();
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -652,8 +650,8 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts, 
                 ))}
               </div>
 
-              {/* Botón editar — visible solo si el padre tiene el permiso */}
-              {can('portal_padres:editar:perfil_hijo') && (
+              {/* Botón editar — visible en modo portal de padres (scout único) */}
+              {scouts.length === 1 && (
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
