@@ -111,7 +111,8 @@ const menuGroups: MenuGroup[] = [
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
-  const { puedeAcceder, esAdmin, esSuperAdmin } = usePermissions();
+  const { puedeAcceder, esAdmin, esSuperAdmin, rolPrincipal } = usePermissions();
+  const esDirigente = (rolPrincipal?.nivel_jerarquia ?? 0) >= 50;
 
   // Grupo que contiene el tab activo — expandido por defecto
   const activeGroupId = menuGroups.find(g => g.items.some(i => i.id === activeTab))?.id ?? null;
@@ -226,7 +227,8 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           })}
         </div>
 
-        {/* Stats */}
+        {/* Stats — solo visibles para admins y dirigentes */}
+        {(esSuperAdmin || esAdmin || esDirigente) && (
         <div className="mt-8 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
             <Trophy className="w-4 h-4 mr-2 text-yellow-500" />
@@ -251,8 +253,10 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Quick Actions — visibles solo si el usuario tiene acceso al módulo */}
+        {/* Quick Actions — solo para admins y dirigentes */}
+        {(esSuperAdmin || esAdmin || esDirigente) && (
         <div className="mt-6 space-y-2">
           <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
             Acciones Rápidas
@@ -274,6 +278,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </button>
           )}
         </div>
+        )}
       </nav>
     </div>
   );
