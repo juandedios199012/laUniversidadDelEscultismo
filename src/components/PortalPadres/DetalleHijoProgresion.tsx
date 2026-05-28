@@ -23,16 +23,22 @@ const DetalleHijoProgresion: React.FC<Props> = ({ hijo }) => {
     let cancelled = false;
     setLoading(true);
 
-    ProgresionService.obtenerProgresoScout(hijo.scout_id)
-      .then((detalle) => {
+    Promise.all([
+      ProgresionService.obtenerProgresoScout(hijo.scout_id),
+      ProgresionService.obtenerResumenProgresion(),
+    ])
+      .then(([detalle, resumen]) => {
         if (cancelled) return;
+        const resumenScout = resumen.find((r) => r.scout_id === hijo.scout_id);
+        const patrulla = resumenScout?.patrulla_nombre ?? '';
+
         if (detalle) {
           const v4: V4Scout = {
             id: hijo.scout_id,
             nombre: hijo.nombre_completo,
             codigo: hijo.codigo_asociado ?? '',
             rama: hijo.rama_actual,
-            patrulla: '',
+            patrulla,
             etapaCodigo: detalle.etapa_actual_codigo,
             etapaNombre: detalle.etapa_actual_nombre,
             progreso: detalle.progreso_general,
@@ -47,7 +53,7 @@ const DetalleHijoProgresion: React.FC<Props> = ({ hijo }) => {
             nombre: hijo.nombre_completo,
             codigo: hijo.codigo_asociado ?? '',
             rama: hijo.rama_actual,
-            patrulla: '',
+            patrulla,
             etapaCodigo: '',
             etapaNombre: 'Sin etapa',
             progreso: 0,

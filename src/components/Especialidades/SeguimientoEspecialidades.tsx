@@ -844,9 +844,33 @@ function ProgresoCard({
                   </div>
                 </div>
                 {progreso.fecha_fin && (
-                  <div>
+                  <div className="group/fecha-fin">
                     <span className="text-gray-500">Completada:</span>
-                    <p className="font-medium text-green-600">{progreso.fecha_fin}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-green-600">{progreso.fecha_fin}</p>
+                      <button
+                        onClick={iniciarEdicionFechas}
+                        className="opacity-0 group-hover/fecha-fin:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+                        title="Editar fecha de completado"
+                      >
+                        <Pencil className="w-3 h-3 text-gray-400 hover:text-blue-500" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!progreso.fecha_fin && (
+                  <div className="group/fecha-fin">
+                    <span className="text-gray-500">Completada:</span>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-400">—</p>
+                      <button
+                        onClick={iniciarEdicionFechas}
+                        className="opacity-0 group-hover/fecha-fin:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+                        title="Agregar fecha de completado"
+                      >
+                        <Pencil className="w-3 h-3 text-gray-400 hover:text-blue-500" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </>

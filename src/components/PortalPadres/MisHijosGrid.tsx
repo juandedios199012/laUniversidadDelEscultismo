@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
 import { User, Calendar, Hash, Shield, ChevronRight } from 'lucide-react';
 
@@ -29,6 +29,29 @@ function ramaColor(rama: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ChildAvatar — shows photo or gradient fallback on error
+// ─────────────────────────────────────────────────────────────
+
+function ChildAvatar({ fotoUrl, nombre }: { fotoUrl: string | null; nombre: string }) {
+  const [imgError, setImgError] = useState(false);
+  if (!fotoUrl || imgError) {
+    return (
+      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow">
+        <User className="w-8 h-8 text-white" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={fotoUrl}
+      alt={nombre}
+      className="w-16 h-16 rounded-full object-cover shadow"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Props
 // ─────────────────────────────────────────────────────────────
 
@@ -53,17 +76,7 @@ const MisHijosGrid: React.FC<MisHijosGridProps> = ({ hijos, onSeleccionar }) => 
         >
           {/* Foto / Avatar */}
           <div className="flex items-center gap-4 mb-4">
-            {hijo.foto_url ? (
-              <img
-                src={hijo.foto_url}
-                alt={hijo.nombre_completo}
-                className="w-16 h-16 rounded-full object-cover shadow"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow">
-                <User className="w-8 h-8 text-white" />
-              </div>
-            )}
+            <ChildAvatar fotoUrl={hijo.foto_url} nombre={hijo.nombre_completo} />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-gray-800 truncate">{hijo.nombre_completo}</h3>
               <p className="text-xs text-gray-500 capitalize">{hijo.parentesco}</p>

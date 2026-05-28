@@ -9,6 +9,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  Pencil,
   Search,
   Star,
   Trophy,
@@ -27,6 +28,8 @@ import { supabase } from '../../../lib/supabase';
 import { ProgressRing } from '../../ProgresionV2/ui/ProgressRing';
 import { CardSkeleton } from '../V4Components';
 import { STAGE_COLORS, AREA_COLORS, AREA_ICONS, type V4Scout } from '../useProgresionV4Data';
+import { useAbility } from '../../../hooks/useAbility';
+import EditarPerfilHijoDialog from '../../PortalPadres/EditarPerfilHijoDialog';
 import type { EspecialidadesScoutResponse, ProgresoEspecialidad } from '../../../types/especialidades';
 
 type SubTab = 'resumen' | 'logros' | 'eventos';
@@ -58,11 +61,15 @@ function hexToRgb(hex: string): [number, number, number] {
 interface V4PortalPadresTabProps {
   loading: boolean;
   scouts: V4Scout[];
+  /** Callback opcional para recargar datos del hijo después de editar */
+  onActualizado?: () => void;
 }
 
-const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }) => {
+const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts, onActualizado }) => {
+  const { can } = useAbility();
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedScoutId, setSelectedScoutId] = useState<string>('');
   const [subTab, setSubTab] = useState<SubTab>('resumen');
   const [detalle, setDetalle] = useState<ProgresoCompletoScout | null>(null);
@@ -497,6 +504,7 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
   };
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -515,8 +523,8 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
         </button>
       </div>
 
-      {/* Scout selector — search input */}
-      <div className="relative z-10" ref={dropdownRef}>
+      {/* Scout selector — search input (only when multiple scouts) */}
+      {scouts.length > 1 && <div className="relative z-10" ref={dropdownRef}>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 shrink-0">
             Seleccionar Scout:
@@ -593,7 +601,7 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
             </div>
           </>
         )}
-      </div>
+      </div>}
 
       {loading ? (
         <div className="space-y-4">
@@ -643,6 +651,20 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                   </div>
                 ))}
               </div>
+
+              {/* Botón editar — visible solo si el padre tiene el permiso */}
+              {can('portal_padres:editar:perfil_hijo') && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setEditDialogOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-blue-200 text-blue-600 text-sm font-medium hover:bg-blue-50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Editar datos de contacto
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1309,6 +1331,18 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
         );
       })()}
     </div>
+
+    {/* Diálogo de edición de datos de contacto del hijo */}
+    {scout && (
+      <EditarPerfilHijoDialog
+        scoutId={scout.id}
+        scoutNombre={scout.nombre}
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onGuardado={onActualizado}
+      />
+    )}
+    </>
   );
 };
 
