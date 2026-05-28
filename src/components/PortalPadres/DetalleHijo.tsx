@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
-import { ArrowLeft, User, Calendar, Hash, Shield, Users } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Hash, Shield, Users, Info, TrendingUp } from 'lucide-react';
+import DetalleHijoProgresion from './DetalleHijoProgresion';
+
+type TabDetalle = 'basica' | 'progresion';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -48,6 +51,8 @@ interface DetalleHijoProps {
 // ─────────────────────────────────────────────────────────────
 
 const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
+  const [tab, setTab] = useState<TabDetalle>('basica');
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Botón volver */}
@@ -62,8 +67,41 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
         </button>
       )}
 
-      {/* Tarjeta principal */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Tabs de navegación */}
+      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setTab('basica')}
+          className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
+            tab === 'basica'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Info className="w-4 h-4" />
+          Información Básica
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('progresion')}
+          className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
+            tab === 'progresion'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Progresión
+        </button>
+      </div>
+
+      {/* Contenido del tab Progresión */}
+      {tab === 'progresion' && (
+        <DetalleHijoProgresion hijo={hijo} />
+      )}
+
+      {/* Tarjeta principal (tab Básica) */}
+      {tab === 'basica' && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Header con gradiente */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-8 text-white">
           <div className="flex items-center gap-6">
@@ -146,7 +184,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
             al dirigente de su rama.
           </p>
         </div>
-      </div>
+      </div>}
     </div>
   );
 };
