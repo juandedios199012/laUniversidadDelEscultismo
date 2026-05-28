@@ -3,8 +3,12 @@ import {
   Award,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Download,
+  ExternalLink,
+  FileText,
   Search,
   Star,
   Trophy,
@@ -70,6 +74,8 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
   const [loadingLogros, setLoadingLogros] = useState(false);
   const [loadingEventos, setLoadingEventos] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [modalEsp, setModalEsp] = useState<ProgresoEspecialidad | null>(null);
+  const [carouselIdx, setCarouselIdx] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const scout = selectedScoutId
@@ -816,44 +822,109 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                     {especialidades.especialidades
                       .filter((e) => e.fase_desafio === 'completada')
                       .map((e) => {
-                        // Primera evidencia de tipo imagen (si existe)
-                        const fotoEvidencia = e.evidencias?.find(
+                        const imgEvs = (e.evidencias ?? []).filter(
                           (ev) => ev.tipo === 'imagen' && ev.url,
                         );
-                        const fotoUrl = fotoEvidencia?.url ?? null;
+                        const totalImgs = imgEvs.length;
+                        const totalEvs = e.evidencias?.length ?? 0;
 
-                        return (
-                          <div
-                            key={e.progreso_id}
-                            className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm
-                                       hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                          >
-                            {/* ── Imagen / Placeholder ── */}
-                            {/* Mobile: cuadrado (1:1) · sm+: 4:3 */}
-                            <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden">
-                              {fotoUrl ? (
+                        // ── Collage renderer ──────────────────────────────
+                        const renderCollage = () => {
+                          if (totalImgs === 0) {
+                            return (
+                              <div
+                                className="w-full h-full flex flex-col items-center justify-center gap-2"
+                                style={{
+                                  background: `linear-gradient(135deg, ${e.area.color}18 0%, ${e.area.color}38 100%)`,
+                                }}
+                              >
+                                <span className="text-5xl select-none">{e.area.icono ?? '⭐'}</span>
+                                <span className="text-xs font-semibold text-gray-400 px-3 text-center">
+                                  Sin foto de evidencia
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (totalImgs === 1) {
+                            return (
+                              <img
+                                src={imgEvs[0].url}
+                                alt={e.especialidad.nombre}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                            );
+                          }
+                          if (totalImgs === 2) {
+                            return (
+                              <div className="flex h-full w-full gap-0.5">
+                                {imgEvs.slice(0, 2).map((img, i) => (
+                                  <div key={i} className="w-1/2 overflow-hidden">
+                                    <img
+                                      src={img.url}
+                                      alt={e.especialidad.nombre}
+                                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                      loading="lazy"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }
+                          // 3+ images: left half full, right half split top/bottom
+                          const remaining = totalImgs - 3;
+                          return (
+                            <div className="flex h-full w-full gap-0.5">
+                              <div className="w-1/2 overflow-hidden">
                                 <img
-                                  src={fotoUrl}
+                                  src={imgEvs[0].url}
                                   alt={e.especialidad.nombre}
                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                   loading="lazy"
                                 />
-                              ) : (
-                                /* Placeholder con gradiente y emoji del área */
-                                <div
-                                  className="w-full h-full flex flex-col items-center justify-center gap-2"
-                                  style={{
-                                    background: `linear-gradient(135deg, ${e.area.color}18 0%, ${e.area.color}38 100%)`,
-                                  }}
-                                >
-                                  <span className="text-5xl select-none">{e.area.icono ?? '⭐'}</span>
-                                  <span className="text-xs font-semibold text-gray-400 px-3 text-center line-clamp-1">
-                                    Sin foto de evidencia
-                                  </span>
+                              </div>
+                              <div className="w-1/2 flex flex-col gap-0.5">
+                                <div className="h-1/2 overflow-hidden">
+                                  <img
+                                    src={imgEvs[1].url}
+                                    alt={e.especialidad.nombre}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    loading="lazy"
+                                  />
                                 </div>
-                              )}
+                                <div className="h-1/2 relative overflow-hidden">
+                                  <img
+                                    src={imgEvs[2].url}
+                                    alt={e.especialidad.nombre}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    loading="lazy"
+                                  />
+                                  {remaining > 0 && (
+                                    <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                                      <span className="text-white font-black text-xl">+{remaining}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        };
 
-                              {/* Badge área — esquina superior izquierda */}
+                        return (
+                          <div
+                            key={e.progreso_id}
+                            onClick={() => {
+                              setModalEsp(e);
+                              setCarouselIdx(0);
+                            }}
+                            className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm
+                                       hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                          >
+                            {/* ── Collage ── */}
+                            <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden">
+                              {renderCollage()}
+
+                              {/* Badge área */}
                               <span
                                 className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white
                                            backdrop-blur-sm shadow-sm"
@@ -862,14 +933,22 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                                 {e.area.nombre}
                               </span>
 
-                              {/* Award icon — esquina superior derecha */}
+                              {/* Award icon */}
                               <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center
                                                rounded-full bg-white/90 backdrop-blur-sm shadow-sm">
                                 <Award className="h-3.5 w-3.5 text-yellow-500" />
                               </span>
+
+                              {/* Evidencias badge (si hay varias) */}
+                              {totalEvs > 1 && (
+                                <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full
+                                                 bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white">
+                                  {totalEvs} ev.
+                                </span>
+                              )}
                             </div>
 
-                            {/* ── Contenido de texto ── */}
+                            {/* ── Texto ── */}
                             <div className="p-4">
                               <p className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug">
                                 {e.especialidad.nombre}
@@ -894,12 +973,9 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
                                   })}
                                 </p>
                               )}
-                              {/* Contador de evidencias */}
-                              {(e.evidencias?.length ?? 0) > 0 && (
-                                <p className="mt-1 text-[10px] text-gray-400">
-                                  {e.evidencias.length} evidencia{e.evidencias.length !== 1 ? 's' : ''}
-                                </p>
-                              )}
+                              <p className="mt-1.5 text-[10px] text-blue-500 font-semibold">
+                                Toca para ver detalles →
+                              </p>
                             </div>
                           </div>
                         );
@@ -1000,6 +1076,238 @@ const V4PortalPadresTab: React.FC<V4PortalPadresTabProps> = ({ loading, scouts }
           )}
         </>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL ESPECIALIDAD — Drawer en mobile · Dialog 2 columnas en desktop
+          ══════════════════════════════════════════════════════════════════════ */}
+      {modalEsp && (() => {
+        const imgEvs = (modalEsp.evidencias ?? []).filter((ev) => ev.tipo === 'imagen' && ev.url);
+        const docEvs = (modalEsp.evidencias ?? []).filter((ev) => ev.tipo === 'documento' && ev.url);
+        const videoEvs = (modalEsp.evidencias ?? []).filter((ev) => ev.tipo === 'video' && ev.url);
+        const safeIdx = Math.min(carouselIdx, imgEvs.length - 1);
+
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              onClick={() => setModalEsp(null)}
+            />
+
+            {/* Container: bottom drawer en mobile, centrado en sm+ */}
+            <div className="fixed inset-x-0 bottom-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-6">
+              <div
+                className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-4xl
+                           max-h-[92vh] sm:max-h-[85vh] overflow-hidden flex flex-col sm:flex-row shadow-2xl"
+              >
+                {/* Botón cerrar */}
+                <button
+                  onClick={() => setModalEsp(null)}
+                  className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center
+                             rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                {/* Drag handle (solo mobile) */}
+                <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                  <div className="h-1 w-10 rounded-full bg-gray-300" />
+                </div>
+
+                {/* ── IZQUIERDA: Carrusel de imágenes ── */}
+                <div className="sm:w-[58%] sm:flex-shrink-0 flex flex-col">
+                  <div
+                    className="relative bg-gray-900 overflow-hidden"
+                    style={{ aspectRatio: '4/3' }}
+                  >
+                    {imgEvs.length === 0 ? (
+                      <div
+                        className="w-full h-full flex flex-col items-center justify-center gap-3"
+                        style={{
+                          background: `linear-gradient(135deg, ${modalEsp.area.color}18 0%, ${modalEsp.area.color}40 100%)`,
+                        }}
+                      >
+                        <span className="text-7xl">{modalEsp.area.icono ?? '⭐'}</span>
+                        <span className="text-sm font-semibold text-gray-500">Sin fotos de evidencia</span>
+                      </div>
+                    ) : (
+                      <>
+                        <img
+                          src={imgEvs[safeIdx].url}
+                          alt={imgEvs[safeIdx].nombre_archivo ?? modalEsp.especialidad.nombre}
+                          className="w-full h-full object-cover"
+                        />
+
+                        {/* Flechas (solo si hay más de 1) */}
+                        {imgEvs.length > 1 && (
+                          <>
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); setCarouselIdx((i) => (i - 1 + imgEvs.length) % imgEvs.length); }}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center
+                                         rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                            >
+                              <ChevronLeft className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); setCarouselIdx((i) => (i + 1) % imgEvs.length); }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center
+                                         rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                            >
+                              <ChevronRight className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
+
+                        {/* Contador X/N */}
+                        {imgEvs.length > 1 && (
+                          <span className="absolute top-3 left-3 rounded-full bg-black/40 px-2.5 py-0.5 text-xs text-white font-bold">
+                            {safeIdx + 1} / {imgEvs.length}
+                          </span>
+                        )}
+
+                        {/* Dots */}
+                        {imgEvs.length > 1 && imgEvs.length <= 8 && (
+                          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                            {imgEvs.map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={(ev) => { ev.stopPropagation(); setCarouselIdx(i); }}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  i === safeIdx ? 'bg-white w-5' : 'bg-white/50 w-1.5'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Descripción de la foto */}
+                        {imgEvs[safeIdx].descripcion && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3">
+                            <p className="text-xs text-white/90">{imgEvs[safeIdx].descripcion}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── DERECHA: Info + documentos ── */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {/* Badge área */}
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
+                    style={{ background: modalEsp.area.color }}
+                  >
+                    <span>{modalEsp.area.icono}</span>
+                    {modalEsp.area.nombre}
+                  </span>
+
+                  {/* Título */}
+                  <h3 className="text-lg font-black text-gray-900 leading-tight">
+                    {modalEsp.especialidad.nombre}
+                  </h3>
+
+                  {/* Descripción */}
+                  {modalEsp.especialidad.descripcion && (
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {modalEsp.especialidad.descripcion}
+                    </p>
+                  )}
+
+                  {/* Meta info */}
+                  <div className="space-y-2">
+                    {modalEsp.asesor_nombre && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Users className="h-4 w-4 text-gray-400 shrink-0" />
+                        <span>Asesor: <strong className="text-gray-700">{modalEsp.asesor_nombre}</strong></span>
+                      </div>
+                    )}
+                    {modalEsp.fecha_fin && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        <span className="font-semibold text-green-700">
+                          Completada el{' '}
+                          {new Date(modalEsp.fecha_fin).toLocaleDateString('es-PE', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notas del asesor */}
+                  {modalEsp.notas && (
+                    <div className="rounded-xl bg-amber-50 p-3 border border-amber-100">
+                      <p className="text-xs font-semibold text-amber-600 mb-1">Notas del asesor</p>
+                      <p className="text-sm text-gray-700">{modalEsp.notas}</p>
+                    </div>
+                  )}
+
+                  {/* Documentos y videos */}
+                  {(docEvs.length > 0 || videoEvs.length > 0) && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+                        Documentos y recursos
+                      </p>
+                      <div className="space-y-2">
+                        {docEvs.map((doc) => (
+                          <a
+                            key={doc.id}
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(ev) => ev.stopPropagation()}
+                            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5
+                                       hover:bg-blue-50 hover:border-blue-200 transition-colors group"
+                          >
+                            <FileText className="h-5 w-5 text-red-400 shrink-0" />
+                            <span className="flex-1 text-xs text-gray-700 truncate font-medium">
+                              {doc.nombre_archivo ?? 'Documento'}
+                            </span>
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 shrink-0" />
+                          </a>
+                        ))}
+                        {videoEvs.map((vid) => (
+                          <a
+                            key={vid.id}
+                            href={vid.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(ev) => ev.stopPropagation()}
+                            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5
+                                       hover:bg-purple-50 hover:border-purple-200 transition-colors group"
+                          >
+                            <span className="text-lg shrink-0">🎬</span>
+                            <span className="flex-1 text-xs text-gray-700 truncate font-medium">
+                              {vid.nombre_archivo ?? 'Video'}
+                            </span>
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-400 group-hover:text-purple-500 shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resumen de evidencias */}
+                  {(modalEsp.evidencias?.length ?? 0) > 0 && (
+                    <p className="text-[11px] text-gray-400 pt-1 border-t border-gray-100">
+                      {[
+                        imgEvs.length > 0 && `${imgEvs.length} foto${imgEvs.length !== 1 ? 's' : ''}`,
+                        docEvs.length > 0 && `${docEvs.length} documento${docEvs.length !== 1 ? 's' : ''}`,
+                        videoEvs.length > 0 && `${videoEvs.length} video${videoEvs.length !== 1 ? 's' : ''}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };

@@ -54,7 +54,7 @@ const PortalPadresPage: React.FC = () => {
       )}
 
       {/* Contenido */}
-      <div className={puedeConsultar ? 'px-6 py-8 max-w-7xl mx-auto' : ''}>
+      <div className={puedeConsultar ? 'px-6 py-8 max-w-7xl mx-auto' : 'px-4 py-4'}>
         {activeTab === 'mi-familia' && <PortalPadresDashboard />}
 
         {activeTab === 'consultar-scout' && puedeConsultar && (
