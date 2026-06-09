@@ -136,10 +136,8 @@ export function ScoutList({
     }
   };
 
-  const ramas = useMemo(() => {
-    const unique = [...new Set(scouts.map((s) => s.rama_actual).filter(Boolean))].sort();
-    return unique;
-  }, [scouts]);
+  const RAMAS = ['Manada', 'Tropa', 'Comunidad', 'Clan'];
+
 
   const filteredScouts = useMemo(() => {
     return scouts.filter((scout) => {
@@ -188,25 +186,27 @@ export function ScoutList({
             </Button>
           )}
         </div>
-        <div className="relative mt-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, código o DNI..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div className="mt-2 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, código o DNI..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={ramaFiltro}
+            onChange={(e) => setRamaFiltro(e.target.value)}
+            className="w-32 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <option value="">Todas</option>
+            {RAMAS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
         </div>
-        <select
-          value={ramaFiltro}
-          onChange={(e) => setRamaFiltro(e.target.value)}
-          className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        >
-          <option value="">Todas las ramas</option>
-          {ramas.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
       </CardHeader>
       
       <CardContent className="flex-1 p-0">
