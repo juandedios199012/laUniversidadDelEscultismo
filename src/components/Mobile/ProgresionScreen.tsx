@@ -11,7 +11,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
-  BarChart3,
   CheckCircle2,
   Circle,
   LayoutDashboard,
@@ -37,7 +36,7 @@ const ETAPAS_META: Record<string, { edad: number; nombre: string }> = {
 const ETAPAS_ORDEN = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'] as const;
 const AREA_ORDER   = ['CORPORALIDAD', 'CREATIVIDAD', 'CARACTER', 'AFECTIVIDAD', 'SOCIABILIDAD', 'ESPIRITUALIDAD'];
 
-type TabId = 'resumen' | 'scouts' | 'analisis';
+type TabId = 'resumen' | 'scouts';
 
 // ─── Componentes pequeños ────────────────────────────────────────────────────
 const Skeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
@@ -612,114 +611,14 @@ const ScoutsTab: React.FC<{
   );
 };
 
-// ─── Tab: Análisis ────────────────────────────────────────────────────────────
-const AnalisisTab: React.FC<{
-  loading: boolean;
-  stageBars: V4StageBar[];
-  globalAreas: V4AreaData[];
-  totalScouts: number;
-  promedioGlobal: number;
-}> = ({ loading, stageBars, globalAreas, totalScouts, promedioGlobal }) => {
-  const totalPorEtapa = stageBars.reduce((a, b) => a + b.totalScouts, 0) || 1;
-  return (
-    <div className="p-4 space-y-5">
-      {!loading && (
-        <div className="grid grid-cols-2 gap-3">
-          <MobileKpiCard icon={<Users className="h-5 w-5" />}      label="Total scouts"    value={totalScouts}           color="#4f8ddb" />
-          <MobileKpiCard icon={<TrendingUp className="h-5 w-5" />} label="Promedio global" value={`${promedioGlobal}%`}  color="#27c664" />
-        </div>
-      )}
-
-      {/* Distribución por etapa */}
-      <section>
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-          Distribución por Etapa
-        </h3>
-        {loading ? (
-          <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
-        ) : (
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
-            {ETAPAS_ORDEN.map(codigo => {
-              const bar    = stageBars.find(b => b.etapaCodigo === codigo);
-              const meta   = ETAPAS_META[codigo];
-              const color  = STAGE_COLORS[codigo] ?? '#888';
-              const icon   = STAGE_ICONS[codigo]  ?? '●';
-              const count  = bar?.totalScouts ?? 0;
-              const pct    = Math.round((count / totalPorEtapa) * 100);
-              return (
-                <div key={codigo} className="flex items-center gap-3">
-                  <span className="text-xl w-8 shrink-0 text-center">{icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                      <span className="text-gray-700">{meta.nombre}</span>
-                      <span style={{ color }}>{count} scouts ({pct}%)</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
-                      <div className="h-full rounded-full transition-all duration-700"
-                           style={{ width: `${pct}%`, background: color }} />
-                    </div>
-                    {bar && bar.promedioProgreso > 0 && (
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        Promedio etapa: {bar.promedioProgreso}%
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Áreas */}
-      <section>
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-          Progreso por Área de Crecimiento
-        </h3>
-        {loading ? (
-          <div className="space-y-2">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
-        ) : (
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
-            {AREA_ORDER.map(codigo => {
-              const area  = globalAreas.find(a => a.codigo === codigo);
-              if (!area) return null;
-              const color = AREA_COLORS[codigo] ?? '#888';
-              const icon  = AREA_ICONS[codigo]  ?? '●';
-              return (
-                <div key={codigo} className="flex items-center gap-3">
-                  <span className="text-xl w-8 shrink-0 text-center">{icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                      <span className="text-gray-700">{area.nombre}</span>
-                      <span style={{ color }}>{area.porcentaje}%</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
-                      <div className="h-full rounded-full transition-all duration-700"
-                           style={{ width: `${area.porcentaje}%`, background: color }} />
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
-                      {area.completados}/{area.total} objetivos
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-};
-
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 export default function ProgresionScreen() {
   const [activeTab, setActiveTab] = useState<TabId>('resumen');
   const data = useProgresionV4Data();
 
   const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-    { id: 'resumen',  label: 'Resumen',  icon: TrendingUp },
-    { id: 'scouts',   label: 'Scouts',   icon: Users      },
-    { id: 'analisis', label: 'Análisis', icon: BarChart3  },
+    { id: 'resumen', label: 'Resumen', icon: TrendingUp },
+    { id: 'scouts',  label: 'Scouts',  icon: Users      },
   ];
 
   return (
@@ -813,15 +712,7 @@ export default function ProgresionScreen() {
             onReload={data.reload}
           />
         )}
-        {activeTab === 'analisis' && (
-          <AnalisisTab
-            loading={data.loading}
-            stageBars={data.stageBars}
-            globalAreas={data.globalAreas}
-            totalScouts={data.totalScouts}
-            promedioGlobal={data.promedioGlobal}
-          />
-        )}
+
       </div>
     </div>
   );
