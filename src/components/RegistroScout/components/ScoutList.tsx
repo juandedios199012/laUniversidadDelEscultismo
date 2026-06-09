@@ -65,6 +65,7 @@ export function ScoutList({
 }: ScoutListProps) {
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
+  const [ramaFiltro, setRamaFiltro] = useState("");
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [generatingWord, setGeneratingWord] = useState<string | null>(null);
 
@@ -135,17 +136,24 @@ export function ScoutList({
     }
   };
 
+  const ramas = useMemo(() => {
+    const unique = [...new Set(scouts.map((s) => s.rama_actual).filter(Boolean))].sort();
+    return unique;
+  }, [scouts]);
+
   const filteredScouts = useMemo(() => {
-    if (!searchTerm.trim()) return scouts;
-    const term = searchTerm.toLowerCase();
-    return scouts.filter(
-      (scout) =>
+    return scouts.filter((scout) => {
+      const term = searchTerm.toLowerCase();
+      const matchSearch =
+        !searchTerm.trim() ||
         scout.nombres?.toLowerCase().includes(term) ||
         scout.apellidos?.toLowerCase().includes(term) ||
         scout.codigo_asociado?.toLowerCase().includes(term) ||
-        scout.numero_documento?.includes(term)
-    );
-  }, [scouts, searchTerm]);
+        scout.numero_documento?.includes(term);
+      const matchRama = !ramaFiltro || scout.rama_actual === ramaFiltro;
+      return matchSearch && matchRama;
+    });
+  }, [scouts, searchTerm, ramaFiltro]);
 
   if (loading) {
     return (
@@ -168,7 +176,7 @@ export function ScoutList({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Scouts ({filteredScouts.length})
+            Scouts ({filteredScouts.length}{filteredScouts.length !== scouts.length ? `/${scouts.length}` : ''})
           </CardTitle>
           {puedeCrear('scouts') && (
             <Button 
@@ -189,20 +197,30 @@ export function ScoutList({
             className="pl-9"
           />
         </div>
+        <select
+          value={ramaFiltro}
+          onChange={(e) => setRamaFiltro(e.target.value)}
+          className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <option value="">Todas las ramas</option>
+          {ramas.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
       </CardHeader>
       
       <CardContent className="flex-1 p-0">
         {filteredScouts.length === 0 ? (
           <EmptyState
             icon={Users}
-            title={searchTerm ? "Sin resultados" : "No hay scouts registrados"}
+            title={searchTerm || ramaFiltro ? "Sin resultados" : "No hay scouts registrados"}
             description={
-              searchTerm
-                ? `No se encontraron scouts con "${searchTerm}"`
+              searchTerm || ramaFiltro
+                ? `No se encontraron scouts${ramaFiltro ? ` en ${ramaFiltro}` : ''}${searchTerm ? ` con "${searchTerm}"` : ''}`
                 : "Comienza registrando al primer scout del grupo"
             }
             action={
-              !searchTerm && puedeCrear('scouts')
+              !searchTerm && !ramaFiltro && puedeCrear('scouts')
                 ? { label: "Registrar Scout", onClick: onNewScout }
                 : undefined
             }
