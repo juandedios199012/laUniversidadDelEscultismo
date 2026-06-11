@@ -39,7 +39,7 @@ const Inventario: React.FC = () => {
   // Estados para el formulario de agregar item
   const [formData, setFormData] = useState({
     nombre: '',
-    categoria: 'material_scout' as 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo',
+    categoria: 'CAMPING' as any,
     descripcion: '',
     cantidad: 1,
     cantidad_minima: 1,

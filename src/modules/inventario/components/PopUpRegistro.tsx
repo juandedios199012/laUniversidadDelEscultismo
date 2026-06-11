@@ -4,7 +4,8 @@ import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 
-type Categoria = 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo';
+// Valores exactos del ENUM categoria_inventario_enum en la DB
+type Categoria = 'CAMPING' | 'CEREMONIAL' | 'DEPORTE' | 'SEGURIDAD' | 'COCINA' | 'EDUCATIVO' | 'OTRO';
 
 interface FormData {
   nombre: string;
@@ -24,12 +25,13 @@ interface PopUpRegistroProps {
 }
 
 const CATEGORIAS: { value: Categoria; label: string; emoji: string }[] = [
-  { value: 'material_scout', label: 'Material Scout', emoji: '🏕️' },
-  { value: 'camping', label: 'Camping', emoji: '⛺' },
-  { value: 'ceremonial', label: 'Ceremonial', emoji: '🎖️' },
-  { value: 'deportivo', label: 'Deportivo', emoji: '⚽' },
-  { value: 'primeros_auxilios', label: 'Primeros Auxilios', emoji: '🏥' },
-  { value: 'administrativo', label: 'Administrativo', emoji: '📋' },
+  { value: 'CAMPING',    label: 'Camping / Material Scout', emoji: '⛺' },
+  { value: 'CEREMONIAL', label: 'Ceremonial',               emoji: '🎖️' },
+  { value: 'DEPORTE',    label: 'Deportivo',                emoji: '⚽' },
+  { value: 'SEGURIDAD',  label: 'Primeros Auxilios',        emoji: '🏥' },
+  { value: 'COCINA',     label: 'Cocina / Alimentación',    emoji: '🍳' },
+  { value: 'EDUCATIVO',  label: 'Material Educativo',       emoji: '📚' },
+  { value: 'OTRO',       label: 'Otro / Administrativo',    emoji: '📋' },
 ];
 
 const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
@@ -51,7 +53,7 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
     descripcion: '',
-    categoria: 'camping',
+    categoria: 'CAMPING',
     estadoConservacion: 10,
     situacionObservaciones: '',
     ubicacionInicial: '',
