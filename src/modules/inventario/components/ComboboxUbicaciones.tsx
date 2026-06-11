@@ -7,8 +7,9 @@ interface ComboboxUbicacionesProps {
   loading: boolean;
   value: string;
   onChange: (nombre: string) => void;
-  onAgregarNueva: (nombre: string) => Promise<Ubicacion | null>;
+  onAgregarNueva?: (nombre: string) => Promise<Ubicacion | null>; // opcional
   required?: boolean;
+  placeholder?: string;
 }
 
 export function ComboboxUbicaciones({
@@ -18,6 +19,7 @@ export function ComboboxUbicaciones({
   onChange,
   onAgregarNueva,
   required = false,
+  placeholder,
 }: ComboboxUbicacionesProps) {
   const id = useId();
   const [query, setQuery] = useState('');
@@ -58,8 +60,8 @@ export function ComboboxUbicaciones({
     u => u.nombre.toLowerCase() === queryTrimmed.toLowerCase()
   );
 
-  // Muestra la opción "Añadir X" si el texto no está vacío y no existe ya
-  const mostrarOpcionAgregar = queryTrimmed.length > 0 && !yaExiste;
+  // Muestra la opción "Añadir X" solo si hay handler y el texto no existe ya
+  const mostrarOpcionAgregar = !!onAgregarNueva && queryTrimmed.length > 0 && !yaExiste;
 
   const seleccionar = (nombre: string) => {
     onChange(nombre);
@@ -68,7 +70,7 @@ export function ComboboxUbicaciones({
   };
 
   const handleAgregarNueva = async () => {
-    if (!queryTrimmed || creando) return;
+    if (!queryTrimmed || creando || !onAgregarNueva) return;
     setCreando(true);
     try {
       const nueva = await onAgregarNueva(queryTrimmed);
@@ -112,7 +114,9 @@ export function ComboboxUbicaciones({
           autoComplete="off"
           required={required}
           disabled={loading}
-          placeholder={loading ? 'Cargando almacenes...' : 'Buscar o escribir almacén...'}
+          placeholder={loading
+            ? 'Cargando...'
+            : (placeholder ?? 'Buscar o escribir...')}
           value={open ? query : value}
           onFocus={() => {
             setOpen(true);

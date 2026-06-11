@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Package, AlertTriangle, Warehouse } from 'lucide-react';
-import { useUbicaciones } from '../hooks/useUbicaciones';
+import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 
@@ -46,7 +46,7 @@ const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
 };
 
 export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
-  const { ubicaciones, loading: loadingUbicaciones, agregarUbicacion } = useUbicaciones();
+  const { personas, loading: loadingUbicaciones } = usePersonasRegistradas();
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -316,16 +316,16 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
 
             <div className="mb-3">
               <label className="block text-sm font-medium mb-1">
-                Almacenado en <span className="text-red-500">*</span>
+                Custodiado por <span className="text-red-500">*</span>
               </label>
               <ComboboxUbicaciones
-                ubicaciones={ubicaciones}
+                ubicaciones={personas}
                 loading={loadingUbicaciones}
                 value={formData.ubicacionInicial}
                 onChange={(nombre) =>
                   setFormData(prev => ({ ...prev, ubicacionInicial: nombre }))
                 }
-                onAgregarNueva={agregarUbicacion}
+                placeholder="Buscar scout, dirigente o comité..."
                 required
               />
               {/* Campo oculto para la validación HTML nativa del formulario */}
