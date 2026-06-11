@@ -110,13 +110,12 @@ export class InventarioService {
           nombre: item.nombre,
           categoria: item.categoria,
           descripcion: item.descripcion || null,
-          // DB uses cantidad_total + cantidad_disponible, not 'cantidad'
-          cantidad_total: item.cantidad,
+          // DB has only cantidad_disponible (no cantidad_total)
           cantidad_disponible: item.cantidad,
           ubicacion: item.ubicacion || null,
           valor_unitario: item.costo || 0,
           observaciones: item.observaciones || item.situacion_observaciones || null,
-          estado: 'DISPONIBLE',
+          estado_item: 'DISPONIBLE',
         })
         .select('id')
         .single();
