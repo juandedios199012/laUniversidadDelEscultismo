@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, Package, AlertTriangle, Warehouse } from 'lucide-react';
+import { X, Package, AlertTriangle, Warehouse, Edit2 } from 'lucide-react';
 import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
+import type { InventarioItem } from '../../../lib/supabase';
 
 // Valores exactos del ENUM categoria_inventario_enum en la DB
 type Categoria = 'CAMPING' | 'CEREMONIAL' | 'DEPORTE' | 'SEGURIDAD' | 'COCINA' | 'EDUCATIVO' | 'OTRO';
@@ -22,6 +23,7 @@ interface FormData {
 interface PopUpRegistroProps {
   onClose: () => void;
   onSave: () => void;
+  itemToEdit?: InventarioItem;
 }
 
 const CATEGORIAS: { value: Categoria; label: string; emoji: string }[] = [
@@ -47,19 +49,20 @@ const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
   1: { label: 'Inutilizable', color: 'text-red-600' },
 };
 
-export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
+export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProps) {
   const { personas, loading: loadingUbicaciones } = usePersonasRegistradas();
+  const modoEdicion = !!itemToEdit;
 
   const [formData, setFormData] = useState<FormData>({
-    nombre: '',
-    descripcion: '',
-    categoria: 'CAMPING',
-    estadoConservacion: 10,
-    situacionObservaciones: '',
-    ubicacionInicial: '',
-    cantidadInicial: 1,
-    fechaIngreso: new Date().toISOString().split('T')[0],
-    valorUnitario: 0,
+    nombre:                  itemToEdit?.nombre ?? '',
+    descripcion:             itemToEdit?.descripcion ?? '',
+    categoria:               (itemToEdit?.categoria as Categoria) ?? 'CAMPING',
+    estadoConservacion:      10,
+    situacionObservaciones:  itemToEdit?.observaciones ?? '',
+    ubicacionInicial:        itemToEdit?.ubicacion ?? '',
+    cantidadInicial:         (itemToEdit as any)?.cantidad_disponible ?? itemToEdit?.cantidad ?? 1,
+    fechaIngreso:            new Date().toISOString().split('T')[0],
+    valorUnitario:           (itemToEdit as any)?.valor_unitario ?? (itemToEdit as any)?.costo ?? 0,
   });
 
   const [saving, setSaving] = useState(false);
@@ -87,7 +90,7 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
       setError('El nombre del artículo es obligatorio.');
       return;
     }
-    if (!formData.ubicacionInicial) {
+    if (!modoEdicion && !formData.ubicacionInicial) {
       setError('Debes seleccionar un almacén de destino.');
       return;
     }
@@ -100,21 +103,33 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
     setError(null);
 
     try {
-      const result = await InventarioService.createItem({
-        nombre: formData.nombre.trim(),
-        descripcion: formData.descripcion.trim() || undefined,
-        categoria: formData.categoria,
-        cantidad: formData.cantidadInicial,
-        ubicacion: formData.ubicacionInicial,
-        costo: formData.valorUnitario,
-        situacion_observaciones:
-          formData.situacionObservaciones.trim() ||
-          `Estado de conservación: ${formData.estadoConservacion}/10`,
-        fecha_ingreso: formData.fechaIngreso,
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || 'Error al registrar el material');
+      if (modoEdicion && itemToEdit) {
+        // ---- MODO EDICIÓN ----
+        const result = await InventarioService.updateItem(itemToEdit.id, {
+          nombre:      formData.nombre.trim(),
+          descripcion: formData.descripcion.trim() || undefined,
+          categoria:   formData.categoria,
+          ubicacion:   formData.ubicacionInicial || itemToEdit.ubicacion,
+          observaciones:
+            formData.situacionObservaciones.trim() ||
+            `Estado de conservación: ${formData.estadoConservacion}/10`,
+        } as any);
+        if (!result.success) throw new Error(result.error || 'Error al actualizar');
+      } else {
+        // ---- MODO CREACIÓN ----
+        const result = await InventarioService.createItem({
+          nombre:       formData.nombre.trim(),
+          descripcion:  formData.descripcion.trim() || undefined,
+          categoria:    formData.categoria,
+          cantidad:     formData.cantidadInicial,
+          ubicacion:    formData.ubicacionInicial,
+          costo:        formData.valorUnitario,
+          situacion_observaciones:
+            formData.situacionObservaciones.trim() ||
+            `Estado de conservación: ${formData.estadoConservacion}/10`,
+          fecha_ingreso: formData.fechaIngreso,
+        });
+        if (!result.success) throw new Error(result.error || 'Error al registrar el material');
       }
 
       onSave();
@@ -143,10 +158,10 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
         <div className="flex items-center justify-between p-5 border-b">
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 p-2 rounded-lg">
-              <Package className="w-5 h-5 text-blue-600" />
+              {modoEdicion ? <Edit2 className="w-5 h-5 text-blue-600" /> : <Package className="w-5 h-5 text-blue-600" />}
             </div>
             <h2 id="popup-registro-title" className="text-lg font-bold text-gray-900">
-              Registrar Nuevo Material
+              {modoEdicion ? 'Editar Material' : 'Registrar Nuevo Material'}
             </h2>
           </div>
           <button
@@ -279,7 +294,8 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
             )}
           </fieldset>
 
-          {/* INVENTARIO INICIAL (KARDEX) */}
+          {/* INVENTARIO INICIAL (KARDEX) — solo en modo creación */}
+          {!modoEdicion && (
           <fieldset className="border border-gray-200 p-4 rounded-lg">
             <legend className="text-xs font-semibold px-2 text-gray-500 uppercase tracking-wide flex items-center gap-1">
               <Warehouse className="w-3 h-3" /> Balance Inicial (Kardex)
@@ -330,7 +346,6 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
                 placeholder="Buscar scout, dirigente o comité..."
                 required
               />
-              {/* Campo oculto para la validación HTML nativa del formulario */}
               <input
                 type="text"
                 required
@@ -359,6 +374,46 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
               />
             </div>
           </fieldset>
+          )}
+
+          {/* CUSTODIO Y VALOR — solo en modo edición */}
+          {modoEdicion && (
+          <fieldset className="border border-gray-200 p-4 rounded-lg">
+            <legend className="text-xs font-semibold px-2 text-gray-500 uppercase tracking-wide">
+              Ubicación y Valor
+            </legend>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">Custodiado por</label>
+                <ComboboxUbicaciones
+                  ubicaciones={personas}
+                  loading={loadingUbicaciones}
+                  value={formData.ubicacionInicial}
+                  onChange={(nombre) =>
+                    setFormData(prev => ({ ...prev, ubicacionInicial: nombre }))
+                  }
+                  placeholder="Buscar scout, dirigente o comité..."
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1" htmlFor="valorUnitario">
+                  Valor Unitario (S/.)
+                </label>
+                <input
+                  type="number"
+                  id="valorUnitario"
+                  name="valorUnitario"
+                  min="0"
+                  step="0.01"
+                  value={formData.valorUnitario}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </fieldset>
+          )}
         </div>
 
         {/* Footer */}
@@ -383,6 +438,8 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
                 </svg>
                 Guardando...
               </>
+            ) : modoEdicion ? (
+              <><Edit2 className="w-4 h-4" /> Actualizar Material</>
             ) : (
               'Guardar e Iniciar Kardex'
             )}

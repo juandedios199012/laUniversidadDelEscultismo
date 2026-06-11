@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
-import { X, ArrowRight, Loader2, MapPin, User, Calendar, MessageSquare } from 'lucide-react';
+import { X, ArrowRight, Loader2, MapPin, User, Calendar } from 'lucide-react';
 import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 import type { InventarioItem } from '../../../lib/supabase';
+
+const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
+  10: { label: 'Perfecto estado',    color: 'text-green-600' },
+  9:  { label: 'Excelente',          color: 'text-green-600' },
+  8:  { label: 'Muy bueno',          color: 'text-green-500' },
+  7:  { label: 'Bueno',              color: 'text-lime-600' },
+  6:  { label: 'Aceptable',          color: 'text-yellow-500' },
+  5:  { label: 'Regular',            color: 'text-yellow-600' },
+  4:  { label: 'Deteriorado',        color: 'text-orange-500' },
+  3:  { label: 'Mal estado',         color: 'text-orange-600' },
+  2:  { label: 'Muy deteriorado',    color: 'text-red-500' },
+  1:  { label: 'Inutilizable',       color: 'text-red-600' },
+};
 
 interface PopUpTransferenciaProps {
   item: InventarioItem;
@@ -17,9 +30,13 @@ export function PopUpTransferencia({ item, onClose, onSuccess }: PopUpTransferen
   const [destinoNombre, setDestinoNombre] = useState('');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [responsableNombre, setResponsableNombre] = useState('');
-  const [notas, setNotas] = useState('');
+  const [estadoConservacion, setEstadoConservacion] = useState(10);
+  const [situacionObservaciones, setSituacionObservaciones] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const estadoInfo = ESTADO_LABELS[estadoConservacion] || ESTADO_LABELS[5];
+  const requiereObservacion = estadoConservacion < 7;
 
   // Ubicación actual del item
   const ubicacionActual = (item as any).ubicacion ?? '—';
@@ -38,7 +55,8 @@ export function PopUpTransferencia({ item, onClose, onSuccess }: PopUpTransferen
     setError(null);
 
     try {
-      const motivo = notas.trim() || `Traslado el ${fecha}`;
+      const motivo = situacionObservaciones.trim() ||
+        `Estado: ${estadoConservacion}/10 — ${estadoInfo.label}. Traslado el ${fecha}`;
       const result = await InventarioService.transferirMaterial({
         item_id:         item.id,
         ubicacion_nueva: destinoNombre.trim(),
@@ -159,20 +177,40 @@ export function PopUpTransferencia({ item, onClose, onSuccess }: PopUpTransferen
             </div>
           </div>
 
-          {/* Notas */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <MessageSquare className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
-              Notas / Situación
-              <span className="text-gray-400 font-normal ml-1">(opcional)</span>
+          {/* Situación / Estado de conservación */}
+          <div className="border border-gray-200 p-4 rounded-lg bg-slate-50">
+            <label className="block text-sm font-medium mb-2">
+              Situación del material:{' '}
+              <span className={`font-bold ${estadoInfo.color}`}>
+                {estadoConservacion}/10 — {estadoInfo.label}
+              </span>
             </label>
-            <textarea
-              value={notas}
-              onChange={e => setNotas(e.target.value)}
-              rows={2}
-              placeholder="Ej: Estado: 9/10, listo para el campamento"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={estadoConservacion}
+              onChange={e => setEstadoConservacion(Number(e.target.value))}
+              className="w-full accent-blue-600"
             />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>Inutilizable</span>
+              <span>Perfecto estado</span>
+            </div>
+            {requiereObservacion && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-amber-800 mb-1">
+                  ¿Cuál es el problema? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={situacionObservaciones}
+                  onChange={e => setSituacionObservaciones(e.target.value)}
+                  rows={2}
+                  placeholder="Ej: Cuerda desgastada, tela rota en la entrada..."
+                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg bg-amber-50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+            )}
           </div>
 
           {/* Error inline */}
