@@ -93,25 +93,30 @@ export class InventarioService {
     ubicacion?: string;
     responsable?: string;
     costo?: number;
+    estado_conservacion?: number;
+    situacion_observaciones?: string;
+    fecha_ingreso?: string;
     proveedor?: string;
     observaciones?: string;
   }): Promise<{ success: boolean; item_id?: string; error?: string }> {
     try {
+      // Generate a unique codigo_item (required by DB schema as UNIQUE NOT NULL)
+      const codigoItem = `INV-${Date.now()}`;
+
       const { data, error } = await supabase
         .from('inventario')
         .insert({
+          codigo_item: codigoItem,
           nombre: item.nombre,
           categoria: item.categoria,
-          descripcion: item.descripcion,
-          cantidad: item.cantidad,
-          cantidad_minima: item.cantidad_minima || 1,
-          ubicacion: item.ubicacion,
-          responsable: item.responsable,
-          costo: item.costo || 0,
-          proveedor: item.proveedor,
-          observaciones: item.observaciones,
-          estado: 'disponible',
-          created_at: new Date().toISOString()
+          descripcion: item.descripcion || null,
+          // DB uses cantidad_total + cantidad_disponible, not 'cantidad'
+          cantidad_total: item.cantidad,
+          cantidad_disponible: item.cantidad,
+          ubicacion: item.ubicacion || null,
+          valor_unitario: item.costo || 0,
+          observaciones: item.observaciones || item.situacion_observaciones || null,
+          estado: 'DISPONIBLE',
         })
         .select('id')
         .single();
