@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, Plus, Search, Edit2, Trash2, Eye, 
-  AlertTriangle, CheckCircle, Clock, Package2, BarChart 
+  AlertTriangle, CheckCircle, Clock, Package2, BarChart, ArrowRightLeft
 } from 'lucide-react';
 import { InventarioService } from '../../services/inventarioService';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import type { InventarioItem } from '../../lib/supabase';
 import { PopUpRegistro } from '../../modules/inventario/components/PopUpRegistro';
 import { DetalleMaterial } from '../../modules/inventario/components/DetalleMaterial';
+import { PopUpTransferencia } from '../../modules/inventario/components/PopUpTransferencia';
 
 const Inventario: React.FC = () => {
   console.log('🏗️ Inventario component loading...');
@@ -27,6 +28,7 @@ const Inventario: React.FC = () => {
   // Estados para modales de acciones
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventarioItem | null>(null);
   const [showChangeStateModal, setShowChangeStateModal] = useState(false);
   const [newState, setNewState] = useState<'disponible' | 'prestado' | 'mantenimiento' | 'perdido' | 'baja'>('disponible');
@@ -701,6 +703,13 @@ const Inventario: React.FC = () => {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => { setSelectedItem(item); setShowTransferModal(true); }}
+                          className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
+                          title="Mover / Transferir"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteItem(item)}
                           disabled={saving}
                           className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -758,6 +767,15 @@ const Inventario: React.FC = () => {
           <PopUpRegistro
             onClose={() => setShowAddForm(false)}
             onSave={() => loadData()}
+          />
+        )}
+
+        {/* Modal de transferencia / mover material */}
+        {showTransferModal && selectedItem && (
+          <PopUpTransferencia
+            item={selectedItem}
+            onClose={() => { setShowTransferModal(false); setSelectedItem(null); }}
+            onSuccess={() => { loadData(); setShowTransferModal(false); setSelectedItem(null); }}
           />
         )}
 

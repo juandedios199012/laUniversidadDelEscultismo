@@ -11,14 +11,33 @@ interface DetalleMaterialProps {
 type Tab = 'info' | 'historial';
 
 const TIPO_MOVIMIENTO_STYLES: Record<string, string> = {
-  ENTRADA_INICIAL: 'bg-blue-100 text-blue-800',
-  entrada: 'bg-green-100 text-green-800',
-  salida: 'bg-red-100 text-red-800',
-  prestamo: 'bg-yellow-100 text-yellow-800',
-  devolucion: 'bg-teal-100 text-teal-800',
-  baja: 'bg-gray-100 text-gray-800',
-  ajuste: 'bg-purple-100 text-purple-800',
+  ENTRADA_INICIAL: 'bg-blue-100 text-blue-700',
+  transferencia:   'bg-indigo-100 text-indigo-700',
+  entrada:         'bg-green-100 text-green-700',
+  salida:          'bg-red-100 text-red-700',
+  prestamo:        'bg-yellow-100 text-yellow-700',
+  devolucion:      'bg-teal-100 text-teal-700',
+  ajuste:          'bg-orange-100 text-orange-700',
+  baja:            'bg-gray-100 text-gray-700',
 };
+
+const TIPO_MOVIMIENTO_LABELS: Record<string, string> = {
+  ENTRADA_INICIAL: '📦 Registro Inicial',
+  transferencia:   '🚚 Transferencia',
+  entrada:         '📥 Entrada',
+  salida:          '📤 Salida',
+  prestamo:        '🤝 Préstamo',
+  devolucion:      '↩️ Devolución',
+  ajuste:          '⚠️ Actualización Estado',
+  baja:            '❌ Baja',
+};
+
+/** Extrae la ubicación anterior desde observaciones con formato "Desde: X → Hacia: Y" */
+function parseUbicacionAnterior(observaciones?: string): string {
+  if (!observaciones) return '—';
+  const match = observaciones.match(/^Desde:\s*(.+?)\s*→/);
+  return match ? match[1].trim() : '—';
+}
 
 const ESTADO_COLORS: Record<string, string> = {
   disponible: 'bg-green-100 text-green-800',
@@ -221,41 +240,43 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
-                      <th className="p-3 border-b whitespace-nowrap">Fecha</th>
-                      <th className="p-3 border-b">Acción</th>
-                      <th className="p-3 border-b">Cant.</th>
-                      <th className="p-3 border-b hidden sm:table-cell">Origen</th>
-                      <th className="p-3 border-b hidden sm:table-cell">Destino</th>
-                      <th className="p-3 border-b hidden md:table-cell">Notas</th>
+                    <tr className="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                      <th className="px-3 py-2.5 whitespace-nowrap">Fecha</th>
+                      <th className="px-3 py-2.5">Acción</th>
+                      <th className="px-3 py-2.5 hidden sm:table-cell">Ubicación Anterior</th>
+                      <th className="px-3 py-2.5 hidden sm:table-cell">Ubicación Nueva</th>
+                      <th className="px-3 py-2.5 hidden md:table-cell">Notas / Situación</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {historial.map(mov => (
                       <tr key={mov.id} className="hover:bg-gray-50 transition">
-                        <td className="p-3 whitespace-nowrap text-gray-500 text-xs">
+                        <td className="px-3 py-2.5 whitespace-nowrap text-gray-500 text-xs">
                           {formatDateTime(mov.fecha_movimiento || mov.created_at)}
                         </td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${TIPO_MOVIMIENTO_STYLES[mov.tipo_movimiento] || 'bg-gray-100 text-gray-700'}`}>
-                            {mov.tipo_movimiento}
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
+                            TIPO_MOVIMIENTO_STYLES[(mov as any).tipo_movimiento] || 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {TIPO_MOVIMIENTO_LABELS[(mov as any).tipo_movimiento] ?? (mov as any).tipo_movimiento}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-gray-800">{mov.cantidad}</td>
-                        <td className="p-3 text-gray-500 hidden sm:table-cell">
-                          {(mov as any).origen || '—'}
+                        <td className="px-3 py-2.5 text-gray-500 text-xs hidden sm:table-cell">
+                          {(mov as any).tipo_movimiento === 'transferencia'
+                            ? parseUbicacionAnterior((mov as any).observaciones)
+                            : '—'}
                         </td>
-                        <td className="p-3 font-medium text-gray-700 hidden sm:table-cell">
+                        <td className="px-3 py-2.5 text-gray-700 text-xs font-medium hidden sm:table-cell">
                           {mov.destino || '—'}
                         </td>
                         <td
-                          className="p-3 text-gray-500 max-w-xs truncate hidden md:table-cell"
-                          title={mov.observaciones || mov.motivo || undefined}
+                          className="px-3 py-2.5 text-gray-500 text-xs max-w-[14rem] truncate hidden md:table-cell"
+                          title={mov.motivo || mov.observaciones || undefined}
                         >
-                          {mov.observaciones || mov.motivo || '—'}
+                          {mov.motivo || mov.observaciones || '—'}
                         </td>
                       </tr>
                     ))}

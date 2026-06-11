@@ -453,7 +453,7 @@ export interface InventarioItem {
 export interface MovimientoInventario {
   id: string;
   item_id: string;
-  tipo_movimiento: 'entrada' | 'salida' | 'prestamo' | 'devolucion' | 'baja' | 'ajuste';
+  tipo_movimiento: 'ENTRADA_INICIAL' | 'transferencia' | 'entrada' | 'salida' | 'prestamo' | 'devolucion' | 'ajuste' | 'baja';
   cantidad: number;
   cantidad_anterior: number;
   cantidad_nueva: number;
