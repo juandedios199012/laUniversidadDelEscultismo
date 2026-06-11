@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Package, AlertTriangle, Warehouse } from 'lucide-react';
 import { useUbicaciones } from '../hooks/useUbicaciones';
+import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 
 type Categoria = 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo';
@@ -45,7 +46,7 @@ const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
 };
 
 export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
-  const { ubicaciones, loading: loadingUbicaciones, error: errorUbicaciones } = useUbicaciones();
+  const { ubicaciones, loading: loadingUbicaciones, agregarUbicacion } = useUbicaciones();
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -314,43 +315,29 @@ export function PopUpRegistro({ onClose, onSave }: PopUpRegistroProps) {
             </div>
 
             <div className="mb-3">
-              <label className="block text-sm font-medium mb-1" htmlFor="ubicacionInicial">
+              <label className="block text-sm font-medium mb-1">
                 Almacenado en <span className="text-red-500">*</span>
               </label>
-              {loadingUbicaciones ? (
-                <p className="text-sm text-gray-400 animate-pulse py-2">Cargando lugares...</p>
-              ) : errorUbicaciones ? (
-                <select
-                  id="ubicacionInicial"
-                  name="ubicacionInicial"
-                  required
-                  value={formData.ubicacionInicial}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Seleccione Almacén --</option>
-                  <option value="Casa de Alberto">Casa de Alberto</option>
-                  <option value="Casa de Jesús">Casa de Jesús</option>
-                  <option value="Almacén Principal">Almacén Principal</option>
-                  <option value="Otro">Otro</option>
-                </select>
-              ) : (
-                <select
-                  id="ubicacionInicial"
-                  name="ubicacionInicial"
-                  required
-                  value={formData.ubicacionInicial}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- Seleccione Almacén --</option>
-                  {ubicaciones.map(loc => (
-                    <option key={loc.id} value={loc.nombre}>
-                      {loc.nombre}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <ComboboxUbicaciones
+                ubicaciones={ubicaciones}
+                loading={loadingUbicaciones}
+                value={formData.ubicacionInicial}
+                onChange={(nombre) =>
+                  setFormData(prev => ({ ...prev, ubicacionInicial: nombre }))
+                }
+                onAgregarNueva={agregarUbicacion}
+                required
+              />
+              {/* Campo oculto para la validación HTML nativa del formulario */}
+              <input
+                type="text"
+                required
+                value={formData.ubicacionInicial}
+                onChange={() => {}}
+                className="sr-only"
+                aria-hidden="true"
+                tabIndex={-1}
+              />
             </div>
 
             <div>
