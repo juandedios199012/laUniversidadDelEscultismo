@@ -56,4 +56,3 @@ export function useUbicaciones() {
 
   return { ubicaciones, loading, error, recargar: cargar, agregarUbicacion };
 }
-}
