@@ -154,8 +154,7 @@ const Inventario: React.FC = () => {
       console.log('🆕 Agregando nuevo item:', formData);
       const newItem = await InventarioService.createItem({
         ...formData,
-        estado: 'disponible'
-      });
+      } as Parameters<typeof InventarioService.createItem>[0]);
       
       console.log('✅ Item creado exitosamente:', newItem);
       
@@ -222,10 +221,12 @@ const Inventario: React.FC = () => {
       nombre: item.nombre,
       categoria: item.categoria,
       descripcion: item.descripcion || '',
-      cantidad: item.cantidad,
-      cantidad_minima: item.cantidad_minima,
+      // DB returns cantidad_disponible, not cantidad
+      cantidad: (item as any).cantidad_disponible ?? item.cantidad ?? 0,
+      cantidad_minima: item.cantidad_minima ?? 1,
       ubicacion: item.ubicacion || '',
-      costo: item.costo || 0
+      // DB returns valor_unitario, not costo
+      costo: (item as any).valor_unitario ?? (item as any).costo ?? 0
     });
     setShowEditModal(true);
   };
@@ -272,8 +273,8 @@ const Inventario: React.FC = () => {
         cantidad_minima:     formData.cantidad_minima,
         ubicacion:           formData.ubicacion,
         valor_unitario:      formData.costo,          // DB column name
-        estado_item:         selectedItem.estado_item ?? selectedItem.estado, // DB column name
-      });
+        estado_item:         (selectedItem as any).estado_item ?? selectedItem.estado, // DB column name
+      } as any);
       
       console.log('✅ Item actualizado exitosamente');
       
@@ -326,34 +327,25 @@ const Inventario: React.FC = () => {
           console.log('📤 Registrando préstamo a:', borrower);
           await InventarioService.registrarMovimiento({
             item_id: selectedItem.id,
-            tipo_movimiento: 'prestamo',
+            tipo: 'prestamo',
             cantidad: 1,
-            cantidad_anterior: selectedItem.cantidad,
-            cantidad_nueva: selectedItem.cantidad - 1,
-            responsable: 'sistema',
-            destino: borrower,
+            responsable: borrower,
             observaciones: stateObservations || `Prestado a ${borrower}`
           });
         } else if (newState === 'disponible' && selectedItem.estado === 'prestado') {
           console.log('📥 Registrando devolución');
           await InventarioService.registrarMovimiento({
             item_id: selectedItem.id,
-            tipo_movimiento: 'devolucion',
+            tipo: 'devolucion',
             cantidad: 1,
-            cantidad_anterior: selectedItem.cantidad,
-            cantidad_nueva: selectedItem.cantidad + 1,
-            responsable: 'sistema',
             observaciones: stateObservations || 'Item devuelto'
           });
         } else if (newState === 'perdido') {
           console.log('❌ Registrando pérdida');
           await InventarioService.registrarMovimiento({
             item_id: selectedItem.id,
-            tipo_movimiento: 'baja',
+            tipo: 'salida',   // 'baja' uses salida in service type
             cantidad: 1,
-            cantidad_anterior: selectedItem.cantidad,
-            cantidad_nueva: selectedItem.cantidad - 1,
-            responsable: 'sistema',
             motivo: 'Perdido',
             observaciones: stateObservations || 'Item reportado como perdido'
           });
@@ -822,12 +814,13 @@ const Inventario: React.FC = () => {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="material_scout">Material Scout</option>
-                    <option value="camping">Camping</option>
-                    <option value="ceremonial">Ceremonial</option>
-                    <option value="deportivo">Deportivo</option>
-                    <option value="primeros_auxilios">Primeros Auxilios</option>
-                    <option value="administrativo">Administrativo</option>
+                    <option value="CAMPING">Camping / Material Scout</option>
+                    <option value="CEREMONIAL">Ceremonial</option>
+                    <option value="DEPORTE">Deportivo</option>
+                    <option value="SEGURIDAD">Primeros Auxilios / Seguridad</option>
+                    <option value="COCINA">Cocina / Alimentación</option>
+                    <option value="EDUCATIVO">Material Educativo</option>
+                    <option value="OTRO">Otro / Administrativo</option>
                   </select>
                 </div>
 

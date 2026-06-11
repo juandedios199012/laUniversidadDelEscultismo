@@ -133,8 +133,8 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl mb-4">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Estado</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${ESTADO_COLORS[material.estado] || 'bg-gray-100 text-gray-700'}`}>
-                  {material.estado.toLowerCase()}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${ESTADO_COLORS[(material as any).estado_item ?? material.estado ?? ''] || 'bg-gray-100 text-gray-700'}`}>
+                  {((material as any).estado_item ?? material.estado ?? '—').toLowerCase()}
                 </span>
               </div>
 

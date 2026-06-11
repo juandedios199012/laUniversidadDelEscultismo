@@ -288,6 +288,33 @@ export class InventarioService {
   }
 
   // ============= 📊 ANALYTICS Y REPORTES =============
+
+  /**
+   * 🔄 Transferir material a otra ubicación/custodio
+   * Actualiza ubicacion en inventario y registra en Kardex como 'transferencia'
+   */
+  static async transferirMaterial(params: {
+    item_id: string;
+    ubicacion_nueva: string;
+    responsable?: string;
+    motivo?: string;
+  }): Promise<{ success: boolean; ubicacion_anterior?: string; ubicacion_nueva?: string; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('transferir_material', {
+        p_item_id:         params.item_id,
+        p_ubicacion_nueva: params.ubicacion_nueva,
+        p_responsable:     params.responsable ?? null,
+        p_motivo:          params.motivo ?? null,
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al transferir material:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
+  // ============= 📊 ANALYTICS Y REPORTES =============
   
   /**
    * 📊 Obtener resumen del inventario
