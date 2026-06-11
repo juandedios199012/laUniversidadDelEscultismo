@@ -265,8 +265,14 @@ const Inventario: React.FC = () => {
       console.log('✏️ Actualizando item:', selectedItem.id, formData);
       
       await InventarioService.updateItem(selectedItem.id, {
-        ...formData,
-        estado: selectedItem.estado // Mantener el estado actual
+        nombre:              formData.nombre,
+        categoria:           formData.categoria,
+        descripcion:         formData.descripcion,
+        cantidad_disponible: formData.cantidad,       // DB column name
+        cantidad_minima:     formData.cantidad_minima,
+        ubicacion:           formData.ubicacion,
+        valor_unitario:      formData.costo,          // DB column name
+        estado_item:         selectedItem.estado_item ?? selectedItem.estado, // DB column name
       });
       
       console.log('✅ Item actualizado exitosamente');
