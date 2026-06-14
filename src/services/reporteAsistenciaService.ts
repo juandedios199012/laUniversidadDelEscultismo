@@ -87,9 +87,8 @@ class ReporteAsistenciaService {
         .from('scouts')
         .select(`
           id,
-          codigo_asociado,
           rama_actual,
-          personas!inner(nombres, apellidos)
+          personas!inner(nombres, apellidos, codigo_asociado)
         `)
         .eq('estado', 'ACTIVO')
         .order('personas(apellidos)', { ascending: true });
@@ -103,7 +102,7 @@ class ReporteAsistenciaService {
         id: scout.id,
         nombres: scout.personas.nombres,
         apellidos: scout.personas.apellidos,
-        codigo_asociado: scout.codigo_asociado || 'S/C',
+        codigo_asociado: scout.personas.codigo_asociado || 'S/C',
         rama_actual: scout.rama_actual
       }));
 
