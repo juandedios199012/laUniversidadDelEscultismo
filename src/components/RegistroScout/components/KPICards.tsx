@@ -90,7 +90,7 @@ interface KPIGridProps {
 
 export function KPIGrid({ stats, loading = false }: KPIGridProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
       <KPICard
         title="Total Scouts"
         value={stats?.total ?? 0}

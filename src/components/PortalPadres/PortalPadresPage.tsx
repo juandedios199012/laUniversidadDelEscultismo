@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Eye, Heart } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import PortalPadresDashboard from './PortalPadresDashboard';
-import V4PortalPadresTab from '../ProgresionV4/tabs/V4PortalPadresTab';
+import PortalPadresTab from '../Progresion/tabs/PortalPadresTab';
 import { useScoutsParaPortal } from './hooks/useScoutsParaPortal';
 
 type TabId = 'mi-familia' | 'consultar-scout';
@@ -58,7 +58,7 @@ const PortalPadresPage: React.FC = () => {
         {activeTab === 'mi-familia' && <PortalPadresDashboard />}
 
         {activeTab === 'consultar-scout' && puedeConsultar && (
-          <V4PortalPadresTab loading={loading} scouts={scouts} />
+          <PortalPadresTab loading={loading} scouts={scouts} />
         )}
       </div>
     </div>

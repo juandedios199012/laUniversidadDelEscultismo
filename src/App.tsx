@@ -21,13 +21,10 @@ import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
 import { SeguridadV2Dashboard } from './components/SeguridadV2';
-import { ProgresionPage, AdminObjetivosPage } from './components/Progresion';
+import AdminObjetivosPage from './components/AdminObjetivos/AdminObjetivosPage';
 // Módulo de Especialidades Scout
 import { EspecialidadesModule } from './components/Especialidades';
-// Módulo Progresión V2 (propuesta visual)
-import { ProgresionV2Module } from './components/ProgresionV2';
-import { ProgresionV3Module } from './components/ProgresionV3';
-import { ProgresionV4Module } from './components/ProgresionV4';
+import { ProgresionModule } from './components/Progresion';
 import PortalPadresPage from './components/PortalPadres/PortalPadresPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider, usePermissions } from './contexts/PermissionsContext';
@@ -93,8 +90,6 @@ function AppContent() {
         return <ConfiguracionDocumentosInscripcion />;
       case 'config-tarifas-inscripcion':
         return <ConfiguracionTarifasInscripcion />;
-      case 'progresion':
-        return <ProgresionPage />;
       case 'admin-objetivos':
         return <AdminObjetivosPage />;
       case 'grupo-scout':
@@ -127,12 +122,8 @@ function AppContent() {
         return <SeguridadV2Dashboard />;
       case 'especialidades':
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
-      case 'progresion-v2':
-        return <ProgresionV2Module />;
-      case 'progresion-v3':
-        return <ProgresionV3Module />;
       case 'progresion-v4':
-        return <ProgresionV4Module />;
+        return <ProgresionModule />;
       case 'portal-padres':
         return <PortalPadresPage />;
       default:

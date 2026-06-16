@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import ProgresionService from '../../../services/progresionService';
-import type { V4Scout } from '../../ProgresionV4/useProgresionV4Data';
+import type { V4Scout } from '../../Progresion/useProgresionData';
 
 /**
  * Hook mínimo: carga solo la lista de scouts con su progreso.

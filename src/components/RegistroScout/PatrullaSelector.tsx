@@ -29,7 +29,6 @@ interface PatrullaSelectorProps {
   disabled?: boolean;
 }
 
-const CAPACIDAD_MAXIMA_PATRULLA = 8;
 const CAPACIDAD_OPTIMA_PATRULLA = 6;
 
 export default function PatrullaSelector({ 
@@ -124,13 +123,7 @@ export default function PatrullaSelector({
   };
 
   const getEstadoCapacidad = (count: number) => {
-    if (count >= CAPACIDAD_MAXIMA_PATRULLA) {
-      return { 
-        label: 'Llena', 
-        color: 'bg-red-100 text-red-800 border-red-300',
-        icon: AlertCircle 
-      };
-    } else if (count >= CAPACIDAD_OPTIMA_PATRULLA) {
+    if (count >= CAPACIDAD_OPTIMA_PATRULLA) {
       return { 
         label: 'Casi llena', 
         color: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -149,12 +142,6 @@ export default function PatrullaSelector({
     const patrulla = patrullas.find(p => p.id === patrullaId);
     
     if (!patrulla) return;
-
-    // Validación de capacidad
-    if (patrulla.miembros_count >= CAPACIDAD_MAXIMA_PATRULLA && patrullaId !== patrullaActualId) {
-      alert(`La patrulla "${patrulla.nombre}" está llena (${CAPACIDAD_MAXIMA_PATRULLA}/${CAPACIDAD_MAXIMA_PATRULLA}). Por favor, elige otra patrulla.`);
-      return;
-    }
 
     onChange(patrullaId);
   };
@@ -239,16 +226,13 @@ export default function PatrullaSelector({
           <option value="">Sin patrulla</option>
           {patrullas.map((patrulla) => {
             const estado = getEstadoCapacidad(patrulla.miembros_count);
-            const estaLlena = patrulla.miembros_count >= CAPACIDAD_MAXIMA_PATRULLA;
-            const esPatrullaActual = patrulla.id === patrullaActualId;
 
             return (
               <option 
                 key={patrulla.id} 
                 value={patrulla.id}
-                disabled={estaLlena && !esPatrullaActual}
               >
-                {patrulla.nombre} ({patrulla.miembros_count}/{CAPACIDAD_MAXIMA_PATRULLA}) - {estado.label}
+                {patrulla.nombre} ({patrulla.miembros_count}) - {estado.label}
                 {patrulla.animal_totem && ` 🦅 ${patrulla.animal_totem}`}
               </option>
             );
@@ -291,7 +275,7 @@ export default function PatrullaSelector({
                   <div>
                     <span className="text-gray-600">Miembros:</span>
                     <span className="ml-2 font-medium">
-                      {patrullaSeleccionada.miembros_count}/{CAPACIDAD_MAXIMA_PATRULLA}
+                      {patrullaSeleccionada.miembros_count}
                     </span>
                   </div>
                   {patrullaSeleccionada.animal_totem && (
@@ -316,7 +300,6 @@ export default function PatrullaSelector({
       {/* Leyenda de Capacidad */}
       <div className="text-xs text-gray-500 space-y-1">
         <p>💡 <strong>Capacidad óptima:</strong> {CAPACIDAD_OPTIMA_PATRULLA} scouts</p>
-        <p>⚠️ <strong>Capacidad máxima:</strong> {CAPACIDAD_MAXIMA_PATRULLA} scouts</p>
       </div>
     </div>
   );

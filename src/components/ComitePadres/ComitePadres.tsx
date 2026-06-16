@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, Save, Plus, Search, User, TrendingUp, Edit, Eye, Phone, Mail, Trash2, Award, Shield, UserCheck } from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
 import ComitePadresService from '../../services/comitePadresService';
+import { PersonSearchCombobox } from '../shared/PersonSearch';
+import type { PersonaResult } from '../../services/personaService';
 
 interface ComitePadresProps {}
 
@@ -40,6 +42,8 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
   });
 
   const [editForm, setEditForm] = useState<typeof createForm>(createForm);
+  /** Persona encontrada via buscador para evitar duplicados */
+  const [personaVinculadaCreate, setPersonaVinculadaCreate] = useState<PersonaResult | null>(null);
 
   // ============= DATOS DEMO Y CONFIGURACIÓN =============
   const cargos = [
@@ -576,6 +580,31 @@ export default function ComitePadresComplete({}: ComitePadresProps) {
             </div>
             
             <form onSubmit={handleCreateMiembro} className="p-6 space-y-6">
+              {/* Buscador de persona existente */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ¿Esta persona ya está registrada en el sistema?
+                </label>
+                <PersonSearchCombobox
+                  placeholder="Buscar por nombre o N° documento..."
+                  onSelect={(persona: PersonaResult) => {
+                    setPersonaVinculadaCreate(persona);
+                    setCreateForm(prev => ({
+                      ...prev,
+                      nombres:          persona.nombres,
+                      apellidos:        persona.apellidos,
+                      tipo_documento:   (persona.tipo_documento as any) ?? prev.tipo_documento,
+                      numero_documento: persona.numero_documento ?? prev.numero_documento,
+                      email:            persona.correo ?? prev.email,
+                      telefono:         persona.celular ?? prev.telefono,
+                      sexo:             (persona.sexo as any) ?? prev.sexo,
+                    }));
+                  }}
+                  personaVinculada={personaVinculadaCreate}
+                  onDesvincular={() => setPersonaVinculadaCreate(null)}
+                />
+              </div>
+
               {/* Información Personal */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h3>

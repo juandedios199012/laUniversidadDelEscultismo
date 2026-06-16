@@ -391,18 +391,13 @@ export default function RegistroScoutPage() {
 
   // Render list view
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 pt-2">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-7 w-7 text-primary" />
-            Scouts
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gestión integral de scouts del grupo
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Users className="h-7 w-7 text-primary" />
+          Scouts
+        </h1>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

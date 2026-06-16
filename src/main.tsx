@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.tsx';
+import LandingPage from './pages/LandingPage.tsx';
 import './index.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -14,8 +16,13 @@ if (!rootElement) {
   try {
     createRoot(rootElement).render(
       <StrictMode>
-        <App />
-      </StrictMode>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/"   element={<LandingPage />} />
+          <Route path="/*"  element={<App />} />
+        </Routes>
+      </BrowserRouter>
+    </StrictMode>
     );
     console.log('✅ React montado exitosamente');
   } catch (error) {

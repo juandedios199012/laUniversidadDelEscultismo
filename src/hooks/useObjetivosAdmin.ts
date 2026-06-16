@@ -2,7 +2,7 @@
 // HOOK: useObjetivosAdmin
 // ============================================================================
 // Hook personalizado para gestionar objetivos educativos (CRUD)
-// Separa la lógica de negocio de la UI
+// Soporta multi-rama: Manada | Tropa | Comunidad | Clan
 // ============================================================================
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -10,7 +10,8 @@ import ProgresionService, {
   Objetivo, 
   GrupoObjetivo,
   Etapa, 
-  AreaCrecimiento 
+  AreaCrecimiento,
+  RamaCodigo,
 } from '../services/progresionService';
 import type { ObjetivoEducativoFormData } from '../schemas/objetivoEducativoSchema';
 
@@ -20,7 +21,7 @@ import type { ObjetivoEducativoFormData } from '../schemas/objetivoEducativoSche
 
 export interface FiltrosObjetivos {
   busqueda: string;
-  grupo: string;  // código del grupo: PISTA_SENDA | RUMBO_TRAVESIA
+  grupo: string;
   area: string;
 }
 
@@ -34,10 +35,14 @@ export interface UseObjetivosAdminReturn {
   // Datos
   objetivos: Objetivo[];
   objetivosFiltrados: Objetivo[];
-  grupos: GrupoObjetivo[];
-  etapas: Etapa[];
+  grupos: GrupoObjetivo[];          // grupos de la rama activa
+  etapas: Etapa[];                  // etapas de la rama activa
   areas: AreaCrecimiento[];
   
+  // Rama activa
+  ramaActiva: RamaCodigo;
+  setRamaActiva: (rama: RamaCodigo) => void;
+
   // Estado
   estado: EstadoCarga;
   filtros: FiltrosObjetivos;
@@ -65,20 +70,21 @@ export interface UseObjetivosAdminReturn {
 // ============================================================================
 
 export function useObjetivosAdmin(): UseObjetivosAdminReturn {
-  // Estado de datos
-  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
-  const [grupos, setGrupos] = useState<GrupoObjetivo[]>([]);
-  const [etapas, setEtapas] = useState<Etapa[]>([]);
+  // Rama activa — por defecto Tropa para retrocompatibilidad
+  const [ramaActiva, setRamaActivaInternal] = useState<RamaCodigo>('TROPA');
+
+  // Estado de datos (todos, sin filtrar por rama — filtramos en useMemo)
+  const [todosObjetivos, setTodosObjetivos] = useState<Objetivo[]>([]);
+  const [todosGrupos, setTodosGrupos] = useState<GrupoObjetivo[]>([]);
+  const [todasEtapas, setTodasEtapas] = useState<Etapa[]>([]);
   const [areas, setAreas] = useState<AreaCrecimiento[]>([]);
   
-  // Estado de carga
   const [estado, setEstado] = useState<EstadoCarga>({
     loading: true,
     error: null,
     guardando: false,
   });
   
-  // Filtros
   const [filtros, setFiltros] = useState<FiltrosObjetivos>({
     busqueda: '',
     grupo: '',
@@ -86,7 +92,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   });
 
   // ==========================================================================
-  // CARGA INICIAL
+  // CARGA INICIAL (carga TODO de una vez — filtrado es client-side)
   // ==========================================================================
 
   const cargarDatos = useCallback(async () => {
@@ -94,15 +100,15 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
     
     try {
       const [objetivosData, gruposData, etapasData, areasData] = await Promise.all([
-        ProgresionService.obtenerObjetivosAdmin(),
-        ProgresionService.obtenerGruposObjetivo(),
-        ProgresionService.obtenerEtapas(),
+        ProgresionService.obtenerObjetivosAdmin(),   // sin rama = todos
+        ProgresionService.obtenerGruposObjetivo(),   // sin rama = todos
+        ProgresionService.obtenerEtapas(),           // sin rama = todas
         ProgresionService.obtenerAreas(),
       ]);
       
-      setObjetivos(objetivosData);
-      setGrupos(gruposData);
-      setEtapas(etapasData);
+      setTodosObjetivos(objetivosData);
+      setTodosGrupos(gruposData);
+      setTodasEtapas(etapasData);
       setAreas(areasData);
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : 'Error al cargar datos';
@@ -117,21 +123,45 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   }, [cargarDatos]);
 
   // ==========================================================================
-  // FILTRADO
+  // CAMBIO DE RAMA — resetea filtros de grupo/área
+  // ==========================================================================
+
+  const setRamaActiva = useCallback((rama: RamaCodigo) => {
+    setRamaActivaInternal(rama);
+    setFiltros(prev => ({ ...prev, grupo: '', area: '' }));
+  }, []);
+
+  // ==========================================================================
+  // DERIVADOS POR RAMA ACTIVA
+  // ==========================================================================
+
+  const objetivos = useMemo(
+    () => todosObjetivos.filter(o => o.grupo_rama === ramaActiva),
+    [todosObjetivos, ramaActiva]
+  );
+
+  const grupos = useMemo(
+    () => todosGrupos.filter(g => g.rama === ramaActiva),
+    [todosGrupos, ramaActiva]
+  );
+
+  const etapas = useMemo(
+    () => todasEtapas.filter(e => e.rama === ramaActiva),
+    [todasEtapas, ramaActiva]
+  );
+
+  // ==========================================================================
+  // FILTRADO SECUNDARIO (búsqueda, grupo, área)
   // ==========================================================================
 
   const objetivosFiltrados = useMemo(() => {
     return objetivos.filter(obj => {
-      // Filtro por búsqueda (título, descripción, código)
       const matchBusqueda = !filtros.busqueda || 
         obj.titulo.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
         obj.codigo.toLowerCase().includes(filtros.busqueda.toLowerCase());
       
-      // Filtro por grupo
       const matchGrupo = !filtros.grupo || obj.grupo_codigo === filtros.grupo;
-      
-      // Filtro por área
-      const matchArea = !filtros.area || obj.area_codigo === filtros.area;
+      const matchArea  = !filtros.area  || obj.area_codigo  === filtros.area;
       
       return matchBusqueda && matchGrupo && matchArea;
     });
@@ -156,11 +186,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
       porArea[obj.area_codigo] = (porArea[obj.area_codigo] || 0) + 1;
     });
     
-    return {
-      total: objetivos.length,
-      porGrupo,
-      porArea,
-    };
+    return { total: objetivos.length, porGrupo, porArea };
   }, [objetivos]);
 
   // ==========================================================================
@@ -169,7 +195,6 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
 
   const crearObjetivo = useCallback(async (datos: ObjetivoEducativoFormData) => {
     setEstado(prev => ({ ...prev, guardando: true }));
-    
     try {
       const resultado = await ProgresionService.crearObjetivo({
         etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id,
@@ -178,10 +203,7 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
         descripcion: datos.descripcion,
         indicadores: datos.indicadores.filter(i => i.trim() !== ''),
       });
-      
-      // Recargar objetivos para obtener el nuevo con toda la info
       await cargarDatos();
-      
       return resultado;
     } finally {
       setEstado(prev => ({ ...prev, guardando: false }));
@@ -193,23 +215,18 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
     datos: Partial<ObjetivoEducativoFormData>
   ) => {
     setEstado(prev => ({ ...prev, guardando: true }));
-    
     try {
       await ProgresionService.actualizarObjetivo(id, {
         ...datos,
         indicadores: datos.indicadores?.filter(i => i.trim() !== ''),
       });
-      
-      // Actualizar en el estado local sin recargar todo
-      setObjetivos(prev => prev.map(obj => {
-        if (obj.id === id) {
-          return {
-            ...obj,
-            ...datos,
-            indicadores: datos.indicadores?.filter(i => i.trim() !== '') || obj.indicadores,
-          };
-        }
-        return obj;
+      setTodosObjetivos(prev => prev.map(obj => {
+        if (obj.id !== id) return obj;
+        return {
+          ...obj,
+          ...datos,
+          indicadores: datos.indicadores?.filter(i => i.trim() !== '') || obj.indicadores,
+        };
       }));
     } finally {
       setEstado(prev => ({ ...prev, guardando: false }));
@@ -218,12 +235,9 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
 
   const eliminarObjetivo = useCallback(async (id: string) => {
     setEstado(prev => ({ ...prev, guardando: true }));
-    
     try {
       await ProgresionService.eliminarObjetivo(id);
-      
-      // Remover del estado local
-      setObjetivos(prev => prev.filter(obj => obj.id !== id));
+      setTodosObjetivos(prev => prev.filter(obj => obj.id !== id));
     } finally {
       setEstado(prev => ({ ...prev, guardando: false }));
     }
@@ -234,27 +248,20 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
   // ==========================================================================
 
   return {
-    // Datos
     objetivos,
     objetivosFiltrados,
     grupos,
     etapas,
     areas,
-    
-    // Estado
+    ramaActiva,
+    setRamaActiva,
     estado,
     filtros,
-    
-    // Estadísticas
     estadisticas,
-    
-    // Acciones
     cargarDatos,
     crearObjetivo,
     actualizarObjetivo,
     eliminarObjetivo,
-    
-    // Filtros
     setFiltros,
     limpiarFiltros,
   };

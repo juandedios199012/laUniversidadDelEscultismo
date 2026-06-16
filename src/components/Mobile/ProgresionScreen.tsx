@@ -21,10 +21,10 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { useProgresionV4Data, AREA_COLORS, AREA_ICONS, STAGE_COLORS, STAGE_ICONS } from '../ProgresionV4/useProgresionV4Data';
-import type { V4Scout, V4AreaData, V4StageBar } from '../ProgresionV4/useProgresionV4Data';
+import { useProgresionData, AREA_COLORS, AREA_ICONS, STAGE_COLORS, STAGE_ICONS } from '../Progresion/useProgresionData';
+import type { V4Scout, V4AreaData, V4StageBar } from '../Progresion/useProgresionData';
 import ProgresionService, { ObjetivoScout, ProgresoArea, ProgresoCompletoScout } from '../../services/progresionService';
-import { ProgressRing } from '../ProgresionV2/ui/ProgressRing';
+import { ProgressRing } from '../shared/ui/ProgressRing';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const ETAPAS_META: Record<string, { edad: number; nombre: string }> = {
@@ -614,7 +614,7 @@ const ScoutsTab: React.FC<{
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 export default function ProgresionScreen() {
   const [activeTab, setActiveTab] = useState<TabId>('resumen');
-  const data = useProgresionV4Data();
+  const data = useProgresionData();
 
   const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'resumen', label: 'Resumen', icon: TrendingUp },

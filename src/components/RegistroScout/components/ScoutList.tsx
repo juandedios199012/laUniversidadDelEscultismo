@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Search, Edit, Eye, Plus, Users, Heart, FileText, FileType2, UserMinus, UserCheck, Trash2 } from "lucide-react";
+import { Search, Edit, Eye, Users, Heart, FileText, FileType2, UserMinus, UserCheck, Trash2 } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -176,15 +176,6 @@ export function ScoutList({
             <Users className="h-5 w-5" />
             Scouts ({filteredScouts.length}{filteredScouts.length !== scouts.length ? `/${scouts.length}` : ''})
           </CardTitle>
-          {puedeCrear('scouts') && (
-            <Button 
-              size="sm" 
-              onClick={onNewScout}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Nuevo
-            </Button>
-          )}
         </div>
         <div className="mt-2 flex gap-2">
           <div className="relative flex-1">

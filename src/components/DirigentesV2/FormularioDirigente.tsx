@@ -33,6 +33,8 @@ import {
 } from '../../types/dirigente';
 import DirigenteService from '../../services/dirigenteServiceV2';
 import { supabase } from '../../lib/supabase';
+import { PersonSearchCombobox } from '../shared/PersonSearch';
+import type { PersonaResult } from '../../services/personaService';
 
 // ============================================================================
 // ICONOS SVG
@@ -157,6 +159,8 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [grupos, setGrupos] = useState<GrupoScoutOption[]>([]);
   const [loadingGrupos, setLoadingGrupos] = useState(false);
+  /** Persona vinculada desde el buscador (evita duplicados de persona) */
+  const [personaVinculada, setPersonaVinculada] = useState<PersonaResult | null>(null);
 
   const isEditing = !!dirigenteId;
 
@@ -365,6 +369,30 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
     }
   };
 
+  /**
+   * Pre-rellena el formulario con los datos de una persona existente.
+   * Llamado desde PersonSearchCombobox para evitar el error de persona duplicada.
+   */
+  const handlePersonaSeleccionada = (persona: PersonaResult) => {
+    setPersonaVinculada(persona);
+    setFormData((prev) => ({
+      ...prev,
+      nombres:          persona.nombres,
+      apellidos:        persona.apellidos,
+      tipo_documento:   persona.tipo_documento ?? prev.tipo_documento,
+      numero_documento: persona.numero_documento ?? prev.numero_documento,
+      celular:          persona.celular ?? prev.celular,
+      correo:           persona.correo ?? prev.correo,
+      sexo:             persona.sexo === 'MASCULINO' ? 'M' : persona.sexo === 'FEMENINO' ? 'F' : prev.sexo,
+    }));
+    // Limpiar errores de campos personales
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      ['nombres', 'apellidos', 'numero_documento', 'celular', 'correo'].forEach((k) => delete newErrors[k]);
+      return newErrors;
+    });
+  };
+
   const showToast = (type: ToastState['type'], message: string) => {
     setToast({ show: true, type, message });
     if (type !== 'error') {
@@ -467,6 +495,20 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
           defaultOpen={true}
           badge={formData.nombres && formData.apellidos ? '✓' : ''}
         >
+          {/* Buscador de persona existente — evita error "duplicate key" */}
+          {!isEditing && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                ¿Esta persona ya está en el sistema? Búscala para pre-llenar el formulario
+              </label>
+              <PersonSearchCombobox
+                placeholder="Buscar por nombre o N° documento..."
+                onSelect={handlePersonaSeleccionada}
+                personaVinculada={personaVinculada}
+                onDesvincular={() => setPersonaVinculada(null)}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <InputField
               label="Apellidos Completos"

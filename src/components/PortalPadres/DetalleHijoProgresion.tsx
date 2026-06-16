@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import ProgresionService from '../../services/progresionService';
-import V4PortalPadresTab from '../ProgresionV4/tabs/V4PortalPadresTab';
-import type { V4Scout } from '../ProgresionV4/useProgresionV4Data';
+import PortalPadresTab from '../Progresion/tabs/PortalPadresTab';
+import type { V4Scout } from '../Progresion/useProgresionData';
 import type { HijoInfo } from '../../services/portalPadresService';
 
 // ─────────────────────────────────────────────────────────────
 // DetalleHijoProgresion
 // Carga el resumen de progresión del scout y lo muestra
-// usando el mismo componente V4PortalPadresTab de Progresión V4.
+// usando el mismo componente PortalPadresTab de Progresión.
 // ─────────────────────────────────────────────────────────────
 
 interface Props {
@@ -90,10 +90,10 @@ const DetalleHijoProgresion: React.FC<Props> = ({ hijo }) => {
     );
   }
 
-  // V4PortalPadresTab espera un array de scouts; pasamos solo el del hijo.
+  // PortalPadresTab espera un array de scouts; pasamos solo el del hijo.
   // El componente auto-selecciona el primero si no hay selección previa.
   return (
-    <V4PortalPadresTab
+    <PortalPadresTab
       loading={false}
       scouts={[scout]}
     />

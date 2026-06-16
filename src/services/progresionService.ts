@@ -24,6 +24,7 @@ export interface Etapa {
   icono: string;
   color: string;
   requisitos_avance?: string;
+  rama: string;
 }
 
 export interface AreaCrecimiento {
@@ -44,8 +45,9 @@ export interface Objetivo {
   orden: number;
   // Grupo de objetivo (nuevo)
   grupo_id?: string;
-  grupo_codigo?: string;  // 'PISTA_SENDA' | 'RUMBO_TRAVESIA'
+  grupo_codigo?: string;
   grupo_nombre?: string;
+  grupo_rama?: string;
   etapa_objetivo_grupo_id?: string;
   // Etapa legacy
   etapa_id: string;
@@ -112,11 +114,25 @@ export interface ResumenProgresoScout {
 
 export interface GrupoObjetivo {
   id: string;
-  codigo: string;  // 'PISTA_SENDA' | 'RUMBO_TRAVESIA'
+  codigo: string;
   nombre: string;
   descripcion: string;
   orden: number;
+  rama: string;
 }
+
+// ============================================================================
+// CONSTANTES
+// ============================================================================
+
+export const RAMAS = [
+  { codigo: 'MANADA',    label: 'Manada',    icono: '🐺', color: 'from-green-500 to-emerald-600',   ring: 'ring-green-400',  bg: 'bg-green-50',  text: 'text-green-700'  },
+  { codigo: 'TROPA',     label: 'Tropa',     icono: '🏕️', color: 'from-amber-500 to-orange-500',    ring: 'ring-amber-400',  bg: 'bg-amber-50',  text: 'text-amber-700'  },
+  { codigo: 'COMUNIDAD', label: 'Comunidad', icono: '🌄', color: 'from-blue-500 to-cyan-600',       ring: 'ring-blue-400',   bg: 'bg-blue-50',   text: 'text-blue-700'   },
+  { codigo: 'CLAN',      label: 'Clan',      icono: '🏔️', color: 'from-purple-500 to-violet-600',   ring: 'ring-purple-400', bg: 'bg-purple-50', text: 'text-purple-700' },
+] as const;
+
+export type RamaCodigo = typeof RAMAS[number]['codigo'];
 
 export interface EstadisticaEtapa {
   etapa_id: string;
@@ -160,8 +176,10 @@ export class ProgresionService {
   /**
    * Obtiene todas las etapas de progresión
    */
-  static async obtenerEtapas(): Promise<Etapa[]> {
-    const { data, error } = await supabase.rpc('obtener_etapas');
+  static async obtenerEtapas(rama?: string): Promise<Etapa[]> {
+    const { data, error } = await supabase.rpc('obtener_etapas', {
+      p_rama: rama || null
+    });
     
     if (error) {
       console.error('Error al obtener etapas:', error);
@@ -186,8 +204,10 @@ export class ProgresionService {
   /**
    * Obtiene los 2 grupos de objetivo para selectores de formulario
    */
-  static async obtenerGruposObjetivo(): Promise<GrupoObjetivo[]> {
-    const { data, error } = await supabase.rpc('obtener_grupos_objetivo');
+  static async obtenerGruposObjetivo(rama?: string): Promise<GrupoObjetivo[]> {
+    const { data, error } = await supabase.rpc('obtener_grupos_objetivo', {
+      p_rama: rama || null
+    });
 
     if (error) {
       console.error('Error al obtener grupos de objetivo:', error);
@@ -246,8 +266,10 @@ export class ProgresionService {
   /**
    * Obtiene todos los objetivos para administración
    */
-  static async obtenerObjetivosAdmin(): Promise<Objetivo[]> {
-    const { data, error } = await supabase.rpc('obtener_objetivos_admin');
+  static async obtenerObjetivosAdmin(rama?: string): Promise<Objetivo[]> {
+    const { data, error } = await supabase.rpc('obtener_objetivos_admin', {
+      p_rama: rama || null,
+    });
 
     if (error) {
       console.error('Error al obtener objetivos admin:', error);
@@ -263,6 +285,7 @@ export class ProgresionService {
       etapa_objetivo_grupo_id: o.etapa_objetivo_grupo_id as string,
       grupo_codigo: o.grupo_codigo as string,
       grupo_nombre: o.grupo_nombre as string,
+      grupo_rama: o.grupo_rama as string,
       etapa_id: o.etapa_id as string,
       etapa_codigo: o.etapa_codigo as string,
       etapa_nombre: o.etapa_nombre as string,
@@ -589,10 +612,110 @@ export class ProgresionService {
     
     return data === true;
   }
-  
+
   // ==========================================================================
-  // CÁLCULOS AUXILIARES
+  // CRUD ETAPAS (admin)
   // ==========================================================================
+
+  static async crearEtapa(datos: {
+    rama: string;
+    nombre: string;
+    codigo?: string;
+    descripcion?: string;
+    edad_tipica?: number;
+    orden?: number;
+    icono?: string;
+    color?: string;
+    requisitos_avance?: string;
+  }): Promise<{ id: string; codigo: string }> {
+    const { data, error } = await supabase.rpc('crear_etapa_progresion', {
+      p_rama:              datos.rama,
+      p_nombre:            datos.nombre,
+      p_codigo:            datos.codigo ?? null,
+      p_descripcion:       datos.descripcion ?? null,
+      p_edad_tipica:       datos.edad_tipica ?? null,
+      p_orden:             datos.orden ?? null,
+      p_icono:             datos.icono ?? '📍',
+      p_color:             datos.color ?? 'hsl(210, 70%, 55%)',
+      p_requisitos_avance: datos.requisitos_avance ?? null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al crear etapa');
+    return { id: data.id, codigo: data.codigo };
+  }
+
+  static async actualizarEtapa(id: string, datos: {
+    nombre?: string;
+    descripcion?: string;
+    edad_tipica?: number;
+    orden?: number;
+    icono?: string;
+    color?: string;
+    requisitos_avance?: string;
+  }): Promise<void> {
+    const { data, error } = await supabase.rpc('actualizar_etapa_progresion', {
+      p_id:                id,
+      p_nombre:            datos.nombre ?? null,
+      p_descripcion:       datos.descripcion ?? null,
+      p_edad_tipica:       datos.edad_tipica ?? null,
+      p_orden:             datos.orden ?? null,
+      p_icono:             datos.icono ?? null,
+      p_color:             datos.color ?? null,
+      p_requisitos_avance: datos.requisitos_avance ?? null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar etapa');
+  }
+
+  static async eliminarEtapa(id: string): Promise<void> {
+    const { data, error } = await supabase.rpc('eliminar_etapa_progresion', { p_id: id });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar etapa');
+  }
+
+  // ==========================================================================
+  // CRUD GRUPOS DE OBJETIVOS (admin)
+  // ==========================================================================
+
+  static async crearGrupoObjetivo(datos: {
+    rama: string;
+    nombre: string;
+    codigo?: string;
+    descripcion?: string;
+    orden?: number;
+  }): Promise<{ id: string; codigo: string }> {
+    const { data, error } = await supabase.rpc('crear_grupo_objetivo', {
+      p_rama:        datos.rama,
+      p_nombre:      datos.nombre,
+      p_codigo:      datos.codigo ?? null,
+      p_descripcion: datos.descripcion ?? null,
+      p_orden:       datos.orden ?? null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al crear grupo');
+    return { id: data.id, codigo: data.codigo };
+  }
+
+  static async actualizarGrupoObjetivo(id: string, datos: {
+    nombre?: string;
+    descripcion?: string;
+    orden?: number;
+  }): Promise<void> {
+    const { data, error } = await supabase.rpc('actualizar_grupo_objetivo', {
+      p_id:          id,
+      p_nombre:      datos.nombre ?? null,
+      p_descripcion: datos.descripcion ?? null,
+      p_orden:       datos.orden ?? null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar grupo');
+  }
+
+  static async eliminarGrupoObjetivo(id: string): Promise<void> {
+    const { data, error } = await supabase.rpc('eliminar_grupo_objetivo', { p_id: id });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar grupo');
+  }
   
   /**
    * Calcula el progreso de un área específica

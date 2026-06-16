@@ -37,6 +37,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IdentityDocumentUpload } from "./IdentityDocumentUpload";
 import { UbigeoSelector } from "./UbigeoSelector";
 import ScoutService from "@/services/scoutService";
+import { PersonSearchCombobox } from "@/components/shared/PersonSearch";
+import type { PersonaResult } from "@/services/personaService";
 
 // Tipos de parentesco disponibles
 const PARENTESCOS = [
@@ -118,6 +120,8 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
   const [verificando, setVerificando] = useState<Record<number, boolean>>({});
   // Estado para guardar documentos originales (para comparar en edición)
   const [documentosOriginales, setDocumentosOriginales] = useState<Record<number, string>>({});
+  // Personas vinculadas a través del buscador explícito (PersonSearchCombobox)
+  const [personasVinculadas, setPersonasVinculadas] = useState<Record<number, PersonaResult | null>>({});
 
   // Guardar documentos originales al cargar
   React.useEffect(() => {
@@ -236,6 +240,35 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
     setPersonasExistentes(prev => ({ ...prev, [index]: null }));
   }, []);
 
+  /**
+   * Vincula un familiar usando el PersonSearchCombobox (búsqueda explícita).
+   * Pre-rellena todos los campos del formulario y marca la persona como vinculada.
+   */
+  const vincularDesdeCombobox = useCallback((index: number, persona: PersonaResult) => {
+    setValue(`familiares.${index}.nombres`, persona.nombres);
+    setValue(`familiares.${index}.apellidos`, persona.apellidos);
+    if (persona.tipo_documento) setValue(`familiares.${index}.tipo_documento`, persona.tipo_documento);
+    if (persona.numero_documento) setValue(`familiares.${index}.numero_documento`, persona.numero_documento);
+    if (persona.celular) setValue(`familiares.${index}.celular`, persona.celular);
+    if (persona.correo) setValue(`familiares.${index}.correo`, persona.correo);
+    if (persona.sexo) setValue(`familiares.${index}.sexo`, persona.sexo);
+    setValue(`familiares.${index}._vincular_persona_id`, persona.persona_id);
+    setValue(`familiares.${index}._persona_existente_id`, persona.persona_id);
+    // Registrar como vinculada (para mostrar banner en el combobox)
+    setPersonasVinculadas(prev => ({ ...prev, [index]: persona }));
+    // Limpiar alerta onBlur si existiera
+    setPersonasExistentes(prev => ({ ...prev, [index]: null }));
+  }, [setValue]);
+
+  /**
+   * Desvincula la persona del buscador (el usuario quiere ingresar datos nuevos).
+   */
+  const desvincularCombobox = useCallback((index: number) => {
+    setValue(`familiares.${index}._vincular_persona_id`, undefined);
+    setValue(`familiares.${index}._persona_existente_id`, undefined);
+    setPersonasVinculadas(prev => ({ ...prev, [index]: null }));
+  }, [setValue]);
+
   const agregarFamiliar = () => {
     append(nuevoFamiliar);
   };
@@ -322,6 +355,19 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* ── Buscador de persona existente ── */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    ¿Esta persona ya está registrada? Búscala para pre-llenar el formulario
+                  </label>
+                  <PersonSearchCombobox
+                    placeholder="Buscar por nombre o N° documento..."
+                    onSelect={(persona) => vincularDesdeCombobox(index, persona)}
+                    personaVinculada={personasVinculadas[index] ?? null}
+                    onDesvincular={() => desvincularCombobox(index)}
+                  />
+                </div>
+
                 {/* Campo oculto: id del familiar (necesario para que RHF lo incluya en onSubmit) */}
                 <FormField
                   control={control}
