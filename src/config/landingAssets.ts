@@ -51,9 +51,9 @@ export interface LandingAssets {
 
 // ─── REEMPLAZA los valores "REEMPLAZAR_*" con tus URLs reales ───────────────
 export const LANDING_ASSETS: LandingAssets = {
-  heroVideo: 'https://1drv.ms/v/c/a877d6f23a3de7d5/IQAcasd8CKMfSr5BUSmeRU2tAcNs7RqhJx47eJHHQf9PGts?e=Lmrg5v',
-  ogImage:   'https://1drv.ms/i/c/a877d6f23a3de7d5/IQCUeXng_6SgR69iUFObBcxeAdTH19nyQMaHBBAhxzt-Kxc?e=fVDjG5',
-  siteUrl:   'https://REEMPLAZAR_TU_DOMINIO.com',
+  heroVideo: 'https://gruposcoutlima12.blob.core.windows.net/landingpage-launiversidaddelescultismo/Download.mp4',
+  ogImage:   'https://gruposcoutlima12.blob.core.windows.net/landingpage-launiversidaddelescultismo/christopher.jpg',
+  siteUrl:   'https://salmon-pebble-02073b20f.1.azurestaticapps.net/',
 
   socials: {
     instagram: 'https://instagram.com/REEMPLAZAR',
