@@ -3,6 +3,12 @@
     "rewrite": "/index.html",
     "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*", "/sw.js", "/manifest.json"]
   },
+  "globalHeaders": {
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)"
+  },
   "mimeTypes": {
     ".json": "application/json",
     ".js": "application/javascript"
