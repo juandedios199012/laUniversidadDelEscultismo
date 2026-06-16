@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '../../../components/ui/dialog';
+} from '../../components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -20,12 +20,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../../../components/ui/form';
-import { Input } from '../../../components/ui/input';
-import { Textarea } from '../../../components/ui/textarea';
-import { Button } from '../../../components/ui/button';
-import { RAMAS, Etapa, GrupoObjetivo } from '../../../services/progresionService';
-import type { EtapaFormData, GrupoFormData } from '../../../hooks/useEtapasAdmin';
+} from '../../components/ui/form';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { Button } from '../../components/ui/button';
+import { RAMAS, Etapa, GrupoObjetivo } from '../../services/progresionService';
+import type { EtapaFormData, GrupoFormData } from '../../hooks/useEtapasAdmin';
 
 // ============================================================================
 // SCHEMAS ZOD
