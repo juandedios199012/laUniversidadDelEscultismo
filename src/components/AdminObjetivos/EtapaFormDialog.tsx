@@ -2,7 +2,7 @@
 // EtapaFormDialog — Diálogo para crear / editar etapas y grupos
 // ============================================================================
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -94,13 +94,31 @@ export function EtapaFormDialog({
   const esEdicion = modo === 'etapa' ? !!etapaEditar : !!grupoEditar;
   const ramaInfo = RAMAS.find(r => r.codigo === ramaActiva);
 
-  // Estado local para etapas_aplicables (checkboxes)
+  // Estado local para etapas_aplicables y validación
   const [etapasAplicables, setEtapasAplicables] = useState<string[]>([]);
+  const [errorEtapas, setErrorEtapas]             = useState<string | null>(null);
+  // Último nombre auto-generado: permite detectar si el usuario lo sobreescribió
+  const [autoNombre, setAutoNombre]               = useState('');
 
   const toggleEtapa = (codigo: string) => {
-    setEtapasAplicables(prev =>
-      prev.includes(codigo) ? prev.filter(c => c !== codigo) : [...prev, codigo]
-    );
+    const nuevos = etapasAplicables.includes(codigo)
+      ? etapasAplicables.filter(c => c !== codigo)
+      : [...etapasAplicables, codigo];
+
+    // Auto-generar nombre desde las etapas seleccionadas
+    const nombreGenerado = etapasDisponibles
+      .filter(e => nuevos.includes(e.codigo))
+      .map(e => e.nombre)
+      .join(' - ');
+
+    // Solo sobreescribir el nombre si el usuario no lo modificó manualmente
+    const nombreActual = grupoForm.getValues('nombre');
+    if (!nombreActual || nombreActual === autoNombre) {
+      grupoForm.setValue('nombre', nombreGenerado, { shouldValidate: !!nombreGenerado });
+    }
+    setAutoNombre(nombreGenerado);
+    setEtapasAplicables(nuevos);
+    setErrorEtapas(null);
   };
 
   // ---- Formulario Etapa ----
@@ -144,9 +162,13 @@ export function EtapaFormDialog({
         orden:       grupoEditar.orden,
       });
       setEtapasAplicables(grupoEditar.etapas_aplicables ?? []);
+      setAutoNombre('');
+      setErrorEtapas(null);
     } else if (modo === 'grupo') {
       grupoForm.reset({ nombre: '', codigo: '', descripcion: '' });
       setEtapasAplicables([]);
+      setAutoNombre('');
+      setErrorEtapas(null);
     }
   }, [open, modo, etapaEditar, grupoEditar]);
 
@@ -171,6 +193,11 @@ export function EtapaFormDialog({
   });
 
   const handleSubmitGrupo = grupoForm.handleSubmit(async (values) => {
+    // Validar: se debe seleccionar al menos una etapa (si hay etapas disponibles)
+    if (etapasDisponibles.length > 0 && etapasAplicables.length === 0) {
+      setErrorEtapas('Selecciona al menos una etapa para este grupo');
+      return;
+    }
     const datos: GrupoFormData = {
       nombre:             values.nombre,
       codigo:             values.codigo || undefined,
@@ -319,85 +346,138 @@ export function EtapaFormDialog({
               onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
               className="space-y-4"
             >
+
+              {/* ── PASO 1: Selección de etapas (lo más importante, va primero) ── */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      Etapas que cubre este grupo
+                      {etapasDisponibles.length > 0 && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Un grupo agrupa objetivos educativos compartidos por una o más etapas
+                    </p>
+                  </div>
+                  {etapasAplicables.length > 0 && (
+                    <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                      {etapasAplicables.length} seleccionada{etapasAplicables.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {etapasDisponibles.length === 0 ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    ⚠ No hay etapas registradas para esta rama. Crea las etapas primero.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {etapasDisponibles.map((etapa) => {
+                      const activa = etapasAplicables.includes(etapa.codigo);
+                      return (
+                        <button
+                          key={etapa.codigo}
+                          type="button"
+                          onClick={() => toggleEtapa(etapa.codigo)}
+                          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
+                            activa
+                              ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
+                          }`}
+                        >
+                          <span>{etapa.icono ?? '📍'}</span>
+                          <span>{etapa.nombre}</span>
+                          {activa && <span className="text-xs">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {errorEtapas && (
+                  <p className="text-xs text-red-500">{errorEtapas}</p>
+                )}
+              </div>
+
+              {/* ── PASO 2: Nombre (auto-generado o manual) ── */}
               <FormField
                 control={grupoForm.control}
                 name="nombre"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre <span className="text-red-500">*</span></FormLabel>
-                    <FormControl><Input placeholder="ej: Pista-Senda" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={grupoForm.control}
-                  name="codigo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código</FormLabel>
-                      <FormControl><Input placeholder="Auto-generado" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={grupoForm.control}
-                  name="orden"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Orden</FormLabel>
-                      <FormControl>
-                        <Input type="number" min={1} placeholder="Auto" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={grupoForm.control}
-                name="descripcion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      Nombre del grupo <span className="text-red-500">*</span>
+                      {field.value && field.value === autoNombre && (
+                        <span className="text-xs font-normal text-gray-400">auto-generado · puedes editarlo</span>
+                      )}
+                    </FormLabel>
                     <FormControl>
-                      <Textarea rows={2} placeholder="Descripción del grupo..." {...field} />
+                      <Input
+                        placeholder="Se genera al seleccionar etapas..."
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Si el usuario edita manualmente, desconectar del auto-nombre
+                          if (e.target.value !== autoNombre) setAutoNombre('');
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Etapas que cubre este grupo */}
-              {etapasDisponibles.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Etapas que cubre este grupo</p>
-                  <p className="text-xs text-gray-500">Selecciona qué etapas de la rama quedan cubiertas por este grupo de objetivos</p>
-                  <div className="flex flex-wrap gap-2">
-                    {etapasDisponibles.map((etapa) => (
-                      <label
-                        key={etapa.codigo}
-                        className={`flex items-center gap-2 cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                          etapasAplicables.includes(etapa.codigo)
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="hidden"
-                          checked={etapasAplicables.includes(etapa.codigo)}
-                          onChange={() => toggleEtapa(etapa.codigo)}
-                        />
-                        <span>{etapa.icono ?? '📍'}</span>
-                        <span>{etapa.nombre}</span>
-                      </label>
-                    ))}
+              {/* ── Campos opcionales ── */}
+              <details className="group">
+                <summary className="cursor-pointer list-none text-xs text-gray-400 hover:text-gray-600 select-none">
+                  <span className="group-open:hidden">▸ Campos opcionales (código, orden, descripción)</span>
+                  <span className="hidden group-open:inline">▾ Campos opcionales</span>
+                </summary>
+                <div className="pt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={grupoForm.control}
+                      name="codigo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Código</FormLabel>
+                          <FormControl><Input placeholder="Auto-generado" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={grupoForm.control}
+                      name="orden"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Orden</FormLabel>
+                          <FormControl>
+                            <Input type="number" min={1} placeholder="Auto" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
+                  <FormField
+                    control={grupoForm.control}
+                    name="descripcion"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descripción</FormLabel>
+                        <FormControl>
+                          <Textarea rows={2} placeholder="Descripción del grupo..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              )}
+              </details>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose} disabled={guardando}>
                   Cancelar
