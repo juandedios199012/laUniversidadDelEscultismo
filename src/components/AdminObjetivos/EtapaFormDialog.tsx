@@ -33,7 +33,6 @@ import type { EtapaFormData, GrupoFormData } from '../../hooks/useEtapasAdmin';
 
 const etapaSchema = z.object({
   nombre:            z.string().min(2, 'El nombre es requerido').max(50),
-  codigo:            z.string().max(20).optional(),
   descripcion:       z.string().optional(),
   edad_tipica:       z.coerce.number().int().positive().optional(),
   orden:             z.coerce.number().int().positive().optional(),
@@ -176,7 +175,6 @@ export function EtapaFormDialog({
   const handleSubmitEtapa = etapaForm.handleSubmit(async (values) => {
     const datos: EtapaFormData = {
       nombre:            values.nombre,
-      codigo:            values.codigo || undefined,
       descripcion:       values.descripcion || undefined,
       edad_tipica:       values.edad_tipica || undefined,
       orden:             values.orden || undefined,
@@ -282,18 +280,7 @@ export function EtapaFormDialog({
                 <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 select-none">
                   Opciones avanzadas ▸
                 </summary>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <FormField
-                    control={etapaForm.control}
-                    name="codigo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Código interno</FormLabel>
-                        <FormControl><Input placeholder="Auto-generado" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="mt-3">
                   <FormField
                     control={etapaForm.control}
                     name="orden"

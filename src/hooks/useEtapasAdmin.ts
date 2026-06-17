@@ -17,7 +17,6 @@ import ProgresionService, {
 
 export interface EtapaFormData {
   nombre: string;
-  codigo?: string;
   descripcion?: string;
   edad_tipica?: number;
   orden?: number;

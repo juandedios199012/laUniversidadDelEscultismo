@@ -101,15 +101,15 @@ const ProgresionTab: React.FC<ProgresionTabProps> = ({
 
       {/* Etapas de Progresión — cards dinámicas desde stageBars */}
       <section>
-        <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-400">
+        <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-400">
           Etapas de Progresión
         </h3>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => <CardSkeleton key={i} className="h-24" />)}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => <CardSkeleton key={i} className="h-44" />)}
           </div>
         ) : stageBars.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {stageBars.map((stage) => (
               <StageCard
                 key={stage.etapaCodigo}
@@ -122,7 +122,7 @@ const ProgresionTab: React.FC<ProgresionTabProps> = ({
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {ETAPAS_ORDEN.map((codigo) => (
               <StageCard
                 key={codigo}
