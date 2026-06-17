@@ -253,17 +253,6 @@ export function EtapaFormDialog({
                 />
                 <FormField
                   control={etapaForm.control}
-                  name="codigo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código</FormLabel>
-                      <FormControl><Input placeholder="Auto-generado" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={etapaForm.control}
                   name="edad_tipica"
                   render={({ field }) => (
                     <FormItem>
@@ -286,20 +275,40 @@ export function EtapaFormDialog({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={etapaForm.control}
-                  name="orden"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Orden</FormLabel>
-                      <FormControl>
-                        <Input type="number" min={1} placeholder="Auto" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
+
+              {/* Campos avanzados colapsados */}
+              <details className="group">
+                <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 select-none">
+                  Opciones avanzadas ▸
+                </summary>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <FormField
+                    control={etapaForm.control}
+                    name="codigo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código interno</FormLabel>
+                        <FormControl><Input placeholder="Auto-generado" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={etapaForm.control}
+                    name="orden"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Orden</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} placeholder="Auto" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </details>
               <FormField
                 control={etapaForm.control}
                 name="descripcion"
