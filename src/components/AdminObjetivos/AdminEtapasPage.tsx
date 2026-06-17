@@ -191,9 +191,6 @@ const AdminEtapasPage: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-800">{etapa.nombre}</span>
-                    <span className="text-xs text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                      {etapa.codigo}
-                    </span>
                     {etapa.edad_tipica && (
                       <span className="text-xs text-gray-500">{etapa.edad_tipica} años</span>
                     )}
