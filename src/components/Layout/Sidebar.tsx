@@ -3,7 +3,7 @@ import {
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart
+  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart, Target
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -55,8 +55,10 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-amber-500 to-orange-500',
     items: [
       { id: 'especialidades',  label: 'Especialidades',       icon: Medal,      gradient: 'from-yellow-500 to-amber-500',  modulo: 'progresion' },
-      { id: 'admin-objetivos', label: 'Objetivos Educativos', icon: Settings,   gradient: 'from-orange-400 to-amber-500',  modulo: 'progresion' },
+      { id: 'admin-objetivos', label: 'Objetivos Educativos', icon: Target,     gradient: 'from-orange-400 to-amber-500',  modulo: 'progresion' },
+      { id: 'admin-etapas',    label: 'Etapas y Grupos',      icon: Settings,   gradient: 'from-amber-600 to-orange-600',  modulo: 'progresion' },
       { id: 'progresion-v4',   label: '🚀 Progresión',        icon: Rocket,     gradient: 'from-blue-500 to-violet-500',   modulo: 'progresion' },
+      { id: 'progresion-v5',   label: '🌍 Multi-Rama (beta)', icon: Rocket,     gradient: 'from-green-500 to-teal-500',    modulo: 'progresion' },
     ],
   },
   {

@@ -22,9 +22,11 @@ import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
 import { SeguridadV2Dashboard } from './components/SeguridadV2';
 import AdminObjetivosPage from './components/AdminObjetivos/AdminObjetivosPage';
+import AdminEtapasPage from './components/AdminObjetivos/AdminEtapasPage';
 // Módulo de Especialidades Scout
 import { EspecialidadesModule } from './components/Especialidades';
 import { ProgresionModule } from './components/Progresion';
+import ProgresionModuleV2 from './components/Progresion/ProgresionModuleV2';
 import PortalPadresPage from './components/PortalPadres/PortalPadresPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider, usePermissions } from './contexts/PermissionsContext';
@@ -92,6 +94,8 @@ function AppContent() {
         return <ConfiguracionTarifasInscripcion />;
       case 'admin-objetivos':
         return <AdminObjetivosPage />;
+      case 'admin-etapas':
+        return <AdminEtapasPage />;
       case 'grupo-scout':
         return <GrupoScout />;
       case 'asistencia':
@@ -124,6 +128,8 @@ function AppContent() {
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
       case 'progresion-v4':
         return <ProgresionModule />;
+      case 'progresion-v5':
+        return <ProgresionModuleV2 />;
       case 'portal-padres':
         return <PortalPadresPage />;
       default:

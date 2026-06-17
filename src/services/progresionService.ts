@@ -119,6 +119,7 @@ export interface GrupoObjetivo {
   descripcion: string;
   orden: number;
   rama: string;
+  etapas_aplicables?: string[];
 }
 
 // ============================================================================
@@ -504,6 +505,32 @@ export class ProgresionService {
   }
 
   /**
+   * Obtiene resumen de progresión filtrado por rama (v2 multi-rama)
+   */
+  static async obtenerResumenProgresionV2(rama?: RamaCodigo): Promise<ResumenProgresoScout[]> {
+    const params = rama ? { p_rama: rama } : {};
+    const { data, error } = await supabase.rpc('obtener_resumen_progresion_v2', params);
+    if (error) {
+      console.error('Error al obtener resumen progresión v2:', error);
+      throw new Error('No se pudo cargar el resumen de progresión');
+    }
+    return data || [];
+  }
+
+  /**
+   * Obtiene estadísticas de etapas filtradas por rama (v2 multi-rama)
+   */
+  static async obtenerEstadisticasEtapasV2(rama?: RamaCodigo): Promise<EstadisticaEtapa[]> {
+    const params = rama ? { p_rama: rama } : {};
+    const { data, error } = await supabase.rpc('obtener_estadisticas_etapas_v2', params);
+    if (error) {
+      console.error('Error al obtener estadísticas etapas v2:', error);
+      throw new Error('No se pudieron cargar las estadísticas');
+    }
+    return data || [];
+  }
+
+  /**
    * Obtiene la tendencia mensual real de progreso para Progresion v4.
    */
   static async obtenerTendenciasProgresionMensual(periodoMeses: number = 8): Promise<TendenciaProgresionMensual[]> {
@@ -683,13 +710,15 @@ export class ProgresionService {
     codigo?: string;
     descripcion?: string;
     orden?: number;
+    etapas_aplicables?: string[];
   }): Promise<{ id: string; codigo: string }> {
     const { data, error } = await supabase.rpc('crear_grupo_objetivo', {
-      p_rama:        datos.rama,
-      p_nombre:      datos.nombre,
-      p_codigo:      datos.codigo ?? null,
-      p_descripcion: datos.descripcion ?? null,
-      p_orden:       datos.orden ?? null,
+      p_rama:               datos.rama,
+      p_nombre:             datos.nombre,
+      p_codigo:             datos.codigo ?? null,
+      p_descripcion:        datos.descripcion ?? null,
+      p_orden:              datos.orden ?? null,
+      p_etapas_aplicables:  datos.etapas_aplicables ?? null,
     });
     if (error) throw new Error(error.message);
     if (!data?.success) throw new Error(data?.error || 'Error al crear grupo');
@@ -700,12 +729,14 @@ export class ProgresionService {
     nombre?: string;
     descripcion?: string;
     orden?: number;
+    etapas_aplicables?: string[];
   }): Promise<void> {
     const { data, error } = await supabase.rpc('actualizar_grupo_objetivo', {
-      p_id:          id,
-      p_nombre:      datos.nombre ?? null,
-      p_descripcion: datos.descripcion ?? null,
-      p_orden:       datos.orden ?? null,
+      p_id:                id,
+      p_nombre:            datos.nombre ?? null,
+      p_descripcion:       datos.descripcion ?? null,
+      p_orden:             datos.orden ?? null,
+      p_etapas_aplicables: datos.etapas_aplicables ?? null,
     });
     if (error) throw new Error(error.message);
     if (!data?.success) throw new Error(data?.error || 'Error al actualizar grupo');

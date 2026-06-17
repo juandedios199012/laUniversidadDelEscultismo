@@ -274,9 +274,10 @@ interface ScoutsTabProps {
   loading: boolean;
   scouts: V4Scout[];
   onReload: () => void;
+  ramaLabel?: string;
 }
 
-const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload }) => {
+const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaLabel }) => {
   const [search, setSearch] = useState('');
   const [filtroPatrulla, setFiltroPatrulla] = useState('');
   const [filtroEtapa, setFiltroEtapa] = useState('');
@@ -312,7 +313,7 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload }) => {
       {/* Header + filters */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-gray-800">Scouts de la Tropa</h2>
+          <h2 className="text-2xl font-black tracking-tight text-gray-800">Scouts de {ramaLabel ? `la ${ramaLabel}` : 'la Tropa'}</h2>
           <p className="mt-1 text-sm text-gray-500">
             {filtered.length} de {scouts.length} scouts
           </p>

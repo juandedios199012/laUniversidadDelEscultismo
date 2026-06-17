@@ -31,6 +31,7 @@ export interface GrupoFormData {
   codigo?: string;
   descripcion?: string;
   orden?: number;
+  etapas_aplicables?: string[];
 }
 
 export interface UseEtapasAdminReturn {

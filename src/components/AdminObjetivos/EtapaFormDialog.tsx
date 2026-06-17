@@ -2,7 +2,7 @@
 // EtapaFormDialog — Diálogo para crear / editar etapas y grupos
 // ============================================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -61,6 +61,8 @@ interface EtapaFormDialogProps {
   onClose: () => void;
   modo: 'etapa' | 'grupo';
   ramaActiva: string;
+  /** Lista de etapas disponibles para configurar etapas_aplicables en grupos */
+  etapasDisponibles?: Etapa[];
   /** Si se provee, es modo edición */
   etapaEditar?: Etapa;
   grupoEditar?: GrupoObjetivo;
@@ -80,6 +82,7 @@ export function EtapaFormDialog({
   onClose,
   modo,
   ramaActiva,
+  etapasDisponibles = [],
   etapaEditar,
   grupoEditar,
   guardando,
@@ -90,6 +93,15 @@ export function EtapaFormDialog({
 }: EtapaFormDialogProps) {
   const esEdicion = modo === 'etapa' ? !!etapaEditar : !!grupoEditar;
   const ramaInfo = RAMAS.find(r => r.codigo === ramaActiva);
+
+  // Estado local para etapas_aplicables (checkboxes)
+  const [etapasAplicables, setEtapasAplicables] = useState<string[]>([]);
+
+  const toggleEtapa = (codigo: string) => {
+    setEtapasAplicables(prev =>
+      prev.includes(codigo) ? prev.filter(c => c !== codigo) : [...prev, codigo]
+    );
+  };
 
   // ---- Formulario Etapa ----
   const etapaForm = useForm<EtapaFormValues>({
@@ -131,8 +143,10 @@ export function EtapaFormDialog({
         descripcion: grupoEditar.descripcion || '',
         orden:       grupoEditar.orden,
       });
+      setEtapasAplicables(grupoEditar.etapas_aplicables ?? []);
     } else if (modo === 'grupo') {
       grupoForm.reset({ nombre: '', codigo: '', descripcion: '' });
+      setEtapasAplicables([]);
     }
   }, [open, modo, etapaEditar, grupoEditar]);
 
@@ -158,10 +172,11 @@ export function EtapaFormDialog({
 
   const handleSubmitGrupo = grupoForm.handleSubmit(async (values) => {
     const datos: GrupoFormData = {
-      nombre:      values.nombre,
-      codigo:      values.codigo || undefined,
-      descripcion: values.descripcion || undefined,
-      orden:       values.orden || undefined,
+      nombre:             values.nombre,
+      codigo:             values.codigo || undefined,
+      descripcion:        values.descripcion || undefined,
+      orden:              values.orden || undefined,
+      etapas_aplicables:  etapasAplicables.length > 0 ? etapasAplicables : undefined,
     };
     if (esEdicion && grupoEditar) {
       await onActualizarGrupo(grupoEditar.id, datos);
@@ -354,6 +369,35 @@ export function EtapaFormDialog({
                   </FormItem>
                 )}
               />
+
+              {/* Etapas que cubre este grupo */}
+              {etapasDisponibles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Etapas que cubre este grupo</p>
+                  <p className="text-xs text-gray-500">Selecciona qué etapas de la rama quedan cubiertas por este grupo de objetivos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {etapasDisponibles.map((etapa) => (
+                      <label
+                        key={etapa.codigo}
+                        className={`flex items-center gap-2 cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                          etapasAplicables.includes(etapa.codigo)
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={etapasAplicables.includes(etapa.codigo)}
+                          onChange={() => toggleEtapa(etapa.codigo)}
+                        />
+                        <span>{etapa.icono ?? '📍'}</span>
+                        <span>{etapa.nombre}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose} disabled={guardando}>
                   Cancelar
