@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ProgresionService, {
-  EstadisticaEtapa,
   ResumenProgresoScout,
   ProgresoArea,
   RamaCodigo,
@@ -30,19 +29,19 @@ export function useProgresionDataV2(rama: RamaCodigo) {
   const [scouts, setScouts] = useState<V4Scout[]>([]);
   const [stageBars, setStageBars] = useState<V4StageBar[]>([]);
   const [areasMap, setAreasMap] = useState<Record<string, ProgresoArea[]>>({});
-  const [estadisticas, setEstadisticas] = useState<EstadisticaEtapa[]>([]);
 
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const [rawScouts, estadis] = await Promise.all([
-        ProgresionService.obtenerResumenProgresionV2(rama),
-        ProgresionService.obtenerEstadisticasEtapasV2(rama),
-      ]);
+      // Usamos los mismos RPCs de v4 (datos reales) y filtramos por rama en frontend
+      const rawScouts = await ProgresionService.obtenerResumenProgresion();
 
-      const mapped: V4Scout[] = rawScouts.map((s: ResumenProgresoScout & { scout_codigo?: string }) => ({
+      // Filtrar por la rama activa
+      const rawFiltrados = rawScouts.filter((s) => s.rama === rama);
+
+      const mapped: V4Scout[] = rawFiltrados.map((s: ResumenProgresoScout & { scout_codigo?: string }) => ({
         id:                    s.scout_id,
         nombre:                s.scout_nombre,
         codigo:                s.scout_codigo ?? '',
@@ -55,11 +54,19 @@ export function useProgresionDataV2(rama: RamaCodigo) {
         totalObjetivos:        s.total_objetivos ?? 0,
       }));
 
-      const bars: V4StageBar[] = estadis.map((e) => ({
-        etapaCodigo:      e.etapa_codigo,
-        etapaNombre:      e.etapa_nombre,
-        totalScouts:      e.total_scouts,
-        promedioProgreso: Math.round(e.promedio_progreso ?? 0),
+      // Derivar stageBars desde los scouts filtrados (no necesita RPC extra)
+      const barsMap = new Map<string, { nombre: string; total: number; sumProgreso: number }>();
+      mapped.forEach((s) => {
+        const entry = barsMap.get(s.etapaCodigo) ?? { nombre: s.etapaNombre, total: 0, sumProgreso: 0 };
+        entry.total++;
+        entry.sumProgreso += s.progreso;
+        barsMap.set(s.etapaCodigo, entry);
+      });
+      const bars: V4StageBar[] = Array.from(barsMap.entries()).map(([code, d]) => ({
+        etapaCodigo:      code,
+        etapaNombre:      d.nombre,
+        totalScouts:      d.total,
+        promedioProgreso: d.total > 0 ? Math.round(d.sumProgreso / d.total) : 0,
       }));
 
       // Cargar áreas por scout
@@ -99,7 +106,6 @@ export function useProgresionDataV2(rama: RamaCodigo) {
 
       if (requestId !== requestIdRef.current) return;
 
-      setEstadisticas(estadis);
       setScouts(mapped);
       setStageBars(bars);
       setAreasMap(map);
@@ -176,7 +182,6 @@ export function useProgresionDataV2(rama: RamaCodigo) {
     error,
     scouts: scoutsWithAreas,
     stageBars,
-    estadisticas,
     globalAreas,
     totalScouts,
     promedioGlobal,

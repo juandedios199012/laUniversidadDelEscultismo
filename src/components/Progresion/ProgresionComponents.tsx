@@ -40,7 +40,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, sub, color
 interface StageCardProps {
   etapaCodigo: string;
   etapaNombre: string;
-  edad: number;
+  edad?: number;
   totalScouts: number;
   promedioProgreso: number;
 }
@@ -57,40 +57,48 @@ export const StageCard: React.FC<StageCardProps> = ({
 
   return (
     <div
-      className="rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="rounded-xl border p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       style={{ borderColor: `${color}40`, background: `${color}09` }}
     >
-      <div className="flex items-start justify-between gap-3">
+      {/* Fila superior: icono + nombre + badge edad */}
+      <div className="flex items-center gap-2">
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg"
           style={{ background: `${color}20` }}
         >
           {icon}
         </div>
-        <span
-          className="rounded-full px-2.5 py-1 text-xs font-bold"
-          style={{ background: `${color}20`, color }}
-        >
-          {edad} años
-        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-1">
+            <h3 className="truncate text-sm font-black tracking-tight text-gray-800">{etapaNombre}</h3>
+            {edad !== undefined && (
+              <span
+                className="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold"
+                style={{ background: `${color}20`, color }}
+              >
+                {edad}a
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Users className="h-3 w-3" />
+            <span className="font-semibold" style={{ color }}>{totalScouts}</span>
+            <span>scouts</span>
+          </div>
+        </div>
       </div>
-      <h3 className="mt-4 text-lg font-black tracking-tight text-gray-800">{etapaNombre}</h3>
-      <div className="mt-3">
-        <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-gray-500">
+      {/* Barra de progreso */}
+      <div className="mt-2">
+        <div className="mb-1 flex items-center justify-between text-xs font-semibold text-gray-500">
           <span>Promedio</span>
           <span style={{ color }}>{promedioProgreso}%</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+        <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{ width: `${promedioProgreso}%`, background: color }}
           />
         </div>
-      </div>
-      <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-500">
-        <Users className="h-4 w-4" />
-        <span className="font-semibold" style={{ color }}>{totalScouts}</span>
-        <span>scouts</span>
       </div>
     </div>
   );

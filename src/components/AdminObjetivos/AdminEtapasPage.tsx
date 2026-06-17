@@ -195,7 +195,7 @@ const AdminEtapasPage: React.FC = () => {
                       {etapa.codigo}
                     </span>
                     {etapa.edad_tipica && (
-                      <span className="text-xs text-gray-500">~{etapa.edad_tipica} años</span>
+                      <span className="text-xs text-gray-500">{etapa.edad_tipica} años</span>
                     )}
                   </div>
                   {etapa.descripcion && (

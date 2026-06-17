@@ -40,23 +40,20 @@ const ProgresionModuleV2: React.FC = () => {
               </div>
             </div>
 
-            {/* Selector de rama */}
-            <div className="flex items-center gap-1 shrink-0">
-              {RAMAS.map((r) => (
-                <button
-                  key={r.codigo}
-                  type="button"
-                  onClick={() => setRamaActiva(r.codigo)}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                    ramaActiva === r.codigo
-                      ? `bg-gradient-to-r ${r.color} text-white shadow`
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                  }`}
-                >
-                  <span>{r.icono}</span>
-                  <span className="hidden md:inline">{r.label}</span>
-                </button>
-              ))}
+            {/* Selector de rama — combobox */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-semibold text-gray-400 hidden sm:inline">Rama</span>
+              <select
+                value={ramaActiva}
+                onChange={(e) => setRamaActiva(e.target.value as RamaCodigo)}
+                className="cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-7 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {RAMAS.map((r) => (
+                  <option key={r.codigo} value={r.codigo}>
+                    {r.icono} {r.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Tabs */}
