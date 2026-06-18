@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users, Calendar, Save, Plus, Search, User, Edit, Eye, Phone, Mail,
   Trash2, Award, Shield, UserCheck, ChevronRight, ChevronLeft, X,
-  IdCard, Briefcase, Sparkles, AlertCircle, Check, BadgeCheck,
+  CreditCard, Briefcase, Sparkles, AlertCircle, Check, BadgeCheck,
 } from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
 import ComitePadresService from '../../services/comitePadresService';
@@ -69,7 +69,7 @@ const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
 ];
 
 const PASOS = [
-  { id: 1, title: 'Identidad', icon: IdCard },
+  { id: 1, title: 'Identidad', icon: CreditCard },
   { id: 2, title: 'Cargo & Afiliación', icon: Briefcase },
   { id: 3, title: 'Experiencia', icon: Sparkles },
 ];
@@ -1018,7 +1018,7 @@ function DetalleMiembro({
 
       <div className="space-y-5 px-6 py-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <InfoRow icon={IdCard} label="Documento" value={`${m.tipo_documento || 'DNI'} ${m.numero_documento || '—'}`} />
+          <InfoRow icon={CreditCard} label="Documento" value={`${m.tipo_documento || 'DNI'} ${m.numero_documento || '—'}`} />
           <InfoRow icon={Mail} label="Correo" value={m.email || m.correo || '—'} />
           <InfoRow icon={Phone} label="Teléfono" value={m.telefono || m.celular || '—'} />
           <InfoRow

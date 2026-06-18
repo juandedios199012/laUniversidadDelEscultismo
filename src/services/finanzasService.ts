@@ -91,6 +91,52 @@ export interface EstadisticaCategoria {
   cantidad: number;
 }
 
+// ============= CONTABILIDAD POR PERSONA (Saldos Virtuales) =============
+
+export type TipoMovimientoPersona = 'INGRESO' | 'EGRESO';
+
+export interface NuevoMovimientoPersona {
+  persona_id: string;
+  tipo_movimiento: TipoMovimientoPersona;
+  concepto: string;
+  monto: number;
+  fecha?: string;
+  notas?: string;
+}
+
+export interface SaldoPersona {
+  persona_id: string;
+  nombres: string;
+  apellidos: string;
+  numero_documento?: string;
+  total_ingresos: number;
+  total_egresos: number;
+  saldo: number;
+  movimientos_count: number;
+  ultima_fecha?: string;
+}
+
+export interface MovimientoPersona {
+  id: string;
+  tipo_movimiento: TipoMovimientoPersona;
+  concepto: string;
+  monto: number;
+  fecha: string;
+  notas?: string;
+  created_at?: string;
+}
+
+export interface MovimientosPersonaDetalle {
+  persona: {
+    persona_id: string;
+    nombres: string;
+    apellidos: string;
+    numero_documento?: string;
+  };
+  saldo: number;
+  data: MovimientoPersona[];
+}
+
 // ============= CONSTANTES =============
 
 export const CATEGORIAS_INGRESO: { value: CategoriaFinanzas; label: string; emoji: string }[] = [
@@ -123,6 +169,16 @@ export const METODOS_PAGO: { value: MetodoPago; label: string; emoji: string }[]
   { value: 'TRANSFERENCIA', label: 'Transferencia', emoji: '🏦' },
   { value: 'TARJETA', label: 'Tarjeta', emoji: '💳' },
   { value: 'OTRO', label: 'Otro', emoji: '💰' },
+];
+
+// Conceptos sugeridos para movimientos por persona (extensible con "Otro")
+export const CONCEPTOS_MOVIMIENTO_PERSONA: { value: string; label: string; emoji: string }[] = [
+  { value: 'Sobrante de viaje', label: 'Sobrante de viaje', emoji: '🧳' },
+  { value: 'Actividad económica', label: 'Actividad económica', emoji: '💼' },
+  { value: 'Cuota ordinaria', label: 'Cuota ordinaria', emoji: '📅' },
+  { value: 'Venta de alimentos', label: 'Venta de alimentos', emoji: '🍔' },
+  { value: 'Sobrante de evento/paseo', label: 'Sobrante de evento/paseo', emoji: '🎉' },
+  { value: 'Cuota de membresía', label: 'Cuota de membresía', emoji: '🎟️' },
 ];
 
 // ============= SERVICE CLASS =============
@@ -445,6 +501,67 @@ export class FinanzasService {
     }
 
     return data;
+  }
+
+  // ============= CONTABILIDAD POR PERSONA (Saldos Virtuales) =============
+
+  /**
+   * Registra un movimiento (INGRESO/EGRESO) en la cuenta virtual de una persona.
+   * El saldo se calcula dinámicamente; no se almacena.
+   */
+  static async registrarMovimientoPersona(
+    movimiento: NuevoMovimientoPersona
+  ): Promise<{ movimiento_id: string; saldo_actual: number }> {
+    const { data, error } = await supabase.rpc('api_registrar_movimiento_persona', {
+      p_datos: movimiento,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al registrar movimiento');
+
+    return { movimiento_id: data.movimiento_id, saldo_actual: data.saldo_actual };
+  }
+
+  /**
+   * Lista los saldos virtuales por persona (sólo personas con movimientos).
+   */
+  static async listarSaldosPersonas(
+    busqueda?: string
+  ): Promise<{ saldos: SaldoPersona[]; saldoGlobal: number }> {
+    const { data, error } = await supabase.rpc('api_listar_saldos_personas', {
+      p_busqueda: busqueda || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener saldos');
+
+    return { saldos: data.data || [], saldoGlobal: data.saldo_global || 0 };
+  }
+
+  /**
+   * Lista los movimientos (auditoría) de una persona junto a su saldo.
+   */
+  static async listarMovimientosPersona(personaId: string): Promise<MovimientosPersonaDetalle> {
+    const { data, error } = await supabase.rpc('api_listar_movimientos_persona', {
+      p_persona_id: personaId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener movimientos');
+
+    return { persona: data.persona, saldo: data.saldo, data: data.data || [] };
+  }
+
+  /**
+   * Elimina (anula) un movimiento puntual de una persona.
+   */
+  static async eliminarMovimientoPersona(movimientoId: string): Promise<void> {
+    const { data, error } = await supabase.rpc('api_eliminar_movimiento_persona', {
+      p_id: movimientoId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al eliminar movimiento');
   }
 }
 

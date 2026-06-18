@@ -18,7 +18,8 @@ import {
   Clock,
   ReceiptText,
   Wallet,
-  PiggyBank
+  PiggyBank,
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ import {
 } from '@/services/finanzasService';
 import TransaccionesTab from './tabs/TransaccionesTab';
 import PrestamosTab from './tabs/PrestamosTab';
+import CuentasPersonasTab from './tabs/CuentasPersonasTab';
 import NuevaTransaccionDialog from './dialogs/NuevaTransaccionDialog';
 import NuevoPrestamoDialog from './dialogs/NuevoPrestamoDialog';
 
@@ -192,29 +194,7 @@ const FinanzasDashboard: React.FC = () => {
     );
   }
 
-  // Estado vacío
-  if (totalTransacciones === 0 && prestamos.length === 0) {
-    return (
-      <div className="container mx-auto py-6 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Finanzas</h1>
-            <p className="text-muted-foreground">Gestión de ingresos, egresos y préstamos</p>
-          </div>
-        </div>
-        
-        <Card>
-          <EstadoVacioFinanzas onNuevaTransaccion={() => setShowNuevaTransaccion(true)} />
-        </Card>
-        
-        <NuevaTransaccionDialog 
-          open={showNuevaTransaccion} 
-          onOpenChange={setShowNuevaTransaccion}
-          onSuccess={cargarDatos}
-        />
-      </div>
-    );
-  }
+  const finanzasGrupoVacia = totalTransacciones === 0 && prestamos.length === 0;
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -314,9 +294,18 @@ const FinanzasDashboard: React.FC = () => {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="personas" className="gap-2">
+            <Users className="h-4 w-4" />
+            Cuentas por Persona
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen">
+          {finanzasGrupoVacia ? (
+            <Card>
+              <EstadoVacioFinanzas onNuevaTransaccion={() => setShowNuevaTransaccion(true)} />
+            </Card>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Últimas transacciones */}
             <Card>
@@ -449,6 +438,7 @@ const FinanzasDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="transacciones">
@@ -457,6 +447,13 @@ const FinanzasDashboard: React.FC = () => {
 
         <TabsContent value="prestamos">
           <PrestamosTab onRefresh={cargarDatos} />
+        </TabsContent>
+
+        <TabsContent value="personas">
+          <CuentasPersonasTab
+            puedeCrear={puedeCrear('finanzas')}
+            puedeEliminar={puedeEliminar('finanzas')}
+          />
         </TabsContent>
       </Tabs>
 
