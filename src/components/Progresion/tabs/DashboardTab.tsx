@@ -49,8 +49,11 @@ interface DashboardTabProps {
   totalObj: number;
 }
 
-// ─── Paleta din\u00e1mica para etapas ─────────────────────────────────────────────
-const DYNAMIC_PALETTE = ['#4f8ddb', '#27c664', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4', '#f97316', '#8b5cf6'];\n\n// Fallback para compatibilidad con c\u00f3digos legacy de TROPA\nconst STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
+// ─── Paleta dinámica para etapas ─────────────────────────────────────────────
+const DYNAMIC_PALETTE = ['#4f8ddb', '#27c664', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4', '#f97316', '#8b5cf6'];
+
+// Fallback para compatibilidad con códigos legacy de TROPA
+const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
 
 // ─── Tooltip personalizado ───────────────────────────────────────────────────
 const CustomBarTooltip = ({ active, payload, label }: any) => {
