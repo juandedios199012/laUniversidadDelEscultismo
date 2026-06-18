@@ -243,8 +243,29 @@ export interface ComitePadresEntry {
   tipo_documento?: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
   fecha_nacimiento?: string;
   sexo?: 'MASCULINO' | 'FEMENINO';
-  // Datos del cargo (tabla comite_padres)
-  cargo: 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
+  // Educación / Trabajo (tabla personas)
+  centro_estudio?: string;
+  anio_estudios?: string;
+  ocupacion?: string;
+  centro_laboral?: string;
+  // Salud (tabla personas)
+  grupo_sanguineo?: string;
+  factor_sanguineo?: string;
+  seguro_medico?: string;
+  tipo_discapacidad?: string;
+  carnet_conadis?: string;
+  descripcion_discapacidad?: string;
+  // Datos scout (tabla personas)
+  rama?: string;
+  codigo_asociado?: string;
+  fecha_ingreso?: string;
+  // Dirección (tabla personas)
+  direccion?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+  // Datos del cargo (tabla comite_padres). Cargo dinámico (catálogo).
+  cargo: string;
   fecha_inicio: string;
   fecha_fin?: string;
   estado: 'ACTIVO' | 'INACTIVO' | 'CULMINADO';

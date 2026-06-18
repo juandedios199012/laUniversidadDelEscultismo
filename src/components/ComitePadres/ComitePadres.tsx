@@ -3,17 +3,18 @@ import {
   Users, Calendar, Save, Plus, Search, User, Edit, Eye, Phone, Mail,
   Trash2, Award, Shield, UserCheck, ChevronRight, ChevronLeft, X,
   CreditCard, Briefcase, Sparkles, AlertCircle, Check, BadgeCheck,
+  GraduationCap, HeartPulse, Tags, Settings2, MapPin, Loader2,
 } from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
-import ComitePadresService from '../../services/comitePadresService';
+import ComitePadresService, { type CargoComite } from '../../services/comitePadresService';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
 import type { PersonaResult } from '../../services/personaService';
+import { UbigeoService, type Departamento, type Provincia, type Distrito } from '../../services/ubigeoService';
 
 // ============================================================
 // 👨‍👩‍👧‍👦 COMITÉ DE PADRES — UI futurista, claro y minimalista
 // ============================================================
 
-type Cargo = 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
 type Estado = 'ACTIVO' | 'INACTIVO' | 'CULMINADO';
 
 interface FormState {
@@ -25,7 +26,29 @@ interface FormState {
   sexo: 'MASCULINO' | 'FEMENINO';
   email: string;
   telefono: string;
-  cargo: Cargo;
+  // Educación / Trabajo
+  centro_estudio: string;
+  anio_estudios: string;
+  ocupacion: string;
+  centro_laboral: string;
+  // Salud
+  grupo_sanguineo: string;
+  factor_sanguineo: string;
+  seguro_medico: string;
+  tipo_discapacidad: string;
+  carnet_conadis: string;
+  descripcion_discapacidad: string;
+  // Scout
+  rama: string;
+  codigo_asociado: string;
+  fecha_ingreso: string;
+  // Dirección
+  direccion: string;
+  departamento: string;
+  provincia: string;
+  distrito: string;
+  // Cargo / afiliación
+  cargo: string;
   fecha_inicio: string;
   fecha_fin: string;
   scout_hijo_nombre: string;
@@ -44,7 +67,24 @@ const FORM_INICIAL: FormState = {
   sexo: 'MASCULINO',
   email: '',
   telefono: '',
-  cargo: 'VOCAL',
+  centro_estudio: '',
+  anio_estudios: '',
+  ocupacion: '',
+  centro_laboral: '',
+  grupo_sanguineo: '',
+  factor_sanguineo: '',
+  seguro_medico: '',
+  tipo_discapacidad: '',
+  carnet_conadis: '',
+  descripcion_discapacidad: '',
+  rama: '',
+  codigo_asociado: '',
+  fecha_ingreso: '',
+  direccion: '',
+  departamento: '',
+  provincia: '',
+  distrito: '',
+  cargo: '',
   fecha_inicio: '',
   fecha_fin: '',
   scout_hijo_nombre: '',
@@ -54,13 +94,20 @@ const FORM_INICIAL: FormState = {
   observaciones: '',
 };
 
-const CARGOS: { value: Cargo; label: string; icon: React.ElementType; from: string; to: string; soft: string; text: string }[] = [
-  { value: 'PRESIDENTE', label: 'Presidente(a)', icon: Shield, from: 'from-blue-500', to: 'to-indigo-500', soft: 'bg-blue-50 text-blue-700 ring-blue-200', text: 'text-blue-600' },
-  { value: 'SECRETARIO', label: 'Secretario(a)', icon: Edit, from: 'from-emerald-500', to: 'to-teal-500', soft: 'bg-emerald-50 text-emerald-700 ring-emerald-200', text: 'text-emerald-600' },
-  { value: 'TESORERO', label: 'Tesorero(a)', icon: Award, from: 'from-amber-500', to: 'to-orange-500', soft: 'bg-amber-50 text-amber-700 ring-amber-200', text: 'text-amber-600' },
-  { value: 'VOCAL', label: 'Vocal', icon: User, from: 'from-violet-500', to: 'to-purple-500', soft: 'bg-violet-50 text-violet-700 ring-violet-200', text: 'text-violet-600' },
-  { value: 'SUPLENTE', label: 'Suplente', icon: UserCheck, from: 'from-slate-500', to: 'to-slate-600', soft: 'bg-slate-100 text-slate-700 ring-slate-200', text: 'text-slate-600' },
-];
+// Estilos predefinidos para los cargos "clásicos". Los cargos personalizados
+// del catálogo usan un estilo neutro por defecto.
+const CARGO_ESTILOS: Record<string, { icon: React.ElementType; from: string; to: string; soft: string; text: string }> = {
+  PRESIDENTE: { icon: Shield, from: 'from-blue-500', to: 'to-indigo-500', soft: 'bg-blue-50 text-blue-700 ring-blue-200', text: 'text-blue-600' },
+  SECRETARIO: { icon: Edit, from: 'from-emerald-500', to: 'to-teal-500', soft: 'bg-emerald-50 text-emerald-700 ring-emerald-200', text: 'text-emerald-600' },
+  TESORERO: { icon: Award, from: 'from-amber-500', to: 'to-orange-500', soft: 'bg-amber-50 text-amber-700 ring-amber-200', text: 'text-amber-600' },
+  VOCAL: { icon: User, from: 'from-violet-500', to: 'to-purple-500', soft: 'bg-violet-50 text-violet-700 ring-violet-200', text: 'text-violet-600' },
+  SUPLENTE: { icon: UserCheck, from: 'from-slate-500', to: 'to-slate-600', soft: 'bg-slate-100 text-slate-700 ring-slate-200', text: 'text-slate-600' },
+};
+
+const CARGO_ESTILO_DEFAULT = { icon: Briefcase, from: 'from-slate-500', to: 'to-slate-600', soft: 'bg-slate-100 text-slate-700 ring-slate-200', text: 'text-slate-600' };
+
+const RAMAS = ['Manada', 'Tropa', 'Comunidad', 'Clan', 'Dirigentes'];
+const GRUPOS_SANGUINEOS = ['A', 'B', 'AB', 'O'];
 
 const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
   { value: 'ACTIVO', label: 'Activo', soft: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
@@ -71,10 +118,18 @@ const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
 const PASOS = [
   { id: 1, title: 'Identidad', icon: CreditCard },
   { id: 2, title: 'Cargo & Afiliación', icon: Briefcase },
-  { id: 3, title: 'Experiencia', icon: Sparkles },
+  { id: 3, title: 'Educación & Trabajo', icon: GraduationCap },
+  { id: 4, title: 'Salud', icon: HeartPulse },
+  { id: 5, title: 'Dirección', icon: MapPin },
+  { id: 6, title: 'Experiencia', icon: Sparkles },
 ];
 
-const cargoInfo = (c: string) => CARGOS.find((x) => x.value === c) ?? CARGOS[3];
+const tituloCargo = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
+
+const cargoInfo = (c: string) => {
+  const est = CARGO_ESTILOS[c] ?? CARGO_ESTILO_DEFAULT;
+  return { value: c, label: tituloCargo(c || '—'), ...est };
+};
 const estadoInfo = (e: string) => ESTADOS.find((x) => x.value === e) ?? ESTADOS[1];
 
 const iniciales = (nombres = '', apellidos = '') =>
@@ -110,11 +165,16 @@ export default function ComitePadres() {
   const [skillInput, setSkillInput] = useState('');
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
+  // Catálogo de cargos (configurable)
+  const [cargos, setCargos] = useState<CargoComite[]>([]);
+  const [cargosModalOpen, setCargosModalOpen] = useState(false);
+
   const modoEdicion = modalMode === 'edit';
 
   // ============= CARGA =============
   useEffect(() => {
     loadMiembros();
+    loadCargos();
   }, []);
 
   const loadMiembros = async () => {
@@ -130,6 +190,18 @@ export default function ComitePadres() {
     }
   };
 
+  const loadCargos = async () => {
+    try {
+      const data = await ComitePadresService.listarCargos(false);
+      setCargos(data);
+    } catch (error) {
+      console.error('❌ Error cargando cargos del comité:', error);
+      setCargos([]);
+    }
+  };
+
+  const cargosActivos = useMemo(() => cargos.filter((c) => c.activo), [cargos]);
+
   const mostrarToast = (type: 'ok' | 'err', msg: string) => {
     setToast({ type, msg });
     if (type === 'ok') setTimeout(() => setToast(null), 3000);
@@ -137,7 +209,8 @@ export default function ComitePadres() {
 
   // ============= APERTURA DE MODALES =============
   const abrirCrear = () => {
-    setForm(FORM_INICIAL);
+    const cargoPorDefecto = cargosActivos.find((c) => c.nombre === 'VOCAL')?.nombre || cargosActivos[0]?.nombre || '';
+    setForm({ ...FORM_INICIAL, cargo: cargoPorDefecto });
     setErrors({});
     setPersonaVinculada(null);
     setSkillInput('');
@@ -147,6 +220,7 @@ export default function ComitePadres() {
   };
 
   const abrirEditar = (m: ComitePadresEntry) => {
+    const a = m as ComitePadresEntry & Record<string, any>;
     setSelectedMiembro(m);
     setForm({
       nombres: m.nombres,
@@ -157,6 +231,23 @@ export default function ComitePadres() {
       sexo: m.sexo || 'MASCULINO',
       email: m.email || m.correo || '',
       telefono: m.telefono || m.celular || '',
+      centro_estudio: a.centro_estudio || '',
+      anio_estudios: a.anio_estudios || '',
+      ocupacion: a.ocupacion || '',
+      centro_laboral: a.centro_laboral || '',
+      grupo_sanguineo: a.grupo_sanguineo || '',
+      factor_sanguineo: a.factor_sanguineo || '',
+      seguro_medico: a.seguro_medico || '',
+      tipo_discapacidad: a.tipo_discapacidad || '',
+      carnet_conadis: a.carnet_conadis || '',
+      descripcion_discapacidad: a.descripcion_discapacidad || '',
+      rama: a.rama || '',
+      codigo_asociado: a.codigo_asociado || '',
+      fecha_ingreso: a.fecha_ingreso || '',
+      direccion: a.direccion || '',
+      departamento: a.departamento || '',
+      provincia: a.provincia || '',
+      distrito: a.distrito || '',
       cargo: m.cargo,
       fecha_inicio: m.fecha_inicio || '',
       fecha_fin: m.fecha_fin || '',
@@ -239,6 +330,28 @@ export default function ComitePadres() {
         sexo: form.sexo,
         email: form.email.trim(),
         telefono: form.telefono.trim(),
+        // educación / trabajo
+        centro_estudio: form.centro_estudio.trim(),
+        anio_estudios: form.anio_estudios.trim(),
+        ocupacion: form.ocupacion.trim(),
+        centro_laboral: form.centro_laboral.trim(),
+        // salud
+        grupo_sanguineo: form.grupo_sanguineo.trim(),
+        factor_sanguineo: form.factor_sanguineo.trim(),
+        seguro_medico: form.seguro_medico.trim(),
+        tipo_discapacidad: form.tipo_discapacidad.trim(),
+        carnet_conadis: form.carnet_conadis.trim(),
+        descripcion_discapacidad: form.descripcion_discapacidad.trim(),
+        // scout
+        rama: form.rama.trim(),
+        codigo_asociado: form.codigo_asociado.trim(),
+        fecha_ingreso: form.fecha_ingreso,
+        // dirección
+        direccion: form.direccion.trim(),
+        departamento: form.departamento.trim(),
+        provincia: form.provincia.trim(),
+        distrito: form.distrito.trim(),
+        // cargo / afiliación
         cargo: form.cargo,
         fecha_inicio: form.fecha_inicio,
         fecha_fin: form.fecha_fin,
@@ -317,14 +430,24 @@ export default function ComitePadres() {
                 <p className="text-blue-100/90 text-sm">Gestión de los padres y madres que apoyan al grupo</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={abrirCrear}
-              className="group inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-semibold text-blue-700 shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
-            >
-              <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
-              Nuevo Miembro
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCargosModalOpen(true)}
+                className="group inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 font-semibold text-white ring-1 ring-white/30 backdrop-blur-sm transition-all hover:bg-white/25"
+              >
+                <Settings2 className="h-5 w-5" />
+                Gestionar cargos
+              </button>
+              <button
+                type="button"
+                onClick={abrirCrear}
+                className="group inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-semibold text-blue-700 shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
+              >
+                <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
+                Nuevo Miembro
+              </button>
+            </div>
           </div>
         </header>
 
@@ -347,8 +470,8 @@ export default function ComitePadres() {
               className={`${inputBase} ${inputOk}`}
             >
               <option value="">Todos los cargos</option>
-              {CARGOS.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+              {cargosActivos.map((c) => (
+                <option key={c.id} value={c.nombre}>{cargoInfo(c.nombre).label}</option>
               ))}
             </select>
             <select
@@ -481,9 +604,15 @@ export default function ComitePadres() {
               />
             )}
 
-            {paso === 2 && <PasoCargo form={form} setForm={setForm} errors={errors} />}
+            {paso === 2 && <PasoCargo form={form} setForm={setForm} errors={errors} cargos={cargosActivos} />}
 
-            {paso === 3 && (
+            {paso === 3 && <PasoEducacionTrabajo form={form} setForm={setForm} />}
+
+            {paso === 4 && <PasoSalud form={form} setForm={setForm} />}
+
+            {paso === 5 && <PasoDireccion form={form} setForm={setForm} />}
+
+            {paso === 6 && (
               <PasoExperiencia
                 form={form}
                 setForm={setForm}
@@ -548,6 +677,18 @@ export default function ComitePadres() {
               setViewMiembro(null);
               abrirEditar(m);
             }}
+          />
+        </Modal>
+      )}
+
+      {/* ---------- Modal Gestionar Cargos ---------- */}
+      {cargosModalOpen && (
+        <Modal onClose={() => setCargosModalOpen(false)} ancho="max-w-2xl">
+          <GestionarCargos
+            cargos={cargos}
+            onClose={() => setCargosModalOpen(false)}
+            onChanged={loadCargos}
+            notify={mostrarToast}
           />
         </Modal>
       )}
@@ -734,42 +875,50 @@ function PasoIdentidad({
 }
 
 function PasoCargo({
-  form, setForm, errors,
+  form, setForm, errors, cargos,
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
   errors: Partial<Record<keyof FormState, string>>;
+  cargos: CargoComite[];
 }) {
   return (
     <div className="space-y-6">
       <div>
         <label className={labelBase}>Cargo en el comité *</label>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {CARGOS.map((c) => {
-            const Icon = c.icon;
-            const activo = form.cargo === c.value;
-            return (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, cargo: c.value }))}
-                className={`group relative flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 transition-all ${
-                  activo
-                    ? `border-transparent bg-gradient-to-br ${c.from} ${c.to} text-white shadow-lg`
-                    : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
-                }`}
-              >
-                {activo && (
-                  <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-white/25">
-                    <Check className="h-3 w-3 text-white" />
-                  </span>
-                )}
-                <Icon className={`h-6 w-6 ${activo ? 'text-white' : c.text}`} />
-                <span className="text-xs font-semibold">{c.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {cargos.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-500">
+            No hay cargos definidos. Usa “Gestionar cargos” para crearlos.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {cargos.map((c) => {
+              const info = cargoInfo(c.nombre);
+              const Icon = info.icon;
+              const activo = form.cargo === c.nombre;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, cargo: c.nombre }))}
+                  className={`group relative flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 transition-all ${
+                    activo
+                      ? `border-transparent bg-gradient-to-br ${info.from} ${info.to} text-white shadow-lg`
+                      : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
+                  }`}
+                >
+                  {activo && (
+                    <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-white/25">
+                      <Check className="h-3 w-3 text-white" />
+                    </span>
+                  )}
+                  <Icon className={`h-6 w-6 ${activo ? 'text-white' : info.text}`} />
+                  <span className="text-xs font-semibold">{info.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <FieldError msg={errors.cargo} />
       </div>
 
@@ -902,6 +1051,575 @@ function PasoExperiencia({
   );
 }
 
+function PasoEducacionTrabajo({
+  form, setForm,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Educación */}
+      <div>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <GraduationCap className="h-4 w-4 text-blue-500" /> Educación
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className={labelBase}>Centro de estudios</label>
+            <input
+              type="text"
+              value={form.centro_estudio}
+              onChange={(e) => setForm((f) => ({ ...f, centro_estudio: e.target.value }))}
+              placeholder="Universidad / Instituto / Colegio"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+          <div>
+            <label className={labelBase}>Año / Grado de estudios</label>
+            <input
+              type="text"
+              value={form.anio_estudios}
+              onChange={(e) => setForm((f) => ({ ...f, anio_estudios: e.target.value }))}
+              placeholder="Ej. 5° año, Egresado, Titulado"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Trabajo */}
+      <div>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Briefcase className="h-4 w-4 text-amber-500" /> Trabajo
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className={labelBase}>Ocupación / Profesión</label>
+            <input
+              type="text"
+              value={form.ocupacion}
+              onChange={(e) => setForm((f) => ({ ...f, ocupacion: e.target.value }))}
+              placeholder="Ej. Contador, Médico, Comerciante"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+          <div>
+            <label className={labelBase}>Centro laboral</label>
+            <input
+              type="text"
+              value={form.centro_laboral}
+              onChange={(e) => setForm((f) => ({ ...f, centro_laboral: e.target.value }))}
+              placeholder="Empresa / Institución"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Datos scout */}
+      <div className="rounded-2xl border border-blue-100 bg-gradient-to-tr from-blue-50/50 to-indigo-50/30 p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Award className="h-4 w-4 text-indigo-500" /> Datos Scout (si aplica)
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <label className={labelBase}>Rama</label>
+            <select
+              value={form.rama}
+              onChange={(e) => setForm((f) => ({ ...f, rama: e.target.value }))}
+              className={`${inputBase} ${inputOk}`}
+            >
+              <option value="">— Sin rama —</option>
+              {RAMAS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelBase}>Código de asociado</label>
+            <input
+              type="text"
+              value={form.codigo_asociado}
+              onChange={(e) => setForm((f) => ({ ...f, codigo_asociado: e.target.value }))}
+              placeholder="N° de asociado"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+          <div>
+            <label className={labelBase}>Fecha de ingreso</label>
+            <input
+              type="date"
+              value={form.fecha_ingreso}
+              onChange={(e) => setForm((f) => ({ ...f, fecha_ingreso: e.target.value }))}
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasoSalud({
+  form, setForm,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div>
+          <label className={labelBase}>Grupo sanguíneo</label>
+          <select
+            value={form.grupo_sanguineo}
+            onChange={(e) => setForm((f) => ({ ...f, grupo_sanguineo: e.target.value }))}
+            className={`${inputBase} ${inputOk}`}
+          >
+            <option value="">— Selecciona —</option>
+            {GRUPOS_SANGUINEOS.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelBase}>Factor RH</label>
+          <div className="flex gap-2">
+            {['+', '-'].map((rh) => (
+              <button
+                key={rh}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, factor_sanguineo: f.factor_sanguineo === rh ? '' : rh }))}
+                className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                  form.factor_sanguineo === rh
+                    ? 'border-blue-300 bg-blue-50 text-blue-700 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                RH {rh}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className={labelBase}>Seguro médico</label>
+          <input
+            type="text"
+            value={form.seguro_medico}
+            onChange={(e) => setForm((f) => ({ ...f, seguro_medico: e.target.value }))}
+            placeholder="Ej. EsSalud, EPS, SIS"
+            className={`${inputBase} ${inputOk}`}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <HeartPulse className="h-4 w-4 text-rose-500" /> Discapacidad / Condición especial
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className={labelBase}>Tipo de discapacidad</label>
+            <input
+              type="text"
+              value={form.tipo_discapacidad}
+              onChange={(e) => setForm((f) => ({ ...f, tipo_discapacidad: e.target.value }))}
+              placeholder="Ninguna / Física / Visual / etc."
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+          <div>
+            <label className={labelBase}>Carnet CONADIS</label>
+            <input
+              type="text"
+              value={form.carnet_conadis}
+              onChange={(e) => setForm((f) => ({ ...f, carnet_conadis: e.target.value }))}
+              placeholder="N° de carnet (opcional)"
+              className={`${inputBase} ${inputOk}`}
+            />
+          </div>
+        </div>
+        <div className="mt-4">
+          <label className={labelBase}>Descripción de la condición</label>
+          <textarea
+            rows={3}
+            value={form.descripcion_discapacidad}
+            onChange={(e) => setForm((f) => ({ ...f, descripcion_discapacidad: e.target.value }))}
+            placeholder="Detalles relevantes para su atención (opcional)"
+            className={`${inputBase} ${inputOk} resize-none`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UbigeoNativo({
+  departamento, provincia, distrito, onChange,
+}: {
+  departamento: string;
+  provincia: string;
+  distrito: string;
+  onChange: (campos: { departamento?: string; provincia?: string; distrito?: string }) => void;
+}) {
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [provincias, setProvincias] = useState<Provincia[]>([]);
+  const [distritos, setDistritos] = useState<Distrito[]>([]);
+  const [loadingDep, setLoadingDep] = useState(true);
+  const [loadingProv, setLoadingProv] = useState(false);
+  const [loadingDist, setLoadingDist] = useState(false);
+  const [depId, setDepId] = useState<number | null>(null);
+  const [provId, setProvId] = useState<number | null>(null);
+
+  // Cargar departamentos al montar
+  useEffect(() => {
+    (async () => {
+      setLoadingDep(true);
+      const data = await UbigeoService.obtenerDepartamentos();
+      setDepartamentos(data);
+      setLoadingDep(false);
+    })();
+  }, []);
+
+  // Resolver ID del departamento por nombre (pre-llenado en edición)
+  useEffect(() => {
+    if (departamento && departamentos.length > 0 && depId === null) {
+      const dep = departamentos.find((d) => d.nombre === departamento);
+      if (dep) setDepId(dep.id);
+    }
+  }, [departamento, departamentos, depId]);
+
+  // Cargar provincias
+  useEffect(() => {
+    if (depId) {
+      (async () => {
+        setLoadingProv(true);
+        setProvincias(await UbigeoService.obtenerProvincias(depId));
+        setLoadingProv(false);
+      })();
+    } else {
+      setProvincias([]);
+      setDistritos([]);
+    }
+  }, [depId]);
+
+  // Resolver ID de provincia por nombre
+  useEffect(() => {
+    if (provincia && provincias.length > 0 && provId === null) {
+      const prov = provincias.find((p) => p.nombre === provincia);
+      if (prov) setProvId(prov.id);
+    }
+  }, [provincia, provincias, provId]);
+
+  // Cargar distritos
+  useEffect(() => {
+    if (provId) {
+      (async () => {
+        setLoadingDist(true);
+        setDistritos(await UbigeoService.obtenerDistritos(provId));
+        setLoadingDist(false);
+      })();
+    } else {
+      setDistritos([]);
+    }
+  }, [provId]);
+
+  const cambiarDepartamento = (value: string) => {
+    const dep = departamentos.find((d) => d.nombre === value);
+    setDepId(dep?.id ?? null);
+    setProvId(null);
+    onChange({ departamento: value, provincia: '', distrito: '' });
+  };
+  const cambiarProvincia = (value: string) => {
+    const prov = provincias.find((p) => p.nombre === value);
+    setProvId(prov?.id ?? null);
+    onChange({ provincia: value, distrito: '' });
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div>
+        <label className={labelBase}>Departamento</label>
+        <div className="relative">
+          <select
+            value={departamento}
+            onChange={(e) => cambiarDepartamento(e.target.value)}
+            disabled={loadingDep}
+            className={`${inputBase} ${inputOk}`}
+          >
+            <option value="">{loadingDep ? 'Cargando…' : 'Seleccionar'}</option>
+            {departamentos.map((d) => (
+              <option key={d.id} value={d.nombre}>{d.nombre}</option>
+            ))}
+          </select>
+          {loadingDep && <Loader2 className="pointer-events-none absolute right-9 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />}
+        </div>
+      </div>
+      <div>
+        <label className={labelBase}>Provincia</label>
+        <div className="relative">
+          <select
+            value={provincia}
+            onChange={(e) => cambiarProvincia(e.target.value)}
+            disabled={!depId || loadingProv}
+            className={`${inputBase} ${inputOk} disabled:opacity-60`}
+          >
+            <option value="">{loadingProv ? 'Cargando…' : 'Seleccionar'}</option>
+            {provincias.map((p) => (
+              <option key={p.id} value={p.nombre}>{p.nombre}</option>
+            ))}
+          </select>
+          {loadingProv && <Loader2 className="pointer-events-none absolute right-9 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />}
+        </div>
+      </div>
+      <div>
+        <label className={labelBase}>Distrito</label>
+        <div className="relative">
+          <select
+            value={distrito}
+            onChange={(e) => onChange({ distrito: e.target.value })}
+            disabled={!provId || loadingDist}
+            className={`${inputBase} ${inputOk} disabled:opacity-60`}
+          >
+            <option value="">{loadingDist ? 'Cargando…' : 'Seleccionar'}</option>
+            {distritos.map((d) => (
+              <option key={d.id} value={d.nombre}>{d.nombre}</option>
+            ))}
+          </select>
+          {loadingDist && <Loader2 className="pointer-events-none absolute right-9 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasoDireccion({
+  form, setForm,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <MapPin className="h-4 w-4 text-blue-500" /> Ubicación
+        </h3>
+        <UbigeoNativo
+          departamento={form.departamento}
+          provincia={form.provincia}
+          distrito={form.distrito}
+          onChange={(campos) => setForm((f) => ({ ...f, ...campos }))}
+        />
+      </div>
+
+      <div>
+        <label className={labelBase}>Dirección</label>
+        <input
+          type="text"
+          value={form.direccion}
+          onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))}
+          placeholder="Av. / Calle / Jr., número, urbanización, referencia"
+          className={`${inputBase} ${inputOk}`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GestionarCargos({
+  cargos, onClose, onChanged, notify,
+}: {
+  cargos: CargoComite[];
+  onClose: () => void;
+  onChanged: () => Promise<void> | void;
+  notify: (type: 'ok' | 'err', msg: string) => void;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const limpiar = () => {
+    setNombre('');
+    setDescripcion('');
+    setEditId(null);
+  };
+
+  const guardar = async () => {
+    if (!nombre.trim()) {
+      notify('err', 'Escribe el nombre del cargo');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = editId
+        ? await ComitePadresService.actualizarCargo(editId, { nombre: nombre.trim(), descripcion: descripcion.trim() })
+        : await ComitePadresService.crearCargo({ nombre: nombre.trim(), descripcion: descripcion.trim(), orden: cargos.length + 1 });
+      if (!res.success) {
+        notify('err', res.error || 'No se pudo guardar el cargo');
+        return;
+      }
+      notify('ok', editId ? 'Cargo actualizado' : 'Cargo creado');
+      limpiar();
+      await onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const editar = (c: CargoComite) => {
+    setEditId(c.id);
+    setNombre(c.nombre);
+    setDescripcion(c.descripcion || '');
+  };
+
+  const alternarActivo = async (c: CargoComite) => {
+    const res = await ComitePadresService.actualizarCargo(c.id, { activo: !c.activo });
+    if (!res.success) {
+      notify('err', res.error || 'No se pudo actualizar');
+      return;
+    }
+    await onChanged();
+  };
+
+  const eliminar = async (c: CargoComite) => {
+    if (!confirm(`¿Eliminar el cargo "${tituloCargo(c.nombre)}"?`)) return;
+    const res = await ComitePadresService.eliminarCargo(c.id);
+    if (!res.success) {
+      notify('err', res.error || 'No se pudo eliminar');
+      return;
+    }
+    notify('ok', 'Cargo eliminado');
+    if (editId === c.id) limpiar();
+    await onChanged();
+  };
+
+  return (
+    <>
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md">
+            <Tags className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Cargos del comité</h2>
+            <p className="text-xs text-slate-400">Define los cargos disponibles para los miembros</p>
+          </div>
+        </div>
+        <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="space-y-5 px-6 py-6">
+        {/* Formulario crear/editar */}
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <label className={labelBase}>Nombre del cargo *</label>
+              <input
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. Coordinador, Fiscal"
+                className={`${inputBase} ${inputOk}`}
+              />
+            </div>
+            <div>
+              <label className={labelBase}>Descripción</label>
+              <input
+                type="text"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Opcional"
+                className={`${inputBase} ${inputOk}`}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            {editId && (
+              <button
+                type="button"
+                onClick={limpiar}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={guardar}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+            >
+              {editId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editId ? 'Guardar' : 'Agregar'}
+            </button>
+          </div>
+        </div>
+
+        {/* Lista de cargos */}
+        {cargos.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">Aún no hay cargos definidos.</p>
+        ) : (
+          <div className="space-y-2">
+            {cargos.map((c) => {
+              const info = cargoInfo(c.nombre);
+              const Icon = info.icon;
+              return (
+                <div
+                  key={c.id}
+                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    c.activo ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50 opacity-70'
+                  }`}
+                >
+                  <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br ${info.from} ${info.to} text-white`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-slate-700">{info.label}</p>
+                    {c.descripcion && <p className="truncate text-xs text-slate-400">{c.descripcion}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => alternarActivo(c)}
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 transition-colors ${
+                      c.activo
+                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
+                        : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
+                    }`}
+                    title={c.activo ? 'Activo — clic para desactivar' : 'Inactivo — clic para activar'}
+                  >
+                    {c.activo ? 'Activo' : 'Inactivo'}
+                  </button>
+                  <button type="button" onClick={() => editar(c)} title="Editar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600">
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => eliminar(c)} title="Eliminar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex justify-end border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function MiembroCard({
   m, onView, onEdit, onDelete,
 }: {
@@ -1030,6 +1748,60 @@ function DetalleMiembro({
 
         {m.scout_hijo_nombre && (
           <DetalleBloque titulo="Scout hijo/a">{m.scout_hijo_nombre}</DetalleBloque>
+        )}
+
+        {(m.centro_estudio || m.anio_estudios || m.ocupacion || m.centro_laboral) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Educación & Trabajo</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {m.centro_estudio && <InfoRow icon={GraduationCap} label="Centro de estudios" value={m.centro_estudio} />}
+              {m.anio_estudios && <InfoRow icon={GraduationCap} label="Año / Grado" value={m.anio_estudios} />}
+              {m.ocupacion && <InfoRow icon={Briefcase} label="Ocupación" value={m.ocupacion} />}
+              {m.centro_laboral && <InfoRow icon={Briefcase} label="Centro laboral" value={m.centro_laboral} />}
+            </div>
+          </div>
+        )}
+
+        {(m.grupo_sanguineo || m.factor_sanguineo || m.seguro_medico || m.tipo_discapacidad || m.carnet_conadis || m.descripcion_discapacidad) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Salud</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(m.grupo_sanguineo || m.factor_sanguineo) && (
+                <InfoRow icon={HeartPulse} label="Grupo sanguíneo" value={`${m.grupo_sanguineo || ''}${m.factor_sanguineo || ''}` || '—'} />
+              )}
+              {m.seguro_medico && <InfoRow icon={HeartPulse} label="Seguro médico" value={m.seguro_medico} />}
+              {m.tipo_discapacidad && <InfoRow icon={HeartPulse} label="Discapacidad" value={m.tipo_discapacidad} />}
+              {m.carnet_conadis && <InfoRow icon={CreditCard} label="Carnet CONADIS" value={m.carnet_conadis} />}
+            </div>
+            {m.descripcion_discapacidad && (
+              <div className="mt-3">
+                <DetalleBloque titulo="Descripción de la condición">{m.descripcion_discapacidad}</DetalleBloque>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(m.rama || m.codigo_asociado || m.fecha_ingreso) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Datos Scout</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {m.rama && <InfoRow icon={Award} label="Rama" value={m.rama} />}
+              {m.codigo_asociado && <InfoRow icon={BadgeCheck} label="Código de asociado" value={m.codigo_asociado} />}
+              {m.fecha_ingreso && <InfoRow icon={Calendar} label="Fecha de ingreso" value={new Date(m.fecha_ingreso).toLocaleDateString()} />}
+            </div>
+          </div>
+        )}
+
+        {(m.direccion || m.departamento || m.provincia || m.distrito) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Dirección</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {m.departamento && <InfoRow icon={MapPin} label="Departamento" value={m.departamento} />}
+              {m.provincia && <InfoRow icon={MapPin} label="Provincia" value={m.provincia} />}
+              {m.distrito && <InfoRow icon={MapPin} label="Distrito" value={m.distrito} />}
+            </div>
+            {m.direccion && <DetalleBloque titulo="Dirección">{m.direccion}</DetalleBloque>}
+          </div>
         )}
 
         {habilidades.length > 0 && (

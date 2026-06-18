@@ -15,8 +15,29 @@ export interface MiembroComiteInput {
   email?: string;   // alias de correo (retrocompatibilidad)
   celular?: string;
   telefono?: string; // alias de celular (retrocompatibilidad)
-  // Datos del cargo (van a tabla comite_padres)
-  cargo: 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
+  // Educación / Trabajo (van a tabla personas)
+  centro_estudio?: string;
+  anio_estudios?: string;
+  ocupacion?: string;
+  centro_laboral?: string;
+  // Salud (van a tabla personas)
+  grupo_sanguineo?: string;
+  factor_sanguineo?: string;
+  seguro_medico?: string;
+  tipo_discapacidad?: string;
+  carnet_conadis?: string;
+  descripcion_discapacidad?: string;
+  // Datos scout (van a tabla personas)
+  rama?: string;
+  codigo_asociado?: string;
+  fecha_ingreso?: string;
+  // Dirección (van a tabla personas)
+  direccion?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+  // Datos del cargo (van a tabla comite_padres). Cargo es dinámico (catálogo).
+  cargo: string;
   fecha_inicio: string;
   fecha_fin?: string;
   scout_hijo_id?: string;
@@ -25,6 +46,17 @@ export interface MiembroComiteInput {
   habilidades?: string[];
   disponibilidad?: string;
   observaciones?: string;
+}
+
+// ----------------------------------------------------------------
+// Cargo del catálogo del comité
+// ----------------------------------------------------------------
+export interface CargoComite {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  orden: number;
+  activo: boolean;
 }
 
 /**
@@ -55,6 +87,27 @@ export class ComitePadresService {
         sexo:             miembro.sexo || 'MASCULINO',
         correo:           miembro.correo || miembro.email || '',
         celular:          miembro.celular || miembro.telefono || '',
+        // educación / trabajo
+        centro_estudio:   miembro.centro_estudio || '',
+        anio_estudios:    miembro.anio_estudios || '',
+        ocupacion:        miembro.ocupacion || '',
+        centro_laboral:   miembro.centro_laboral || '',
+        // salud
+        grupo_sanguineo:  miembro.grupo_sanguineo || '',
+        factor_sanguineo: miembro.factor_sanguineo || '',
+        seguro_medico:    miembro.seguro_medico || '',
+        tipo_discapacidad: miembro.tipo_discapacidad || '',
+        carnet_conadis:   miembro.carnet_conadis || '',
+        descripcion_discapacidad: miembro.descripcion_discapacidad || '',
+        // scout
+        rama:             miembro.rama || '',
+        codigo_asociado:  miembro.codigo_asociado || '',
+        fecha_ingreso:    miembro.fecha_ingreso || '',
+        // dirección
+        direccion:        miembro.direccion || '',
+        departamento:     miembro.departamento || '',
+        provincia:        miembro.provincia || '',
+        distrito:         miembro.distrito || '',
       };
       const datos_comite = {
         cargo:             miembro.cargo,
@@ -134,6 +187,27 @@ export class ComitePadresService {
         sexo:             miembro.sexo,
         correo:           miembro.correo || miembro.email,
         celular:          miembro.celular || miembro.telefono,
+        // educación / trabajo
+        centro_estudio:   miembro.centro_estudio,
+        anio_estudios:    miembro.anio_estudios,
+        ocupacion:        miembro.ocupacion,
+        centro_laboral:   miembro.centro_laboral,
+        // salud
+        grupo_sanguineo:  miembro.grupo_sanguineo,
+        factor_sanguineo: miembro.factor_sanguineo,
+        seguro_medico:    miembro.seguro_medico,
+        tipo_discapacidad: miembro.tipo_discapacidad,
+        carnet_conadis:   miembro.carnet_conadis,
+        descripcion_discapacidad: miembro.descripcion_discapacidad,
+        // scout
+        rama:             miembro.rama,
+        codigo_asociado:  miembro.codigo_asociado,
+        fecha_ingreso:    miembro.fecha_ingreso,
+        // dirección
+        direccion:        miembro.direccion,
+        departamento:     miembro.departamento,
+        provincia:        miembro.provincia,
+        distrito:         miembro.distrito,
       };
       const datos_comite = {
         cargo:             miembro.cargo,
@@ -179,6 +253,86 @@ export class ComitePadresService {
       return { success: true };
     } catch (err) {
       console.error('❌ Error al eliminar miembro comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
+    }
+  }
+
+  // ============= 🏷️ CATÁLOGO DE CARGOS DEL COMITÉ =============
+
+  /**
+   * 📋 Listar cargos del catálogo del comité.
+   */
+  static async listarCargos(soloActivos: boolean = false): Promise<CargoComite[]> {
+    try {
+      const { data, error } = await supabase.rpc('api_listar_cargos_comite', {
+        p_solo_activos: soloActivos,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; data?: CargoComite[]; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return result.data || [];
+    } catch (err) {
+      console.error('❌ Error al listar cargos del comité:', err);
+      return [];
+    }
+  }
+
+  /**
+   * ➕ Crear un cargo del comité.
+   */
+  static async crearCargo(cargo: { nombre: string; descripcion?: string; orden?: number; activo?: boolean }): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_crear_cargo_comite', {
+        p_datos: {
+          nombre: cargo.nombre,
+          descripcion: cargo.descripcion || '',
+          orden: cargo.orden ?? 0,
+          activo: cargo.activo ?? true,
+        },
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; id?: string; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return { success: true, id: result.id };
+    } catch (err) {
+      console.error('❌ Error al crear cargo del comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
+    }
+  }
+
+  /**
+   * ✏️ Actualizar un cargo del comité.
+   */
+  static async actualizarCargo(id: string, cargo: { nombre?: string; descripcion?: string; orden?: number; activo?: boolean }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_actualizar_cargo_comite', {
+        p_id: id,
+        p_datos: cargo,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return { success: true };
+    } catch (err) {
+      console.error('❌ Error al actualizar cargo del comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
+    }
+  }
+
+  /**
+   * 🗑️ Eliminar un cargo del comité.
+   */
+  static async eliminarCargo(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_eliminar_cargo_comite', {
+        p_id: id,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return { success: true };
+    } catch (err) {
+      console.error('❌ Error al eliminar cargo del comité:', err);
       return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
     }
   }
