@@ -1,19 +1,7 @@
 import React from 'react';
 import { Award, RefreshCw, Target, TrendingUp, Users } from 'lucide-react';
 import { StageCard, KpiCard, AreaCard, CardSkeleton } from '../ProgresionComponents';
-import { STAGE_COLORS } from '../useProgresionData';
 import type { V4AreaData, V4StageBar } from '../useProgresionData';
-
-// Etapas: 1 edad por etapa (no rango)
-const ETAPAS_META: Record<string, { edad: number; nombre: string }> = {
-  PISTA:    { edad: 11, nombre: 'Pista' },
-  SENDA:    { edad: 12, nombre: 'Senda' },
-  RUMBO:    { edad: 13, nombre: 'Rumbo' },
-  TRAVESIA: { edad: 14, nombre: 'Travesía' },
-};
-
-// Etapas en orden canónico para layout plano
-const ETAPAS_ORDEN = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'] as const;
 
 interface ProgresionTabProps {
   loading: boolean;
@@ -43,7 +31,7 @@ const ProgresionTab: React.FC<ProgresionTabProps> = ({
         <div>
           <h2 className="text-2xl font-black tracking-tight text-gray-800">Progresión Scout</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Seguimiento del crecimiento personal en 4 etapas y 6 áreas
+            Seguimiento del crecimiento personal · {stageBars.length > 0 ? `${stageBars.length} etapas` : '6 áreas'}
           </p>
         </div>
         <button
@@ -115,24 +103,17 @@ const ProgresionTab: React.FC<ProgresionTabProps> = ({
                 key={stage.etapaCodigo}
                 etapaCodigo={stage.etapaCodigo}
                 etapaNombre={stage.etapaNombre}
-                edad={ETAPAS_META[stage.etapaCodigo]?.edad}
+                etapaIcono={stage.etapaIcono}
+                etapaColor={stage.etapaColor}
                 totalScouts={stage.totalScouts}
                 promedioProgreso={stage.promedioProgreso}
               />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {ETAPAS_ORDEN.map((codigo) => (
-              <StageCard
-                key={codigo}
-                etapaCodigo={codigo}
-                etapaNombre={ETAPAS_META[codigo].nombre}
-                edad={ETAPAS_META[codigo].edad}
-                totalScouts={0}
-                promedioProgreso={0}
-              />
-            ))}
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-12 text-center">
+            <p className="text-sm font-semibold text-gray-500">Sin datos de etapas</p>
+            <p className="mt-1 text-xs text-gray-400">Selecciona una rama para ver sus etapas</p>
           </div>
         )}
       </section>

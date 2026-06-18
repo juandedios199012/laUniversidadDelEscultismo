@@ -26,12 +26,19 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
     setLoading(true);
     setError(null);
     try {
-      const [p, objs] = await Promise.all([
+      const [p, objs, grupos] = await Promise.all([
         ProgresionService.obtenerProgresoScout(scoutId),
         ProgresionService.obtenerObjetivosScout(scoutId),
+        scoutRama ? ProgresionService.obtenerGruposObjetivo(scoutRama) : Promise.resolve([] as GrupoObjetivo[]),
       ]);
       setProgreso(p);
       setObjetivos(objs);
+      // Resolver grupo dinámico por rama + etapa del scout
+      const etapaCodigo = p?.etapa_actual_codigo ?? '';
+      const grupoMatch = grupos.find((g) =>
+        g.etapas_aplicables?.some((e) => e === etapaCodigo)
+      );
+      setGrupoNombre(grupoMatch?.nombre ?? p?.grupo_objetivo_nombre ?? null);
       // Use first area from objectives (reliable) or from SQL areas as fallback
       setAreaActiva(prev => prev || (objs[0]?.area_codigo ?? p?.areas?.[0]?.area_codigo ?? ''));
     } catch {
@@ -167,8 +174,8 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () =
                 <span className="text-lg font-normal text-gray-400"> / {computedTotal}</span>
               </p>
               <p className="text-sm text-gray-500">objetivos completados</p>
-              {progreso.grupo_objetivo_nombre && (
-                <p className="mt-1 text-xs text-gray-400">Grupo: {progreso.grupo_objetivo_nombre}</p>
+              {grupoNombre && (
+                <p className="mt-1 text-xs text-gray-400">Grupo: {grupoNombre}</p>
               )}
             </div>
           </div>
@@ -274,10 +281,11 @@ interface ScoutsTabProps {
   loading: boolean;
   scouts: V4Scout[];
   onReload: () => void;
+  ramaActiva?: string;
   ramaLabel?: string;
 }
 
-const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaLabel }) => {
+const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaActiva, ramaLabel }) => {
   const [search, setSearch] = useState('');
   const [filtroPatrulla, setFiltroPatrulla] = useState('');
   const [filtroEtapa, setFiltroEtapa] = useState('');
@@ -289,6 +297,7 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaLa
       <ScoutDetail
         scoutId={selectedId}
         scoutNombre={scout?.nombre ?? ''}
+        scoutRama={scout?.rama ?? ramaActiva ?? ''}
         onBack={() => setSelectedId(null)}
         onDataChanged={onReload}
       />
@@ -313,7 +322,9 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaLa
       {/* Header + filters */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-gray-800">Scouts de {ramaLabel ? `la ${ramaLabel}` : 'la Tropa'}</h2>
+          <h2 className="text-2xl font-black tracking-tight text-gray-800">
+            {ramaLabel ? `Scouts · ${ramaLabel}` : 'Scouts · Todas las ramas'}
+          </h2>
           <p className="mt-1 text-sm text-gray-500">
             {filtered.length} de {scouts.length} scouts
           </p>
@@ -347,8 +358,10 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaLa
         >
           <option value="">Todas las etapas</option>
           {etapas.map((e) => {
-            const names: Record<string, string> = { PISTA: 'Pista', SENDA: 'Senda', RUMBO: 'Rumbo', TRAVESIA: 'Travesía' };
-            return <option key={e} value={e}>{STAGE_ICONS[e]} {names[e] ?? e}</option>;
+            const scoutData = scouts.find((s) => s.etapaCodigo === e);
+            const nombre = scoutData?.etapaNombre ?? e;
+            const icono = scoutData?.etapaIcono ?? STAGE_ICONS[e] ?? '📍';
+            return <option key={e} value={e}>{icono} {nombre}</option>;
           })}
         </select>
         {hasFilters && (

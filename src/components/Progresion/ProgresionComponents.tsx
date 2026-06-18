@@ -40,6 +40,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, sub, color
 interface StageCardProps {
   etapaCodigo: string;
   etapaNombre: string;
+  etapaIcono?: string;
+  etapaColor?: string;
   edad?: number;
   totalScouts: number;
   promedioProgreso: number;
@@ -48,12 +50,14 @@ interface StageCardProps {
 export const StageCard: React.FC<StageCardProps> = ({
   etapaCodigo,
   etapaNombre,
+  etapaIcono,
+  etapaColor,
   edad,
   totalScouts,
   promedioProgreso,
 }) => {
-  const color = STAGE_COLORS[etapaCodigo] ?? '#888';
-  const icon = STAGE_ICONS[etapaCodigo] ?? '●';
+  const color = etapaColor ?? STAGE_COLORS[etapaCodigo] ?? '#4f8ddb';
+  const icon  = etapaIcono ?? STAGE_ICONS[etapaCodigo] ?? '📍';
 
   return (
     <div
@@ -104,26 +108,28 @@ interface AreaCardProps {
 }
 
 export const AreaCard: React.FC<AreaCardProps> = ({ area }) => (
-  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+  <div
+    className="flex items-center gap-4 rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
+    style={{ borderColor: `${area.color}35`, background: `${area.color}0a` }}
+  >
     <ProgressRing
       percentage={area.porcentaje}
-      size={64}
-      strokeWidth={5}
+      size={72}
+      strokeWidth={7}
       color={area.color}
     >
-      <span className="text-lg">{area.icon}</span>
+      <span className="text-xl">{area.icon}</span>
     </ProgressRing>
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-bold text-gray-800">{area.nombre}</p>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
+      <p className="text-sm font-black" style={{ color: area.color }}>{area.nombre}</p>
+      <p className="text-2xl font-black tracking-tight text-gray-800">{area.porcentaje}<span className="text-sm font-normal text-gray-400">%</span></p>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-gray-200">
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{ width: `${area.porcentaje}%`, background: area.color }}
         />
       </div>
-      <p className="mt-1 text-xs text-gray-400">
-        {area.completados}/{area.total} objetivos · {area.porcentaje}%
-      </p>
+      <p className="mt-1 text-xs text-gray-400">{area.completados} / {area.total} objetivos</p>
     </div>
   </div>
 );
@@ -138,8 +144,8 @@ interface ScoutCardProps {
 }
 
 export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }) => {
-  const color = STAGE_COLORS[scout.etapaCodigo] ?? '#2563eb';
-  const etapaIcon = STAGE_ICONS[scout.etapaCodigo] ?? '●';
+  const color = scout.etapaColor ?? STAGE_COLORS[scout.etapaCodigo] ?? '#2563eb';
+  const etapaIcon = scout.etapaIcono ?? STAGE_ICONS[scout.etapaCodigo] ?? '📍';
 
   const areasVisibles = (scout.areas ?? [])
     .filter((a) => a.total_objetivos > 0)

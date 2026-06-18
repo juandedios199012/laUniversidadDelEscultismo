@@ -128,8 +128,6 @@ function AppContent() {
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
       case 'progresion-v4':
         return <ProgresionModule />;
-      case 'progresion-v5':
-        return <ProgresionModuleV2 />;
       case 'portal-padres':
         return <PortalPadresPage />;
       default:

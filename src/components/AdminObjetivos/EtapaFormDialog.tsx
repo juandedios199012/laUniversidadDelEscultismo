@@ -268,7 +268,9 @@ export function EtapaFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Ícono (emoji)</FormLabel>
-                      <FormControl><Input placeholder="📍" {...field} /></FormControl>
+                      <FormControl>
+                        <Input placeholder="🐺" className="w-20 text-center text-xl" maxLength={4} {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -10,13 +10,10 @@ import { CardSkeleton, KpiCard } from '../ProgresionComponents';
 import { AREA_COLORS, type V4AreaData, type V4StageBar } from '../useProgresionData';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
+// Colores de paleta para etapas dinámicas (hasta 8)
+const DYNAMIC_PALETTE = ['#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#a855f7'];
 const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
-const STAGE_LABEL: Record<string, string> = { PISTA: 'Pista (11a)', SENDA: 'Senda (12a)', RUMBO: 'Rumbo (13a)', TRAVESIA: 'Travesía (14a)' };
-// Tremor v3 named colors → must match their palette so fill-* classes are generated
-const STAGE_TREMOR: Record<string, string> = { PISTA: 'blue', SENDA: 'green', RUMBO: 'amber', TRAVESIA: 'violet' };
-const STAGE_HEX: Record<string, string> = { PISTA: '#3b82f6', SENDA: '#22c55e', RUMBO: '#f59e0b', TRAVESIA: '#8b5cf6' };
-// Grupos de objetivo — dos etapas comparten los mismos objetivos
-const STAGE_GRUPO: Record<string, string> = { PISTA: 'PISTA_SENDA', SENDA: 'PISTA_SENDA', RUMBO: 'RUMBO_TRAVESIA', TRAVESIA: 'RUMBO_TRAVESIA' };
+const STAGE_TREMOR_MAP: Record<string, string> = { PISTA: 'blue', SENDA: 'green', RUMBO: 'amber', TRAVESIA: 'violet' };
 
 const AREA_ORDER = ['CORPORALIDAD', 'CREATIVIDAD', 'CARACTER', 'AFECTIVIDAD', 'SOCIABILIDAD', 'ESPIRITUALIDAD'];
 
@@ -36,6 +33,8 @@ interface AnalisisTabProps {
   globalAreas: V4AreaData[];
   totalScouts: number;
   promedioGlobal: number;
+  ramaActiva?: string;
+  ramaLabel?: string;
 }
 
 const AnalisisTab: React.FC<AnalisisTabProps> = ({
@@ -44,12 +43,22 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
   globalAreas,
   totalScouts,
   promedioGlobal,
+  ramaLabel,
 }) => {
   const [subTab, setSubTab] = useState<SubTab>('general');
-  const [selectedEtapas, setSelectedEtapas] = useState<Set<string>>(new Set(STAGE_ORDER));
   const [period, setPeriod] = useState(8);
   const [trendRows, setTrendRows] = useState<TendenciaProgresionMensual[]>([]);
   const [loadingTrends, setLoadingTrends] = useState(false);
+
+  // Etapas dinámicas desde stageBars (fallback a STAGE_ORDER si vacío)
+  const stageList = stageBars.length > 0 ? stageBars : STAGE_ORDER.map((c) => ({ etapaCodigo: c, etapaNombre: c, etapaIcono: undefined, etapaColor: undefined, totalScouts: 0, promedioProgreso: 0 }));
+  const [selectedEtapas, setSelectedEtapas] = useState<Set<string>>(new Set(stageList.map((s) => s.etapaCodigo)));
+
+  // Sincronizar selectedEtapas cuando cambian las etapas disponibles (por cambio de rama)
+  useEffect(() => {
+    const codes = stageBars.length > 0 ? stageBars.map((s) => s.etapaCodigo) : STAGE_ORDER;
+    setSelectedEtapas(new Set(codes));
+  }, [stageBars]);
 
   useEffect(() => {
     if (subTab !== 'tendencias') return;
@@ -87,11 +96,14 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
     });
   };
 
-  // ── Donut data – fixed order so colors always match ──────────────────────
-  const donutData = STAGE_ORDER.map((code) => ({
-    name: STAGE_LABEL[code],
-    value: stageBars.find((s) => s.etapaCodigo === code)?.totalScouts ?? 0,
-  })).filter((d) => d.value > 0);
+  // ── Donut data – dynamic from stageBars ─────────────────────────────────
+  const donutData = stageList
+    .filter((s) => s.totalScouts > 0)
+    .map((s, i) => ({
+      name: s.etapaNombre,
+      value: s.totalScouts,
+      color: s.etapaColor ?? DYNAMIC_PALETTE[i % DYNAMIC_PALETTE.length],
+    }));
 
   // ── Bar data – always show all 6 areas ──────────────────────────────────
   const orderedAreas = AREA_ORDER
@@ -105,12 +117,14 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
   }));
 
   // ── Trend data (RPC real) ────────────────────────────────────────────────
+  const stageNameMap = new Map(stageList.map((s) => [s.etapaCodigo, s.etapaNombre]));
   const monthMap = new Map<string, Record<string, string | number>>();
   trendRows.forEach((row) => {
     if (!selectedEtapas.has(row.etapa_codigo)) return;
     const key = row.mes;
     const item = monthMap.get(key) ?? { mes: row.mes_label };
-    item[STAGE_LABEL[row.etapa_codigo] ?? row.etapa_nombre] = Math.round(row.promedio_progreso ?? 0);
+    const label = stageNameMap.get(row.etapa_codigo) ?? row.etapa_nombre;
+    item[label] = Math.round(row.promedio_progreso ?? 0);
     monthMap.set(key, item);
   });
 
@@ -118,8 +132,8 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, value]) => value);
 
-  const activeSeries = STAGE_ORDER.filter((c) => selectedEtapas.has(c)).map((c) => STAGE_LABEL[c]);
-  const activeColors = STAGE_ORDER.filter((c) => selectedEtapas.has(c)).map((c) => STAGE_TREMOR[c] ?? 'gray');
+  const activeSeries = stageList.filter((s) => selectedEtapas.has(s.etapaCodigo)).map((s) => stageNameMap.get(s.etapaCodigo) ?? s.etapaNombre);
+  const activeColors = stageList.filter((s) => selectedEtapas.has(s.etapaCodigo)).map((s, i) => STAGE_TREMOR_MAP[s.etapaCodigo] ?? ['blue','green','amber','violet','red','cyan','orange','purple'][i % 8]);
 
   const pctFmt = (v: number) => `${v}%`;
 
@@ -128,7 +142,10 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
       {/* Header */}
       <div>
         <h2 className="text-2xl font-black tracking-tight text-gray-800">Análisis de Progresión</h2>
-        <p className="mt-1 text-sm text-gray-500">Visualización con gráficos interactivos del desarrollo scout</p>
+        <p className="mt-1 text-sm text-gray-500">
+          {ramaLabel ? `Rama: ${ramaLabel} · ` : 'Todas las ramas · '}
+          Visualización con gráficos interactivos del desarrollo scout
+        </p>
       </div>
 
       {/* Sub-tabs */}
@@ -181,10 +198,9 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                         animationBegin={0}
                         animationDuration={700}
                       >
-                        {(donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1 }]).map((entry) => {
-                          const code = STAGE_ORDER.find((c) => STAGE_LABEL[c] === entry.name);
-                          return <Cell key={entry.name} fill={code ? STAGE_HEX[code] : '#d1d5db'} />;
-                        })}
+                        {(donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1, color: '#d1d5db' }]).map((entry, i) => (
+                          <Cell key={entry.name} fill={'color' in entry ? (entry as any).color : '#d1d5db'} />
+                        ))}
                         <Label
                           content={({ viewBox }: any) => {
                             const { cx, cy } = viewBox;
@@ -208,8 +224,8 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                         content={({ active, payload }: any) => {
                           if (!active || !payload?.length) return null;
                           const d = payload[0];
-                          const code = STAGE_ORDER.find((c) => STAGE_LABEL[c] === d.name);
-                          const hex = code ? STAGE_HEX[code] : '#888';
+                          const entry = donutData.find((e) => e.name === d.name);
+                          const hex = entry ? entry.color : '#888';
                           return (
                             <div className="rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-lg text-xs min-w-[140px]">
                               <div className="flex items-center gap-2">
@@ -226,16 +242,14 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                 </div>
                 {/* Custom legend with bars */}
                 <div className="flex-1 space-y-4 self-center w-full">
-                  {STAGE_ORDER.map((code) => {
-                    const bar = stageBars.find((s) => s.etapaCodigo === code);
-                    const scouts = bar?.totalScouts ?? 0;
+                  {stageList.map((stage, i) => {
+                    const scouts = stage.totalScouts;
                     const pct = totalScouts > 0 ? Math.round((scouts / totalScouts) * 100) : 0;
-                    const hex = STAGE_HEX[code];
-                    const grupo = STAGE_GRUPO[code];
+                    const hex = stage.etapaColor ?? DYNAMIC_PALETTE[i % DYNAMIC_PALETTE.length];
                     return (
-                      <div key={code} className="flex items-center gap-3">
+                      <div key={stage.etapaCodigo} className="flex items-center gap-3">
                         <span className="h-3 w-3 rounded-full shrink-0" style={{ background: hex }} />
-                        <span className="w-28 text-sm font-semibold text-gray-700">{STAGE_LABEL[code]}</span>
+                        <span className="w-28 text-sm font-semibold text-gray-700">{stage.etapaNombre}</span>
                         <div className="flex flex-1 items-center gap-3">
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
                             <div className="h-full rounded-full transition-all duration-700"
@@ -245,18 +259,9 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                             {scouts} scouts · {pct}%
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400 hidden lg:inline shrink-0">
-                          {grupo === 'PISTA_SENDA' ? '📘 P&S' : '📗 R&T'}
-                        </span>
                       </div>
                     );
                   })}
-                  {/* Group note */}
-                  <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-600">
-                    📘 <strong>Pista & Senda</strong> comparten objetivos educativos (11–12 años)
-                    &nbsp;·&nbsp;
-                    📗 <strong>Rumbo & Travesía</strong> comparten objetivos (13–14 años)
-                  </div>
                 </div>
               </div>
             )}
@@ -319,18 +324,18 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
               <div>
                 <p className="mb-2 text-xs font-semibold text-gray-500">Etapas visibles</p>
                 <div className="flex flex-wrap gap-2">
-                  {STAGE_ORDER.map((code) => {
-                    const hex = STAGE_HEX[code];
-                    const active = selectedEtapas.has(code);
+                  {stageList.map((stage, i) => {
+                    const hex = stage.etapaColor ?? DYNAMIC_PALETTE[i % DYNAMIC_PALETTE.length];
+                    const active = selectedEtapas.has(stage.etapaCodigo);
                     return (
-                      <button key={code} type="button" onClick={() => toggleEtapa(code)}
+                      <button key={stage.etapaCodigo} type="button" onClick={() => toggleEtapa(stage.etapaCodigo)}
                         className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                           active ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
                         }`}
                         style={active ? { background: hex, borderColor: hex } : undefined}>
                         <span className="h-2 w-2 rounded-full"
                           style={{ background: active ? 'rgba(255,255,255,0.8)' : hex }} />
-                        {STAGE_LABEL[code]}
+                        {stage.etapaNombre}
                       </button>
                     );
                   })}

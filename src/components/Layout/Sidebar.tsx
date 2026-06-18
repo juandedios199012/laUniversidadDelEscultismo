@@ -58,7 +58,6 @@ const menuGroups: MenuGroup[] = [
       { id: 'admin-objetivos', label: 'Objetivos Educativos', icon: Target,     gradient: 'from-orange-400 to-amber-500',  modulo: 'progresion' },
       { id: 'admin-etapas',    label: 'Etapas y Grupos',      icon: Settings,   gradient: 'from-amber-600 to-orange-600',  modulo: 'progresion' },
       { id: 'progresion-v4',   label: '🚀 Progresión',        icon: Rocket,     gradient: 'from-blue-500 to-violet-500',   modulo: 'progresion' },
-      { id: 'progresion-v5',   label: '🌍 Multi-Rama (beta)', icon: Rocket,     gradient: 'from-green-500 to-teal-500',    modulo: 'progresion' },
     ],
   },
   {

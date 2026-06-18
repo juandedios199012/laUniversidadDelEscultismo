@@ -49,11 +49,8 @@ interface DashboardTabProps {
   totalObj: number;
 }
 
-// ─── Paleta coherente con la BD ───────────────────────────────────────────────
-const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
-const STAGE_LABEL: Record<string, string> = {
-  PISTA: 'Pista', SENDA: 'Senda', RUMBO: 'Rumbo', TRAVESIA: 'Travesía',
-};
+// ─── Paleta din\u00e1mica para etapas ─────────────────────────────────────────────
+const DYNAMIC_PALETTE = ['#4f8ddb', '#27c664', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4', '#f97316', '#8b5cf6'];\n\n// Fallback para compatibilidad con c\u00f3digos legacy de TROPA\nconst STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
 
 // ─── Tooltip personalizado ───────────────────────────────────────────────────
 const CustomBarTooltip = ({ active, payload, label }: any) => {
@@ -132,18 +129,14 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
 
   // ── Datos para el donut de distribución por etapa ─────────────────────────
   const etapaDonutData = useMemo(() => {
-    return STAGE_ORDER
-      .map((codigo) => {
-        const bar = stageBars.find((b) => b.etapaCodigo === codigo);
-        if (!bar || bar.totalScouts === 0) return null;
-        return {
-          name: STAGE_LABEL[codigo],
-          value: bar.totalScouts,
-          pct: totalScouts > 0 ? Math.round((bar.totalScouts / totalScouts) * 100) : 0,
-          color: STAGE_COLORS[codigo] ?? '#888',
-        };
-      })
-      .filter(Boolean) as { name: string; value: number; pct: number; color: string }[];
+    return stageBars
+      .filter((b) => b.totalScouts > 0)
+      .map((b, i) => ({
+        name: b.etapaNombre,
+        value: b.totalScouts,
+        pct: totalScouts > 0 ? Math.round((b.totalScouts / totalScouts) * 100) : 0,
+        color: b.etapaColor ?? STAGE_COLORS[b.etapaCodigo] ?? DYNAMIC_PALETTE[i % DYNAMIC_PALETTE.length],
+      }));
   }, [stageBars, totalScouts]);
 
   // ── Radial de porcentaje por área ─────────────────────────────────────────
@@ -727,7 +720,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
         />
         <div className="space-y-2">
           {topScouts.map((scout, idx) => {
-            const stageColor = STAGE_COLORS[scout.etapaCodigo] ?? '#888';
+            const stageColor = scout.etapaColor ?? STAGE_COLORS[scout.etapaCodigo] ?? '#2563eb';
             return (
               <div
                 key={scout.id}

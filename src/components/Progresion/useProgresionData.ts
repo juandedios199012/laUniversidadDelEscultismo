@@ -59,6 +59,8 @@ export interface V4Scout {
   patrulla: string;
   etapaCodigo: string;
   etapaNombre: string;
+  etapaIcono?: string;
+  etapaColor?: string;
   progreso: number;
   objetivosCompletados: number;
   totalObjetivos: number;
@@ -68,6 +70,8 @@ export interface V4Scout {
 export interface V4StageBar {
   etapaCodigo: string;
   etapaNombre: string;
+  etapaIcono?: string;
+  etapaColor?: string;
   totalScouts: number;
   promedioProgreso: number;
 }
@@ -112,6 +116,8 @@ export function useProgresionData() {
         patrulla: s.patrulla_nombre ?? 'Sin patrulla',
         etapaCodigo: s.etapa_actual_codigo ?? 'PISTA',
         etapaNombre: s.etapa_actual_nombre ?? 'Pista',
+        etapaIcono: s.etapa_actual_icono ?? undefined,
+        etapaColor: s.etapa_actual_color ?? undefined,
         progreso: parseFloat((s.progreso_general ?? 0).toFixed(1)),
         objetivosCompletados: s.objetivos_completados ?? 0,
         totalObjetivos: s.total_objetivos ?? 0,
