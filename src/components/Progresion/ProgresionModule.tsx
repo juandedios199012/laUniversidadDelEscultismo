@@ -30,29 +30,15 @@ const ProgresionModule: React.FC = () => {
     [data.scouts, ramaActiva],
   );
 
-  // StageBars derivados de scoutsFiltrados (no del RPC global)
+  // StageBars: fuente autoritativa = data.stageBars (de obtenerEstadisticasEtapas)
+  // filtrado por ramaActiva usando etapaRama. Evita depender de etapaCodigo de scouts
+  // (que puede ser incorrecto si un scout no tiene scout_etapa asignada).
   const filteredStageBars = useMemo(() => {
-    const map = new Map<string, { nombre: string; icono: string; color: string; count: number; sumProgreso: number }>();
-    scoutsFiltrados.forEach((s) => {
-      const prev = map.get(s.etapaCodigo) ?? {
-        nombre: s.etapaNombre,
-        icono: s.etapaIcono ?? '📍',
-        color: s.etapaColor ?? '#888',
-        count: 0, sumProgreso: 0,
-      };
-      prev.count++;
-      prev.sumProgreso += s.progreso;
-      map.set(s.etapaCodigo, prev);
-    });
-    return Array.from(map.entries()).map(([codigo, d]) => ({
-      etapaCodigo: codigo,
-      etapaNombre: d.nombre,
-      etapaIcono: d.icono,
-      etapaColor: d.color,
-      totalScouts: d.count,
-      promedioProgreso: d.count > 0 ? Math.round(d.sumProgreso / d.count) : 0,
-    })).sort((a, b) => a.etapaCodigo.localeCompare(b.etapaCodigo));
-  }, [scoutsFiltrados]);
+    const bars = ramaActiva
+      ? data.stageBars.filter((b) => b.etapaRama === ramaActiva)
+      : data.stageBars;
+    return bars;
+  }, [data.stageBars, ramaActiva]);
 
   // GlobalAreas derivadas de scoutsFiltrados
   const filteredGlobalAreas = useMemo(() => {

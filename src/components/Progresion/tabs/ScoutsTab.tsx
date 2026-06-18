@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Circle, RefreshCw, Search, X } from 'lucide-react';
-import ProgresionService, { ProgresoCompletoScout, ObjetivoScout, ProgresoArea } from '../../../services/progresionService';
+import ProgresionService, { ProgresoCompletoScout, ObjetivoScout, ProgresoArea, GrupoObjetivo } from '../../../services/progresionService';
 import { ProgressRing } from '../../shared/ui/ProgressRing';
 import { CardSkeleton, ScoutCard } from '../ProgresionComponents';
 import { AREA_COLORS, AREA_ICONS, STAGE_COLORS, STAGE_ICONS, type V4Scout } from '../useProgresionData';
 
 // ─── Scout Detail ─────────────────────────────────────────────────────────────
-const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; onBack: () => void; onDataChanged: () => void }> = ({
+const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: string; onBack: () => void; onDataChanged: () => void }> = ({
   scoutId,
   scoutNombre,
+  scoutRama,
   onBack,
   onDataChanged,
 }) => {
   const [progreso, setProgreso] = useState<ProgresoCompletoScout | null>(null);
   const [objetivos, setObjetivos] = useState<ObjetivoScout[]>([]);
+  const [grupoNombre, setGrupoNombre] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);

@@ -72,6 +72,7 @@ export interface V4StageBar {
   etapaNombre: string;
   etapaIcono?: string;
   etapaColor?: string;
+  etapaRama?: string;
   totalScouts: number;
   promedioProgreso: number;
 }
@@ -126,6 +127,9 @@ export function useProgresionData() {
       const bars: V4StageBar[] = estadis.map((e) => ({
         etapaCodigo: e.etapa_codigo,
         etapaNombre: e.etapa_nombre,
+        etapaIcono: e.etapa_icono || undefined,
+        etapaColor: e.etapa_color || undefined,
+        etapaRama: e.etapa_rama || undefined,
         totalScouts: e.total_scouts,
         promedioProgreso: Math.round(e.promedio_progreso ?? 0),
       }));

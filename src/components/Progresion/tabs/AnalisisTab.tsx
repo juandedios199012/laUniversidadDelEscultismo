@@ -43,6 +43,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
   globalAreas,
   totalScouts,
   promedioGlobal,
+  ramaActiva,
   ramaLabel,
 }) => {
   const [subTab, setSubTab] = useState<SubTab>('general');
@@ -64,7 +65,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
     if (subTab !== 'tendencias') return;
     let mounted = true;
     setLoadingTrends(true);
-    ProgresionService.obtenerTendenciasProgresionMensual(period)
+    ProgresionService.obtenerTendenciasProgresionMensual(period, ramaActiva || undefined)
       .then((rows) => {
         if (!mounted) return;
         setTrendRows(rows);
@@ -81,7 +82,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
     return () => {
       mounted = false;
     };
-  }, [period, subTab]);
+  }, [period, subTab, ramaActiva]);
 
   const toggleEtapa = (code: string) => {
     setSelectedEtapas((prev) => {

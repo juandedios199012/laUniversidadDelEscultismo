@@ -141,6 +141,7 @@ export interface EstadisticaEtapa {
   etapa_nombre: string;
   etapa_icono: string;
   etapa_color: string;
+  etapa_rama: string;
   total_scouts: number;
   promedio_progreso: number;
 }
@@ -505,9 +506,10 @@ export class ProgresionService {
   /**
    * Obtiene la tendencia mensual real de progreso para Progresion v4.
    */
-  static async obtenerTendenciasProgresionMensual(periodoMeses: number = 8): Promise<TendenciaProgresionMensual[]> {
+  static async obtenerTendenciasProgresionMensual(periodoMeses: number = 8, rama?: string): Promise<TendenciaProgresionMensual[]> {
     const { data, error } = await supabase.rpc('api_obtener_tendencias_progresion_v4', {
       p_periodo_meses: periodoMeses,
+      p_rama: rama || null,
     });
 
     if (error) {
