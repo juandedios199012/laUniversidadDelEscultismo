@@ -82,21 +82,22 @@ export const StageCard: React.FC<StageCardProps> = ({
       </div>
       <h3 className="mt-4 text-lg font-black tracking-tight text-gray-800">{etapaNombre}</h3>
       <div className="mt-3">
-        <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-gray-500">
-          <span>Promedio</span>
-          <span style={{ color }}>{promedioProgreso}%</span>
+        <div className="mb-1.5 flex items-end gap-1">
+          <span className="text-3xl font-black leading-none text-gray-800">{promedioProgreso}</span>
+          <span className="mb-0.5 text-sm font-bold" style={{ color }}>%</span>
+          <span className="mb-0.5 ml-auto text-xs text-gray-400">promedio</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+        <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
           <div
             className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${promedioProgreso}%`, background: color }}
+            style={{ width: `${Math.max(promedioProgreso, 3)}%`, background: color }}
           />
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-500">
-        <Users className="h-4 w-4" />
-        <span className="font-semibold" style={{ color }}>{totalScouts}</span>
-        <span>scouts</span>
+      <div className="mt-3 flex items-center gap-1.5 text-sm">
+        <Users className="h-4 w-4 text-gray-400" />
+        <span className="font-bold text-gray-800">{totalScouts}</span>
+        <span className="text-gray-400">scouts</span>
       </div>
     </div>
   );

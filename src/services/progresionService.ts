@@ -477,54 +477,26 @@ export class ProgresionService {
   }
   
   /**
-   * Obtiene resumen de progresión de todos los scouts
+   * Obtiene resumen de progresión de todos los scouts (multi-rama)
    */
-  static async obtenerResumenProgresion(): Promise<ResumenProgresoScout[]> {
-    const { data, error } = await supabase.rpc('obtener_resumen_progresion');
-    
+  static async obtenerResumenProgresion(rama?: RamaCodigo): Promise<ResumenProgresoScout[]> {
+    const params = rama ? { p_rama: rama } : {};
+    const { data, error } = await supabase.rpc('obtener_resumen_progresion_v2', params);
     if (error) {
       console.error('Error al obtener resumen de progresión:', error);
       throw new Error('No se pudo cargar el resumen de progresión');
     }
-    
-    return data || [];
-  }
-  
-  /**
-   * Obtiene estadísticas de scouts por etapa
-   */
-  static async obtenerEstadisticasEtapas(): Promise<EstadisticaEtapa[]> {
-    const { data, error } = await supabase.rpc('obtener_estadisticas_etapas');
-    
-    if (error) {
-      console.error('Error al obtener estadísticas de etapas:', error);
-      throw new Error('No se pudieron cargar las estadísticas');
-    }
-    
     return data || [];
   }
 
   /**
-   * Obtiene resumen de progresión filtrado por rama (v2 multi-rama)
+   * Obtiene estadísticas de scouts por etapa (multi-rama)
    */
-  static async obtenerResumenProgresionV2(rama?: RamaCodigo): Promise<ResumenProgresoScout[]> {
-    const params = rama ? { p_rama: rama } : {};
-    const { data, error } = await supabase.rpc('obtener_resumen_progresion_v2', params);
-    if (error) {
-      console.error('Error al obtener resumen progresión v2:', error);
-      throw new Error('No se pudo cargar el resumen de progresión');
-    }
-    return data || [];
-  }
-
-  /**
-   * Obtiene estadísticas de etapas filtradas por rama (v2 multi-rama)
-   */
-  static async obtenerEstadisticasEtapasV2(rama?: RamaCodigo): Promise<EstadisticaEtapa[]> {
+  static async obtenerEstadisticasEtapas(rama?: RamaCodigo): Promise<EstadisticaEtapa[]> {
     const params = rama ? { p_rama: rama } : {};
     const { data, error } = await supabase.rpc('obtener_estadisticas_etapas_v2', params);
     if (error) {
-      console.error('Error al obtener estadísticas etapas v2:', error);
+      console.error('Error al obtener estadísticas de etapas:', error);
       throw new Error('No se pudieron cargar las estadísticas');
     }
     return data || [];
