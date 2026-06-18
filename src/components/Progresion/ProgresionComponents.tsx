@@ -166,10 +166,10 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
       }`}
       style={selected ? { borderColor: color, ringColor: color } : undefined}
     >
-      {/* Banda de color superior (etapa) */}
+      {/* Banda de color superior (etapa) — degradado del mismo tono: bajo → fuerte */}
       <div
         className="h-1.5 w-full rounded-t-2xl"
-        style={{ background: color }}
+        style={{ background: `linear-gradient(90deg, ${color}40, ${color})` }}
       />
 
       <div className="flex gap-4 p-4">

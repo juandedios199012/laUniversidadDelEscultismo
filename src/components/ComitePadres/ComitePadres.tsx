@@ -1,1300 +1,1110 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Save, Plus, Search, User, TrendingUp, Edit, Eye, Phone, Mail, Trash2, Award, Shield, UserCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Users, Calendar, Save, Plus, Search, User, Edit, Eye, Phone, Mail,
+  Trash2, Award, Shield, UserCheck, ChevronRight, ChevronLeft, X,
+  IdCard, Briefcase, Sparkles, AlertCircle, Check, BadgeCheck,
+} from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
 import ComitePadresService from '../../services/comitePadresService';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
 import type { PersonaResult } from '../../services/personaService';
 
-interface ComitePadresProps {}
+// ============================================================
+// 👨‍👩‍👧‍👦 COMITÉ DE PADRES — UI futurista, claro y minimalista
+// ============================================================
 
-export default function ComitePadresComplete({}: ComitePadresProps) {
-  // ============= ESTADOS =============
+type Cargo = 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE';
+type Estado = 'ACTIVO' | 'INACTIVO' | 'CULMINADO';
+
+interface FormState {
+  nombres: string;
+  apellidos: string;
+  numero_documento: string;
+  tipo_documento: 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE';
+  fecha_nacimiento: string;
+  sexo: 'MASCULINO' | 'FEMENINO';
+  email: string;
+  telefono: string;
+  cargo: Cargo;
+  fecha_inicio: string;
+  fecha_fin: string;
+  scout_hijo_nombre: string;
+  experiencia_previa: string;
+  habilidades: string[];
+  disponibilidad: string;
+  observaciones: string;
+}
+
+const FORM_INICIAL: FormState = {
+  nombres: '',
+  apellidos: '',
+  numero_documento: '',
+  tipo_documento: 'DNI',
+  fecha_nacimiento: '',
+  sexo: 'MASCULINO',
+  email: '',
+  telefono: '',
+  cargo: 'VOCAL',
+  fecha_inicio: '',
+  fecha_fin: '',
+  scout_hijo_nombre: '',
+  experiencia_previa: '',
+  habilidades: [],
+  disponibilidad: '',
+  observaciones: '',
+};
+
+const CARGOS: { value: Cargo; label: string; icon: React.ElementType; from: string; to: string; soft: string; text: string }[] = [
+  { value: 'PRESIDENTE', label: 'Presidente(a)', icon: Shield, from: 'from-blue-500', to: 'to-indigo-500', soft: 'bg-blue-50 text-blue-700 ring-blue-200', text: 'text-blue-600' },
+  { value: 'SECRETARIO', label: 'Secretario(a)', icon: Edit, from: 'from-emerald-500', to: 'to-teal-500', soft: 'bg-emerald-50 text-emerald-700 ring-emerald-200', text: 'text-emerald-600' },
+  { value: 'TESORERO', label: 'Tesorero(a)', icon: Award, from: 'from-amber-500', to: 'to-orange-500', soft: 'bg-amber-50 text-amber-700 ring-amber-200', text: 'text-amber-600' },
+  { value: 'VOCAL', label: 'Vocal', icon: User, from: 'from-violet-500', to: 'to-purple-500', soft: 'bg-violet-50 text-violet-700 ring-violet-200', text: 'text-violet-600' },
+  { value: 'SUPLENTE', label: 'Suplente', icon: UserCheck, from: 'from-slate-500', to: 'to-slate-600', soft: 'bg-slate-100 text-slate-700 ring-slate-200', text: 'text-slate-600' },
+];
+
+const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
+  { value: 'ACTIVO', label: 'Activo', soft: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+  { value: 'INACTIVO', label: 'Inactivo', soft: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
+  { value: 'CULMINADO', label: 'Culminado', soft: 'bg-blue-50 text-blue-700 ring-blue-200', dot: 'bg-blue-500' },
+];
+
+const PASOS = [
+  { id: 1, title: 'Identidad', icon: IdCard },
+  { id: 2, title: 'Cargo & Afiliación', icon: Briefcase },
+  { id: 3, title: 'Experiencia', icon: Sparkles },
+];
+
+const cargoInfo = (c: string) => CARGOS.find((x) => x.value === c) ?? CARGOS[3];
+const estadoInfo = (e: string) => ESTADOS.find((x) => x.value === e) ?? ESTADOS[1];
+
+const iniciales = (nombres = '', apellidos = '') =>
+  `${(nombres.trim()[0] ?? '')}${(apellidos.trim()[0] ?? '')}`.toUpperCase() || '·';
+
+// Clases base reutilizables (glow focus claro)
+const inputBase =
+  'w-full px-4 py-2.5 rounded-xl border bg-white/90 text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-2';
+const inputOk =
+  'border-slate-200 focus:border-blue-400 focus:ring-blue-100 focus:shadow-[0_0_15px_rgba(59,130,246,0.2)]';
+const inputErr =
+  'border-rose-300 focus:border-rose-400 focus:ring-rose-100 focus:shadow-[0_0_15px_rgba(244,63,94,0.2)]';
+
+const labelBase = 'block text-sm font-medium text-slate-600 mb-1.5';
+
+export default function ComitePadres() {
+  // ============= ESTADO PRINCIPAL =============
   const [miembros, setMiembros] = useState<ComitePadresEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCargo, setFilterCargo] = useState<string>('');
-  const [filterEstado, setFilterEstado] = useState<string>('');
+  const [filterCargo, setFilterCargo] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
 
-  // Estados para modales
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  // Wizard / modal
+  const [modalMode, setModalMode] = useState<'closed' | 'create' | 'edit'>('closed');
+  const [viewMiembro, setViewMiembro] = useState<ComitePadresEntry | null>(null);
   const [selectedMiembro, setSelectedMiembro] = useState<ComitePadresEntry | null>(null);
+  const [form, setForm] = useState<FormState>(FORM_INICIAL);
+  const [paso, setPaso] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [personaVinculada, setPersonaVinculada] = useState<PersonaResult | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [skillInput, setSkillInput] = useState('');
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  // Estados para formularios
-  const [createForm, setCreateForm] = useState({
-    nombres: '',
-    apellidos: '',
-    numero_documento: '',
-    tipo_documento: 'DNI' as 'DNI' | 'CARNET_EXTRANJERIA' | 'PASAPORTE',
-    fecha_nacimiento: '',
-    sexo: 'MASCULINO' as 'MASCULINO' | 'FEMENINO',
-    email: '',
-    telefono: '',
-    cargo: 'VOCAL' as 'PRESIDENTE' | 'SECRETARIO' | 'TESORERO' | 'VOCAL' | 'SUPLENTE',
-    fecha_inicio: '',
-    fecha_fin: '',
-    scout_hijo_id: '',
-    experiencia_previa: '',
-    habilidades: [''],
-    disponibilidad: '',
-    observaciones: ''
-  });
+  const modoEdicion = modalMode === 'edit';
 
-  const [editForm, setEditForm] = useState<typeof createForm>(createForm);
-  /** Persona encontrada via buscador para evitar duplicados */
-  const [personaVinculadaCreate, setPersonaVinculadaCreate] = useState<PersonaResult | null>(null);
-
-  // ============= DATOS DEMO Y CONFIGURACIÓN =============
-  const cargos = [
-    { value: 'PRESIDENTE', label: 'Presidente(a)', color: 'blue', icon: Shield },
-    { value: 'SECRETARIO', label: 'Secretario(a)', color: 'green', icon: Edit },
-    { value: 'TESORERO', label: 'Tesorero(a)', color: 'yellow', icon: Award },
-    { value: 'VOCAL', label: 'Vocal', color: 'purple', icon: User },
-    { value: 'SUPLENTE', label: 'Suplente', color: 'gray', icon: UserCheck }
-  ];
-
-  const estadosMiembro = [
-    { value: 'ACTIVO', label: 'Activo', color: 'green' },
-    { value: 'INACTIVO', label: 'Inactivo', color: 'gray' },
-    { value: 'CULMINADO', label: 'Culminado', color: 'blue' }
-  ];
-
-  // ============= EFECTOS =============
+  // ============= CARGA =============
   useEffect(() => {
     loadMiembros();
   }, []);
 
-  // ============= FUNCIONES DE CARGA =============
   const loadMiembros = async () => {
     setLoading(true);
     try {
-      console.log('🏛️ Cargando miembros del comité de padres desde Supabase...');
-      const miembrosData = await ComitePadresService.getMiembrosComite();
-      console.log('📊 Datos recibidos:', miembrosData.length, 'miembros');
-      setMiembros(miembrosData);
-      
+      const data = await ComitePadresService.getMiembrosComite({ activos_solo: false });
+      setMiembros(data);
     } catch (error) {
-      console.error('❌ Error loading comité de padres:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      console.warn(`⚠️ Usando datos demo debido al error: ${errorMessage}`);
-      
-      // Fallback a datos demo en caso de error
-      const miembrosDemo: ComitePadresEntry[] = [
-        {
-          id: '1',
-          nombres: 'Rosa María',
-          apellidos: 'Vásquez González',
-          email: 'rosa.vasquez@email.com',
-          telefono: '987654321',
-          cargo: 'PRESIDENTE',
-          fecha_inicio: '2024-03-15',
-          fecha_fin: '2025-03-15',
-          estado: 'ACTIVO',
-          scout_hijo_id: 'scout001',
-          scout_hijo_nombre: 'Carlos Vásquez',
-          experiencia_previa: 'Ex tesorera del comité anterior, contadora profesional',
-          habilidades: ['Liderazgo', 'Contabilidad', 'Gestión de proyectos', 'Comunicación'],
-          disponibilidad: 'Fines de semana y tardes entre semana',
-          observaciones: 'Muy comprometida con las actividades scouts',
-          fecha_registro: '2024-03-01',
-          fecha_actualizacion: '2024-12-01',
-          periodo_actual: true
-        },
-        {
-          id: '2',
-          nombres: 'Carlos Eduardo',
-          apellidos: 'López Morales',
-          email: 'carlos.lopez@email.com',
-          telefono: '987654322',
-          cargo: 'SECRETARIO',
-          fecha_inicio: '2024-03-15',
-          fecha_fin: '2025-03-15',
-          estado: 'ACTIVO',
-          scout_hijo_id: 'scout002',
-          scout_hijo_nombre: 'Ana López',
-          experiencia_previa: 'Secretario de junta de propietarios, abogado',
-          habilidades: ['Redacción', 'Organización', 'Derecho', 'Comunicación escrita'],
-          disponibilidad: 'Tardes entre semana',
-          observaciones: 'Excelente para documentación y actas',
-          fecha_registro: '2024-03-01',
-          fecha_actualizacion: '2024-11-15',
-          periodo_actual: true
-        },
-        {
-          id: '3',
-          nombres: 'Patricia',
-          apellidos: 'Morales Castro',
-          email: 'patricia.morales@email.com',
-          telefono: '987654323',
-          cargo: 'TESORERO',
-          fecha_inicio: '2024-03-15',
-          fecha_fin: '2025-03-15',
-          estado: 'ACTIVO',
-          scout_hijo_id: 'scout003',
-          scout_hijo_nombre: 'Diego Morales',
-          experiencia_previa: 'Administradora financiera con 10 años de experiencia',
-          habilidades: ['Finanzas', 'Excel avanzado', 'Presupuestos', 'Auditoría'],
-          disponibilidad: 'Flexibilidad de horarios',
-          observaciones: 'Mantiene excelente control financiero del grupo',
-          fecha_registro: '2024-03-01',
-          fecha_actualizacion: '2024-12-10',
-          periodo_actual: true
-        },
-        {
-          id: '4',
-          nombres: 'Miguel Ángel',
-          apellidos: 'Torres Díaz',
-          email: 'miguel.torres@email.com',
-          telefono: '987654324',
-          cargo: 'VOCAL',
-          fecha_inicio: '2024-03-15',
-          fecha_fin: '2025-03-15',
-          estado: 'ACTIVO',
-          scout_hijo_id: 'scout004',
-          scout_hijo_nombre: 'Sofía Torres',
-          experiencia_previa: 'Coordinador de eventos empresariales',
-          habilidades: ['Logística', 'Coordinación de eventos', 'Relaciones públicas'],
-          disponibilidad: 'Fines de semana principalmente',
-          observaciones: 'Especialista en organización de campamentos',
-          fecha_registro: '2024-03-01',
-          fecha_actualizacion: '2024-11-20',
-          periodo_actual: true
-        },
-        {
-          id: '5',
-          nombres: 'Carmen Elena',
-          apellidos: 'Ruiz Fernández',
-          email: 'carmen.ruiz@email.com',
-          telefono: '987654325',
-          cargo: 'SUPLENTE',
-          fecha_inicio: '2024-03-15',
-          fecha_fin: '2025-03-15',
-          estado: 'ACTIVO',
-          scout_hijo_id: 'scout005',
-          scout_hijo_nombre: 'Andrés Ruiz',
-          experiencia_previa: 'Profesora de primaria, coordinadora de actividades escolares',
-          habilidades: ['Educación', 'Trabajo con niños', 'Creatividad', 'Paciencia'],
-          disponibilidad: 'Tardes y vacaciones escolares',
-          observaciones: 'Apoyo especial en actividades educativas',
-          fecha_registro: '2024-03-01',
-          fecha_actualizacion: '2024-10-30',
-          periodo_actual: true
-        }
-      ];
-      setMiembros(miembrosDemo);
-      
+      console.error('❌ Error cargando comité de padres:', error);
+      setMiembros([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ============= FUNCIONES DE MODAL =============
-  const openCreateModal = () => {
-    setCreateForm({
-      nombres: '',
-      apellidos: '',
-      numero_documento: '',
-      tipo_documento: 'DNI',
-      fecha_nacimiento: '',
-      sexo: 'MASCULINO',
-      email: '',
-      telefono: '',
-      cargo: 'VOCAL',
-      fecha_inicio: '',
-      fecha_fin: '',
-      scout_hijo_id: '',
-      experiencia_previa: '',
-      habilidades: [''],
-      disponibilidad: '',
-      observaciones: ''
+  const mostrarToast = (type: 'ok' | 'err', msg: string) => {
+    setToast({ type, msg });
+    if (type === 'ok') setTimeout(() => setToast(null), 3000);
+  };
+
+  // ============= APERTURA DE MODALES =============
+  const abrirCrear = () => {
+    setForm(FORM_INICIAL);
+    setErrors({});
+    setPersonaVinculada(null);
+    setSkillInput('');
+    setPaso(1);
+    setSelectedMiembro(null);
+    setModalMode('create');
+  };
+
+  const abrirEditar = (m: ComitePadresEntry) => {
+    setSelectedMiembro(m);
+    setForm({
+      nombres: m.nombres,
+      apellidos: m.apellidos,
+      numero_documento: m.numero_documento || '',
+      tipo_documento: m.tipo_documento || 'DNI',
+      fecha_nacimiento: m.fecha_nacimiento && m.fecha_nacimiento !== '1900-01-01' ? m.fecha_nacimiento : '',
+      sexo: m.sexo || 'MASCULINO',
+      email: m.email || m.correo || '',
+      telefono: m.telefono || m.celular || '',
+      cargo: m.cargo,
+      fecha_inicio: m.fecha_inicio || '',
+      fecha_fin: m.fecha_fin || '',
+      scout_hijo_nombre: m.scout_hijo_nombre || '',
+      experiencia_previa: m.experiencia_previa || '',
+      habilidades: (m.habilidades || []).filter(Boolean),
+      disponibilidad: m.disponibilidad || '',
+      observaciones: m.observaciones || '',
     });
-    setIsCreateModalOpen(true);
+    setErrors({});
+    setPersonaVinculada(null);
+    setSkillInput('');
+    setPaso(1);
+    setModalMode('edit');
   };
 
-  const openEditModal = (miembro: ComitePadresEntry) => {
-    setSelectedMiembro(miembro);
-    setEditForm({
-      nombres:          miembro.nombres,
-      apellidos:        miembro.apellidos,
-      numero_documento: miembro.numero_documento || '',
-      tipo_documento:   miembro.tipo_documento || 'DNI',
-      fecha_nacimiento: miembro.fecha_nacimiento && miembro.fecha_nacimiento !== '1900-01-01' ? miembro.fecha_nacimiento : '',
-      sexo:             miembro.sexo || 'MASCULINO',
-      email:            miembro.email || miembro.correo || '',
-      telefono:         miembro.telefono || miembro.celular || '',
-      cargo:            miembro.cargo,
-      fecha_inicio:     miembro.fecha_inicio,
-      fecha_fin:        miembro.fecha_fin || '',
-      scout_hijo_id:    miembro.scout_hijo_id || '',
-      experiencia_previa: miembro.experiencia_previa || '',
-      habilidades:      miembro.habilidades || [''],
-      disponibilidad:   miembro.disponibilidad || '',
-      observaciones:    miembro.observaciones || ''
-    });
-    setIsEditModalOpen(true);
+  const cerrarModal = () => {
+    setModalMode('closed');
+    setSelectedMiembro(null);
   };
 
-  const openViewModal = (miembro: ComitePadresEntry) => {
-    setSelectedMiembro(miembro);
-    setIsViewModalOpen(true);
-  };
-
-  // ============= FUNCIONES CRUD =============
-  const handleCreateMiembro = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await ComitePadresService.registrarMiembro(createForm);
-      await loadMiembros();
-      setIsCreateModalOpen(false);
-      alert('Miembro del comité registrado exitosamente');
-    } catch (err) {
-      console.error('Error creating miembro:', err);
-    } finally {
-      setLoading(false);
+  // ============= VALIDACIÓN =============
+  const validarPaso = (n: number): boolean => {
+    const e: Partial<Record<keyof FormState, string>> = {};
+    if (n === 1) {
+      if (!form.nombres.trim()) e.nombres = 'Ingresa los nombres';
+      if (!form.apellidos.trim()) e.apellidos = 'Ingresa los apellidos';
+      if (!form.numero_documento.trim()) e.numero_documento = 'Documento obligatorio';
     }
-  };
-
-  const handleUpdateMiembro = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedMiembro) return;
-    
-    setLoading(true);
-    try {
-      await ComitePadresService.updateMiembro(selectedMiembro.id, editForm);
-      await loadMiembros();
-      setIsEditModalOpen(false);
-      alert('Miembro del comité actualizado exitosamente');
-    } catch (err) {
-      console.error('Error updating miembro:', err);
-    } finally {
-      setLoading(false);
+    if (n === 2) {
+      if (!form.cargo) e.cargo = 'Selecciona un cargo';
+      if (!form.fecha_inicio.trim()) e.fecha_inicio = 'Indica la fecha de inicio';
     }
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleDeleteMiembro = async (miembro: ComitePadresEntry) => {
-    if (!confirm(`¿Estás seguro de eliminar a ${miembro.nombres} ${miembro.apellidos} del comité?`)) {
+  const irAPaso = (n: number) => {
+    if (modoEdicion && n >= 1 && n <= PASOS.length) setPaso(n);
+  };
+
+  const siguiente = () => {
+    if (validarPaso(paso)) setPaso((p) => Math.min(p + 1, PASOS.length));
+  };
+  const anterior = () => setPaso((p) => Math.max(p - 1, 1));
+
+  // ============= HABILIDADES (chips) =============
+  const agregarSkill = () => {
+    const v = skillInput.trim();
+    if (v && !form.habilidades.includes(v)) {
+      setForm((f) => ({ ...f, habilidades: [...f.habilidades, v] }));
+    }
+    setSkillInput('');
+  };
+  const quitarSkill = (s: string) =>
+    setForm((f) => ({ ...f, habilidades: f.habilidades.filter((x) => x !== s) }));
+
+  // ============= GUARDAR =============
+  const guardar = async () => {
+    // Validar todos los campos obligatorios; navegar al primer paso con error
+    if (!form.nombres.trim() || !form.apellidos.trim() || !form.numero_documento.trim()) {
+      validarPaso(1);
+      setPaso(1);
+      return;
+    }
+    if (!form.cargo || !form.fecha_inicio.trim()) {
+      validarPaso(2);
+      setPaso(2);
       return;
     }
 
+    setSaving(true);
+    try {
+      const payload = {
+        nombres: form.nombres.trim(),
+        apellidos: form.apellidos.trim(),
+        numero_documento: form.numero_documento.trim(),
+        tipo_documento: form.tipo_documento,
+        fecha_nacimiento: form.fecha_nacimiento,
+        sexo: form.sexo,
+        email: form.email.trim(),
+        telefono: form.telefono.trim(),
+        cargo: form.cargo,
+        fecha_inicio: form.fecha_inicio,
+        fecha_fin: form.fecha_fin,
+        scout_hijo_nombre: form.scout_hijo_nombre.trim(),
+        experiencia_previa: form.experiencia_previa.trim(),
+        habilidades: form.habilidades,
+        disponibilidad: form.disponibilidad.trim(),
+        observaciones: form.observaciones.trim(),
+      };
+
+      const res = modoEdicion && selectedMiembro
+        ? await ComitePadresService.updateMiembro(selectedMiembro.id, payload)
+        : await ComitePadresService.registrarMiembro(payload);
+
+      if (!res.success) {
+        mostrarToast('err', res.error || 'No se pudo guardar el miembro');
+        return;
+      }
+
+      await loadMiembros();
+      cerrarModal();
+      mostrarToast('ok', modoEdicion ? 'Miembro actualizado' : 'Miembro registrado');
+    } catch (err) {
+      console.error('Error al guardar miembro:', err);
+      mostrarToast('err', err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const eliminar = async (m: ComitePadresEntry) => {
+    if (!confirm(`¿Quitar a ${m.nombres} ${m.apellidos} del comité?`)) return;
     setLoading(true);
     try {
-      await ComitePadresService.deleteMiembro(miembro.id);
+      const res = await ComitePadresService.deleteMiembro(m.id);
+      if (!res.success) throw new Error(res.error);
       await loadMiembros();
-      alert('Miembro del comité eliminado exitosamente');
+      mostrarToast('ok', 'Miembro retirado del comité');
     } catch (err) {
-      console.error('Error deleting miembro:', err);
+      console.error('Error eliminando miembro:', err);
+      mostrarToast('err', err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
 
-  // ============= FUNCIONES DE FORMULARIO =============
-  const addHabilidad = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
-    setForm(prev => ({
-      ...prev,
-      habilidades: [...prev.habilidades, '']
-    }));
-  };
+  // ============= FILTRADO =============
+  const filtrados = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return miembros.filter((m) => {
+      const matchSearch =
+        `${m.nombres} ${m.apellidos}`.toLowerCase().includes(q) ||
+        (m.email || m.correo || '').toLowerCase().includes(q) ||
+        (m.numero_documento || '').toLowerCase().includes(q);
+      const matchCargo = !filterCargo || m.cargo === filterCargo;
+      const matchEstado = !filterEstado || m.estado === filterEstado;
+      return matchSearch && matchCargo && matchEstado;
+    });
+  }, [miembros, searchQuery, filterCargo, filterEstado]);
 
-  const removeHabilidad = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
-    setForm(prev => ({
-      ...prev,
-      habilidades: prev.habilidades.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateHabilidad = (index: number, value: string, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
-    setForm(prev => ({
-      ...prev,
-      habilidades: prev.habilidades.map((hab, i) => i === index ? value : hab)
-    }));
-  };
-
-  // ============= FUNCIONES DE FILTRADO =============
-  const filteredMiembros = miembros.filter(miembro => {
-    const matchesSearch = `${miembro.nombres} ${miembro.apellidos}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         miembro.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCargo = !filterCargo || miembro.cargo === filterCargo;
-    const matchesEstado = !filterEstado || miembro.estado === filterEstado;
-    
-    return matchesSearch && matchesCargo && matchesEstado;
-  });
-
-  // ============= FUNCIONES DE UTILIDAD =============
-  const getCargoInfo = (cargo: string) => {
-    return cargos.find(c => c.value === cargo) || cargos[3]; // Default a VOCAL
-  };
-
-  const getEstadoColor = (estado: string) => {
-    const colors = {
-      'ACTIVO': 'bg-green-100 text-green-800',
-      'INACTIVO': 'bg-gray-100 text-gray-800',
-      'CULMINADO': 'bg-blue-100 text-blue-800'
-    };
-    return colors[estado as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getCargoColor = (cargo: string) => {
-    const cargoInfo = getCargoInfo(cargo);
-    const colors = {
-      'blue': 'bg-blue-100 text-blue-800',
-      'green': 'bg-green-100 text-green-800',
-      'yellow': 'bg-yellow-100 text-yellow-800',
-      'purple': 'bg-purple-100 text-purple-800',
-      'gray': 'bg-gray-100 text-gray-800'
-    };
-    return colors[cargoInfo.color as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
-  // ============= COMPONENTE PRINCIPAL =============
+  // ============= RENDER =============
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-white to-blue-50/40 p-4 md:p-6">
       <div className="max-w-7xl mx-auto w-full">
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white p-6 rounded-xl mb-6 shadow-xl">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-                <Users className="w-8 h-8" />
+        {/* ---------- Header ---------- */}
+        <header className="relative overflow-hidden rounded-2xl mb-6 border border-white/60 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-6 shadow-[0_8px_30px_rgba(59,130,246,0.25)]">
+          <div className="absolute -top-16 -right-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-20 left-1/3 h-44 w-44 rounded-full bg-violet-300/20 blur-3xl" />
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-white/15 p-3 backdrop-blur-sm ring-1 ring-white/30">
+                <Users className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Comité de Padres</h1>
-                <p className="text-purple-100">Gestión y administración del comité de padres de familia</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Comité de Padres</h1>
+                <p className="text-blue-100/90 text-sm">Gestión de los padres y madres que apoyan al grupo</p>
               </div>
             </div>
             <button
-              onClick={openCreateModal}
-              className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200 hover:shadow-xl"
+              type="button"
+              onClick={abrirCrear}
+              className="group inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-semibold text-blue-700 shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
             >
-              <Plus className="w-5 h-5" />
-              <span>Nuevo Miembro</span>
+              <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
+              Nuevo Miembro
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Miembros Activos</p>
-                <p className="text-2xl font-bold text-gray-900">{miembros.filter(m => m.estado === 'ACTIVO').length}</p>
-              </div>
-              <User className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Cargos Ocupados</p>
-                <p className="text-2xl font-bold text-green-600">{new Set(miembros.filter(m => m.estado === 'ACTIVO').map(m => m.cargo)).size}</p>
-              </div>
-              <Shield className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Período Actual</p>
-                <p className="text-2xl font-bold text-blue-600">2024-2025</p>
-              </div>
-              <Calendar className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Experiencia</p>
-                <p className="text-2xl font-bold text-orange-600">Alta</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        {/* ---------- Filtros ---------- */}
+        <div className="sticky top-0 z-20 mb-6 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur-md">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="relative md:col-span-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar miembros..."
+                placeholder="Buscar por nombre, correo o documento…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/80"
+                className={`${inputBase} ${inputOk} pl-10`}
               />
             </div>
             <select
               value={filterCargo}
               onChange={(e) => setFilterCargo(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/80"
+              className={`${inputBase} ${inputOk}`}
             >
               <option value="">Todos los cargos</option>
-              {cargos.map(cargo => (
-                <option key={cargo.value} value={cargo.value}>{cargo.label}</option>
+              {CARGOS.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
             <select
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/80"
+              className={`${inputBase} ${inputOk}`}
             >
               <option value="">Todos los estados</option>
-              {estadosMiembro.map(estado => (
-                <option key={estado.value} value={estado.value}>{estado.label}</option>
+              {ESTADOS.map((e) => (
+                <option key={e.value} value={e.value}>{e.label}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Lista de Miembros */}
-        <div className="space-y-6">
-          {filteredMiembros.map((miembro) => (
-            <div key={miembro.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{miembro.nombres} {miembro.apellidos}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCargoColor(miembro.cargo)}`}>
-                        {getCargoInfo(miembro.cargo).label}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(miembro.estado)}`}>
-                        {estadosMiembro.find(e => e.value === miembro.estado)?.label}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        <span>{miembro.email}</span>
-                      </div>
-                      {miembro.telefono && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          <span>{miembro.telefono}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>Desde {new Date(miembro.fecha_inicio).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    {miembro.scout_hijo_nombre && (
-                      <div className="text-sm text-gray-700 mb-3">
-                        <p><strong>Scout hijo/a:</strong> {miembro.scout_hijo_nombre}</p>
-                      </div>
-                    )}
-                    {miembro.habilidades && miembro.habilidades.length > 0 && miembro.habilidades[0] && (
-                      <div className="flex flex-wrap gap-2">
-                        {miembro.habilidades.slice(0, 3).map((habilidad, index) => (
-                          <span key={index} className="px-2 py-1 bg-purple-50 text-purple-700 rounded-full text-xs">
-                            {habilidad}
-                          </span>
-                        ))}
-                        {miembro.habilidades.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-50 text-gray-700 rounded-full text-xs">
-                            +{miembro.habilidades.length - 3} más
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => openViewModal(miembro)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Ver detalles"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => openEditModal(miembro)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Editar"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMiembro(miembro)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Loading state */}
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        {/* ---------- Lista ---------- */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-blue-200 border-t-blue-600" />
           </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && filteredMiembros.length === 0 && (
-          <div className="text-center py-8">
-            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay miembros</h3>
-            <p className="text-gray-600 mb-4">
-              {searchQuery || filterCargo || filterEstado ? 'No se encontraron miembros con los filtros aplicados.' : 'Comienza registrando el primer miembro del comité.'}
-            </p>
-            <button
-              onClick={openCreateModal}
-              className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Registrar Miembro
-            </button>
+        ) : filtrados.length === 0 ? (
+          <EmptyState
+            filtrando={!!(searchQuery || filterCargo || filterEstado)}
+            onNuevo={abrirCrear}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filtrados.map((m) => (
+              <MiembroCard
+                key={m.id}
+                m={m}
+                onView={() => setViewMiembro(m)}
+                onEdit={() => abrirEditar(m)}
+                onDelete={() => eliminar(m)}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Modal Crear Miembro */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <Plus className="w-6 h-6 mr-2 text-purple-600" />
-                  Nuevo Miembro del Comité
-                </h2>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            
-            <form onSubmit={handleCreateMiembro} className="p-6 space-y-6">
-              {/* Buscador de persona existente */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ¿Esta persona ya está registrada en el sistema?
-                </label>
-                <PersonSearchCombobox
-                  placeholder="Buscar por nombre o N° documento..."
-                  onSelect={(persona: PersonaResult) => {
-                    setPersonaVinculadaCreate(persona);
-                    setCreateForm(prev => ({
-                      ...prev,
-                      nombres:          persona.nombres,
-                      apellidos:        persona.apellidos,
-                      tipo_documento:   (persona.tipo_documento as any) ?? prev.tipo_documento,
-                      numero_documento: persona.numero_documento ?? prev.numero_documento,
-                      email:            persona.correo ?? prev.email,
-                      telefono:         persona.celular ?? prev.telefono,
-                      sexo:             (persona.sexo as any) ?? prev.sexo,
-                    }));
-                  }}
-                  personaVinculada={personaVinculadaCreate}
-                  onDesvincular={() => setPersonaVinculadaCreate(null)}
-                />
-              </div>
-
-              {/* Información Personal */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombres *
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.nombres}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, nombres: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Apellidos *
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.apellidos}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, apellidos: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo de Documento *
-                    </label>
-                    <select
-                      value={createForm.tipo_documento}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, tipo_documento: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="DNI">DNI</option>
-                      <option value="CARNET_EXTRANJERIA">Carnet de Extranjería</option>
-                      <option value="PASAPORTE">Pasaporte</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Número de Documento *
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.numero_documento}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, numero_documento: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Nacimiento
-                    </label>
-                    <input
-                      type="date"
-                      value={createForm.fecha_nacimiento}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sexo *
-                    </label>
-                    <select
-                      value={createForm.sexo}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, sexo: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="MASCULINO">Masculino</option>
-                      <option value="FEMENINO">Femenino</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={createForm.email}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono / Celular
-                    </label>
-                    <input
-                      type="tel"
-                      value={createForm.telefono}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, telefono: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
+      {/* ---------- Wizard (crear / editar) ---------- */}
+      {modalMode !== 'closed' && (
+        <Modal onClose={cerrarModal} ancho="max-w-3xl">
+          {/* Encabezado wizard */}
+          <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md">
+                  {modoEdicion ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
                 </div>
-              </div>
-
-              {/* Información del Cargo */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Información del Cargo</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cargo *
-                    </label>
-                    <select
-                      value={createForm.cargo}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, cargo: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      {cargos.map(cargo => (
-                        <option key={cargo.value} value={cargo.value}>{cargo.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Inicio *
-                    </label>
-                    <input
-                      type="date"
-                      value={createForm.fecha_inicio}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Fin
-                    </label>
-                    <input
-                      type="date"
-                      value={createForm.fecha_fin}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ID Scout Hijo/a
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.scout_hijo_id}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, scout_hijo_id: e.target.value }))}
-                      placeholder="ID del scout hijo/a (opcional)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Habilidades */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Habilidades y Competencias
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => addHabilidad(setCreateForm)}
-                    className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                  >
-                    + Agregar Habilidad
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {createForm.habilidades.map((habilidad, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={habilidad}
-                        onChange={(e) => updateHabilidad(index, e.target.value, setCreateForm)}
-                        placeholder={`Habilidad ${index + 1}`}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                      {createForm.habilidades.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeHabilidad(index, setCreateForm)}
-                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Información Adicional */}
-              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Experiencia Previa
-                  </label>
-                  <textarea
-                    value={createForm.experiencia_previa}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, experiencia_previa: e.target.value }))}
-                    placeholder="Describe la experiencia previa relevante..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Disponibilidad
-                  </label>
-                  <input
-                    type="text"
-                    value={createForm.disponibilidad}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, disponibilidad: e.target.value }))}
-                    placeholder="Ej: Fines de semana, tardes entre semana, flexible"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Observaciones
-                  </label>
-                  <textarea
-                    value={createForm.observaciones}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, observaciones: e.target.value }))}
-                    placeholder="Observaciones adicionales..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Botones */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Registrando...' : 'Registrar Miembro'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Editar Miembro (Similar estructura al crear) */}
-      {isEditModalOpen && selectedMiembro && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <Edit className="w-6 h-6 mr-2 text-purple-600" />
-                  Editar: {selectedMiembro.nombres} {selectedMiembro.apellidos}
-                </h2>
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            
-            <form onSubmit={handleUpdateMiembro} className="p-6 space-y-6">
-              {/* Misma estructura que crear pero con editForm */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombres *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.nombres}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, nombres: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Apellidos *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.apellidos}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, apellidos: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo de Documento *
-                    </label>
-                    <select
-                      value={editForm.tipo_documento}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, tipo_documento: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="DNI">DNI</option>
-                      <option value="CARNET_EXTRANJERIA">Carnet de Extranjería</option>
-                      <option value="PASAPORTE">Pasaporte</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Número de Documento *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.numero_documento}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, numero_documento: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Nacimiento
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.fecha_nacimiento}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sexo *
-                    </label>
-                    <select
-                      value={editForm.sexo}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, sexo: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="MASCULINO">Masculino</option>
-                      <option value="FEMENINO">Femenino</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono / Celular
-                    </label>
-                    <input
-                      type="tel"
-                      value={editForm.telefono}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, telefono: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Información del Cargo</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cargo *
-                    </label>
-                    <select
-                      value={editForm.cargo}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, cargo: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      {cargos.map(cargo => (
-                        <option key={cargo.value} value={cargo.value}>{cargo.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha de Inicio *
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.fecha_inicio}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Habilidades para editar */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Habilidades y Competencias
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => addHabilidad(setEditForm)}
-                    className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                  >
-                    + Agregar Habilidad
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {editForm.habilidades.map((habilidad, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={habilidad}
-                        onChange={(e) => updateHabilidad(index, e.target.value, setEditForm)}
-                        placeholder={`Habilidad ${index + 1}`}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                      {editForm.habilidades.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeHabilidad(index, setEditForm)}
-                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Experiencia Previa
-                  </label>
-                  <textarea
-                    value={editForm.experiencia_previa}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, experiencia_previa: e.target.value }))}
-                    placeholder="Describe la experiencia previa relevante..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Disponibilidad
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.disponibilidad}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, disponibilidad: e.target.value }))}
-                    placeholder="Ej: Fines de semana, tardes entre semana, flexible"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Observaciones
-                  </label>
-                  <textarea
-                    value={editForm.observaciones}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, observaciones: e.target.value }))}
-                    placeholder="Observaciones adicionales..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Actualizando...' : 'Actualizar Miembro'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Ver Miembro */}
-      {isViewModalOpen && selectedMiembro && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <Eye className="w-6 h-6 mr-2 text-blue-600" />
-                  {selectedMiembro.nombres} {selectedMiembro.apellidos}
-                </h2>
-                <button
-                  onClick={() => setIsViewModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Información General */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Información Personal</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Nombre completo:</span>
-                        <span className="font-medium">{selectedMiembro.nombres} {selectedMiembro.apellidos}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">{selectedMiembro.email}</span>
-                      </div>
-                      {selectedMiembro.telefono && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Teléfono:</span>
-                          <span className="font-medium">{selectedMiembro.telefono}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Información del Cargo</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Cargo:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCargoColor(selectedMiembro.cargo)}`}>
-                          {getCargoInfo(selectedMiembro.cargo).label}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Estado:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(selectedMiembro.estado)}`}>
-                          {estadosMiembro.find(e => e.value === selectedMiembro.estado)?.label}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Período:</span>
-                        <span className="font-medium">
-                          {new Date(selectedMiembro.fecha_inicio).toLocaleDateString()} - 
-                          {selectedMiembro.fecha_fin ? new Date(selectedMiembro.fecha_fin).toLocaleDateString() : 'Indefinido'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scout hijo/a */}
-              {selectedMiembro.scout_hijo_nombre && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Scout hijo/a</h3>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {selectedMiembro.scout_hijo_nombre}
+                  <h2 className="text-lg font-bold text-slate-800">
+                    {modoEdicion ? 'Editar miembro' : 'Nuevo miembro del comité'}
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    {modoEdicion ? 'Edición libre — toca cualquier paso' : `Paso ${paso} de ${PASOS.length}`}
                   </p>
                 </div>
-              )}
+              </div>
+              <button type="button" onClick={cerrarModal} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-              {/* Habilidades */}
-              {selectedMiembro.habilidades && selectedMiembro.habilidades.length > 0 && selectedMiembro.habilidades[0] && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Habilidades y Competencias</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedMiembro.habilidades.map((habilidad, index) => (
-                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                        {habilidad}
+            {/* Stepper */}
+            <div className="mt-5 flex items-center">
+              {PASOS.map((p, i) => {
+                const activo = paso === p.id;
+                const completado = paso > p.id;
+                const Icon = p.icon;
+                const clickable = modoEdicion;
+                return (
+                  <React.Fragment key={p.id}>
+                    <button
+                      type="button"
+                      disabled={!clickable}
+                      onClick={() => irAPaso(p.id)}
+                      className={`flex flex-col items-center gap-1.5 ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
+                      <span
+                        className={`grid h-10 w-10 place-items-center rounded-full ring-1 transition-all ${
+                          activo
+                            ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white ring-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.35)]'
+                            : completado
+                            ? 'bg-blue-50 text-blue-600 ring-blue-200'
+                            : 'bg-slate-50 text-slate-400 ring-slate-200'
+                        } ${clickable ? 'hover:scale-105' : ''}`}
+                      >
+                        {completado ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                       </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <span className={`text-[11px] font-medium ${activo ? 'text-blue-600' : 'text-slate-400'}`}>{p.title}</span>
+                    </button>
+                    {i < PASOS.length - 1 && (
+                      <div className={`mx-2 mb-5 h-0.5 flex-1 rounded-full transition-colors ${paso > p.id ? 'bg-blue-400' : 'bg-slate-200'}`} />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
 
-              {/* Experiencia */}
-              {selectedMiembro.experiencia_previa && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Experiencia Previa</h3>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {selectedMiembro.experiencia_previa}
-                  </p>
-                </div>
-              )}
+          {/* Cuerpo de pasos (no <form> para evitar submit accidental) */}
+          <div
+            className="px-6 py-6"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault();
+            }}
+          >
+            {paso === 1 && (
+              <PasoIdentidad
+                form={form}
+                setForm={setForm}
+                errors={errors}
+                personaVinculada={personaVinculada}
+                onVincular={(persona) => {
+                  setPersonaVinculada(persona);
+                  setForm((f) => ({
+                    ...f,
+                    nombres: persona.nombres ?? f.nombres,
+                    apellidos: persona.apellidos ?? f.apellidos,
+                    tipo_documento: (persona.tipo_documento as FormState['tipo_documento']) ?? f.tipo_documento,
+                    numero_documento: persona.numero_documento ?? f.numero_documento,
+                    email: persona.correo ?? f.email,
+                    telefono: persona.celular ?? f.telefono,
+                    sexo: (persona.sexo as FormState['sexo']) ?? f.sexo,
+                  }));
+                }}
+                onDesvincular={() => setPersonaVinculada(null)}
+                modoEdicion={modoEdicion}
+              />
+            )}
 
-              {/* Disponibilidad */}
-              {selectedMiembro.disponibilidad && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Disponibilidad</h3>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {selectedMiembro.disponibilidad}
-                  </p>
-                </div>
-              )}
+            {paso === 2 && <PasoCargo form={form} setForm={setForm} errors={errors} />}
 
-              {/* Observaciones */}
-              {selectedMiembro.observaciones && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Observaciones</h3>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {selectedMiembro.observaciones}
-                  </p>
-                </div>
-              )}
+            {paso === 3 && (
+              <PasoExperiencia
+                form={form}
+                setForm={setForm}
+                skillInput={skillInput}
+                setSkillInput={setSkillInput}
+                onAddSkill={agregarSkill}
+                onRemoveSkill={quitarSkill}
+              />
+            )}
+          </div>
 
-              {/* Botones de Acción */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <button
-                  onClick={() => setIsViewModalOpen(false)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cerrar
+          {/* Footer wizard */}
+          <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
+            <button
+              type="button"
+              onClick={anterior}
+              disabled={paso === 1}
+              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-0"
+            >
+              <ChevronLeft className="h-4 w-4" /> Anterior
+            </button>
+
+            {modoEdicion ? (
+              <button
+                type="button"
+                onClick={guardar}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+              >
+                <Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            ) : paso < PASOS.length ? (
+              <button
+                type="button"
+                onClick={siguiente}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
+              >
+                Siguiente <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={guardar}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+              >
+                <BadgeCheck className="h-4 w-4" /> {saving ? 'Registrando…' : 'Registrar miembro'}
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* ---------- Modal Ver ---------- */}
+      {viewMiembro && (
+        <Modal onClose={() => setViewMiembro(null)} ancho="max-w-2xl">
+          <DetalleMiembro
+            m={viewMiembro}
+            onClose={() => setViewMiembro(null)}
+            onEdit={() => {
+              const m = viewMiembro;
+              setViewMiembro(null);
+              abrirEditar(m);
+            }}
+          />
+        </Modal>
+      )}
+
+      {/* ---------- Toast ---------- */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[60] animate-in fade-in slide-in-from-bottom-2">
+          <div
+            className={`flex items-center gap-2 rounded-xl px-4 py-3 shadow-lg ring-1 ${
+              toast.type === 'ok'
+                ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
+                : 'bg-rose-50 text-rose-800 ring-rose-200'
+            }`}
+          >
+            {toast.type === 'ok' ? <Check className="h-5 w-5 text-emerald-500" /> : <AlertCircle className="h-5 w-5 text-rose-500" />}
+            <span className="text-sm font-medium">{toast.msg}</span>
+            {toast.type === 'err' && (
+              <button type="button" onClick={() => setToast(null)} className="ml-1 text-rose-400 hover:text-rose-600">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Subcomponentes
+// ============================================================
+
+function Modal({ children, onClose, ancho }: { children: React.ReactNode; onClose: () => void; ancho: string }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative ${ancho} w-full max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200`}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-500">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" />
+      {msg}
+    </p>
+  );
+}
+
+function PasoIdentidad({
+  form, setForm, errors, personaVinculada, onVincular, onDesvincular, modoEdicion,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  errors: Partial<Record<keyof FormState, string>>;
+  personaVinculada: PersonaResult | null;
+  onVincular: (p: PersonaResult) => void;
+  onDesvincular: () => void;
+  modoEdicion: boolean;
+}) {
+  return (
+    <div className="space-y-6">
+      {!modoEdicion && (
+        <div className="rounded-2xl border border-blue-100 bg-gradient-to-tr from-blue-50/60 to-indigo-50/40 p-4">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Search className="h-4 w-4 text-blue-500" />
+            ¿Ya está registrada en el sistema?
+          </label>
+          <PersonSearchCombobox
+            placeholder="Buscar por nombre o N° de documento…"
+            onSelect={onVincular}
+            personaVinculada={personaVinculada}
+            onDesvincular={onDesvincular}
+          />
+          <p className="mt-2 text-xs text-slate-400">
+            Si es padre/madre de un scout ya existe en el sistema. Vincúlalo para no duplicar datos.
+          </p>
+        </div>
+      )}
+
+      {/* Bento de identidad */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelBase}>Nombres *</label>
+          <input
+            type="text"
+            value={form.nombres}
+            onChange={(e) => setForm((f) => ({ ...f, nombres: e.target.value }))}
+            className={`${inputBase} ${errors.nombres ? inputErr : inputOk}`}
+          />
+          <FieldError msg={errors.nombres} />
+        </div>
+        <div>
+          <label className={labelBase}>Apellidos *</label>
+          <input
+            type="text"
+            value={form.apellidos}
+            onChange={(e) => setForm((f) => ({ ...f, apellidos: e.target.value }))}
+            className={`${inputBase} ${errors.apellidos ? inputErr : inputOk}`}
+          />
+          <FieldError msg={errors.apellidos} />
+        </div>
+        <div>
+          <label className={labelBase}>Tipo de documento</label>
+          <select
+            value={form.tipo_documento}
+            onChange={(e) => setForm((f) => ({ ...f, tipo_documento: e.target.value as FormState['tipo_documento'] }))}
+            className={`${inputBase} ${inputOk}`}
+          >
+            <option value="DNI">DNI</option>
+            <option value="CARNET_EXTRANJERIA">Carnet de Extranjería</option>
+            <option value="PASAPORTE">Pasaporte</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelBase}>N° de documento *</label>
+          <input
+            type="text"
+            value={form.numero_documento}
+            onChange={(e) => setForm((f) => ({ ...f, numero_documento: e.target.value }))}
+            className={`${inputBase} ${errors.numero_documento ? inputErr : inputOk}`}
+          />
+          <FieldError msg={errors.numero_documento} />
+        </div>
+        <div>
+          <label className={labelBase}>Fecha de nacimiento</label>
+          <input
+            type="date"
+            value={form.fecha_nacimiento}
+            onChange={(e) => setForm((f) => ({ ...f, fecha_nacimiento: e.target.value }))}
+            className={`${inputBase} ${inputOk}`}
+          />
+        </div>
+        <div>
+          <label className={labelBase}>Sexo</label>
+          <div className="flex gap-2">
+            {(['MASCULINO', 'FEMENINO'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, sexo: s }))}
+                className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                  form.sexo === s
+                    ? 'border-blue-300 bg-blue-50 text-blue-700 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                {s === 'MASCULINO' ? 'Masculino' : 'Femenino'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className={labelBase}>Correo</label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className={`${inputBase} ${inputOk} pl-10`}
+            />
+          </div>
+        </div>
+        <div>
+          <label className={labelBase}>Teléfono / Celular</label>
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="tel"
+              value={form.telefono}
+              onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
+              className={`${inputBase} ${inputOk} pl-10`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasoCargo({
+  form, setForm, errors,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  errors: Partial<Record<keyof FormState, string>>;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className={labelBase}>Cargo en el comité *</label>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {CARGOS.map((c) => {
+            const Icon = c.icon;
+            const activo = form.cargo === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, cargo: c.value }))}
+                className={`group relative flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 transition-all ${
+                  activo
+                    ? `border-transparent bg-gradient-to-br ${c.from} ${c.to} text-white shadow-lg`
+                    : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
+                }`}
+              >
+                {activo && (
+                  <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-white/25">
+                    <Check className="h-3 w-3 text-white" />
+                  </span>
+                )}
+                <Icon className={`h-6 w-6 ${activo ? 'text-white' : c.text}`} />
+                <span className="text-xs font-semibold">{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <FieldError msg={errors.cargo} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelBase}>Fecha de inicio *</label>
+          <input
+            type="date"
+            value={form.fecha_inicio}
+            onChange={(e) => setForm((f) => ({ ...f, fecha_inicio: e.target.value }))}
+            className={`${inputBase} ${errors.fecha_inicio ? inputErr : inputOk}`}
+          />
+          <FieldError msg={errors.fecha_inicio} />
+        </div>
+        <div>
+          <label className={labelBase}>Fecha de fin</label>
+          <input
+            type="date"
+            value={form.fecha_fin}
+            onChange={(e) => setForm((f) => ({ ...f, fecha_fin: e.target.value }))}
+            className={`${inputBase} ${inputOk}`}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-600">
+          <Users className="h-4 w-4 text-slate-400" /> Scout hijo/a (afiliación)
+        </label>
+        <input
+          type="text"
+          value={form.scout_hijo_nombre}
+          onChange={(e) => setForm((f) => ({ ...f, scout_hijo_nombre: e.target.value }))}
+          placeholder="Nombre del scout hijo/a (opcional)"
+          className={`${inputBase} ${inputOk}`}
+        />
+        <p className="mt-2 text-xs text-slate-400">Vincula al miembro con su hijo/a scout para tener contexto familiar.</p>
+      </div>
+    </div>
+  );
+}
+
+function PasoExperiencia({
+  form, setForm, skillInput, setSkillInput, onAddSkill, onRemoveSkill,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  skillInput: string;
+  setSkillInput: (v: string) => void;
+  onAddSkill: () => void;
+  onRemoveSkill: (s: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Habilidades como chips */}
+      <div>
+        <label className={labelBase}>Habilidades y competencias</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={skillInput}
+            onChange={(e) => setSkillInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onAddSkill();
+              }
+            }}
+            placeholder="Escribe y presiona Enter (ej. Contabilidad)"
+            className={`${inputBase} ${inputOk} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={onAddSkill}
+            className="rounded-xl bg-blue-50 px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
+          >
+            Agregar
+          </button>
+        </div>
+        {form.habilidades.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {form.habilidades.map((s) => (
+              <span
+                key={s}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1 text-sm text-blue-700 ring-1 ring-blue-100"
+              >
+                {s}
+                <button type="button" onClick={() => onRemoveSkill(s)} className="text-blue-400 hover:text-rose-500">
+                  <X className="h-3.5 w-3.5" />
                 </button>
-                <button
-                  onClick={() => {
-                    setIsViewModalOpen(false);
-                    openEditModal(selectedMiembro);
-                  }}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                  Editar Miembro
-                </button>
-              </div>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className={labelBase}>Experiencia previa</label>
+        <textarea
+          rows={3}
+          value={form.experiencia_previa}
+          onChange={(e) => setForm((f) => ({ ...f, experiencia_previa: e.target.value }))}
+          placeholder="Cargos o experiencia relevante…"
+          className={`${inputBase} ${inputOk} resize-none`}
+        />
+      </div>
+
+      <div>
+        <label className={labelBase}>Disponibilidad</label>
+        <input
+          type="text"
+          value={form.disponibilidad}
+          onChange={(e) => setForm((f) => ({ ...f, disponibilidad: e.target.value }))}
+          placeholder="Ej. Fines de semana, tardes entre semana, flexible"
+          className={`${inputBase} ${inputOk}`}
+        />
+      </div>
+
+      <div>
+        <label className={labelBase}>Observaciones</label>
+        <textarea
+          rows={3}
+          value={form.observaciones}
+          onChange={(e) => setForm((f) => ({ ...f, observaciones: e.target.value }))}
+          placeholder="Notas adicionales…"
+          className={`${inputBase} ${inputOk} resize-none`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MiembroCard({
+  m, onView, onEdit, onDelete,
+}: {
+  m: ComitePadresEntry;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const cargo = cargoInfo(m.cargo);
+  const estado = estadoInfo(m.estado);
+  return (
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <div className={`h-1.5 w-full bg-gradient-to-r ${cargo.from} ${cargo.to}`} />
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start gap-3">
+          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${cargo.from} ${cargo.to} text-sm font-bold text-white shadow-md`}>
+            {iniciales(m.nombres, m.apellidos)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-semibold text-slate-800">{m.nombres} {m.apellidos}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${cargo.soft}`}>
+                {cargo.label}
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${estado.soft}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${estado.dot}`} />
+                {estado.label}
+              </span>
             </div>
           </div>
         </div>
+
+        <div className="mt-4 space-y-1.5 text-sm text-slate-500">
+          {(m.email || m.correo) && (
+            <div className="flex items-center gap-2 truncate">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className="truncate">{m.email || m.correo}</span>
+            </div>
+          )}
+          {(m.telefono || m.celular) && (
+            <div className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{m.telefono || m.celular}</span>
+            </div>
+          )}
+          {m.fecha_inicio && (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>Desde {new Date(m.fecha_inicio).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
+
+        {m.habilidades && m.habilidades.filter(Boolean).length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {m.habilidades.filter(Boolean).slice(0, 3).map((h, i) => (
+              <span key={i} className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] text-slate-500 ring-1 ring-slate-200">{h}</span>
+            ))}
+            {m.habilidades.filter(Boolean).length > 3 && (
+              <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] text-slate-400 ring-1 ring-slate-200">
+                +{m.habilidades.filter(Boolean).length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="mt-auto flex items-center justify-end gap-1 pt-4">
+          <button type="button" onClick={onView} title="Ver" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600">
+            <Eye className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={onEdit} title="Editar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600">
+            <Edit className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={onDelete} title="Retirar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetalleMiembro({
+  m, onClose, onEdit,
+}: {
+  m: ComitePadresEntry;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const cargo = cargoInfo(m.cargo);
+  const estado = estadoInfo(m.estado);
+  const habilidades = (m.habilidades || []).filter(Boolean);
+  return (
+    <>
+      <div className={`relative overflow-hidden bg-gradient-to-r ${cargo.from} ${cargo.to} px-6 py-6 text-white`}>
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/20 hover:text-white">
+          <X className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-4">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/20 text-xl font-bold ring-1 ring-white/30 backdrop-blur">
+            {iniciales(m.nombres, m.apellidos)}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">{m.nombres} {m.apellidos}</h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium">{cargo.label}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium">
+                <span className={`h-1.5 w-1.5 rounded-full ${estado.dot}`} /> {estado.label}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5 px-6 py-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <InfoRow icon={IdCard} label="Documento" value={`${m.tipo_documento || 'DNI'} ${m.numero_documento || '—'}`} />
+          <InfoRow icon={Mail} label="Correo" value={m.email || m.correo || '—'} />
+          <InfoRow icon={Phone} label="Teléfono" value={m.telefono || m.celular || '—'} />
+          <InfoRow
+            icon={Calendar}
+            label="Período"
+            value={`${m.fecha_inicio ? new Date(m.fecha_inicio).toLocaleDateString() : '—'} → ${m.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'Indefinido'}`}
+          />
+        </div>
+
+        {m.scout_hijo_nombre && (
+          <DetalleBloque titulo="Scout hijo/a">{m.scout_hijo_nombre}</DetalleBloque>
+        )}
+
+        {habilidades.length > 0 && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Habilidades</h3>
+            <div className="flex flex-wrap gap-2">
+              {habilidades.map((h, i) => (
+                <span key={i} className="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700 ring-1 ring-blue-100">{h}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {m.experiencia_previa && <DetalleBloque titulo="Experiencia previa">{m.experiencia_previa}</DetalleBloque>}
+        {m.disponibilidad && <DetalleBloque titulo="Disponibilidad">{m.disponibilidad}</DetalleBloque>}
+        {m.observaciones && <DetalleBloque titulo="Observaciones">{m.observaciones}</DetalleBloque>}
+
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+            Cerrar
+          </button>
+          <button type="button" onClick={onEdit} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg">
+            <Edit className="h-4 w-4" /> Editar
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-slate-400 ring-1 ring-slate-200">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-slate-400">{label}</p>
+        <p className="truncate text-sm font-medium text-slate-700">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function DetalleBloque({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="mb-1.5 text-sm font-semibold text-slate-700">{titulo}</h3>
+      <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600 ring-1 ring-slate-100">{children}</p>
+    </div>
+  );
+}
+
+function EmptyState({ filtrando, onNuevo }: { filtrando: boolean; onNuevo: () => void }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 py-16 text-center">
+      <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 ring-1 ring-blue-100">
+        <Users className="h-10 w-10 text-blue-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-700">
+        {filtrando ? 'Sin resultados' : 'Aún no hay miembros'}
+      </h3>
+      <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">
+        {filtrando
+          ? 'No encontramos miembros con los filtros aplicados. Prueba ajustarlos.'
+          : 'Registra al primer padre o madre que forma parte del comité.'}
+      </p>
+      {!filtrando && (
+        <button
+          type="button"
+          onClick={onNuevo}
+          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
+        >
+          <Plus className="h-4 w-4" /> Registrar miembro
+        </button>
       )}
     </div>
   );

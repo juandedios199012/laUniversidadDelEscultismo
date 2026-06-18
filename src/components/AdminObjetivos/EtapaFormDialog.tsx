@@ -28,6 +28,28 @@ import { RAMAS, Etapa, GrupoObjetivo } from '../../services/progresionService';
 import type { EtapaFormData, GrupoFormData } from '../../hooks/useEtapasAdmin';
 
 // ============================================================================
+// PALETA DE COLORES — Etapas (minimalista). Estos colores se reflejan en los
+// cards del módulo de Progresión (etapa_actual_color → STAGE_COLORS fallback).
+// ============================================================================
+
+const PALETA_ETAPAS: { valor: string; nombre: string }[] = [
+  { valor: '#4f8ddb', nombre: 'Azul' },
+  { valor: '#0ea5e9', nombre: 'Cielo' },
+  { valor: '#14b8a6', nombre: 'Verde azulado' },
+  { valor: '#27c664', nombre: 'Verde' },
+  { valor: '#84cc16', nombre: 'Lima' },
+  { valor: '#f59e0b', nombre: 'Ámbar' },
+  { valor: '#fb923c', nombre: 'Naranja' },
+  { valor: '#f43f5e', nombre: 'Rojo' },
+  { valor: '#ec4899', nombre: 'Rosa' },
+  { valor: '#a855f7', nombre: 'Violeta' },
+  { valor: '#6366f1', nombre: 'Índigo' },
+  { valor: '#64748b', nombre: 'Pizarra' },
+];
+
+const COLOR_ETAPA_DEFAULT = PALETA_ETAPAS[0].valor;
+
+// ============================================================================
 // SCHEMAS ZOD
 // ============================================================================
 
@@ -125,7 +147,7 @@ export function EtapaFormDialog({
     resolver: zodResolver(etapaSchema),
     defaultValues: {
       nombre: '', codigo: '', descripcion: '', icono: '📍',
-      color: 'hsl(210, 70%, 55%)',
+      color: COLOR_ETAPA_DEFAULT,
     },
   });
 
@@ -146,11 +168,11 @@ export function EtapaFormDialog({
         edad_tipica:       etapaEditar.edad_tipica,
         orden:             etapaEditar.orden,
         icono:             etapaEditar.icono || '📍',
-        color:             etapaEditar.color || 'hsl(210, 70%, 55%)',
+        color:             etapaEditar.color || COLOR_ETAPA_DEFAULT,
         requisitos_avance: etapaEditar.requisitos_avance || '',
       });
     } else if (modo === 'etapa') {
-      etapaForm.reset({ nombre: '', codigo: '', descripcion: '', icono: '📍', color: 'hsl(210, 70%, 55%)' });
+      etapaForm.reset({ nombre: '', codigo: '', descripcion: '', icono: '📍', color: COLOR_ETAPA_DEFAULT });
     }
 
     if (modo === 'grupo' && grupoEditar) {
@@ -319,6 +341,52 @@ export function EtapaFormDialog({
                     <FormLabel>Requisitos de avance</FormLabel>
                     <FormControl>
                       <Textarea rows={2} placeholder="¿Qué debe cumplir para avanzar?" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={etapaForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Color de la etapa
+                      <span
+                        className="inline-block h-4 w-4 rounded-full border border-gray-200"
+                        style={{ backgroundColor: field.value || COLOR_ETAPA_DEFAULT }}
+                      />
+                      <span className="text-xs font-normal text-gray-400">
+                        se usa en los cards de Progresión
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {PALETA_ETAPAS.map(({ valor, nombre }) => {
+                          const seleccionado = field.value === valor;
+                          return (
+                            <button
+                              key={valor}
+                              type="button"
+                              title={nombre}
+                              aria-label={nombre}
+                              aria-pressed={seleccionado}
+                              onClick={() => field.onChange(valor)}
+                              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all hover:scale-110 ${
+                                seleccionado
+                                  ? 'ring-2 ring-gray-500 ring-offset-2'
+                                  : 'ring-1 ring-inset ring-black/5'
+                              }`}
+                              style={{ backgroundColor: valor }}
+                            >
+                              {seleccionado && (
+                                <span className="text-xs font-bold text-white drop-shadow">✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -20,7 +20,10 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
   const [error, setError] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [areaActiva, setAreaActiva] = useState('');
-  const [toggling, setToggling] = useState<string | null>(null);
+  // Edición local: los cambios se aplican en memoria y se persisten al pulsar "Guardar"
+  const [dirty, setDirty] = useState<Set<string>>(new Set());
+  const [guardandoCambios, setGuardandoCambios] = useState(false);
+  const savedRef = React.useRef<Map<string, boolean>>(new Map());
 
   React.useEffect(() => { load(); }, [scoutId]);
 
@@ -35,6 +38,9 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
       ]);
       setProgreso(p);
       setObjetivos(objs);
+      // Snapshot del estado persistido para detectar cambios sin guardar
+      savedRef.current = new Map(objs.map((o) => [o.id, o.completado]));
+      setDirty(new Set());
       // Resolver grupo dinámico por rama + etapa del scout
       const etapaCodigo = p?.etapa_actual_codigo ?? '';
       const grupoMatch = grupos.find((g) =>
@@ -50,27 +56,68 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
     }
   };
 
-  const handleToggle = async (obj: ObjetivoScout) => {
-    setToggling(obj.id);
+  const handleToggle = (obj: ObjetivoScout) => {
+    if (guardandoCambios) return;
+    const nuevoValor = !obj.completado;
+    setToggleError(null);
+    // Aplicar el cambio en memoria (sin tocar la BD)
+    setObjetivos((prev) =>
+      prev.map((o) =>
+        o.id === obj.id
+          ? { ...o, completado: nuevoValor, fecha_completado: nuevoValor ? new Date().toISOString() : null }
+          : o,
+      ),
+    );
+    // Marcar/limpiar el objetivo como pendiente respecto al estado persistido
+    setDirty((prev) => {
+      const next = new Set(prev);
+      const original = savedRef.current.get(obj.id) ?? false;
+      if (nuevoValor === original) next.delete(obj.id);
+      else next.add(obj.id);
+      return next;
+    });
+  };
+
+  const descartarCambios = () => {
+    if (guardandoCambios) return;
+    setObjetivos((prev) =>
+      prev.map((o) => {
+        const original = savedRef.current.get(o.id) ?? o.completado;
+        return o.completado === original ? o : { ...o, completado: original };
+      }),
+    );
+    setDirty(new Set());
+    setToggleError(null);
+  };
+
+  const guardarCambios = async () => {
+    if (dirty.size === 0 || guardandoCambios) return;
+    setGuardandoCambios(true);
     setToggleError(null);
     try {
-      if (obj.completado) {
-        await ProgresionService.desmarcarObjetivo(scoutId, obj.id);
-      } else {
-        const ok = await ProgresionService.completarObjetivo(scoutId, obj.id);
-        if (!ok) throw new Error('La BD no confirmó el marcado del objetivo');
+      for (const id of dirty) {
+        const obj = objetivos.find((o) => o.id === id);
+        if (!obj) continue;
+        if (obj.completado) {
+          const ok = await ProgresionService.completarObjetivo(scoutId, id);
+          if (!ok) throw new Error('La BD no confirmó el marcado del objetivo');
+        } else {
+          await ProgresionService.desmarcarObjetivo(scoutId, id);
+        }
       }
       await load();
       onDataChanged();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar el objetivo';
+      const msg = err instanceof Error ? err.message : 'Error al guardar los cambios';
       setToggleError(msg);
     } finally {
-      setToggling(null);
+      setGuardandoCambios(false);
     }
   };
 
-  const etapaColor = STAGE_COLORS[progreso?.etapa_actual_codigo ?? 'PISTA'] ?? '#888';
+  const etapaColor = progreso?.etapa_actual_color
+    || STAGE_COLORS[progreso?.etapa_actual_codigo ?? 'PISTA']
+    || '#888';
   const objetivosArea = objetivos.filter((o) => !areaActiva || o.area_codigo === areaActiva);
 
   // Compute areas from loaded objectives (fallback when obtener_progreso_completo_scout returns 0/0)
@@ -137,8 +184,11 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
           )}
         </div>
         <button
-          onClick={load}
-          disabled={loading}
+          onClick={() => {
+            if (dirty.size > 0 && !window.confirm('Hay cambios sin guardar. ¿Recargar y descartarlos?')) return;
+            load();
+          }}
+          disabled={loading || guardandoCambios}
           className="ml-auto rounded-xl border border-gray-200 bg-white p-2 text-gray-500 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -152,6 +202,32 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
         <div className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
           <span>⚠ No se pudo guardar: {toggleError}</span>
           <button type="button" onClick={() => setToggleError(null)} className="text-orange-400 hover:text-orange-600 font-bold ml-3">✕</button>
+        </div>
+      )}
+
+      {dirty.size > 0 && (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-sm">
+          <span className="text-sm font-medium text-amber-800">
+            Tienes {dirty.size} cambio{dirty.size > 1 ? 's' : ''} sin guardar
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={descartarCambios}
+              disabled={guardandoCambios}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+            >
+              Descartar
+            </button>
+            <button
+              type="button"
+              onClick={guardarCambios}
+              disabled={guardandoCambios}
+              className="rounded-lg bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
+            >
+              {guardandoCambios ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -229,16 +305,21 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
                 ) : (
                   objetivosArea.map((obj) => {
                     const color = AREA_COLORS[obj.area_codigo] ?? '#888';
+                    const sinGuardar = dirty.has(obj.id);
                     return (
                       <div
                         key={obj.id}
                         className={`flex items-start gap-3 rounded-xl border p-4 transition ${
-                          obj.completado ? 'border-green-100 bg-green-50' : 'border-gray-100 bg-white'
+                          sinGuardar
+                            ? 'border-amber-300 bg-amber-50/60 ring-1 ring-amber-200'
+                            : obj.completado
+                              ? 'border-green-100 bg-green-50'
+                              : 'border-gray-100 bg-white'
                         }`}
                       >
                         <button
                           type="button"
-                          disabled={toggling === obj.id}
+                          disabled={guardandoCambios}
                           onClick={() => handleToggle(obj)}
                           className="mt-0.5 shrink-0 transition hover:scale-110 disabled:opacity-50"
                         >
