@@ -481,7 +481,7 @@ export class ProgresionService {
    */
   static async obtenerResumenProgresion(rama?: RamaCodigo): Promise<ResumenProgresoScout[]> {
     const params = rama ? { p_rama: rama } : {};
-    const { data, error } = await supabase.rpc('obtener_resumen_progresion_v2', params);
+    const { data, error } = await supabase.rpc('obtener_resumen_progresion', params);
     if (error) {
       console.error('Error al obtener resumen de progresión:', error);
       throw new Error('No se pudo cargar el resumen de progresión');
@@ -494,7 +494,7 @@ export class ProgresionService {
    */
   static async obtenerEstadisticasEtapas(rama?: RamaCodigo): Promise<EstadisticaEtapa[]> {
     const params = rama ? { p_rama: rama } : {};
-    const { data, error } = await supabase.rpc('obtener_estadisticas_etapas_v2', params);
+    const { data, error } = await supabase.rpc('obtener_estadisticas_etapas', params);
     if (error) {
       console.error('Error al obtener estadísticas de etapas:', error);
       throw new Error('No se pudieron cargar las estadísticas');
