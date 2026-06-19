@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 // Tipo para el resultado de registrar/actualizar miembro comité
 // ----------------------------------------------------------------
 export interface MiembroComiteInput {
+  // Si se vincula una persona existente, su id (evita duplicar el documento)
+  persona_id?: string;
   // Datos de persona (van a tabla personas)
   nombres: string;
   apellidos: string;
@@ -79,6 +81,7 @@ export class ComitePadresService {
   static async registrarMiembro(miembro: MiembroComiteInput): Promise<{ success: boolean; miembro_id?: string; comite_id?: string; error?: string }> {
     try {
       const datos_persona = {
+        persona_id:       miembro.persona_id || '',
         nombres:          miembro.nombres,
         apellidos:        miembro.apellidos,
         numero_documento: miembro.numero_documento,

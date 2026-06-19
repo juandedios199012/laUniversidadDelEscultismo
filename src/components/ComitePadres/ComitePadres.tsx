@@ -106,7 +106,7 @@ const CARGO_ESTILOS: Record<string, { icon: React.ElementType; from: string; to:
 
 const CARGO_ESTILO_DEFAULT = { icon: Briefcase, from: 'from-slate-500', to: 'to-slate-600', soft: 'bg-slate-100 text-slate-700 ring-slate-200', text: 'text-slate-600' };
 
-const RAMAS = ['Manada', 'Tropa', 'Comunidad', 'Clan', 'Dirigentes'];
+const RAMAS = ['Manada', 'Tropa', 'Comunidad', 'Clan', 'Dirigentes', 'Comité'];
 const GRUPOS_SANGUINEOS = ['A', 'B', 'AB', 'O'];
 
 const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
@@ -322,6 +322,10 @@ export default function ComitePadres() {
     setSaving(true);
     try {
       const payload = {
+        // Si se vinculó una persona existente (p. ej. el padre ya registrado
+        // como familiar de un scout), enviamos su id para reutilizarla y
+        // evitar duplicar el documento.
+        persona_id: personaVinculada?.persona_id || '',
         nombres: form.nombres.trim(),
         apellidos: form.apellidos.trim(),
         numero_documento: form.numero_documento.trim(),
