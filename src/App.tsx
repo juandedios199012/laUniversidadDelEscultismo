@@ -10,6 +10,7 @@ import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
 import ComitePadres from './components/ComitePadres/ComitePadres';
+import GestionDocumentos from './components/GestionDocumentos/GestionDocumentos';
 // Módulo de Dirigentes con nuevo diseño Glassmorphism (DNGI-02)
 import DirigentesV2 from './components/DirigentesV2';
 import Patrullas from './components/Patrullas/Patrullas';
@@ -106,6 +107,8 @@ function AppContent() {
         return <DirigentesV2 />;
       case 'comite-padres':
         return <ComitePadres />;
+      case 'documentos':
+        return <GestionDocumentos />;
       case 'patrullas':
         return <Patrullas />;
       case 'inventario':

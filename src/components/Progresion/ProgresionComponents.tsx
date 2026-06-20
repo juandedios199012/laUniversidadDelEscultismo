@@ -90,7 +90,10 @@ export const StageCard: React.FC<StageCardProps> = ({
         <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
           <div
             className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${Math.max(promedioProgreso, 3)}%`, background: color }}
+            style={{
+              width: `${promedioProgreso}%`,
+              background: promedioProgreso === 0 ? 'transparent' : color,
+            }}
           />
         </div>
       </div>

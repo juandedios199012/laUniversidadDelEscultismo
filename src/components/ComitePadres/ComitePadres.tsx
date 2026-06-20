@@ -3,7 +3,8 @@ import {
   Users, Calendar, Save, Plus, Search, User, Edit, Eye, Phone, Mail,
   Trash2, Award, Shield, UserCheck, ChevronRight, ChevronLeft, X,
   CreditCard, Briefcase, Sparkles, AlertCircle, Check, BadgeCheck,
-  GraduationCap, HeartPulse, Tags, Settings2, MapPin, Loader2,
+  GraduationCap, HeartPulse, Tags, Settings2, MapPin, Loader2, Trash,
+  Contact, BookOpen,
 } from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
 import ComitePadresService, { type CargoComite } from '../../services/comitePadresService';
@@ -38,6 +39,11 @@ interface FormState {
   tipo_discapacidad: string;
   carnet_conadis: string;
   descripcion_discapacidad: string;
+  // Religión
+  religion: string;
+  // Contacto (p. ej. cónyuge / familiar de un scout)
+  contacto_nombre: string;
+  contacto_telefono: string;
   // Scout
   rama: string;
   codigo_asociado: string;
@@ -51,12 +57,25 @@ interface FormState {
   cargo: string;
   fecha_inicio: string;
   fecha_fin: string;
-  scout_hijo_nombre: string;
   experiencia_previa: string;
   habilidades: string[];
   disponibilidad: string;
   observaciones: string;
 }
+
+// Formatea una fecha tipo "YYYY-MM-DD" sin desfase de zona horaria.
+// `new Date('2026-04-10')` se interpreta como UTC y, en Lima (UTC-5),
+// se muestra el día anterior. Aquí construimos la fecha en hora local.
+const formatearFecha = (valor?: string | null): string => {
+  if (!valor) return '';
+  const soloFecha = valor.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(soloFecha);
+  if (match) {
+    const [, y, mo, d] = match;
+    return new Date(Number(y), Number(mo) - 1, Number(d)).toLocaleDateString();
+  }
+  return new Date(valor).toLocaleDateString();
+};
 
 const FORM_INICIAL: FormState = {
   nombres: '',
@@ -77,6 +96,9 @@ const FORM_INICIAL: FormState = {
   tipo_discapacidad: '',
   carnet_conadis: '',
   descripcion_discapacidad: '',
+  religion: '',
+  contacto_nombre: '',
+  contacto_telefono: '',
   rama: '',
   codigo_asociado: '',
   fecha_ingreso: '',
@@ -87,7 +109,6 @@ const FORM_INICIAL: FormState = {
   cargo: '',
   fecha_inicio: '',
   fecha_fin: '',
-  scout_hijo_nombre: '',
   experiencia_previa: '',
   habilidades: [],
   disponibilidad: '',
@@ -117,11 +138,12 @@ const ESTADOS: { value: Estado; label: string; soft: string; dot: string }[] = [
 
 const PASOS = [
   { id: 1, title: 'Identidad', icon: CreditCard },
-  { id: 2, title: 'Cargo & Afiliación', icon: Briefcase },
-  { id: 3, title: 'Educación & Trabajo', icon: GraduationCap },
-  { id: 4, title: 'Salud', icon: HeartPulse },
-  { id: 5, title: 'Dirección', icon: MapPin },
-  { id: 6, title: 'Experiencia', icon: Sparkles },
+  { id: 2, title: 'Dirección', icon: MapPin },
+  { id: 3, title: 'Cargo & Afiliación', icon: Briefcase },
+  { id: 4, title: 'Educación & Trabajo', icon: GraduationCap },
+  { id: 5, title: 'Salud', icon: HeartPulse },
+  { id: 6, title: 'Contacto & Religión', icon: Contact },
+  { id: 7, title: 'Experiencia', icon: Sparkles },
 ];
 
 const tituloCargo = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
@@ -241,6 +263,9 @@ export default function ComitePadres() {
       tipo_discapacidad: a.tipo_discapacidad || '',
       carnet_conadis: a.carnet_conadis || '',
       descripcion_discapacidad: a.descripcion_discapacidad || '',
+      religion: a.religion || '',
+      contacto_nombre: a.contacto_nombre || '',
+      contacto_telefono: a.contacto_telefono || '',
       rama: a.rama || '',
       codigo_asociado: a.codigo_asociado || '',
       fecha_ingreso: a.fecha_ingreso || '',
@@ -251,7 +276,6 @@ export default function ComitePadres() {
       cargo: m.cargo,
       fecha_inicio: m.fecha_inicio || '',
       fecha_fin: m.fecha_fin || '',
-      scout_hijo_nombre: m.scout_hijo_nombre || '',
       experiencia_previa: m.experiencia_previa || '',
       habilidades: (m.habilidades || []).filter(Boolean),
       disponibilidad: m.disponibilidad || '',
@@ -277,7 +301,7 @@ export default function ComitePadres() {
       if (!form.apellidos.trim()) e.apellidos = 'Ingresa los apellidos';
       if (!form.numero_documento.trim()) e.numero_documento = 'Documento obligatorio';
     }
-    if (n === 2) {
+    if (n === 3) {
       if (!form.cargo) e.cargo = 'Selecciona un cargo';
       if (!form.fecha_inicio.trim()) e.fecha_inicio = 'Indica la fecha de inicio';
     }
@@ -314,8 +338,8 @@ export default function ComitePadres() {
       return;
     }
     if (!form.cargo || !form.fecha_inicio.trim()) {
-      validarPaso(2);
-      setPaso(2);
+      validarPaso(3);
+      setPaso(3);
       return;
     }
 
@@ -346,6 +370,11 @@ export default function ComitePadres() {
         tipo_discapacidad: form.tipo_discapacidad.trim(),
         carnet_conadis: form.carnet_conadis.trim(),
         descripcion_discapacidad: form.descripcion_discapacidad.trim(),
+        // religión
+        religion: form.religion.trim(),
+        // contacto
+        contacto_nombre: form.contacto_nombre.trim(),
+        contacto_telefono: form.contacto_telefono.trim(),
         // scout
         rama: form.rama.trim(),
         codigo_asociado: form.codigo_asociado.trim(),
@@ -359,7 +388,6 @@ export default function ComitePadres() {
         cargo: form.cargo,
         fecha_inicio: form.fecha_inicio,
         fecha_fin: form.fecha_fin,
-        scout_hijo_nombre: form.scout_hijo_nombre.trim(),
         experiencia_previa: form.experiencia_previa.trim(),
         habilidades: form.habilidades,
         disponibilidad: form.disponibilidad.trim(),
@@ -386,14 +414,34 @@ export default function ComitePadres() {
     }
   };
 
-  const eliminar = async (m: ComitePadresEntry) => {
+  const retirar = async (m: ComitePadresEntry) => {
     if (!confirm(`¿Quitar a ${m.nombres} ${m.apellidos} del comité?`)) return;
     setLoading(true);
     try {
-      const res = await ComitePadresService.deleteMiembro(m.id);
+      const res = await ComitePadresService.desactivarMiembro(m.id);
       if (!res.success) throw new Error(res.error);
       await loadMiembros();
       mostrarToast('ok', 'Miembro retirado del comité');
+    } catch (err) {
+      console.error('Error retirando miembro:', err);
+      mostrarToast('err', err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const eliminar = async (m: ComitePadresEntry) => {
+    if (!confirm(
+      `⚠️ Eliminar a ${m.nombres} ${m.apellidos} del comité.\n\n` +
+      `Esta acción es IRREVERSIBLE y borra el registro permanentemente. ` +
+      `Los datos personales se conservan si la persona tiene otros roles.\n\n¿Continuar?`
+    )) return;
+    setLoading(true);
+    try {
+      const res = await ComitePadresService.eliminarMiembro(m.id);
+      if (!res.success) throw new Error(res.error);
+      await loadMiembros();
+      mostrarToast('ok', 'Miembro eliminado del comité');
     } catch (err) {
       console.error('Error eliminando miembro:', err);
       mostrarToast('err', err instanceof Error ? err.message : 'Error desconocido');
@@ -509,7 +557,8 @@ export default function ComitePadres() {
                 m={m}
                 onView={() => setViewMiembro(m)}
                 onEdit={() => abrirEditar(m)}
-                onDelete={() => eliminar(m)}
+                onRetirar={() => retirar(m)}
+                onEliminar={() => eliminar(m)}
               />
             ))}
           </div>
@@ -608,15 +657,30 @@ export default function ComitePadres() {
               />
             )}
 
-            {paso === 2 && <PasoCargo form={form} setForm={setForm} errors={errors} cargos={cargosActivos} />}
+            {paso === 2 && <PasoDireccion form={form} setForm={setForm} />}
 
-            {paso === 3 && <PasoEducacionTrabajo form={form} setForm={setForm} />}
+            {paso === 3 && <PasoCargo form={form} setForm={setForm} errors={errors} cargos={cargosActivos} />}
 
-            {paso === 4 && <PasoSalud form={form} setForm={setForm} />}
+            {paso === 4 && <PasoEducacionTrabajo form={form} setForm={setForm} />}
 
-            {paso === 5 && <PasoDireccion form={form} setForm={setForm} />}
+            {paso === 5 && <PasoSalud form={form} setForm={setForm} />}
 
             {paso === 6 && (
+              <PasoContactoReligion
+                form={form}
+                setForm={setForm}
+                modoEdicion={modoEdicion}
+                onVincularContacto={(persona) =>
+                  setForm((f) => ({
+                    ...f,
+                    contacto_nombre: `${persona.nombres ?? ''} ${persona.apellidos ?? ''}`.trim() || f.contacto_nombre,
+                    contacto_telefono: persona.celular ?? f.contacto_telefono,
+                  }))
+                }
+              />
+            )}
+
+            {paso === 7 && (
               <PasoExperiencia
                 form={form}
                 setForm={setForm}
@@ -947,20 +1011,6 @@ function PasoCargo({
           />
         </div>
       </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-        <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-600">
-          <Users className="h-4 w-4 text-slate-400" /> Scout hijo/a (afiliación)
-        </label>
-        <input
-          type="text"
-          value={form.scout_hijo_nombre}
-          onChange={(e) => setForm((f) => ({ ...f, scout_hijo_nombre: e.target.value }))}
-          placeholder="Nombre del scout hijo/a (opcional)"
-          className={`${inputBase} ${inputOk}`}
-        />
-        <p className="mt-2 text-xs text-slate-400">Vincula al miembro con su hijo/a scout para tener contexto familiar.</p>
-      </div>
     </div>
   );
 }
@@ -1253,6 +1303,83 @@ function PasoSalud({
             placeholder="Detalles relevantes para su atención (opcional)"
             className={`${inputBase} ${inputOk} resize-none`}
           />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasoContactoReligion({
+  form, setForm, modoEdicion, onVincularContacto,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  modoEdicion: boolean;
+  onVincularContacto: (p: PersonaResult) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Religión */}
+      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-tr from-indigo-50/50 to-violet-50/30 p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <BookOpen className="h-4 w-4 text-indigo-500" /> Religión
+        </h3>
+        <input
+          type="text"
+          value={form.religion}
+          onChange={(e) => setForm((f) => ({ ...f, religion: e.target.value }))}
+          placeholder="Ej. Católica, Cristiana, Ninguna…"
+          className={`${inputBase} ${inputOk}`}
+        />
+      </div>
+
+      {/* Datos de contacto */}
+      <div className="rounded-2xl border border-emerald-100 bg-gradient-to-tr from-emerald-50/50 to-teal-50/30 p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Contact className="h-4 w-4 text-emerald-500" /> Datos de contacto
+        </h3>
+        {!modoEdicion && (
+          <div className="mb-4">
+            <label className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <Search className="h-3.5 w-3.5 text-emerald-500" />
+              Buscar contacto en el sistema (p. ej. cónyuge o familiar de un scout)
+            </label>
+            <PersonSearchCombobox
+              placeholder="Buscar por nombre o N° de documento…"
+              onSelect={onVincularContacto}
+            />
+            <p className="mt-2 text-xs text-slate-400">
+              Al seleccionar se completan automáticamente el nombre y el celular.
+            </p>
+          </div>
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className={labelBase}>Nombre completo del contacto</label>
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={form.contacto_nombre}
+                onChange={(e) => setForm((f) => ({ ...f, contacto_nombre: e.target.value }))}
+                placeholder="Nombres y apellidos"
+                className={`${inputBase} ${inputOk} pl-10`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelBase}>Celular del contacto</label>
+            <div className="relative">
+              <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="tel"
+                value={form.contacto_telefono}
+                onChange={(e) => setForm((f) => ({ ...f, contacto_telefono: e.target.value }))}
+                placeholder="Número de celular"
+                className={`${inputBase} ${inputOk} pl-10`}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1625,12 +1752,13 @@ function GestionarCargos({
 }
 
 function MiembroCard({
-  m, onView, onEdit, onDelete,
+  m, onView, onEdit, onRetirar, onEliminar,
 }: {
   m: ComitePadresEntry;
   onView: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onRetirar: () => void;
+  onEliminar: () => void;
 }) {
   const cargo = cargoInfo(m.cargo);
   const estado = estadoInfo(m.estado);
@@ -1672,7 +1800,7 @@ function MiembroCard({
           {m.fecha_inicio && (
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span>Desde {new Date(m.fecha_inicio).toLocaleDateString()}</span>
+              <span>Desde {formatearFecha(m.fecha_inicio)}</span>
             </div>
           )}
         </div>
@@ -1697,8 +1825,11 @@ function MiembroCard({
           <button type="button" onClick={onEdit} title="Editar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600">
             <Edit className="h-4 w-4" />
           </button>
-          <button type="button" onClick={onDelete} title="Retirar" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600">
+          <button type="button" onClick={onRetirar} title="Retirar (marcar inactivo)" className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600">
             <Trash2 className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={onEliminar} title="Eliminar del comité" className="rounded-lg p-2 text-rose-500 transition-colors hover:bg-rose-600 hover:text-white">
+            <Trash className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -1746,13 +1877,9 @@ function DetalleMiembro({
           <InfoRow
             icon={Calendar}
             label="Período"
-            value={`${m.fecha_inicio ? new Date(m.fecha_inicio).toLocaleDateString() : '—'} → ${m.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'Indefinido'}`}
+            value={`${m.fecha_inicio ? formatearFecha(m.fecha_inicio) : '—'} → ${m.fecha_fin ? formatearFecha(m.fecha_fin) : 'Indefinido'}`}
           />
         </div>
-
-        {m.scout_hijo_nombre && (
-          <DetalleBloque titulo="Scout hijo/a">{m.scout_hijo_nombre}</DetalleBloque>
-        )}
 
         {(m.centro_estudio || m.anio_estudios || m.ocupacion || m.centro_laboral) && (
           <div>
@@ -1782,6 +1909,17 @@ function DetalleMiembro({
                 <DetalleBloque titulo="Descripción de la condición">{m.descripcion_discapacidad}</DetalleBloque>
               </div>
             )}
+          </div>
+        )}
+
+        {((m as any).religion || (m as any).contacto_nombre || (m as any).contacto_telefono) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Contacto & Religión</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(m as any).religion && <InfoRow icon={BookOpen} label="Religión" value={(m as any).religion} />}
+              {(m as any).contacto_nombre && <InfoRow icon={Contact} label="Contacto" value={(m as any).contacto_nombre} />}
+              {(m as any).contacto_telefono && <InfoRow icon={Phone} label="Celular del contacto" value={(m as any).contacto_telefono} />}
+            </div>
           </div>
         )}
 

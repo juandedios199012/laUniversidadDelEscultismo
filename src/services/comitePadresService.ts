@@ -29,6 +29,11 @@ export interface MiembroComiteInput {
   tipo_discapacidad?: string;
   carnet_conadis?: string;
   descripcion_discapacidad?: string;
+  // Religión (va a tabla personas)
+  religion?: string;
+  // Datos de contacto (van a tabla comite_padres)
+  contacto_nombre?: string;
+  contacto_telefono?: string;
   // Datos scout (van a tabla personas)
   rama?: string;
   codigo_asociado?: string;
@@ -42,8 +47,6 @@ export interface MiembroComiteInput {
   cargo: string;
   fecha_inicio: string;
   fecha_fin?: string;
-  scout_hijo_id?: string;
-  scout_hijo_nombre?: string;
   experiencia_previa?: string;
   habilidades?: string[];
   disponibilidad?: string;
@@ -102,6 +105,8 @@ export class ComitePadresService {
         tipo_discapacidad: miembro.tipo_discapacidad || '',
         carnet_conadis:   miembro.carnet_conadis || '',
         descripcion_discapacidad: miembro.descripcion_discapacidad || '',
+        // religión
+        religion:         miembro.religion || '',
         // scout
         rama:             miembro.rama || '',
         codigo_asociado:  miembro.codigo_asociado || '',
@@ -116,12 +121,12 @@ export class ComitePadresService {
         cargo:             miembro.cargo,
         fecha_inicio:      miembro.fecha_inicio,
         fecha_fin:         miembro.fecha_fin || '',
-        scout_hijo_id:     miembro.scout_hijo_id || '',
-        scout_hijo_nombre: miembro.scout_hijo_nombre || '',
         experiencia_previa:miembro.experiencia_previa || '',
         habilidades:       miembro.habilidades || [],
         disponibilidad:    miembro.disponibilidad || '',
         observaciones:     miembro.observaciones || '',
+        contacto_nombre:   miembro.contacto_nombre || '',
+        contacto_telefono: miembro.contacto_telefono || '',
       };
 
       const { data, error } = await supabase.rpc('api_registrar_miembro_comite', {
@@ -202,6 +207,8 @@ export class ComitePadresService {
         tipo_discapacidad: miembro.tipo_discapacidad,
         carnet_conadis:   miembro.carnet_conadis,
         descripcion_discapacidad: miembro.descripcion_discapacidad,
+        // religión
+        religion:         miembro.religion,
         // scout
         rama:             miembro.rama,
         codigo_asociado:  miembro.codigo_asociado,
@@ -216,12 +223,12 @@ export class ComitePadresService {
         cargo:             miembro.cargo,
         fecha_inicio:      miembro.fecha_inicio,
         fecha_fin:         miembro.fecha_fin,
-        scout_hijo_id:     miembro.scout_hijo_id,
-        scout_hijo_nombre: miembro.scout_hijo_nombre,
         experiencia_previa:miembro.experiencia_previa,
         habilidades:       miembro.habilidades,
         disponibilidad:    miembro.disponibilidad,
         observaciones:     miembro.observaciones,
+        contacto_nombre:   miembro.contacto_nombre,
+        contacto_telefono: miembro.contacto_telefono,
       };
 
       const { data, error } = await supabase.rpc('api_actualizar_miembro_comite', {
@@ -242,9 +249,30 @@ export class ComitePadresService {
 
   /**
    * 🗑️ Desactivar miembro del comité (soft delete)
-   * La persona en la tabla personas persiste.
+   * Marca el registro como INACTIVO. La persona en personas persiste.
    */
-  static async deleteMiembro(id: string): Promise<{ success: boolean; error?: string }> {
+  static async desactivarMiembro(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_desactivar_miembro_comite', {
+        p_comite_id: id,
+      });
+
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
+      return { success: true };
+    } catch (err) {
+      console.error('❌ Error al eliminar miembro comité:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
+    }
+  }
+
+  /**
+   * 🗑️ Eliminar miembro del comité (hard delete)
+   * Borra el registro de comite_padres de forma permanente.
+   * La persona en la tabla personas persiste (puede tener otros roles).
+   */
+  static async eliminarMiembro(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await supabase.rpc('api_eliminar_miembro_comite', {
         p_comite_id: id,

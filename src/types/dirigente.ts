@@ -106,6 +106,7 @@ export interface PersonaDirigente {
   tipo_discapacidad?: string;
   carnet_conadis?: string;
   descripcion_discapacidad?: string;
+  profesion?: string;
 }
 
 // ============================================================================
@@ -234,6 +235,7 @@ export interface FormularioDirigente {
   ciclo_anio_estudios: string;
   centro_laboral: string;
   cargo_laboral: string;
+  profesion: string;
   
   // Formación
   nivel_formacion: NivelFormacion | '';
@@ -379,6 +381,7 @@ export const FORMULARIO_INICIAL: FormularioDirigente = {
   ciclo_anio_estudios: '',
   centro_laboral: '',
   cargo_laboral: '',
+  profesion: '',
   nivel_formacion: '',
   fecha_sfh1: '',
   aprobo_sfh1: false,

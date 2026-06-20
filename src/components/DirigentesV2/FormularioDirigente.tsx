@@ -34,6 +34,9 @@ import {
 import DirigenteService from '../../services/dirigenteServiceV2';
 import { supabase } from '../../lib/supabase';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
+import { UbigeoSelector } from '../RegistroScout/components/UbigeoSelector';
+import { IdentityDocumentUpload } from '../RegistroScout/components/IdentityDocumentUpload';
+import personaDocumentsService from '../../services/personaDocumentsService';
 import type { PersonaResult } from '../../services/personaService';
 
 // ============================================================================
@@ -161,6 +164,8 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
   const [loadingGrupos, setLoadingGrupos] = useState(false);
   /** Persona vinculada desde el buscador (evita duplicados de persona) */
   const [personaVinculada, setPersonaVinculada] = useState<PersonaResult | null>(null);
+  const [contactoVinculado, setContactoVinculado] = useState<PersonaResult | null>(null);
+  const [personaId, setPersonaId] = useState<string | null>(null);
 
   const isEditing = !!dirigenteId;
 
@@ -198,6 +203,7 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
       console.log('DEBUG - codigo_credencial:', dirigente?.codigo_credencial);
       console.log('DEBUG - persona.sexo:', dirigente?.persona?.sexo);
       if (dirigente) {
+        setPersonaId(dirigente.persona.id || null);
         setFormData({
           nombres: dirigente.persona.nombres,
           apellidos: dirigente.persona.apellidos,
@@ -230,6 +236,7 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
           ciclo_anio_estudios: dirigente.ciclo_anio_estudios || '',
           centro_laboral: dirigente.centro_laboral || '',
           cargo_laboral: dirigente.cargo_laboral || '',
+          profesion: dirigente.persona.profesion || '',
           nivel_formacion: dirigente.nivel_formacion || '',
           fecha_sfh1: dirigente.fecha_sfh1 || '',
           aprobo_sfh1: dirigente.aprobo_sfh1 || false,
@@ -391,6 +398,18 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
       ['nombres', 'apellidos', 'numero_documento', 'celular', 'correo'].forEach((k) => delete newErrors[k]);
       return newErrors;
     });
+  };
+
+  /**
+   * Pre-rellena el contacto de emergencia con los datos de una persona existente.
+   */
+  const handleContactoSeleccionado = (persona: PersonaResult) => {
+    setContactoVinculado(persona);
+    setFormData((prev) => ({
+      ...prev,
+      contacto_emergencia_nombre: `${persona.nombres} ${persona.apellidos}`.trim(),
+      contacto_emergencia_telefono: persona.celular ?? prev.contacto_emergencia_telefono,
+    }));
   };
 
   const showToast = (type: ToastState['type'], message: string) => {
@@ -608,24 +627,14 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
           title="Domicilio"
           icon={Icons.MapPin}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <InputField
-              label="Departamento"
-              value={formData.departamento}
-              onChange={(e) => handleChange('departamento', e.target.value)}
-              placeholder="Ej: Lima"
-            />
-            <InputField
-              label="Provincia"
-              value={formData.provincia}
-              onChange={(e) => handleChange('provincia', e.target.value)}
-              placeholder="Ej: Lima"
-            />
-            <InputField
-              label="Distrito"
-              value={formData.distrito}
-              onChange={(e) => handleChange('distrito', e.target.value)}
-              placeholder="Ej: Miraflores"
+          <div className="mb-4">
+            <UbigeoSelector
+              departamento={formData.departamento}
+              provincia={formData.provincia}
+              distrito={formData.distrito}
+              onDepartamentoChange={(value) => handleChange('departamento', value)}
+              onProvinciaChange={(value) => handleChange('provincia', value)}
+              onDistritoChange={(value) => handleChange('distrito', value)}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -785,6 +794,14 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
           title="Educación y Trabajo"
           icon={Icons.Briefcase}
         >
+          <div className="mb-6">
+            <InputField
+              label="Profesión"
+              value={formData.profesion}
+              onChange={(e) => handleChange('profesion', e.target.value)}
+              placeholder="Ej: Ingeniero, Médico, Contador"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-medium text-slate-600 dark:text-slate-300 mb-3 flex items-center gap-2">
@@ -963,6 +980,20 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
           title="Contacto de Emergencia"
           icon={Icons.Phone}
         >
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+              Buscar persona registrada
+            </label>
+            <PersonSearchCombobox
+              onSelect={handleContactoSeleccionado}
+              placeholder="Buscar por nombre o documento..."
+              personaVinculada={contactoVinculado}
+              onDesvincular={() => setContactoVinculado(null)}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Si la persona no existe, escribe los datos manualmente abajo.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <InputField
               label="Nombre Completo"
@@ -984,6 +1015,21 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
             />
           </div>
         </CollapsibleSection>
+
+        {/* SECCIÓN: DOCUMENTO DE IDENTIDAD (solo en edición) */}
+        {isEditing && personaId && (
+          <CollapsibleSection
+            title="Documento de Identidad"
+            icon={Icons.Shield}
+          >
+            <IdentityDocumentUpload
+              entityType="scout"
+              entityId={personaId}
+              service={personaDocumentsService}
+              label="Documento de Identidad (Anverso y Reverso)"
+            />
+          </CollapsibleSection>
+        )}
 
         {/* SECCIÓN 10: OBSERVACIONES */}
         <CollapsibleSection

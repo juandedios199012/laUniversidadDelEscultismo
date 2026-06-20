@@ -269,8 +269,6 @@ export interface ComitePadresEntry {
   fecha_inicio: string;
   fecha_fin?: string;
   estado: 'ACTIVO' | 'INACTIVO' | 'CULMINADO';
-  scout_hijo_id?: string;
-  scout_hijo_nombre?: string;
   experiencia_previa?: string;
   habilidades?: string[];
   disponibilidad?: string;

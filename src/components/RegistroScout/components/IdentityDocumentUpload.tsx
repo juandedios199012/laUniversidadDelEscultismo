@@ -17,17 +17,45 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import scoutDocumentsService, { EntityType, DocumentSide, DocumentMetadata } from '@/services/scoutDocumentsService';
+import scoutDocumentsService, { EntityType, DocumentSide, DocumentMetadata, UploadResult } from '@/services/scoutDocumentsService';
 
 // ============================================
 // Tipos
 // ============================================
+
+/**
+ * Interfaz mínima de un servicio de documentos de identidad.
+ * Permite inyectar un backend alternativo (p. ej. por persona) manteniendo
+ * la misma UI. Por defecto se usa `scoutDocumentsService`.
+ */
+export interface IdentityDocumentService {
+  getIdentityDocuments(
+    entityType: EntityType | string,
+    entityId: string
+  ): Promise<{
+    anverso?: { url: string; metadata: DocumentMetadata };
+    reverso?: { url: string; metadata: DocumentMetadata };
+  }>;
+  uploadIdentityDocument(
+    entityType: EntityType | string,
+    entityId: string,
+    side: DocumentSide,
+    file: File
+  ): Promise<UploadResult>;
+  deleteIdentityDocument(
+    entityType: EntityType | string,
+    entityId: string,
+    side: DocumentSide
+  ): Promise<{ success: boolean; error?: string }>;
+}
 
 interface IdentityDocumentUploadProps {
   /** Tipo de entidad (scout o familiar) */
   entityType: EntityType;
   /** ID de la entidad */
   entityId?: string;
+  /** Servicio de documentos (por defecto: scoutDocumentsService) */
+  service?: IdentityDocumentService;
   /** Label del componente */
   label?: string;
   /** Si es requerido */
@@ -238,6 +266,7 @@ function DocumentSlot({
 export function IdentityDocumentUpload({
   entityType,
   entityId,
+  service = scoutDocumentsService,
   label = "Documento de Identidad",
   required = false,
   onDocumentsChange,
@@ -270,7 +299,7 @@ export function IdentityDocumentUpload({
     if (!entityId) return;
     
     try {
-      const docs = await scoutDocumentsService.getIdentityDocuments(entityType, entityId);
+      const docs = await service.getIdentityDocuments(entityType, entityId);
       
       if (docs.anverso) {
         setAnverso({
@@ -309,7 +338,7 @@ export function IdentityDocumentUpload({
     setError(null);
 
     try {
-      const result = await scoutDocumentsService.uploadIdentityDocument(
+      const result = await service.uploadIdentityDocument(
         entityType,
         entityId,
         side,
@@ -348,7 +377,7 @@ export function IdentityDocumentUpload({
     const setState = side === 'ANVERSO' ? setAnverso : setReverso;
     
     try {
-      const result = await scoutDocumentsService.deleteIdentityDocument(entityType, entityId, side);
+      const result = await service.deleteIdentityDocument(entityType, entityId, side);
       
       if (result.success) {
         setState({ url: null, fileName: '', isUploading: false });

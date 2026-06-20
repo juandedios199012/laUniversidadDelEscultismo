@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy, Flag, ChevronUp, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy, Flag, ChevronUp, ChevronDown, FileSpreadsheet } from 'lucide-react';
 import { ProgramaSemanalEntry, ProgramaActividad } from '../../lib/supabase';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 import PuntajesActividad from './PuntajesActividad';
 import RankingPatrullas from './RankingPatrullas';
 import { formatFechaLocal } from '../../utils/dateUtils';
+import { ImportDialog } from '../shared/ImportDialog/ImportDialog';
+import { programaImportConfig } from '../../lib/import/configs/programaImportConfig';
 
 // Tipo para dirigentes activos
 interface DirigenteActivo {
@@ -20,6 +22,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRama, setFilterRama] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
@@ -514,15 +517,33 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                 <p className="text-green-100">Planificación y gestión de actividades scouts semanales</p>
               </div>
             </div>
-            <button
-              onClick={openCreateModal}
-              className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200 hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Nuevo Programa</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="bg-white/15 text-white border border-white/40 px-6 py-3 rounded-lg hover:bg-white/25 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200"
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                <span>Importar Excel</span>
+              </button>
+              <button
+                onClick={openCreateModal}
+                className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200 hover:shadow-xl"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nuevo Programa</span>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Diálogo de importación desde Excel */}
+        <ImportDialog
+          config={programaImportConfig}
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onCompleted={loadProgramas}
+        />
 
         {/* Estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

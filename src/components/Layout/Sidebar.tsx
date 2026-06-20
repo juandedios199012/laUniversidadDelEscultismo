@@ -93,6 +93,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'libro-oro',  label: 'Libro de Oro', icon: Book,    gradient: 'from-yellow-500 to-orange-500', modulo: 'libro_oro'  },
       { id: 'inventario', label: 'Inventario',   icon: Package, gradient: 'from-gray-500 to-slate-500',    modulo: 'inventario' },
       { id: 'finanzas',   label: 'Finanzas',     icon: Wallet,  gradient: 'from-emerald-500 to-green-600', modulo: 'finanzas'   },
+      { id: 'documentos', label: 'Documentos',   icon: FileText, gradient: 'from-blue-500 to-indigo-500' },
     ],
   },
   {
