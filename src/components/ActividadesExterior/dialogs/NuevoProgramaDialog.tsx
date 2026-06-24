@@ -152,7 +152,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     mode: 'onBlur',
   });
 
-  const { fields, replace } = useFieldArray({
+  const { fields, replace, update } = useFieldArray({
     control,
     name: 'bloques',
   });
@@ -230,10 +230,21 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     replace(recalcularBloques(bloquesWatch.filter((_, i) => i !== index)));
   };
 
+  // IMPORTANTE: usa update() fila por fila, nunca replace() aquí. replace()
+  // reemplaza el arreglo completo y React desmonta/remonta TODAS las
+  // tarjetas (incluido el <SelectorObjetivosEducativos> de cada una, que
+  // vuelve a pedir su catálogo al montarse) en cada tecla que se escribe en
+  // un input — con varios bloques eso dispara decenas de llamadas a la vez
+  // y cuelga la página. update() solo toca la fila indicada.
   const actualizarBloqueLocal = (index: number, cambios: Partial<BloqueFormData>) => {
     const actualizados = bloquesWatch.map((b, i) => (i === index ? { ...b, ...cambios } : b));
     const requiereRecalculo = 'hora_inicio' in cambios || 'duracion_minutos' in cambios;
-    replace(requiereRecalculo ? recalcularBloques(actualizados) : actualizados);
+    const finales = requiereRecalculo ? recalcularBloques(actualizados) : actualizados;
+    finales.forEach((bloque, i) => {
+      if (JSON.stringify(bloque) !== JSON.stringify(bloquesWatch[i])) {
+        update(i, bloque);
+      }
+    });
   };
 
   type BloquePegado = {
