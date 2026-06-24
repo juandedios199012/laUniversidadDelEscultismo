@@ -269,6 +269,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     }
   };
 
+  // Zona de pegado dedicada: garantiza un campo enfocable para Ctrl+V aunque
+  // todavía no haya bloques creados (el estado vacío no tiene ningún input).
+  const [zonaPegado, setZonaPegado] = useState('');
+  const onPasteZonaPegado = (event: React.ClipboardEvent) => {
+    onPasteBloques(event);
+    setTimeout(() => setZonaPegado(''), 0);
+  };
+
   const siguientePaso = async () => {
     if (paso === 1) {
       const valid = await trigger(['nombre', 'tipo', 'fecha', 'hora_inicio']);
@@ -493,15 +501,27 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 <div>
                   <h3 className="font-medium">Bloques de Actividades</h3>
                   <p className="text-sm text-muted-foreground">
-                    Mismos campos que "Agregar Actividad" en Programación. También puedes copiar
-                    celdas desde Excel (nombre, descripción, hora_inicio, duracion_minutos,
-                    materiales_necesarios, observaciones) y pegarlas aquí con Ctrl+V.
+                    Mismos campos que "Agregar Actividad" en Programación.
                   </p>
                 </div>
                 <Button type="button" variant="outline" onClick={agregarBloque}>
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar Bloque
                 </Button>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs flex items-center gap-1">
+                  Pegar desde Excel
+                </Label>
+                <Textarea
+                  value={zonaPegado}
+                  onChange={(e) => setZonaPegado(e.target.value)}
+                  onPaste={onPasteZonaPegado}
+                  placeholder="Copia varias filas en Excel (nombre, descripción, hora_inicio, duracion_minutos, materiales_necesarios, observaciones) y pégalas aquí con Ctrl+V: se crea un bloque por cada fila."
+                  className="resize-none text-xs"
+                  rows={2}
+                />
               </div>
 
               {fields.length === 0 ? (

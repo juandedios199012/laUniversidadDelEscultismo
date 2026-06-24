@@ -41,6 +41,10 @@ export function usePasteRows<T = Record<string, unknown>>(
       if (!looksLikeMultiCellPaste(text)) return null; // pegado normal de una celda
 
       event.preventDefault();
+      // Evita que un mismo pegado se procese dos veces cuando hay un
+      // onPaste tanto en el elemento enfocado (p. ej. una zona de pegado
+      // dedicada) como en un contenedor ancestro que también escucha paste.
+      event.stopPropagation();
 
       const { rows } = parseClipboardRows(text, sheet.columns);
       const { valid, errors } = coerceAndValidateSheet(rows, sheet);
