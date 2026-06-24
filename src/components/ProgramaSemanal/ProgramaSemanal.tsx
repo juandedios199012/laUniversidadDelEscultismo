@@ -834,7 +834,15 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               </div>
             </div>
             
-            <form onSubmit={handleCreatePrograma} className="p-6 space-y-6">
+            <form
+              onSubmit={handleCreatePrograma}
+              className="p-6 space-y-6"
+              onKeyDown={(e) => {
+                // Evita que Enter (p. ej. al confirmar una hora) envíe el
+                // formulario completo y cierre el modal antes de tiempo.
+                if (e.key === 'Enter') e.preventDefault();
+              }}
+            >
               {/* Información Básica */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -1188,7 +1196,15 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               </div>
             </div>
             
-            <form onSubmit={handleUpdatePrograma} className="p-6 space-y-6">
+            <form
+              onSubmit={handleUpdatePrograma}
+              className="p-6 space-y-6"
+              onKeyDown={(e) => {
+                // Evita que Enter (p. ej. al confirmar una hora) envíe el
+                // formulario completo y cierre el modal antes de tiempo.
+                if (e.key === 'Enter') e.preventDefault();
+              }}
+            >
               {/* Formulario idéntico al crear pero usando editForm */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

@@ -409,7 +409,17 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
           <div className={`flex-1 h-2 rounded ${paso >= 2 ? 'bg-primary' : 'bg-muted'}`} />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          onKeyDown={(e) => {
+            // Evita que Enter (p. ej. al confirmar la hora en un input
+            // type="time") envíe el formulario y cierre el diálogo.
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
+        >
           {/* Paso 1: Información básica */}
           {paso === 1 && (
             <div className="space-y-4">
