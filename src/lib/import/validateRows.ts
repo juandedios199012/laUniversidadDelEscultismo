@@ -18,8 +18,14 @@ function coerceValue(raw: string, col: ColumnDef): unknown {
   switch (col.type) {
     case 'number': {
       if (value === '') return undefined;
-      const n = Number(value.replace(',', '.'));
-      return Number.isNaN(n) ? value : n; // si no es número, dejar string → Zod lo marca
+      // Tolerante a espacios (incluso no separables), separador decimal "," y
+      // sufijos como "40 min": extrae el primer número en vez de exigir que
+      // toda la celda sea numérica.
+      const limpio = value.replace(/\s/g, '').replace(',', '.');
+      const match = limpio.match(/-?\d+(\.\d+)?/);
+      if (!match) return value; // no hay número → dejar string, Zod lo marca
+      const n = Number(match[0]);
+      return Number.isNaN(n) ? value : n;
     }
     case 'boolean': {
       if (value === '') return undefined;
