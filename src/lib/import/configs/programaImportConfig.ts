@@ -66,6 +66,13 @@ export const ACTIVIDAD_PROGRAMA_BASE_SCHEMA = z.object({
   responsable: z.string().optional().default(''),
   materiales: z.array(z.string()).optional().default([]),
   observaciones: z.string().optional().default(''),
+  // Texto libre tal cual viene del Excel del usuario. No se persisten así:
+  // se resuelven a objetivo_ids contra el catálogo de Objetivos Educativos
+  // después del pegado (ver resolverObjetivosDesdeTexto en ProgramaSemanal.tsx
+  // / NuevoProgramaDialog.tsx). "area_nombre" es solo informativo para quien
+  // llena el Excel; no se guarda (el área ya se deriva de cada objetivo).
+  area_nombre: z.string().optional().default(''),
+  objetivos_texto: z.string().optional().default(''),
 });
 
 export const ACTIVIDAD_PROGRAMA_BASE_COLUMNS: ColumnDef[] = [
@@ -75,12 +82,14 @@ export const ACTIVIDAD_PROGRAMA_BASE_COLUMNS: ColumnDef[] = [
     type: 'string',
     required: true,
     example: 'Nudo de pescador',
+    aliases: ['actividad'],
   },
   {
     key: 'desarrollo',
     header: 'desarrollo',
     type: 'string',
     example: 'Explicación y práctica guiada.',
+    aliases: ['descripcion', 'descripción'],
   },
   {
     key: 'hora_inicio',
@@ -88,12 +97,14 @@ export const ACTIVIDAD_PROGRAMA_BASE_COLUMNS: ColumnDef[] = [
     type: 'string',
     example: '15:00',
     help: 'Formato HH:MM.',
+    aliases: ['hora'],
   },
   {
     key: 'duracion_minutos',
     header: 'duracion_minutos',
     type: 'number',
     example: '30',
+    aliases: ['duracion', 'duración'],
   },
   {
     key: 'responsable',
@@ -113,6 +124,22 @@ export const ACTIVIDAD_PROGRAMA_BASE_COLUMNS: ColumnDef[] = [
     header: 'observaciones',
     type: 'string',
     example: '',
+  },
+  {
+    key: 'area_nombre',
+    header: 'area_nombre',
+    type: 'string',
+    example: 'Corporalidad',
+    help: 'Solo informativo, no se guarda. Aliases: areas de desarrollo / áreas de crecimiento.',
+    aliases: ['areas de desarrollo', 'área de desarrollo', 'areas de crecimiento', 'área de crecimiento'],
+  },
+  {
+    key: 'objetivos_texto',
+    header: 'objetivos_texto',
+    type: 'string',
+    example: 'Convive constantemente en la naturaleza...',
+    help: 'Uno o más títulos de Objetivos Educativos (uno por línea dentro de la celda); se resuelven contra el catálogo.',
+    aliases: ['objetivos educativos'],
   },
 ];
 

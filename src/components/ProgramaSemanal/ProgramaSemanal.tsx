@@ -10,6 +10,8 @@ import { programaImportConfig, actividadProgramaSheet } from '../../lib/import/c
 import { usePasteRows } from '../../hooks/usePasteRows';
 import { timeToMinutes, minutesToTime, recalcularHorarioSecuencial } from '../../utils/horarioSecuencial';
 import SelectorObjetivosEducativos from '../shared/SelectorObjetivosEducativos';
+import ProgresionService from '../../services/progresionService';
+import { resolverMultiplesContraCatalogo } from '../../utils/matchTextoCatalogo';
 
 // Tipo para dirigentes activos
 interface DirigenteActivo {
@@ -409,7 +411,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   };
 
   // Pegar actividades copiadas desde Excel (columnas: nombre, desarrollo,
-  // hora_inicio, duracion_minutos, responsable, materiales, observaciones)
+  // hora_inicio, duracion_minutos, responsable, materiales, observaciones,
+  // objetivos_texto). "objetivos_texto" llega como texto libre del Excel
+  // del usuario y ya viene resuelto a objetivo_ids al llegar aquí (ver
+  // aplicarActividadesPegadas).
   const pegarActividades = (
     filasPegadas: Array<{
       nombre: string;
@@ -419,6 +424,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       responsable: string;
       materiales: string[];
       observaciones: string;
+      objetivo_ids: string[];
     }>,
     setForm: React.Dispatch<React.SetStateAction<typeof createForm>>
   ) => {
@@ -436,6 +442,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         responsable: fila.responsable,
         materiales: fila.materiales,
         observaciones: fila.observaciones,
+        objetivo_ids: fila.objetivo_ids,
       })) as unknown as ProgramaActividad[];
 
       return {
@@ -454,7 +461,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     }
   };
 
-  const { handlePaste: handlePasteCreate } = usePasteRows<{
+  type ActividadPegada = {
     nombre: string;
     desarrollo: string;
     hora_inicio: string;
@@ -462,17 +469,34 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     responsable: string;
     materiales: string[];
     observaciones: string;
-  }>(actividadProgramaSheet, (filas) => pegarActividades(filas, setCreateForm));
+    objetivos_texto: string;
+  };
 
-  const { handlePaste: handlePasteEdit } = usePasteRows<{
-    nombre: string;
-    desarrollo: string;
-    hora_inicio: string;
-    duracion_minutos?: number;
-    responsable: string;
-    materiales: string[];
-    observaciones: string;
-  }>(actividadProgramaSheet, (filas) => pegarActividades(filas, setEditForm));
+  const aplicarActividadesPegadas = async (
+    filasPegadas: ActividadPegada[],
+    setForm: React.Dispatch<React.SetStateAction<typeof createForm>>
+  ) => {
+    const necesitaObjetivos = filasPegadas.some((f) => f.objetivos_texto);
+    const objetivos = necesitaObjetivos ? await ProgresionService.obtenerObjetivos().catch(() => []) : [];
+
+    pegarActividades(
+      filasPegadas.map((f) => ({
+        ...f,
+        objetivo_ids: resolverMultiplesContraCatalogo(f.objetivos_texto, objetivos, (o) => o.titulo),
+      })),
+      setForm
+    );
+  };
+
+  const { handlePaste: handlePasteCreate } = usePasteRows<ActividadPegada>(
+    actividadProgramaSheet,
+    (filas) => aplicarActividadesPegadas(filas, setCreateForm),
+  );
+
+  const { handlePaste: handlePasteEdit } = usePasteRows<ActividadPegada>(
+    actividadProgramaSheet,
+    (filas) => aplicarActividadesPegadas(filas, setEditForm),
+  );
 
   const handlePasteActividadesCreate = (event: React.ClipboardEvent) => {
     const resultado = handlePasteCreate(event);
@@ -979,7 +1003,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                 </div>
                 <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
                   <FileSpreadsheet className="w-3.5 h-3.5" />
-                  Tip: copia celdas en Excel (nombre, desarrollo, hora_inicio, duracion_minutos, responsable, materiales, observaciones) y pégalas aquí con Ctrl+V.
+                  Tip: copia celdas en Excel (con o sin fila de encabezados: actividad/nombre, hora, duracion, responsable, desarrollo/descripcion, materiales, observaciones, objetivos educativos) y pégalas aquí con Ctrl+V.
                 </p>
                 {getVentanaHorariaError(createForm) && (
                   <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
@@ -1337,7 +1361,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                 </div>
                 <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
                   <FileSpreadsheet className="w-3.5 h-3.5" />
-                  Tip: copia celdas en Excel (nombre, desarrollo, hora_inicio, duracion_minutos, responsable, materiales, observaciones) y pégalas aquí con Ctrl+V.
+                  Tip: copia celdas en Excel (con o sin fila de encabezados: actividad/nombre, hora, duracion, responsable, desarrollo/descripcion, materiales, observaciones, objetivos educativos) y pégalas aquí con Ctrl+V.
                 </p>
                 {getVentanaHorariaError(editForm) && (
                   <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">

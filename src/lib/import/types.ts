@@ -42,6 +42,14 @@ export interface ColumnDef {
   help?: string;
   /** Delimitador para columnas tipo 'array' (por defecto ';'). */
   arrayDelimiter?: string;
+  /**
+   * Encabezados alternativos aceptados al pegar desde el portapapeles
+   * (p. ej. "HORA" para hora_inicio). Solo los usa el pegado rápido
+   * (clipboardParser.ts) para reconocer el encabezado sin importar el
+   * orden de columnas del Excel del usuario; no afecta la plantilla de
+   * importación por archivo.
+   */
+  aliases?: string[];
 }
 
 /** Definición de una hoja del libro (padre o hija). */

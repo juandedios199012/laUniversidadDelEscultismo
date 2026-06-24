@@ -56,6 +56,8 @@ import { usePasteRows } from '@/hooks/usePasteRows';
 import { bloqueProgramaSheet } from '@/lib/import/configs/bloqueProgramaAireLibreSheet';
 import { recalcularHorarioSecuencial } from '@/utils/horarioSecuencial';
 import SelectorObjetivosEducativos from '@/components/shared/SelectorObjetivosEducativos';
+import ProgresionService from '@/services/progresionService';
+import { resolverMultiplesContraCatalogo, resolverUnoContraCatalogo } from '@/utils/matchTextoCatalogo';
 
 // Schema de validación para bloque (mismos campos que Actividad de Programación)
 const bloqueSchema = z.object({
@@ -234,15 +236,24 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     replace(requiereRecalculo ? recalcularBloques(actualizados) : actualizados);
   };
 
-  // Pegar bloques copiados desde Excel (ver hook usePasteRows)
-  const { handlePaste: handlePasteBloques } = usePasteRows<{
+  type BloquePegado = {
     nombre: string;
     descripcion: string;
     hora_inicio: string;
     duracion_minutos?: number;
+    responsable_nombre: string;
     materiales_necesarios: string;
     observaciones: string;
-  }>(bloqueProgramaSheet, (bloquesPegados) => {
+    objetivos_texto: string;
+  };
+
+  // "responsable_nombre" y "objetivos_texto" llegan como texto libre del
+  // Excel del usuario; se resuelven contra los catálogos (dirigentes ya
+  // cargados, objetivos educativos) antes de crear los bloques.
+  const aplicarBloquesPegados = async (bloquesPegados: BloquePegado[]) => {
+    const necesitaObjetivos = bloquesPegados.some((b) => b.objetivos_texto);
+    const objetivos = necesitaObjetivos ? await ProgresionService.obtenerObjetivos().catch(() => []) : [];
+
     const nuevos = bloquesPegados.map((b) => ({
       ...bloqueVacio(b.hora_inicio || '08:00'),
       nombre: b.nombre,
@@ -250,11 +261,22 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
       duracion_minutos: b.duracion_minutos || 30,
       materiales_necesarios: b.materiales_necesarios,
       observaciones: b.observaciones,
+      objetivo_ids: resolverMultiplesContraCatalogo(b.objetivos_texto, objetivos, (o) => o.titulo),
+      responsable_id: resolverUnoContraCatalogo(b.responsable_nombre, dirigentes, (d) => d.nombre) || '',
     }));
+
     const soloUnoVacio = fields.length === 1 && !bloquesWatch[0]?.nombre;
     const base = soloUnoVacio ? [] : bloquesWatch;
     replace(recalcularBloques([...base, ...nuevos]));
-  });
+  };
+
+  // Pegar bloques copiados desde Excel (ver hook usePasteRows)
+  const { handlePaste: handlePasteBloques } = usePasteRows<BloquePegado>(
+    bloqueProgramaSheet,
+    (bloquesPegados) => {
+      aplicarBloquesPegados(bloquesPegados);
+    },
+  );
 
   const onPasteBloques = (event: React.ClipboardEvent) => {
     const resultado = handlePasteBloques(event);
@@ -518,7 +540,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                   value={zonaPegado}
                   onChange={(e) => setZonaPegado(e.target.value)}
                   onPaste={onPasteZonaPegado}
-                  placeholder="Copia varias filas en Excel (nombre, descripción, hora_inicio, duracion_minutos, materiales_necesarios, observaciones) y pégalas aquí con Ctrl+V: se crea un bloque por cada fila."
+                  placeholder='Pega aquí filas copiadas desde Excel (con o sin fila de encabezados: actividad/nombre, hora, duracion, responsable, desarrollo/descripcion, materiales, áreas de desarrollo, objetivos educativos). Se crea un bloque por cada fila.'
                   className="resize-none text-xs"
                   rows={2}
                 />
