@@ -33,9 +33,10 @@ import {
   ActividadesExteriorService,
   ActividadExteriorResumen,
   TipoActividadExterior,
+  TipoActividadAireLibre,
   EstadoActividadExterior,
-  TIPOS_ACTIVIDAD_EXTERIOR,
   ESTADOS_ACTIVIDAD_EXTERIOR,
+  getEmojiTipoActividad,
 } from '@/services/actividadesExteriorService';
 import NuevaActividadDialog from './dialogs/NuevaActividadDialog';
 import ActividadDetalle from './ActividadDetalle';
@@ -109,9 +110,8 @@ const ActividadCard: React.FC<{
   actividad: ActividadExteriorResumen;
   onClick: () => void;
 }> = ({ actividad, onClick }) => {
-  const tipoInfo = TIPOS_ACTIVIDAD_EXTERIOR.find(t => t.value === actividad.tipo);
   const estadoInfo = ESTADOS_ACTIVIDAD_EXTERIOR.find(e => e.value === actividad.estado);
-  
+
   const diasRestantes = (() => {
     const inicio = new Date(actividad.fecha_inicio);
     const hoy = new Date();
@@ -141,7 +141,7 @@ const ActividadCard: React.FC<{
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-3xl">{tipoInfo?.emoji}</div>
+            <div className="text-3xl">{getEmojiTipoActividad(actividad.tipo)}</div>
             <div>
               <CardTitle className="text-lg group-hover:text-primary transition-colors">
                 {actividad.nombre}
@@ -228,15 +228,22 @@ const ActividadesExteriorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actividades, setActividades] = useState<ActividadExteriorResumen[]>([]);
   const [, setTotal] = useState(0);
-  
+  const [tiposCatalogo, setTiposCatalogo] = useState<TipoActividadAireLibre[]>([]);
+
   // Filtros
   const [filtroTipo, setFiltroTipo] = useState<TipoActividadExterior | 'TODOS'>('TODOS');
   const [filtroEstado, setFiltroEstado] = useState<EstadoActividadExterior | 'TODOS'>('TODOS');
   const [filtroAnio, setFiltroAnio] = useState<number>(new Date().getFullYear());
-  
+
   // Dialogs
   const [showNuevaActividad, setShowNuevaActividad] = useState(false);
   const [actividadSeleccionada, setActividadSeleccionada] = useState<string | null>(null);
+
+  useEffect(() => {
+    ActividadesExteriorService.listarTiposActividadAireLibre()
+      .then(setTiposCatalogo)
+      .catch((err) => console.error('Error cargando catálogo de tipos de actividad:', err));
+  }, []);
 
   useEffect(() => {
     cargarActividades();
@@ -420,9 +427,9 @@ const ActividadesExteriorDashboard: React.FC = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="TODOS">Todos los tipos</SelectItem>
-            {TIPOS_ACTIVIDAD_EXTERIOR.map(tipo => (
-              <SelectItem key={tipo.value} value={tipo.value}>
-                {tipo.emoji} {tipo.label}
+            {tiposCatalogo.map(tipo => (
+              <SelectItem key={tipo.id} value={tipo.descripcion}>
+                {getEmojiTipoActividad(tipo.descripcion)} {tipo.descripcion}
               </SelectItem>
             ))}
           </SelectContent>

@@ -31,7 +31,7 @@ import {
   NivelFormacion,
   TipoMembresia,
 } from '../../types/dirigente';
-import DirigenteService from '../../services/dirigenteServiceV2';
+import DirigenteService from '../../services/dirigenteService';
 import { supabase } from '../../lib/supabase';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
 import { UbigeoSelector } from '../RegistroScout/components/UbigeoSelector';

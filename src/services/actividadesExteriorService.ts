@@ -8,7 +8,16 @@ import { supabase } from '@/lib/supabase';
 // ============= TIPOS =============
 // Valores definidos por CHECK constraints en BD (tabla actividades_aire_libre)
 
-export type TipoActividadExterior = 'paseo' | 'campamento' | 'excursion' | 'expedicion' | 'acantonamiento';
+// El tipo de actividad ya no es una lista fija: se administra desde el
+// catálogo "tipos_actividad_aire_libre" (Configuración > Tipos de Actividad).
+export type TipoActividadExterior = string;
+
+export interface TipoActividadAireLibre {
+  id: string;
+  descripcion: string;
+  activo: boolean;
+  total_uso?: number;
+}
 
 export type EstadoActividadExterior = 'borrador' | 'planificacion' | 'aprobado' | 'en_curso' | 'finalizado' | 'cancelado';
 
@@ -110,27 +119,31 @@ export interface BloqueProgramaActividad {
   id?: string;
   nombre: string;
   descripcion?: string;
-  tipo_bloque?: string;
   hora_inicio: string;
-  hora_fin: string;
+  hora_fin?: string;
+  duracion_minutos: number;
   responsable_id?: string;
   materiales_necesarios?: string;
+  observaciones?: string;
   orden?: number;
-  otorga_puntaje?: boolean;
-  puntaje_maximo?: number;
+  objetivo_ids?: string[];
+  // Solo categoriza el bloque para la línea de tiempo (ActividadDetalle.tsx);
+  // ya no se edita desde el formulario de bloques (unificado con Actividad
+  // de Programación). El puntaje ya no depende de un flag por bloque:
+  // cualquier bloque puede recibir puntaje (ver registrarPuntajesMasivoBloque).
+  tipo_bloque?: string;
 }
 
 export interface NuevoBloquePrograma {
   nombre: string;
   descripcion?: string;
-  tipo_bloque?: string;
   hora_inicio: string;
-  hora_fin: string;
+  duracion_minutos: number;
   responsable_id?: string;
   materiales_necesarios?: string;
+  observaciones?: string;
   orden?: number;
-  otorga_puntaje?: boolean;
-  puntaje_maximo?: number;
+  objetivo_ids?: string[];
 }
 
 export interface ParticipanteActividad {
@@ -220,9 +233,8 @@ export interface NuevoItemMenuActividad {
 
 export interface PuntajeActividad {
   id: string;
-  patrulla_id: string;
+  patrulla_actividad_id: string;
   patrulla_nombre: string;
-  patrulla_actividad_id?: string;
   subcampo_id?: string;
   bloque_id?: string;
   bloque_nombre?: string;
@@ -720,13 +732,26 @@ export interface ResumenActividadExterior {
 
 // ============= CONSTANTES =============
 
-export const TIPOS_ACTIVIDAD_EXTERIOR: { value: TipoActividadExterior; label: string; emoji: string }[] = [
-  { value: 'campamento', label: 'Campamento', emoji: '🏕️' },
-  { value: 'paseo', label: 'Paseo', emoji: '🥾' },
-  { value: 'excursion', label: 'Excursión', emoji: '🌄' },
-  { value: 'expedicion', label: 'Expedición', emoji: '🏔️' },
-  { value: 'acantonamiento', label: 'Acantonamiento', emoji: '🏠' },
-];
+// El catálogo de tipos ahora es dinámico (ver listarTiposActividadAireLibre).
+// Este mapa solo aporta un emoji "bonito" para los tipos históricos conocidos;
+// cualquier tipo nuevo creado desde el catálogo usa el emoji por defecto.
+const EMOJI_TIPO_ACTIVIDAD_DEFAULT = '🏕️';
+const EMOJI_POR_TIPO_ACTIVIDAD: Record<string, string> = {
+  campamento: '🏕️',
+  paseo: '🥾',
+  excursion: '🌄',
+  expedicion: '🏔️',
+  acantonamiento: '🏠',
+};
+
+export function getEmojiTipoActividad(tipo?: string | null): string {
+  if (!tipo) return EMOJI_TIPO_ACTIVIDAD_DEFAULT;
+  const normalizado = tipo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+  return EMOJI_POR_TIPO_ACTIVIDAD[normalizado] || EMOJI_TIPO_ACTIVIDAD_DEFAULT;
+}
 
 export const ESTADOS_ACTIVIDAD_EXTERIOR: { value: EstadoActividadExterior; label: string; color: string }[] = [
   { value: 'borrador', label: 'Borrador', color: 'gray' },
@@ -879,6 +904,44 @@ export const ESTADOS_LOGISTICA = [
 // ============= SERVICE CLASS =============
 
 export class ActividadesExteriorService {
+  /**
+   * Catálogo de Tipos de Actividad (Aire Libre)
+   */
+  static async listarTiposActividadAireLibre(soloActivos = false): Promise<TipoActividadAireLibre[]> {
+    const { data, error } = await supabase.rpc('api_listar_tipos_actividad_aire_libre', {
+      p_solo_activos: soloActivos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar tipos de actividad');
+
+    return data.tipos || [];
+  }
+
+  static async upsertTipoActividadAireLibre(tipo: {
+    id?: string | null;
+    descripcion: string;
+    activo: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_tipo_actividad_aire_libre', {
+      p_id: tipo.id || null,
+      p_descripcion: tipo.descripcion,
+      p_activo: tipo.activo,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarTipoActividadAireLibre(id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_tipo_actividad_aire_libre', {
+      p_id: id,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * Lista actividades con filtros
    */
@@ -1069,6 +1132,48 @@ export class ActividadesExteriorService {
     if (!data?.success) throw new Error(data?.error || 'Error al registrar puntaje');
 
     return { puntaje_id: data.id };
+  }
+
+  /**
+   * Registra el puntaje de todas las patrullas para UN bloque en una sola
+   * llamada (mismo patrón que ProgramaSemanalService.registrarPuntajesMasivo).
+   */
+  static async registrarPuntajesMasivoBloque(
+    bloqueId: string,
+    puntajes: Array<{ patrulla_actividad_id: string; puntaje: number; observaciones?: string }>,
+    registradoPor?: string
+  ): Promise<{ puntajes_registrados: number }> {
+    const { data, error } = await supabase.rpc('api_registrar_puntajes_masivo_bloque', {
+      p_bloque_id: bloqueId,
+      p_puntajes: puntajes,
+      p_registrado_por: registradoPor || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al registrar puntajes');
+
+    return { puntajes_registrados: data.puntajes_registrados };
+  }
+
+  /**
+   * Puntajes ya registrados para un bloque (para precargar el formulario).
+   */
+  static async obtenerPuntajesBloque(bloqueId: string): Promise<Array<{
+    id: string;
+    patrulla_actividad_id: string;
+    patrulla_nombre: string;
+    color_patrulla?: string;
+    puntaje: number;
+    observaciones?: string;
+  }>> {
+    const { data, error } = await supabase.rpc('api_obtener_puntajes_bloque', {
+      p_bloque_id: bloqueId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener puntajes');
+
+    return data.data || [];
   }
 
   /**

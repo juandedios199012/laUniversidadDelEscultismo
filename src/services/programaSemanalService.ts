@@ -29,6 +29,7 @@ export class ProgramaSemanalService {
       responsable?: string;
       materiales?: string[];
       observaciones?: string;
+      objetivo_ids?: string[];
     }>;
     responsable_programa: string;
     observaciones_generales?: string;
@@ -58,25 +59,36 @@ export class ProgramaSemanalService {
 
       if (programaError) throw programaError;
 
-      // Crear actividades asociadas
+      // Crear actividades asociadas (una por una para poder sincronizar
+      // sus Objetivos Educativos con el id recién generado)
       if (programa.actividades && programa.actividades.length > 0) {
-        const actividadesData = programa.actividades.map((act, index) => ({
-          programa_id: programaData.id,
-          nombre: act.nombre,
-          desarrollo: act.desarrollo,
-          hora_inicio: act.hora_inicio,
-          duracion_minutos: act.duracion_minutos,
-          responsable: act.responsable,
-          materiales: act.materiales || [],
-          observaciones: act.observaciones,
-          orden_ejecucion: index + 1
-        }));
+        for (let index = 0; index < programa.actividades.length; index++) {
+          const act = programa.actividades[index];
+          const { data: actividadInsertada, error: actividadError } = await supabase
+            .from('programa_actividades')
+            .insert([{
+              programa_id: programaData.id,
+              nombre: act.nombre,
+              desarrollo: act.desarrollo,
+              hora_inicio: act.hora_inicio,
+              duracion_minutos: act.duracion_minutos,
+              responsable: act.responsable,
+              materiales: act.materiales || [],
+              observaciones: act.observaciones,
+              orden_ejecucion: index + 1
+            }])
+            .select('id')
+            .single();
 
-        const { error: actividadesError } = await supabase
-          .from('programa_actividades')
-          .insert(actividadesData);
+          if (actividadError) throw actividadError;
 
-        if (actividadesError) throw actividadesError;
+          if (act.objetivo_ids && act.objetivo_ids.length > 0) {
+            await supabase.rpc('api_sincronizar_objetivos_actividad_programa', {
+              p_actividad_id: actividadInsertada.id,
+              p_objetivo_ids: act.objetivo_ids,
+            });
+          }
+        }
       }
 
       return { success: true, programa_id: programaData.id };
@@ -101,7 +113,10 @@ export class ProgramaSemanalService {
         .from('programa_semanal')
         .select(`
           *,
-          programa_actividades (*)
+          programa_actividades (
+            *,
+            programa_actividad_objetivos (objetivo_id)
+          )
         `)
         .order('fecha_inicio', { ascending: false });
 
@@ -207,6 +222,7 @@ export class ProgramaSemanalService {
       responsable?: string;
       materiales?: string[];
       observaciones?: string;
+      objetivo_ids?: string[];
     }>;
     responsable_programa?: string;
     observaciones_generales?: string;
@@ -264,20 +280,31 @@ export class ProgramaSemanalService {
             observaciones: act.observaciones,
             orden_ejecucion: i + 1
           };
-          if (act.id) {
+          let actividadId = act.id as string | undefined;
+
+          if (actividadId) {
             // Actualizar existente
             const { error: errorUpdate } = await supabase
               .from('programa_actividades')
               .update(actividadData)
-              .eq('id', act.id);
+              .eq('id', actividadId);
             if (errorUpdate) throw errorUpdate;
           } else {
             // Insertar nueva
-            const { error: errorInsert } = await supabase
+            const { data: actividadInsertada, error: errorInsert } = await supabase
               .from('programa_actividades')
-              .insert([actividadData]);
+              .insert([actividadData])
+              .select('id')
+              .single();
             if (errorInsert) throw errorInsert;
+            actividadId = actividadInsertada.id;
           }
+
+          // Sincronizar Objetivos Educativos de esta actividad
+          await supabase.rpc('api_sincronizar_objetivos_actividad_programa', {
+            p_actividad_id: actividadId,
+            p_objetivo_ids: act.objetivo_ids || [],
+          });
         }
       }
 

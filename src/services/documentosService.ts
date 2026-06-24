@@ -37,6 +37,7 @@ export interface PlantillaCarta {
   parrafo_despedida?: string;
   frase_cierre?: string;
   logo_url?: string;
+  emblema_url?: string;
   carta_prefijo?: string;
   firma_nombre?: string;
   firma_cargo?: string;

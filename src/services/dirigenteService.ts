@@ -1,636 +1,421 @@
-import { supabase } from '../lib/supabase';
-
 /**
- * ======================================================================
- * 👥 DIRIGENTE SERVICE - CLIENTE DE MICROSERVICIO/API
- * ======================================================================
- * 
- * Este servicio actúa como un cliente puro de microservicio/API.
- * TODA la lógica de negocio reside en el backend (Supabase Database Functions).
- * 
- * Principios arquitectónicos:
- * - ❌ NO hay lógica de negocio en el frontend
- * - ✅ Solo llamadas a Database Functions
- * - ✅ Manejo consistente de errores
- * - ✅ Tipado fuerte para todas las operaciones
- * - ✅ Documentación clara de cada endpoint
- * ======================================================================
+ * Servicio para gestión de Dirigentes
+ * Basado en formato DNGI-02 - Registro Institucional para Adultos Voluntarios
  */
+
+import { supabase } from '../lib/supabase';
+import {
+  Dirigente,
+  FormularioDirigente,
+  EstadisticasDirigentes,
+  DocumentoDirigente,
+  FormacionDirigente,
+} from '../types/dirigente';
+
+// ============================================================================
+// CLASE PRINCIPAL DEL SERVICIO
+// ============================================================================
+
 export class DirigenteService {
-
-  // ============= 👥 GESTIÓN DE DIRIGENTES =============
-  
-  /**
-   * 👥 Crear nuevo dirigente
-   * Endpoint: POST /api/dirigentes
-   */
-  static async crearDirigente(dirigente: {
-    nombres: string;
-    apellidos: string;
-    email: string;
-    telefono?: string;
-    fecha_nacimiento?: string;
-    direccion?: string;
-    cargo: string;
-    rama: string;
-    fecha_ingreso?: string;
-    estado: 'activo' | 'inactivo' | 'licencia';
-    experiencia_previa?: string;
-    especialidades?: string[];
-    nivel_formacion?: string;
-    certificaciones?: string[];
-    observaciones?: string;
-  }): Promise<{ success: boolean; dirigente_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('crear_dirigente', {
-          p_nombres: dirigente.nombres,
-          p_apellidos: dirigente.apellidos,
-          p_email: dirigente.email,
-          p_telefono: dirigente.telefono,
-          p_fecha_nacimiento: dirigente.fecha_nacimiento,
-          p_direccion: dirigente.direccion,
-          p_cargo: dirigente.cargo,
-          p_rama: dirigente.rama,
-          p_fecha_ingreso: dirigente.fecha_ingreso || new Date().toISOString(),
-          p_estado: dirigente.estado,
-          p_experiencia_previa: dirigente.experiencia_previa,
-          p_especialidades: dirigente.especialidades || [],
-          p_nivel_formacion: dirigente.nivel_formacion,
-          p_certificaciones: dirigente.certificaciones || [],
-          p_observaciones: dirigente.observaciones
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al crear dirigente:', error);
-      throw error;
-    }
-  }
+  // ==========================================================================
+  // CRUD PRINCIPAL
+  // ==========================================================================
 
   /**
-   * 📋 Obtener todos los dirigentes
-   * Endpoint: GET /api/dirigentes
+   * Obtener todos los dirigentes con filtros opcionales
    */
-  static async getDirigentes(filtros?: {
-    rama?: string;
-    cargo?: string;
+  static async obtenerDirigentes(filtros?: {
     estado?: string;
-    nivel_formacion?: string;
-    activos_solo?: boolean;
-  }): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_dirigentes', { p_filtros: filtros || {} });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener dirigentes:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🎯 Obtener dirigente por ID
-   * Endpoint: GET /api/dirigentes/{id}
-   */
-  static async getDirigenteById(id: string): Promise<any | null> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_dirigente_por_id', { p_dirigente_id: id });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al obtener dirigente:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * ✏️ Actualizar dirigente
-   * Endpoint: PUT /api/dirigentes/{id}
-   */
-  static async updateDirigente(id: string, updates: any): Promise<{ success: boolean; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('actualizar_dirigente', {
-          p_dirigente_id: id,
-          p_datos_actualizacion: updates
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al actualizar dirigente:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🗑️ Eliminar dirigente
-   * Endpoint: DELETE /api/dirigentes/{id}
-   */
-  static async deleteDirigente(id: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('eliminar_dirigente', { p_dirigente_id: id });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al eliminar dirigente:', error);
-      throw error;
-    }
-  }
-
-  // ============= 🎓 GESTIÓN DE FORMACIÓN =============
-  
-  /**
-   * 🎓 Registrar capacitación
-   * Endpoint: POST /api/dirigentes/capacitaciones
-   */
-  static async registrarCapacitacion(capacitacion: {
-    dirigente_id: string;
-    nombre_curso: string;
-    institucion: string;
-    fecha_inicio: string;
-    fecha_fin?: string;
-    horas_academicas?: number;
-    certificado_obtenido: boolean;
-    puntuacion?: number;
-    observaciones?: string;
-    documentos?: string[];
-  }): Promise<{ success: boolean; capacitacion_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('registrar_capacitacion_dirigente', {
-          p_dirigente_id: capacitacion.dirigente_id,
-          p_nombre_curso: capacitacion.nombre_curso,
-          p_institucion: capacitacion.institucion,
-          p_fecha_inicio: capacitacion.fecha_inicio,
-          p_fecha_fin: capacitacion.fecha_fin,
-          p_horas_academicas: capacitacion.horas_academicas,
-          p_certificado_obtenido: capacitacion.certificado_obtenido,
-          p_puntuacion: capacitacion.puntuacion,
-          p_observaciones: capacitacion.observaciones,
-          p_documentos: capacitacion.documentos || []
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al registrar capacitación:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 📚 Obtener historial de capacitaciones
-   * Endpoint: GET /api/dirigentes/{id}/capacitaciones
-   */
-  static async getCapacitacionesDirigente(dirigenteId: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_capacitaciones_dirigente', { p_dirigente_id: dirigenteId });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener capacitaciones:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🏆 Actualizar nivel de formación
-   * Endpoint: PUT /api/dirigentes/{id}/nivel-formacion
-   */
-  static async actualizarNivelFormacion(dirigenteId: string, nuevoNivel: {
-    nivel: string;
-    fecha_obtencion: string;
-    institucion?: string;
-    certificado?: string;
-    observaciones?: string;
-  }): Promise<{ success: boolean; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('actualizar_nivel_formacion_dirigente', {
-          p_dirigente_id: dirigenteId,
-          p_nuevo_nivel: nuevoNivel
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al actualizar nivel de formación:', error);
-      throw error;
-    }
-  }
-
-  // ============= 🎯 GESTIÓN DE RESPONSABILIDADES =============
-  
-  /**
-   * 🎯 Asignar responsabilidad
-   * Endpoint: POST /api/dirigentes/responsabilidades
-   */
-  static async asignarResponsabilidad(asignacion: {
-    dirigente_id: string;
-    tipo_responsabilidad: string;
-    descripcion: string;
-    fecha_inicio: string;
-    fecha_fin?: string;
-    ambito: 'grupo' | 'rama' | 'patrulla' | 'actividad' | 'evento';
-    referencia_id?: string;
-    prioridad?: 'alta' | 'media' | 'baja';
-    observaciones?: string;
-  }): Promise<{ success: boolean; responsabilidad_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('asignar_responsabilidad_dirigente', {
-          p_dirigente_id: asignacion.dirigente_id,
-          p_tipo_responsabilidad: asignacion.tipo_responsabilidad,
-          p_descripcion: asignacion.descripcion,
-          p_fecha_inicio: asignacion.fecha_inicio,
-          p_fecha_fin: asignacion.fecha_fin,
-          p_ambito: asignacion.ambito,
-          p_referencia_id: asignacion.referencia_id,
-          p_prioridad: asignacion.prioridad || 'media',
-          p_observaciones: asignacion.observaciones
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al asignar responsabilidad:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 📋 Obtener responsabilidades activas
-   * Endpoint: GET /api/dirigentes/{id}/responsabilidades
-   */
-  static async getResponsabilidadesDirigente(dirigenteId: string, soloActivas: boolean = true): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_responsabilidades_dirigente', {
-          p_dirigente_id: dirigenteId,
-          p_solo_activas: soloActivas
-        });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener responsabilidades:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * ✅ Completar responsabilidad
-   * Endpoint: PUT /api/dirigentes/responsabilidades/{id}/completar
-   */
-  static async completarResponsabilidad(responsabilidadId: string, datos: {
-    fecha_completado: string;
-    resultado?: 'exitoso' | 'parcial' | 'fallido';
-    observaciones_finales?: string;
-    documentos_evidencia?: string[];
-  }): Promise<{ success: boolean; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('completar_responsabilidad_dirigente', {
-          p_responsabilidad_id: responsabilidadId,
-          p_datos_completado: datos
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al completar responsabilidad:', error);
-      throw error;
-    }
-  }
-
-  // ============= 📊 EVALUACIONES Y DESEMPEÑO =============
-  
-  /**
-   * 📊 Registrar evaluación de desempeño
-   * Endpoint: POST /api/dirigentes/evaluaciones
-   */
-  static async registrarEvaluacion(evaluacion: {
-    dirigente_id: string;
-    evaluador_id: string;
-    periodo_inicio: string;
-    periodo_fin: string;
-    puntuacion_liderazgo: number;
-    puntuacion_conocimiento: number;
-    puntuacion_compromiso: number;
-    puntuacion_relaciones: number;
-    puntuacion_general: number;
-    fortalezas: string[];
-    areas_mejora: string[];
-    objetivos_proximos: string[];
-    observaciones?: string;
-    plan_desarrollo?: string;
-  }): Promise<{ success: boolean; evaluacion_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('registrar_evaluacion_dirigente', {
-          p_dirigente_id: evaluacion.dirigente_id,
-          p_evaluador_id: evaluacion.evaluador_id,
-          p_periodo_inicio: evaluacion.periodo_inicio,
-          p_periodo_fin: evaluacion.periodo_fin,
-          p_puntuaciones: {
-            liderazgo: evaluacion.puntuacion_liderazgo,
-            conocimiento: evaluacion.puntuacion_conocimiento,
-            compromiso: evaluacion.puntuacion_compromiso,
-            relaciones: evaluacion.puntuacion_relaciones,
-            general: evaluacion.puntuacion_general
-          },
-          p_fortalezas: evaluacion.fortalezas,
-          p_areas_mejora: evaluacion.areas_mejora,
-          p_objetivos_proximos: evaluacion.objetivos_proximos,
-          p_observaciones: evaluacion.observaciones,
-          p_plan_desarrollo: evaluacion.plan_desarrollo
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al registrar evaluación:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 📈 Obtener historial de evaluaciones
-   * Endpoint: GET /api/dirigentes/{id}/evaluaciones
-   */
-  static async getEvaluacionesDirigente(dirigenteId: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_evaluaciones_dirigente', { p_dirigente_id: dirigenteId });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener evaluaciones:', error);
-      throw error;
-    }
-  }
-
-  // ============= 📅 GESTIÓN DE DISPONIBILIDAD =============
-  
-  /**
-   * 📅 Registrar disponibilidad
-   * Endpoint: POST /api/dirigentes/disponibilidad
-   */
-  static async registrarDisponibilidad(disponibilidad: {
-    dirigente_id: string;
-    fecha_inicio: string;
-    fecha_fin: string;
-    tipo: 'disponible' | 'ocupado' | 'vacaciones' | 'licencia' | 'enfermedad';
-    descripcion?: string;
-    es_recurrente: boolean;
-    patron_recurrencia?: string;
-    observaciones?: string;
-  }): Promise<{ success: boolean; disponibilidad_id?: string; error?: string }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('registrar_disponibilidad_dirigente', {
-          p_dirigente_id: disponibilidad.dirigente_id,
-          p_fecha_inicio: disponibilidad.fecha_inicio,
-          p_fecha_fin: disponibilidad.fecha_fin,
-          p_tipo: disponibilidad.tipo,
-          p_descripcion: disponibilidad.descripcion,
-          p_es_recurrente: disponibilidad.es_recurrente,
-          p_patron_recurrencia: disponibilidad.patron_recurrencia,
-          p_observaciones: disponibilidad.observaciones
-        });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al registrar disponibilidad:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🗓️ Obtener disponibilidad de dirigente
-   * Endpoint: GET /api/dirigentes/{id}/disponibilidad
-   */
-  static async getDisponibilidadDirigente(dirigenteId: string, filtros?: {
-    fecha_desde?: string;
-    fecha_hasta?: string;
-    tipo?: string;
-  }): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_disponibilidad_dirigente', {
-          p_dirigente_id: dirigenteId,
-          p_filtros: filtros || {}
-        });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('❌ Error al obtener disponibilidad:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 🔍 Buscar dirigentes disponibles
-   * Endpoint: GET /api/dirigentes/disponibles
-   */
-  static async buscarDirigentesDisponibles(criterios: {
-    fecha_inicio: string;
-    fecha_fin: string;
-    rama?: string;
-    especialidad?: string;
-    nivel_minimo?: string;
     cargo?: string;
-  }): Promise<any[]> {
+    rama?: string;
+    nivel_formacion?: string;
+  }): Promise<Dirigente[]> {
     try {
-      const { data, error } = await supabase
-        .rpc('buscar_dirigentes_disponibles', { p_criterios: criterios });
+      const { data, error } = await supabase.rpc('obtener_dirigentes', {
+        p_filtros: filtros || {},
+      });
 
       if (error) throw error;
-      return data || [];
+      return (data as Dirigente[]) || [];
     } catch (error) {
-      console.error('❌ Error al buscar dirigentes disponibles:', error);
-      throw error;
-    }
-  }
-
-  // ============= 📊 REPORTES Y ESTADÍSTICAS =============
-  
-  /**
-   * 📊 Obtener estadísticas de dirigentes
-   * Endpoint: GET /api/dirigentes/estadisticas
-   */
-  static async getEstadisticasDirigentes(): Promise<{
-    total_dirigentes: number;
-    dirigentes_activos: number;
-    dirigentes_en_formacion: number;
-    distribucion_por_rama: Record<string, number>;
-    distribucion_por_nivel: Record<string, number>;
-    promedio_antiguedad: number;
-    proximas_capacitaciones: number;
-    evaluaciones_pendientes: number;
-  }> {
-    try {
-      const { data, error } = await supabase
-        .rpc('obtener_estadisticas_dirigentes');
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('❌ Error al obtener estadísticas:', error);
+      console.error('Error al obtener dirigentes:', error);
       throw error;
     }
   }
 
   /**
-   * 🏆 Obtener dirigentes destacados
-   * Endpoint: GET /api/dirigentes/destacados
+   * Obtener un dirigente por ID con todos sus datos relacionados
    */
-  static async getDirigentesDestacados(criterio: 'evaluacion' | 'capacitacion' | 'antiguedad' | 'responsabilidades'): Promise<any[]> {
+  static async obtenerDirigentePorId(id: string): Promise<Dirigente | null> {
     try {
-      const { data, error } = await supabase
-        .rpc('obtener_dirigentes_destacados', { p_criterio: criterio });
+      const { data, error } = await supabase.rpc('obtener_dirigente_por_id', {
+        p_dirigente_id: id,
+      });
 
       if (error) throw error;
-      return data || [];
+      return data as Dirigente;
     } catch (error) {
-      console.error('❌ Error al obtener dirigentes destacados:', error);
+      console.error('Error al obtener dirigente:', error);
       throw error;
     }
   }
 
   /**
-   * ⚠️ Obtener alertas de dirigentes
-   * Endpoint: GET /api/dirigentes/alertas
+   * Registrar un nuevo dirigente
    */
-  static async getAlertasDirigentes(): Promise<Array<{
-    tipo: 'capacitacion_vencida' | 'evaluacion_pendiente' | 'licencia_proxima' | 'sobrecarga_responsabilidades';
-    dirigente_id: string;
-    dirigente_nombre: string;
-    mensaje: string;
-    prioridad: 'alta' | 'media' | 'baja';
-    fecha_limite?: string;
-    accion_recomendada: string;
-  }>> {
+  static async registrarDirigente(
+    datos: FormularioDirigente
+  ): Promise<{ success: boolean; message: string; data?: { dirigente_id: string } }> {
     try {
-      const { data, error } = await supabase
-        .rpc('obtener_alertas_dirigentes');
+      const { data, error } = await supabase.rpc('registrar_dirigente', {
+        p_datos: datos,
+      });
 
       if (error) throw error;
-      return data || [];
+      return data as { success: boolean; message: string; data?: { dirigente_id: string } };
     } catch (error) {
-      console.error('❌ Error al obtener alertas:', error);
+      console.error('Error al registrar dirigente:', error);
       throw error;
     }
   }
 
   /**
-   * 🗂️ Generar reporte de dirigentes
-   * Endpoint: GET /api/dirigentes/reportes
+   * Actualizar un dirigente existente
    */
-  static async generarReporteDirigentes(
-    tipo: 'general' | 'formacion' | 'evaluaciones' | 'responsabilidades' | 'disponibilidad',
-    filtros?: {
-      rama?: string;
-      nivel_formacion?: string;
-      fecha_desde?: string;
-      fecha_hasta?: string;
-      estado?: string;
-    }
-  ): Promise<{
-    reporte_id: string;
-    url_descarga?: string;
-    datos: any;
-  }> {
+  static async actualizarDirigente(
+    id: string,
+    datos: Partial<FormularioDirigente>
+  ): Promise<{ success: boolean; message: string }> {
     try {
-      const { data, error } = await supabase
-        .rpc('generar_reporte_dirigentes', {
-          p_tipo: tipo,
-          p_filtros: filtros || {}
+      const { data, error } = await supabase.rpc('actualizar_dirigente', {
+        p_dirigente_id: id,
+        p_datos: datos,
+      });
+
+      if (error) throw error;
+      return data as { success: boolean; message: string };
+    } catch (error) {
+      console.error('Error al actualizar dirigente:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cambiar estado de un dirigente
+   */
+  static async cambiarEstado(
+    id: string,
+    nuevoEstado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'RETIRADO'
+  ): Promise<{ success: boolean; message: string }> {
+    return this.actualizarDirigente(id, { observaciones: `Estado cambiado a ${nuevoEstado}` } as Partial<FormularioDirigente>);
+  }
+
+  // ==========================================================================
+  // ESTADÍSTICAS
+  // ==========================================================================
+
+  /**
+   * Obtener estadísticas generales de dirigentes
+   */
+  static async obtenerEstadisticas(): Promise<EstadisticasDirigentes> {
+    try {
+      const { data, error } = await supabase.rpc('obtener_estadisticas_dirigentes');
+
+      if (error) throw error;
+      return data as EstadisticasDirigentes;
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      // Retornar valores por defecto en caso de error
+      return {
+        total_dirigentes: 0,
+        por_cargo: {} as EstadisticasDirigentes['por_cargo'],
+        por_nivel_formacion: {} as EstadisticasDirigentes['por_nivel_formacion'],
+        con_sfh1_aprobado: 0,
+        con_documentos_completos: 0,
+        membresias_por_vencer: 0,
+      };
+    }
+  }
+
+  // ==========================================================================
+  // GESTIÓN DE DOCUMENTOS
+  // ==========================================================================
+
+  /**
+   * Subir documento de un dirigente
+   */
+  static async subirDocumento(
+    dirigenteId: string,
+    archivo: File,
+    tipoDocumento: string
+  ): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      // Generar nombre único para el archivo
+      const extension = archivo.name.split('.').pop();
+      const nombreArchivo = `${dirigenteId}/${tipoDocumento}_${Date.now()}.${extension}`;
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('documentos-dirigentes')
+        .upload(nombreArchivo, archivo, {
+          cacheControl: '3600',
+          upsert: true,
         });
 
-      if (error) throw error;
-      return data;
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: urlData } = supabase.storage
+        .from('documentos-dirigentes')
+        .getPublicUrl(nombreArchivo);
+
+      // Registrar en base de datos
+      const { error: dbError } = await supabase.from('dirigentes_documentos').upsert(
+        {
+          dirigente_id: dirigenteId,
+          tipo_documento: tipoDocumento,
+          nombre_archivo: archivo.name,
+          url_archivo: urlData.publicUrl,
+          mime_type: archivo.type,
+          tamano_bytes: archivo.size,
+          estado: 'PENDIENTE',
+        },
+        {
+          onConflict: 'dirigente_id,tipo_documento',
+        }
+      );
+
+      if (dbError) throw dbError;
+
+      return { success: true, url: urlData.publicUrl };
     } catch (error) {
-      console.error('❌ Error al generar reporte:', error);
-      throw error;
+      console.error('Error al subir documento:', error);
+      return { success: false, error: (error as Error).message };
     }
   }
 
   /**
-   * 📋 Obtener plan de desarrollo de dirigente
-   * Endpoint: GET /api/dirigentes/{id}/plan-desarrollo
+   * Obtener documentos de un dirigente
    */
-  static async getPlanDesarrolloDirigente(dirigenteId: string): Promise<{
-    dirigente_info: any;
-    nivel_actual: string;
-    proximo_nivel: string;
-    capacitaciones_requeridas: string[];
-    capacitaciones_completadas: string[];
-    objetivos_pendientes: string[];
-    timeline_estimado: Array<{
-      hito: string;
-      fecha_estimada: string;
-      estado: 'pendiente' | 'en_progreso' | 'completado';
-    }>;
-    recomendaciones: string[];
-  }> {
+  static async obtenerDocumentos(dirigenteId: string): Promise<DocumentoDirigente[]> {
     try {
       const { data, error } = await supabase
-        .rpc('obtener_plan_desarrollo_dirigente', { p_dirigente_id: dirigenteId });
+        .from('dirigentes_documentos')
+        .select('*')
+        .eq('dirigente_id', dirigenteId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return (data || []).map((doc) => ({
+        id: doc.id,
+        tipo: doc.tipo_documento,
+        nombre: doc.nombre_archivo,
+        url: doc.url_archivo,
+        estado: doc.estado,
+        fecha_vencimiento: doc.fecha_vencimiento,
+      }));
     } catch (error) {
-      console.error('❌ Error al obtener plan de desarrollo:', error);
-      throw error;
+      console.error('Error al obtener documentos:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Eliminar documento
+   */
+  static async eliminarDocumento(documentoId: string): Promise<{ success: boolean }> {
+    try {
+      const { error } = await supabase
+        .from('dirigentes_documentos')
+        .delete()
+        .eq('id', documentoId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error al eliminar documento:', error);
+      return { success: false };
+    }
+  }
+
+  // ==========================================================================
+  // GESTIÓN DE FORMACIONES
+  // ==========================================================================
+
+  /**
+   * Registrar una formación/curso
+   */
+  static async registrarFormacion(
+    dirigenteId: string,
+    formacion: {
+      tipo_curso: string;
+      nombre_curso: string;
+      institucion?: string;
+      fecha_inicio?: string;
+      fecha_fin?: string;
+      fecha_certificado?: string;
+      numero_certificado?: string;
+      horas_duracion?: number;
+    }
+  ): Promise<{ success: boolean; id?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('dirigentes_formacion')
+        .insert({
+          dirigente_id: dirigenteId,
+          ...formacion,
+          estado: 'PENDIENTE',
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return { success: true, id: data?.id };
+    } catch (error) {
+      console.error('Error al registrar formación:', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Obtener formaciones de un dirigente
+   */
+  static async obtenerFormaciones(dirigenteId: string): Promise<FormacionDirigente[]> {
+    try {
+      const { data, error } = await supabase
+        .from('dirigentes_formacion')
+        .select('*')
+        .eq('dirigente_id', dirigenteId)
+        .order('fecha_certificado', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map((f) => ({
+        id: f.id,
+        tipo: f.tipo_curso,
+        nombre: f.nombre_curso,
+        institucion: f.institucion,
+        fecha_certificado: f.fecha_certificado,
+        numero_certificado: f.numero_certificado,
+        archivo_url: f.archivo_certificado_url,
+        estado: f.estado,
+      }));
+    } catch (error) {
+      console.error('Error al obtener formaciones:', error);
+      return [];
+    }
+  }
+
+  // ==========================================================================
+  // BÚSQUEDA
+  // ==========================================================================
+
+  /**
+   * Buscar dirigentes por término
+   */
+  static async buscarDirigentes(termino: string): Promise<Dirigente[]> {
+    try {
+      const terminoLower = termino.toLowerCase().trim();
+
+      // Obtener todos los dirigentes y filtrar en cliente
+      // (idealmente esto debería ser una función RPC optimizada)
+      const todos = await this.obtenerDirigentes();
+
+      return todos.filter((d) => {
+        const nombreCompleto = `${d.persona.nombres} ${d.persona.apellidos}`.toLowerCase();
+        const documento = d.persona.numero_documento?.toLowerCase() || '';
+        const correo = d.persona.correo?.toLowerCase() || '';
+        const codigo = d.codigo_credencial?.toLowerCase() || '';
+
+        return (
+          nombreCompleto.includes(terminoLower) ||
+          documento.includes(terminoLower) ||
+          correo.includes(terminoLower) ||
+          codigo.includes(terminoLower)
+        );
+      });
+    } catch (error) {
+      console.error('Error al buscar dirigentes:', error);
+      return [];
+    }
+  }
+
+  // ==========================================================================
+  // UTILIDADES
+  // ==========================================================================
+
+  /**
+   * Verificar si un documento de identidad ya está registrado
+   */
+  static async verificarDocumentoExistente(
+    numeroDocumento: string,
+    excludeId?: string
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('personas')
+        .select('id')
+        .eq('numero_documento', numeroDocumento)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data && excludeId) {
+        // Verificar si es el mismo registro
+        const { data: dirigente } = await supabase
+          .from('dirigentes')
+          .select('id')
+          .eq('persona_id', data.id)
+          .single();
+
+        return dirigente?.id !== excludeId;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error al verificar documento:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Obtener resumen para dashboard
+   */
+  static async obtenerResumenDashboard(): Promise<{
+    activos: number;
+    nuevosEsteMes: number;
+    porVencerMembresia: number;
+    pendientesSFH1: number;
+  }> {
+    try {
+      const stats = await this.obtenerEstadisticas();
+      const todos = await this.obtenerDirigentes({ estado: 'ACTIVO' });
+
+      const hoy = new Date();
+      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+      const nuevosEsteMes = todos.filter((d) => {
+        const fechaCreacion = new Date(d.created_at);
+        return fechaCreacion >= inicioMes;
+      }).length;
+
+      const pendientesSFH1 = todos.filter((d) => !d.aprobo_sfh1).length;
+
+      return {
+        activos: stats.total_dirigentes,
+        nuevosEsteMes,
+        porVencerMembresia: stats.membresias_por_vencer,
+        pendientesSFH1,
+      };
+    } catch (error) {
+      console.error('Error al obtener resumen:', error);
+      return {
+        activos: 0,
+        nuevosEsteMes: 0,
+        porVencerMembresia: 0,
+        pendientesSFH1: 0,
+      };
     }
   }
 }
-
-/**
- * ======================================================================
- * 📝 NOTAS DE IMPLEMENTACIÓN
- * ======================================================================
- * 
- * Este servicio implementa el patrón de arquitectura de microservicio/API:
- * 
- * 1. 🔄 TODAS las operaciones usan Database Functions
- * 2. 👥 Gestión completa del ciclo de vida de dirigentes
- * 3. 🎓 Sistema integrado de formación y capacitación
- * 4. 📊 Evaluaciones y seguimiento de desempeño
- * 5. 📅 Gestión de disponibilidad y asignaciones
- * 6. 🔐 Seguridad manejada por RLS policies
- * 7. 📈 Analytics y reportes automatizados
- * 
- * Características especiales:
- * - Sistema de niveles de formación progresivo
- * - Evaluaciones 360° con múltiples criterios
- * - Gestión inteligente de disponibilidad
- * - Detección automática de dirigentes destacados
- * - Alertas proactivas de gestión
- * - Planes de desarrollo personalizados
- * 
- * Próximos pasos:
- * - Implementar todas las Database Functions correspondientes
- * - Agregar integración con calendario externo
- * - Implementar sistema de mentoring
- * - Agregar gamificación para formación
- * - Integrar con plataformas de e-learning
- * ======================================================================
- */
 
 export default DirigenteService;

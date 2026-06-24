@@ -22,7 +22,8 @@ import {
   ChevronUp,
   Trash2,
   ShoppingCart,
-  ExternalLink
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,10 +48,9 @@ import {
 import {
   ActividadesExteriorService,
   ActividadExteriorCompleta,
-  BloqueProgramaActividad,
   ProgramaActividad,
   DashboardPresupuesto,
-  TIPOS_ACTIVIDAD_EXTERIOR,
+  getEmojiTipoActividad,
   ESTADOS_ACTIVIDAD_EXTERIOR,
   TIPOS_COMIDA_ACTIVIDAD,
 } from '@/services/actividadesExteriorService';
@@ -109,7 +109,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   const [showMenuDialog, setShowMenuDialog] = useState(false);
   const [dashboardPresupuesto, setDashboardPresupuesto] = useState<DashboardPresupuesto | null>(null);
   const [menuEditar, setMenuEditar] = useState<any>(null);
-  const [showPuntajeDialog, setShowPuntajeDialog] = useState(false);
+  const [bloqueParaPuntaje, setBloqueParaPuntaje] = useState<{ id: string; nombre: string } | null>(null);
   const [showStaffDialog, setShowStaffDialog] = useState(false);
   const [showDocumentoDialog, setShowDocumentoDialog] = useState(false);
   const [showCompraDialog, setShowCompraDialog] = useState(false);
@@ -393,7 +393,6 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
     );
   }
 
-  const tipoInfo = TIPOS_ACTIVIDAD_EXTERIOR.find(t => t.value === actividad.tipo);
   const estadoInfo = ESTADOS_ACTIVIDAD_EXTERIOR.find(e => e.value === actividad.estado);
 
   // Estadísticas
@@ -413,21 +412,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
     return Math.max(1, Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24)) + 1);
   })();
 
-  // Obtener todos los bloques de todos los programas
-  const todosLosBloques: (BloqueProgramaActividad & { programa_nombre?: string })[] = 
-    actividad.programas.flatMap(p => 
-      p.bloques.map(b => ({
-        ...b,
-        programa_nombre: p.nombre,
-      }))
-    );
-
   // Ranking de puntajes
   const rankingAgrupado = actividad.puntajes.reduce((acc, p) => {
-    if (!acc[p.patrulla_id]) {
-      acc[p.patrulla_id] = { nombre: p.patrulla_nombre, total: 0 };
+    if (!acc[p.patrulla_actividad_id]) {
+      acc[p.patrulla_actividad_id] = { nombre: p.patrulla_nombre, total: 0 };
     }
-    acc[p.patrulla_id].total += p.puntaje;
+    acc[p.patrulla_actividad_id].total += p.puntaje;
     return acc;
   }, {} as Record<string, { nombre: string; total: number }>);
 
@@ -443,7 +433,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-3xl">{tipoInfo?.emoji}</span>
+            <span className="text-3xl">{getEmojiTipoActividad(actividad.tipo)}</span>
             <h1 className="text-2xl font-bold">{actividad.nombre}</h1>
             <Badge variant="outline" className="ml-2">{actividad.codigo}</Badge>
             <Badge 
@@ -896,9 +886,9 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                                   {bloque.tipo_bloque}
                                                 </Badge>
                                               )}
-                                              {bloque.otorga_puntaje && (
+                                              {(bloque.objetivo_ids?.length ?? 0) > 0 && (
                                                 <Badge variant="secondary" className="text-xs">
-                                                  🏆 {bloque.puntaje_maximo} pts máx
+                                                  🎯 {bloque.objetivo_ids?.length} objetivo(s)
                                                 </Badge>
                                               )}
                                               <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
@@ -909,7 +899,17 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                         </div>
                                       </CollapsibleTrigger>
                                       <CollapsibleContent>
-                                        <div className="border-t bg-muted/20 p-3">
+                                        <div className="border-t bg-muted/20 p-3 space-y-3">
+                                          {bloque.id && tienePermisoAireLibre('registrar_puntajes') && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => setBloqueParaPuntaje({ id: bloque.id!, nombre: bloque.nombre })}
+                                            >
+                                              <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                                              Puntajes
+                                            </Button>
+                                          )}
                                           {/* Materiales del bloque */}
                                           {bloque.id && (
                                             <MaterialesBloque
@@ -1419,19 +1419,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         <TabsContent value="puntajes">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-yellow-500" />
-                    Ranking de Patrullas
-                  </CardTitle>
-                </div>
-                {tienePermisoAireLibre('registrar_puntajes') && (
-                  <Button onClick={() => setShowPuntajeDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar Puntaje
-                  </Button>
-                )}
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-yellow-500" />
+                  Ranking de Patrullas
+                </CardTitle>
+                <CardDescription>
+                  Registra puntajes desde el bloque correspondiente en la pestaña "Programa".
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {rankingSorted.length === 0 ? (
@@ -1577,13 +1572,16 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         onSuccess={cargarActividad}
       />
 
-      <RegistrarPuntajeDialog
-        open={showPuntajeDialog}
-        onOpenChange={setShowPuntajeDialog}
-        actividadId={actividadId}
-        bloques={todosLosBloques}
-        onSuccess={cargarActividad}
-      />
+      {bloqueParaPuntaje && (
+        <RegistrarPuntajeDialog
+          open={!!bloqueParaPuntaje}
+          onOpenChange={(open) => !open && setBloqueParaPuntaje(null)}
+          actividadId={actividadId}
+          bloqueId={bloqueParaPuntaje.id}
+          bloqueNombre={bloqueParaPuntaje.nombre}
+          onSuccess={cargarActividad}
+        />
+      )}
 
       <AgregarStaffDialog
         open={showStaffDialog}

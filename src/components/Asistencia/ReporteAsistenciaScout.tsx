@@ -181,10 +181,10 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todas las ramas</option>
-              <option value="MANADA">Manada</option>
-              <option value="TROPA">Tropa</option>
-              <option value="COMUNIDAD">Comunidad</option>
-              <option value="CLAN">Clan</option>
+              <option value="Manada">Manada</option>
+              <option value="Tropa">Tropa</option>
+              <option value="Comunidad">Comunidad</option>
+              <option value="Clan">Clan</option>
             </select>
             <select
               value={filtroPorcentaje}

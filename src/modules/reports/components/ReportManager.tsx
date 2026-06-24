@@ -35,10 +35,10 @@ import RankingPatrullasReportTemplate from '../templates/pdf/RankingPatrullasRep
 import GenericSummaryReportTemplate from '../templates/pdf/GenericSummaryReportTemplate';
 import { getEspecialidadesReportData } from '../services/especialidadesDataService';
 import { supabase } from '../../../lib/supabase';
-import ScoutService from '../../../services/scoutService';
+import DirigenteService from '../../../services/dirigenteService';
+import ComitePadresService from '../../../services/comitePadresService';
 import ReportsService from '../../../services/reportsService';
 import FinanzasService from '../../../services/finanzasService';
-import { ActividadesExteriorService } from '../../../services/actividadesExteriorService';
 import InventarioService from '../../../services/inventarioService';
 import {
   getInscripcionesAnuales,
@@ -92,15 +92,35 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [availableRamas, setAvailableRamas] = useState<string[]>([]);
   const [selectedMassiveScoutId, setSelectedMassiveScoutId] = useState<string>('');
 
+  // Estado para el reporte "Persona" (DNGI-03): tipo de persona y selección
+  const [personaEntityType, setPersonaEntityType] = useState<'SCOUT' | 'DIRIGENTE' | 'COMITE'>('SCOUT');
+  const [dirigentesList, setDirigentesList] = useState<any[]>([]);
+  const [comiteList, setComiteList] = useState<any[]>([]);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
+
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
     loadScouts();
     loadRamas();
+    loadDirigentesYComite();
   }, []);
   
   const loadRamas = async () => {
     const ramas = await getAvailableRamas();
     setAvailableRamas(ramas);
+  };
+
+  const loadDirigentesYComite = async () => {
+    try {
+      const [dirigentes, comite] = await Promise.all([
+        DirigenteService.obtenerDirigentes({ estado: 'ACTIVO' }),
+        ComitePadresService.getMiembrosComite({ activos_solo: true }),
+      ]);
+      setDirigentesList(dirigentes || []);
+      setComiteList(comite || []);
+    } catch (error) {
+      console.error('Error cargando dirigentes/comité:', error);
+    }
   };
 
   const loadScouts = async () => {
@@ -199,7 +219,22 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   };
 
   // Definir tipos de reportes disponibles (agrupados por categoría)
-  const reportCategories = [
+  interface ReportCardItem {
+    type: ReportType;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    color: string;
+    badge?: string;
+    disabled?: boolean;
+  }
+
+  interface ReportCategoryItem {
+    name: string;
+    reports: ReportCardItem[];
+  }
+
+  const reportCategories: ReportCategoryItem[] = [
     {
       name: 'Reportes Operativos',
       reports: [
@@ -368,8 +403,8 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         },
         {
           type: ReportType.DNGI03_WORD_POR_SCOUT,
-          title: 'DNGI-03 Word por Scout',
-          description: 'Exporta 1 archivo Word por scout activo',
+          title: 'Persona',
+          description: 'Ficha DNGI-03 en Word de un scout, dirigente o miembro del comité',
           icon: <FileText className="w-6 h-6" />,
           color: 'blue',
           badge: '¡Nuevo!'
@@ -607,7 +642,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         // Para DOCX, crear un documento estructurado
         const { Document, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle, Packer } = await import('docx');
         
-        const { dashboard, scouts } = especialidadesData;
+        const { dashboard } = especialidadesData;
         
         const doc = new Document({
           sections: [{
@@ -946,8 +981,8 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     metadata: any
   ): Promise<ReportGenerationResult> => {
     const dashboard = await ReportsService.getDashboardEjecutivo();
-    const kpis = dashboard?.kpis_principales || {};
-    const tendencias = dashboard?.tendencias || {};
+    const kpis: any = dashboard?.kpis_principales || {};
+    const tendencias: any = dashboard?.tendencias || {};
     const comparativo = dashboard?.comparativo_periodo_anterior || {};
     const alertas = dashboard?.alertas || [];
 
@@ -1452,6 +1487,87 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
   };
 
+  // Construye los datos (formato ScoutReportData) para la ficha DNGI-03
+  // a partir de un dirigente o un miembro del comité de padres.
+  const buildPersonaReportData = async (
+    tipo: 'DIRIGENTE' | 'COMITE',
+    id: string
+  ): Promise<any | null> => {
+    if (tipo === 'DIRIGENTE') {
+      const dirigente: any = await DirigenteService.obtenerDirigentePorId(id);
+      if (!dirigente?.persona) return null;
+      const p = dirigente.persona;
+      return {
+        id: dirigente.id,
+        nombre: p.nombres || '',
+        apellido: p.apellidos || '',
+        fechaNacimiento: p.fecha_nacimiento || '',
+        edad: 0,
+        sexo: p.sexo || '',
+        tipoDocumento: p.tipo_documento || '',
+        numeroDocumento: p.numero_documento || '',
+        rama: dirigente.cargo || 'DIRIGENTE',
+        numeroRegistro: dirigente.codigo_credencial || '',
+        fechaIngreso: '',
+        direccion: p.direccion || '',
+        departamento: p.departamento || '',
+        provincia: p.provincia || '',
+        distrito: p.distrito || '',
+        codigoPostal: p.codigo_postal || '',
+        centroEstudio: dirigente.centro_estudios || '',
+        anioEstudios: dirigente.ciclo_anio_estudios || '',
+        telefono: p.telefono || '',
+        celular: p.celular || '',
+        email: p.correo || '',
+        correoInstitucional: p.correo_institucional || '',
+        religion: p.religion || '',
+        grupoSanguineo: p.grupo_sanguineo || '',
+        factorSanguineo: p.factor_sanguineo || '',
+        seguroMedico: p.seguro_medico || '',
+        tipoDiscapacidad: p.tipo_discapacidad || '',
+        carnetConadis: p.carnet_conadis || '',
+        descripcionDiscapacidad: p.descripcion_discapacidad || '',
+        familiares: [],
+      };
+    }
+
+    // COMITE: los datos vienen completos en la lista cargada
+    const m: any = comiteList.find((c) => c.id === id);
+    if (!m) return null;
+    return {
+      id: m.id,
+      nombre: m.nombres || '',
+      apellido: m.apellidos || '',
+      fechaNacimiento: m.fecha_nacimiento && m.fecha_nacimiento !== '1900-01-01' ? m.fecha_nacimiento : '',
+      edad: 0,
+      sexo: m.sexo || '',
+      tipoDocumento: m.tipo_documento || '',
+      numeroDocumento: m.numero_documento || '',
+      rama: m.cargo || 'COMITÉ',
+      numeroRegistro: m.codigo_asociado || '',
+      fechaIngreso: '',
+      direccion: m.direccion || '',
+      departamento: m.departamento || '',
+      provincia: m.provincia || '',
+      distrito: m.distrito || '',
+      codigoPostal: '',
+      centroEstudio: m.centro_estudio || '',
+      anioEstudios: m.anio_estudios || '',
+      telefono: m.telefono || m.celular || '',
+      celular: m.celular || '',
+      email: m.email || m.correo || '',
+      correoInstitucional: '',
+      religion: m.religion || '',
+      grupoSanguineo: m.grupo_sanguineo || '',
+      factorSanguineo: m.factor_sanguineo || '',
+      seguroMedico: m.seguro_medico || '',
+      tipoDiscapacidad: m.tipo_discapacidad || '',
+      carnetConadis: m.carnet_conadis || '',
+      descripcionDiscapacidad: m.descripcion_discapacidad || '',
+      familiares: [],
+    };
+  };
+
   const exportDngi03WordPorScout = async (format: ExportFormat): Promise<ReportGenerationResult> => {
     try {
       if (format !== ExportFormat.DOCX) {
@@ -1459,6 +1575,35 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           status: 'error' as any,
           fileName: 'error',
           error: 'Este reporte se exporta solo en formato Word',
+        };
+      }
+
+      // Rama "Persona": dirigente o miembro de comité
+      if (personaEntityType !== 'SCOUT') {
+        if (!selectedPersonaId) {
+          return {
+            status: 'error' as any,
+            fileName: 'error',
+            error: 'Selecciona una persona para exportar',
+          };
+        }
+
+        const personaData = await buildPersonaReportData(personaEntityType, selectedPersonaId);
+        if (!personaData) {
+          showError('No se pudo obtener los datos de la persona seleccionada');
+          return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+        }
+
+        const doc = createDNGI03WordDocument(personaData as any);
+        const blob = await Packer.toBlob(doc);
+        const nombre = sanitizeFilePart(personaData.nombre || 'Persona') || 'Persona';
+        const apellido = sanitizeFilePart(getFirstSurname(personaData.apellido || '')) || 'Apellido';
+        const prefijo = personaEntityType === 'DIRIGENTE' ? 'Ficha_Dirigente' : 'Ficha_Comite';
+        saveAs(blob, `${prefijo}_${nombre}${apellido}.docx`);
+
+        return {
+          status: 'success' as any,
+          fileName: `${prefijo}_${nombre}${apellido}.docx`,
         };
       }
 
@@ -1777,24 +1922,52 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
             selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
             <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-4">
-              <label className="block text-sm font-medium text-sky-800 mb-2">
-                Filtrar por Rama
-              </label>
-              <select
-                value={ramaFilter}
-                onChange={(e) => setRamaFilter(e.target.value)}
-                className="w-full md:w-64 px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              >
-                <option value="TODAS">Todas las ramas</option>
-                {availableRamas.map(rama => (
-                  <option key={rama} value={rama}>{rama}</option>
-                ))}
-              </select>
-              <p className="text-xs text-sky-600 mt-2">
-                Selecciona una rama para filtrar los documentos de identidad.
-              </p>
+              {/* Selector de tipo de persona (solo para la ficha "Persona") */}
+              {selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Tipo de persona
+                  </label>
+                  <select
+                    value={personaEntityType}
+                    onChange={(e) => {
+                      setPersonaEntityType(e.target.value as 'SCOUT' | 'DIRIGENTE' | 'COMITE');
+                      setSelectedPersonaId('');
+                      setSelectedMassiveScoutId('');
+                    }}
+                    className="w-full md:w-64 px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  >
+                    <option value="SCOUT">Scout</option>
+                    <option value="DIRIGENTE">Dirigentes</option>
+                    <option value="COMITE">Comité</option>
+                  </select>
+                </div>
+              )}
 
-              {(selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
+              {/* Filtro por rama: oculto cuando es ficha Persona de dirigente/comité */}
+              {!(selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType !== 'SCOUT') && (
+                <>
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Filtrar por Rama
+                  </label>
+                  <select
+                    value={ramaFilter}
+                    onChange={(e) => setRamaFilter(e.target.value)}
+                    className="w-full md:w-64 px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  >
+                    <option value="TODAS">Todas las ramas</option>
+                    {availableRamas.map(rama => (
+                      <option key={rama} value={rama}>{rama}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-sky-600 mt-2">
+                    Selecciona una rama para filtrar los documentos de identidad.
+                  </p>
+                </>
+              )}
+
+              {/* Selector de scout (ficha Persona tipo Scout o DNI scout+apoderado) */}
+              {((selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType === 'SCOUT') ||
                 selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-sky-800 mb-2">
@@ -1815,6 +1988,48 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   <p className="text-xs text-sky-600 mt-2">
                     Para reducir carga en base de datos, este reporte se exporta scout por scout.
                   </p>
+                </div>
+              )}
+
+              {/* Selector de dirigente */}
+              {selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType === 'DIRIGENTE' && (
+                <div>
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Buscar Dirigente
+                  </label>
+                  <select
+                    value={selectedPersonaId}
+                    onChange={(e) => setSelectedPersonaId(e.target.value)}
+                    className="w-full md:w-[520px] px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  >
+                    <option value="">Selecciona un dirigente</option>
+                    {dirigentesList.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.persona?.apellidos} {d.persona?.nombres}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Selector de miembro de comité */}
+              {selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType === 'COMITE' && (
+                <div>
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Buscar Miembro del Comité
+                  </label>
+                  <select
+                    value={selectedPersonaId}
+                    onChange={(e) => setSelectedPersonaId(e.target.value)}
+                    className="w-full md:w-[520px] px-3 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  >
+                    <option value="">Selecciona un miembro</option>
+                    {comiteList.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.apellidos} {m.nombres}{m.cargo ? ` (${m.cargo})` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>

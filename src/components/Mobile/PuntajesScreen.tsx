@@ -67,8 +67,6 @@ interface BloquePrograma {
   nombre: string;
   hora_inicio: string;
   hora_fin: string;
-  otorga_puntaje?: boolean;
-  puntaje_maximo?: number;
 }
 
 interface PatrullaActividad {
@@ -896,7 +894,7 @@ export default function PuntajesScreen() {
                             📅 {formatFechaLocal(programa.fecha)} • {programa.tipo === 'DIURNO' ? '☀️' : '🌙'} {programa.tipo}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
-                            {programa.bloques?.filter(b => b.otorga_puntaje).length || 0} bloques con puntaje
+                            {programa.bloques?.length || 0} bloque(s)
                           </p>
                         </div>
                         <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -922,20 +920,18 @@ export default function PuntajesScreen() {
                 <p className="text-sm text-blue-600 mt-1">📅 {formatFechaLocal(programaALSeleccionado.fecha)}</p>
               </div>
 
-              {(!programaALSeleccionado.bloques || programaALSeleccionado.bloques.filter(b => b.otorga_puntaje).length === 0) ? (
+              {!programaALSeleccionado.bloques || programaALSeleccionado.bloques.length === 0 ? (
                 <div className="text-center py-8">
                   <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
-                  <p className="text-gray-700 font-semibold">Sin bloques con puntaje</p>
-                  <p className="text-sm text-gray-500">Marca bloques como "Otorga Puntaje" desde el sistema web</p>
+                  <p className="text-gray-700 font-semibold">Sin bloques de actividades</p>
+                  <p className="text-sm text-gray-500">Agrega bloques desde el sistema web</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-gray-700">
-                    Bloques con Puntaje ({programaALSeleccionado.bloques.filter(b => b.otorga_puntaje).length})
+                    Bloques ({programaALSeleccionado.bloques.length})
                   </h3>
-                  {programaALSeleccionado.bloques
-                    .filter(b => b.otorga_puntaje)
-                    .map(bloque => (
+                  {programaALSeleccionado.bloques.map(bloque => (
                       <button
                         key={bloque.id}
                         onClick={() => seleccionarBloqueAL(bloque)}
@@ -947,11 +943,6 @@ export default function PuntajesScreen() {
                             <p className="text-sm text-gray-500 mt-1">
                               ⏰ {bloque.hora_inicio} - {bloque.hora_fin}
                             </p>
-                            {bloque.puntaje_maximo && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Máximo: {bloque.puntaje_maximo} pts
-                              </p>
-                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Star className="w-5 h-5 text-yellow-500" />
@@ -978,7 +969,6 @@ export default function PuntajesScreen() {
                 <p className="text-purple-900 font-semibold">{bloqueSeleccionado.nombre}</p>
                 <p className="text-sm text-purple-600 mt-1">
                   ⏰ {bloqueSeleccionado.hora_inicio} - {bloqueSeleccionado.hora_fin}
-                  {bloqueSeleccionado.puntaje_maximo && ` • Máx: ${bloqueSeleccionado.puntaje_maximo} pts`}
                 </p>
               </div>
 
@@ -1020,7 +1010,7 @@ export default function PuntajesScreen() {
                           <input
                             type="number"
                             min="0"
-                            max={bloqueSeleccionado.puntaje_maximo || 100}
+                            max={100}
                             value={puntajeActual || ''}
                             onChange={(e) => handlePuntajeALChange(patrulla.id, e.target.value)}
                             disabled={!puedeRegistrarAireLibre}

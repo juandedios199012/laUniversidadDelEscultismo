@@ -592,9 +592,13 @@ function PlantillaTab({ plantilla, onSaved }: { plantilla: PlantillaCarta | null
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-        <div className="md:col-span-2">
-          <label className={labelCls}>URL del logo</label>
-          <input className={inputCls} value={form.logo_url || ''} onChange={(e) => set('logo_url', e.target.value)} />
+        <div>
+          <label className={labelCls}>URL del banner (cabecera izquierda)</label>
+          <input className={inputCls} placeholder="https://… banner SCOUTS Perú" value={form.logo_url || ''} onChange={(e) => set('logo_url', e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>URL del emblema (cabecera derecha)</label>
+          <input className={inputCls} placeholder="https://… emblema del grupo" value={form.emblema_url || ''} onChange={(e) => set('emblema_url', e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>Prefijo de carta</label>

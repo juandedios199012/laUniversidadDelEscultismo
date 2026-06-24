@@ -226,6 +226,7 @@ export interface ProgramaActividad {
   observaciones?: string;
   orden_ejecucion?: number;
   created_at?: string;
+  objetivo_ids?: string[];
 }
 
 export interface ComitePadresEntry {

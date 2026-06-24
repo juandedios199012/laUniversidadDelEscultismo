@@ -9,9 +9,11 @@
 import { z } from 'zod';
 import type {
   AssembledRecord,
+  ColumnDef,
   ExistingMap,
   ImportConfig,
   PersistResult,
+  SheetDef,
 } from '../types';
 import ProgramaSemanalService from '../../../services/programaSemanalService';
 
@@ -48,8 +50,15 @@ const programaSchema = z.object({
   observaciones_generales: z.string().optional(),
 });
 
-const actividadSchema = z.object({
-  ref_programa: z.string().min(1, 'requerido'),
+/**
+ * Esquema y columnas base de una Actividad de Programa Semanal, sin la
+ * referencia "ref_programa" (solo necesaria para enlazar hojas en la
+ * importación masiva por archivo). Se reutilizan tal cual en el pegado
+ * de filas desde Excel dentro del formulario "Agregar Actividad"
+ * (ver src/lib/pasteRows + ProgramaSemanal.tsx) para no duplicar la
+ * lista de campos en dos lugares.
+ */
+export const ACTIVIDAD_PROGRAMA_BASE_SCHEMA = z.object({
   nombre: z.string().min(1, 'requerido'),
   desarrollo: z.string().optional().default(''),
   hora_inicio: z.string().optional().default(''),
@@ -58,6 +67,65 @@ const actividadSchema = z.object({
   materiales: z.array(z.string()).optional().default([]),
   observaciones: z.string().optional().default(''),
 });
+
+export const ACTIVIDAD_PROGRAMA_BASE_COLUMNS: ColumnDef[] = [
+  {
+    key: 'nombre',
+    header: 'nombre',
+    type: 'string',
+    required: true,
+    example: 'Nudo de pescador',
+  },
+  {
+    key: 'desarrollo',
+    header: 'desarrollo',
+    type: 'string',
+    example: 'Explicación y práctica guiada.',
+  },
+  {
+    key: 'hora_inicio',
+    header: 'hora_inicio',
+    type: 'string',
+    example: '15:00',
+    help: 'Formato HH:MM.',
+  },
+  {
+    key: 'duracion_minutos',
+    header: 'duracion_minutos',
+    type: 'number',
+    example: '30',
+  },
+  {
+    key: 'responsable',
+    header: 'responsable',
+    type: 'string',
+    example: 'Baloo',
+  },
+  {
+    key: 'materiales',
+    header: 'materiales',
+    type: 'array',
+    example: 'Cuerdas; Conos',
+    help: 'Separar varios materiales con ";".',
+  },
+  {
+    key: 'observaciones',
+    header: 'observaciones',
+    type: 'string',
+    example: '',
+  },
+];
+
+const actividadSchema = ACTIVIDAD_PROGRAMA_BASE_SCHEMA.extend({
+  ref_programa: z.string().min(1, 'requerido'),
+});
+
+/** SheetDef de Actividad lista para pegado de filas (sin ref_programa). */
+export const actividadProgramaSheet: SheetDef = {
+  sheetName: 'Actividades',
+  columns: ACTIVIDAD_PROGRAMA_BASE_COLUMNS,
+  rowSchema: ACTIVIDAD_PROGRAMA_BASE_SCHEMA,
+};
 
 // ----------------------------------------------------------------------
 // Config
@@ -152,51 +220,7 @@ export const programaImportConfig: ImportConfig = {
           example: 'P1',
           help: 'Debe coincidir con el "ref_programa" de la hoja Programas.',
         },
-        {
-          key: 'nombre',
-          header: 'nombre',
-          type: 'string',
-          required: true,
-          example: 'Nudo de pescador',
-        },
-        {
-          key: 'desarrollo',
-          header: 'desarrollo',
-          type: 'string',
-          example: 'Explicación y práctica guiada.',
-        },
-        {
-          key: 'hora_inicio',
-          header: 'hora_inicio',
-          type: 'string',
-          example: '15:00',
-          help: 'Formato HH:MM.',
-        },
-        {
-          key: 'duracion_minutos',
-          header: 'duracion_minutos',
-          type: 'number',
-          example: '30',
-        },
-        {
-          key: 'responsable',
-          header: 'responsable',
-          type: 'string',
-          example: 'Baloo',
-        },
-        {
-          key: 'materiales',
-          header: 'materiales',
-          type: 'array',
-          example: 'Cuerdas; Conos',
-          help: 'Separar varios materiales con ";".',
-        },
-        {
-          key: 'observaciones',
-          header: 'observaciones',
-          type: 'string',
-          example: '',
-        },
+        ...ACTIVIDAD_PROGRAMA_BASE_COLUMNS,
       ],
     },
   ],

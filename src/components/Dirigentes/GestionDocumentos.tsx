@@ -19,7 +19,7 @@ import {
   ESTADOS_DOCUMENTO_LABELS,
   EstadoDocumento,
 } from '../../types/dirigente';
-import DirigenteService from '../../services/dirigenteServiceV2';
+import DirigenteService from '../../services/dirigenteService';
 
 // ============================================================================
 // ICONOS

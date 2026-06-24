@@ -1,9 +1,59 @@
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
+  ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import type { CartaData } from './CartaOficialDocumento';
 import { fechaLarga } from './CartaOficialDocumento';
+
+type DocxImageType = 'png' | 'jpg' | 'gif' | 'bmp';
+type FetchedImage = { data: ArrayBuffer; type: DocxImageType; width: number; height: number };
+
+function detectImageType(buf: ArrayBuffer): DocxImageType | null {
+  const b = new Uint8Array(buf);
+  if (b[0] === 0x89 && b[1] === 0x50) return 'png';
+  if (b[0] === 0xff && b[1] === 0xd8) return 'jpg';
+  if (b[0] === 0x47 && b[1] === 0x49) return 'gif';
+  if (b[0] === 0x42 && b[1] === 0x4d) return 'bmp';
+  return null;
+}
+
+function imageDimensions(url: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ width: img.naturalWidth || 200, height: img.naturalHeight || 80 });
+    img.onerror = () => resolve({ width: 200, height: 80 });
+    img.src = url;
+  });
+}
+
+// Descarga una imagen remota y la prepara para incrustar en el .docx.
+// Devuelve null si falla (p. ej. CORS) para que el documento se genere igual.
+async function fetchImage(url?: string): Promise<FetchedImage | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return null;
+    const data = await res.arrayBuffer();
+    const type = detectImageType(data);
+    if (!type) return null;
+    const { width, height } = await imageDimensions(url);
+    return { data, type, width, height };
+  } catch {
+    return null;
+  }
+}
+
+// Escala una imagen a una altura objetivo (px) conservando la proporción.
+function scaledImageRun(img: FetchedImage, targetHeight: number): ImageRun {
+  const ratio = img.width > 0 && img.height > 0 ? img.width / img.height : 2.5;
+  return new ImageRun({
+    data: img.data,
+    type: img.type,
+    transformation: { width: Math.round(targetHeight * ratio), height: targetHeight },
+  });
+}
 
 function numeroCartaTexto({ numeroCarta, anio, plantilla }: CartaData): string {
   return [
@@ -50,8 +100,9 @@ export function imprimirCartaPDF(node: HTMLElement | null) {
 // ================================================================
 // WORD (.docx) — generación estructurada con la librería `docx`
 // Mantiene la verticalidad y los saltos de línea solicitados.
-// (Las imágenes de logo/firma se omiten para evitar problemas de CORS;
-//  el texto y la firma escrita se conservan íntegros.)
+// La cabecera de ancho completo (banner + emblema) y la firma se
+// incrustan descargando las imágenes; si alguna falla (CORS), el
+// documento se genera igual sin esa imagen.
 // ================================================================
 export async function descargarCartaWord(data: CartaData) {
   const { plantilla: p, institucion: inst, evento: ev } = data;
@@ -60,6 +111,58 @@ export async function descargarCartaWord(data: CartaData) {
   const direccion = inst?.direccion || '';
 
   const justify = AlignmentType.JUSTIFIED;
+
+  // Descarga las imágenes en paralelo (cabecera + firma).
+  const [banner, emblema, firma] = await Promise.all([
+    fetchImage(p?.logo_url),
+    fetchImage(p?.emblema_url),
+    fetchImage(p?.firma_url_imagen),
+  ]);
+
+  // Cabecera de ancho completo: tabla sin bordes, banner (izq.) y emblema (der.).
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const cellBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+  const cabeceraBloque: (Table | Paragraph)[] =
+    banner || emblema
+      ? [
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+              insideHorizontal: noBorder, insideVertical: noBorder,
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 60, type: WidthType.PERCENTAGE },
+                    borders: cellBorders,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.LEFT,
+                        children: banner ? [scaledImageRun(banner, 64)] : [new TextRun('')],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 40, type: WidthType.PERCENTAGE },
+                    borders: cellBorders,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: emblema ? [scaledImageRun(emblema, 72)] : [new TextRun('')],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new Paragraph({ text: '', spacing: { after: 120 } }),
+        ]
+      : [];
 
   const datoLinea = (label: string, valor?: string) =>
     new Paragraph({
@@ -75,6 +178,9 @@ export async function descargarCartaWord(data: CartaData) {
       {
         properties: {},
         children: [
+          // Cabecera (banner + emblema) a ancho completo
+          ...cabeceraBloque,
+
           // Fecha + numeración (derecha)
           new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun(fechaLarga())] }),
           new Paragraph({
@@ -169,6 +275,9 @@ export async function descargarCartaWord(data: CartaData) {
           }),
 
           // Firma
+          ...(firma
+            ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [scaledImageRun(firma, 70)] })]
+            : []),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun('_______________________________')] }),
           ...(p?.firma_nombre
             ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: p.firma_nombre, bold: true })] })]

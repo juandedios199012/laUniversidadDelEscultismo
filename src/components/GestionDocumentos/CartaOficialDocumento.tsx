@@ -32,8 +32,17 @@ const S = {
     fontSize: '12.5pt',
     lineHeight: 1.6,
   } as React.CSSProperties,
-  logoWrap: { minHeight: '2.2cm', marginBottom: '0.4cm' } as React.CSSProperties,
-  logo: { maxWidth: '4.5cm', maxHeight: '2.2cm', objectFit: 'contain' } as React.CSSProperties,
+  cabecera: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1cm',
+    margin: '-2.5cm -2.5cm 0.6cm',
+    padding: '0.5cm 1cm 0.35cm',
+    borderBottom: '2px solid #6d28d9',
+  } as React.CSSProperties,
+  cabeceraBanner: { maxHeight: '2.4cm', maxWidth: '11cm', objectFit: 'contain', display: 'block' } as React.CSSProperties,
+  cabeceraEmblema: { maxHeight: '2.6cm', maxWidth: '4cm', objectFit: 'contain', display: 'block' } as React.CSSProperties,
   fechaBlock: { textAlign: 'right', fontSize: '11pt', marginBottom: '0.6cm' } as React.CSSProperties,
   cartaNro: { fontWeight: 700, marginTop: '2px' } as React.CSSProperties,
   destinatario: { marginBottom: '0.5cm', lineHeight: 1.4 } as React.CSSProperties,
@@ -107,10 +116,13 @@ const CartaOficialDocumento = forwardRef<HTMLDivElement, CartaData>(
 
     return (
       <div ref={ref} style={S.hoja}>
-        {/* 1. Logo */}
-        <div style={S.logoWrap}>
-          {p?.logo_url ? <img src={p.logo_url} alt="Logo" style={S.logo} /> : null}
-        </div>
+        {/* 1. Cabecera de ancho completo: banner (izq.) + emblema (der.) */}
+        {(p?.logo_url || p?.emblema_url) ? (
+          <div style={S.cabecera}>
+            {p?.logo_url ? <img src={p.logo_url} alt="Banner" style={S.cabeceraBanner} /> : <span />}
+            {p?.emblema_url ? <img src={p.emblema_url} alt="Emblema" style={S.cabeceraEmblema} /> : <span />}
+          </div>
+        ) : null}
 
         {/* 2. Fecha y numeración */}
         <div style={S.fechaBlock}>

@@ -81,6 +81,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'programa-semanal',    label: 'Programa',    icon: Calendar,      gradient: 'from-indigo-500 to-purple-500', modulo: 'programa_semanal'    },
       { id: 'asistencia',          label: 'Asistencia',  icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500',    modulo: 'asistencia'          },
       { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent,           gradient: 'from-green-600 to-teal-600',   modulo: 'actividades_exterior' },
+      { id: 'config-tipos-actividad-aire-libre', label: 'Tipos de Actividad', icon: Settings, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'mapas',               label: 'Mapas',       icon: Map,            gradient: 'from-emerald-500 to-teal-500', modulo: 'mapas'               },
     ],
   },

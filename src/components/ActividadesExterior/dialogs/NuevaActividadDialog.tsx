@@ -44,19 +44,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { 
-  ActividadesExteriorService, 
+import {
+  ActividadesExteriorService,
   TipoActividadExterior,
+  TipoActividadAireLibre,
   EstadoActividadExterior,
-  TIPOS_ACTIVIDAD_EXTERIOR,
   ESTADOS_ACTIVIDAD_EXTERIOR,
+  getEmojiTipoActividad,
 } from '@/services/actividadesExteriorService';
 
-// Schema de validación - valores alineados con CHECK constraints de BD
+// Schema de validación - el tipo viene del catálogo dinámico (ya no es una lista fija)
 const actividadSchema = z.object({
   // Paso 1: Info básica
   nombre: z.string().min(3, 'Mínimo 3 caracteres').max(255),
-  tipo: z.enum(['paseo', 'campamento', 'excursion', 'expedicion', 'acantonamiento']),
+  tipo: z.string().min(1, 'Selecciona un tipo de actividad'),
   estado: z.enum(['borrador', 'planificacion', 'aprobado', 'en_curso', 'finalizado', 'cancelado']).optional(),
   descripcion: z.string().optional(),
   
@@ -123,11 +124,32 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
   const [guardando, setGuardando] = useState(false);
   const modoEdicion = !!actividadEditar;
 
+  const [tiposDisponibles, setTiposDisponibles] = useState<TipoActividadAireLibre[]>([]);
+  const [cargandoTipos, setCargandoTipos] = useState(false);
+
+  // Cargar catálogo de tipos de actividad cada vez que se abre el diálogo
+  React.useEffect(() => {
+    if (!open) return;
+    let activo = true;
+    setCargandoTipos(true);
+    ActividadesExteriorService.listarTiposActividadAireLibre(true)
+      .then((tipos) => {
+        if (activo) setTiposDisponibles(tipos);
+      })
+      .catch((err) => console.error('Error cargando tipos de actividad:', err))
+      .finally(() => {
+        if (activo) setCargandoTipos(false);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [open]);
+
   const form = useForm<ActividadFormData>({
     resolver: zodResolver(actividadSchema),
     defaultValues: {
       nombre: '',
-      tipo: 'campamento',
+      tipo: '',
       descripcion: '',
       fecha_inicio: '',
       fecha_fin: '',
@@ -167,7 +189,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
     } else if (open && !actividadEditar) {
       form.reset({
         nombre: '',
-        tipo: 'campamento',
+        tipo: '',
         estado: undefined,
         descripcion: '',
         fecha_inicio: '',
@@ -374,23 +396,31 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Actividad *</FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
-                        {TIPOS_ACTIVIDAD_EXTERIOR.map(tipo => (
-                          <button
-                            key={tipo.value}
-                            type="button"
-                            onClick={() => field.onChange(tipo.value)}
-                            className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-colors ${
-                              field.value === tipo.value 
-                                ? 'border-primary bg-primary/5' 
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <span className="text-2xl">{tipo.emoji}</span>
-                            <span className="text-xs font-medium">{tipo.label}</span>
-                          </button>
-                        ))}
-                      </div>
+                      {cargandoTipos ? (
+                        <p className="text-sm text-muted-foreground py-2">Cargando tipos de actividad...</p>
+                      ) : tiposDisponibles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">
+                          No hay tipos de actividad registrados. Agrégalos en Configuración &gt; Tipos de Actividad.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {tiposDisponibles.map(tipo => (
+                            <button
+                              key={tipo.id}
+                              type="button"
+                              onClick={() => field.onChange(tipo.descripcion)}
+                              className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-colors ${
+                                field.value?.toLowerCase() === tipo.descripcion.toLowerCase()
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <span className="text-2xl">{getEmojiTipoActividad(tipo.descripcion)}</span>
+                              <span className="text-xs font-medium">{tipo.descripcion}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

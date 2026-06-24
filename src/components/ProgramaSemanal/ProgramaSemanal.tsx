@@ -6,7 +6,10 @@ import PuntajesActividad from './PuntajesActividad';
 import RankingPatrullas from './RankingPatrullas';
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { ImportDialog } from '../shared/ImportDialog/ImportDialog';
-import { programaImportConfig } from '../../lib/import/configs/programaImportConfig';
+import { programaImportConfig, actividadProgramaSheet } from '../../lib/import/configs/programaImportConfig';
+import { usePasteRows } from '../../hooks/usePasteRows';
+import { timeToMinutes, minutesToTime, recalcularHorarioSecuencial } from '../../utils/horarioSecuencial';
+import SelectorObjetivosEducativos from '../shared/SelectorObjetivosEducativos';
 
 // Tipo para dirigentes activos
 interface DirigenteActivo {
@@ -154,7 +157,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
           duracion_minutos: a.duracion_minutos || 0,
           responsable: a.responsable || '',
           materiales: Array.isArray(a.materiales) ? a.materiales : [''],
-          observaciones: a.observaciones || ''
+          observaciones: a.observaciones || '',
+          objetivo_ids: Array.isArray((a as any).programa_actividad_objetivos)
+            ? (a as any).programa_actividad_objetivos.map((o: any) => o.objetivo_id)
+            : [],
         }))
       : [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }];
 
@@ -402,41 +408,80 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     });
   };
 
-  const timeToMinutes = (time: string): number | null => {
-    if (!time || !time.includes(':')) return null;
-    const [hh, mm] = time.split(':').map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-    return (hh * 60) + mm;
-  };
+  // Pegar actividades copiadas desde Excel (columnas: nombre, desarrollo,
+  // hora_inicio, duracion_minutos, responsable, materiales, observaciones)
+  const pegarActividades = (
+    filasPegadas: Array<{
+      nombre: string;
+      desarrollo: string;
+      hora_inicio: string;
+      duracion_minutos?: number;
+      responsable: string;
+      materiales: string[];
+      observaciones: string;
+    }>,
+    setForm: React.Dispatch<React.SetStateAction<typeof createForm>>
+  ) => {
+    setForm(prev => {
+      const soloUnaVacia = prev.actividades.length === 1 &&
+        !prev.actividades[0]?.nombre &&
+        !(prev.actividades[0] as any)?.desarrollo;
+      const base = soloUnaVacia ? [] : prev.actividades;
 
-  const minutesToTime = (minutes: number): string => {
-    const normalized = ((minutes % 1440) + 1440) % 1440;
-    const hh = Math.floor(normalized / 60).toString().padStart(2, '0');
-    const mm = (normalized % 60).toString().padStart(2, '0');
-    return `${hh}:${mm}`;
-  };
+      const nuevasActividades = filasPegadas.map(fila => ({
+        nombre: fila.nombre,
+        desarrollo: fila.desarrollo,
+        hora_inicio: fila.hora_inicio || '09:00',
+        duracion_minutos: fila.duracion_minutos ?? 60,
+        responsable: fila.responsable,
+        materiales: fila.materiales,
+        observaciones: fila.observaciones,
+      })) as unknown as ProgramaActividad[];
 
-  const recalcularHorarioSecuencial = (
-    actividades: ProgramaActividad[],
-    startTime: string
-  ): ProgramaActividad[] => {
-    if (!Array.isArray(actividades) || actividades.length === 0) return [];
-
-    const startMinutes = timeToMinutes(startTime) ?? 9 * 60;
-    let currentStart = startMinutes;
-
-    return actividades.map((actividad, index) => {
-      const duracion = Number(actividad.duracion_minutos) > 0 ? Number(actividad.duracion_minutos) : 0;
-      const horaInicio = index === 0
-        ? (startTime || actividad.hora_inicio || '09:00')
-        : minutesToTime(currentStart);
-
-      currentStart += duracion;
       return {
-        ...actividad,
-        hora_inicio: horaInicio
+        ...prev,
+        actividades: recalcularHorarioSecuencial(
+          [...base, ...nuevasActividades],
+          prev.hora_inicio_programa || base[0]?.hora_inicio || '09:00'
+        )
       };
     });
+  };
+
+  const onErroresPegado = (errorMessages: string[]) => {
+    if (errorMessages.length > 0) {
+      alert(`Algunas filas no se pudieron agregar:\n${errorMessages.slice(0, 5).join('\n')}`);
+    }
+  };
+
+  const { handlePaste: handlePasteCreate } = usePasteRows<{
+    nombre: string;
+    desarrollo: string;
+    hora_inicio: string;
+    duracion_minutos?: number;
+    responsable: string;
+    materiales: string[];
+    observaciones: string;
+  }>(actividadProgramaSheet, (filas) => pegarActividades(filas, setCreateForm));
+
+  const { handlePaste: handlePasteEdit } = usePasteRows<{
+    nombre: string;
+    desarrollo: string;
+    hora_inicio: string;
+    duracion_minutos?: number;
+    responsable: string;
+    materiales: string[];
+    observaciones: string;
+  }>(actividadProgramaSheet, (filas) => pegarActividades(filas, setEditForm));
+
+  const handlePasteActividadesCreate = (event: React.ClipboardEvent) => {
+    const resultado = handlePasteCreate(event);
+    if (resultado) onErroresPegado(resultado.errorMessages);
+  };
+
+  const handlePasteActividadesEdit = (event: React.ClipboardEvent) => {
+    const resultado = handlePasteEdit(event);
+    if (resultado) onErroresPegado(resultado.errorMessages);
   };
 
   const getVentanaHorariaError = (form: typeof createForm): string | null => {
@@ -908,7 +953,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               </div>
 
               {/* Actividades */}
-              <div>
+              <div onPaste={handlePasteActividadesCreate}>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Actividades *
@@ -932,6 +977,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     </button>
                   </div>
                 </div>
+                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Tip: copia celdas en Excel (nombre, desarrollo, hora_inicio, duracion_minutos, responsable, materiales, observaciones) y pégalas aquí con Ctrl+V.
+                </p>
                 {getVentanaHorariaError(createForm) && (
                   <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
                     {getVentanaHorariaError(createForm)}
@@ -1045,6 +1094,12 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                             onChange={(e) => updateActividad(index, 'materiales', e.target.value, setCreateForm)}
                             placeholder="Lista de materiales"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <SelectorObjetivosEducativos
+                            objetivoIds={actividad.objetivo_ids || []}
+                            onChange={(ids) => updateActividad(index, 'objetivo_ids', ids, setCreateForm)}
                           />
                         </div>
                       </div>
@@ -1256,7 +1311,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               </div>
 
               {/* Actividades para editar */}
-              <div>
+              <div onPaste={handlePasteActividadesEdit}>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Actividades *
@@ -1280,6 +1335,10 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     </button>
                   </div>
                 </div>
+                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Tip: copia celdas en Excel (nombre, desarrollo, hora_inicio, duracion_minutos, responsable, materiales, observaciones) y pégalas aquí con Ctrl+V.
+                </p>
                 {getVentanaHorariaError(editForm) && (
                   <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
                     {getVentanaHorariaError(editForm)}
@@ -1399,6 +1458,12 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                               onChange={(e) => updateActividad(index, 'materiales', e.target.value, setEditForm)}
                               placeholder="Lista de materiales"
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <SelectorObjetivosEducativos
+                              objetivoIds={actividad.objetivo_ids || []}
+                              onChange={(ids) => updateActividad(index, 'objetivo_ids', ids, setEditForm)}
                             />
                           </div>
                         </React.Fragment>

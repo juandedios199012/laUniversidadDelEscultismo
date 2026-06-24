@@ -2,13 +2,18 @@
  * Programa Dialog - Formulario Multi-pasos para crear/editar programa
  * Incluye bloques de actividades con validación onBlur
  * Soporta modo creación y edición
+ *
+ * Los campos de cada bloque son los mismos que "Actividad" en el módulo
+ * de Programación (nombre, descripción, hora_inicio + duración,
+ * responsable, materiales, observaciones, Objetivos Educativos), para
+ * que ambos formularios se mantengan en paridad.
  */
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { 
+import {
   Calendar,
   Clock,
   Plus,
@@ -16,8 +21,8 @@ import {
   GripVertical,
   ChevronRight,
   ChevronLeft,
-  Trophy,
-  Pencil
+  Pencil,
+  Users
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,21 +45,29 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ActividadesExteriorService, ProgramaActividad, TipoProgramaExterior } from '@/services/actividadesExteriorService';
+import {
+  ActividadesExteriorService,
+  ProgramaActividad,
+  TipoProgramaExterior,
+  DirigentDisponible,
+} from '@/services/actividadesExteriorService';
 import { toast } from 'sonner';
+import { usePasteRows } from '@/hooks/usePasteRows';
+import { bloqueProgramaSheet } from '@/lib/import/configs/bloqueProgramaAireLibreSheet';
+import { recalcularHorarioSecuencial } from '@/utils/horarioSecuencial';
+import SelectorObjetivosEducativos from '@/components/shared/SelectorObjetivosEducativos';
 
-// Schema de validación para bloque (incluye id opcional para edición)
+// Schema de validación para bloque (mismos campos que Actividad de Programación)
 const bloqueSchema = z.object({
   id: z.string().optional(),
   nombre: z.string().min(2, 'Mínimo 2 caracteres'),
   descripcion: z.string().optional(),
-  tipo_bloque: z.string().optional(),
   hora_inicio: z.string().min(1, 'Requerido'),
-  hora_fin: z.string().min(1, 'Requerido'),
+  duracion_minutos: z.number().min(1, 'Debe ser mayor a 0'),
+  responsable_id: z.string().optional(),
   materiales_necesarios: z.string().optional(),
-  otorga_puntaje: z.boolean(),
-  puntaje_maximo: z.number().min(0),
+  observaciones: z.string().optional(),
+  objetivo_ids: z.array(z.string()).optional().default([]),
 });
 
 const programaSchema = z.object({
@@ -81,22 +94,23 @@ interface NuevoProgramaDialogProps {
   programaEditar?: ProgramaActividad | null;
 }
 
-const TIPOS_BLOQUE = [
-  { value: 'FORMACION', label: 'Formación', emoji: '📚' },
-  { value: 'JUEGO', label: 'Juego', emoji: '🎮' },
-  { value: 'ACTIVIDAD', label: 'Actividad', emoji: '🏃' },
-  { value: 'COMIDA', label: 'Comida', emoji: '🍽️' },
-  { value: 'DESCANSO', label: 'Descanso', emoji: '😴' },
-  { value: 'CEREMONIA', label: 'Ceremonia', emoji: '🔥' },
-  { value: 'LIBRE', label: 'Tiempo Libre', emoji: '🌟' },
-];
-
 // Mapeo de tipos de la BD a los del formulario
 const mapTipoFromDB = (tipo: string): 'DIURNO' | 'NOCTURNO' => {
   if (tipo === 'DIA' || tipo === 'DIURNO') return 'DIURNO';
   if (tipo === 'NOCHE' || tipo === 'NOCTURNO') return 'NOCTURNO';
   return 'DIURNO'; // Default
 };
+
+const bloqueVacio = (horaInicio: string): BloqueFormData => ({
+  nombre: '',
+  descripcion: '',
+  hora_inicio: horaInicio,
+  duracion_minutos: 30,
+  responsable_id: '',
+  materiales_necesarios: '',
+  observaciones: '',
+  objetivo_ids: [],
+});
 
 const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   open,
@@ -109,7 +123,8 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 }) => {
   const [paso, setPaso] = useState(1);
   const [guardando, setGuardando] = useState(false);
-  
+  const [dirigentes, setDirigentes] = useState<DirigentDisponible[]>([]);
+
   const esEdicion = !!programaEditar;
 
   const {
@@ -135,7 +150,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     mode: 'onBlur',
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, replace } = useFieldArray({
     control,
     name: 'bloques',
   });
@@ -143,14 +158,22 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   const tipoPrograma = watch('tipo');
   const bloquesWatch = watch('bloques');
 
+  // Dirigentes disponibles para asignar como responsable de un bloque
+  useEffect(() => {
+    if (!open) return;
+    ActividadesExteriorService.listarDirigentesDisponibles(actividadId)
+      .then(setDirigentes)
+      .catch((err) => console.error('Error cargando dirigentes:', err));
+  }, [open, actividadId]);
+
   // Cargar datos cuando es modo edición
   useEffect(() => {
     if (open && programaEditar) {
       console.log('Cargando programa para edición:', programaEditar);
-      
+
       // Mapear tipo del programa
       const tipoMapeado = mapTipoFromDB(programaEditar.tipo);
-      
+
       // Cargar datos del programa
       setValue('nombre', programaEditar.nombre || '');
       setValue('descripcion', programaEditar.descripcion || '');
@@ -158,19 +181,19 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
       setValue('fecha', programaEditar.fecha || '');
       setValue('hora_inicio', programaEditar.hora_inicio || '06:00');
       setValue('hora_fin', programaEditar.hora_fin || '22:00');
-      
+
       // Cargar bloques existentes
       if (programaEditar.bloques && programaEditar.bloques.length > 0) {
         const bloquesFormateados: BloqueFormData[] = programaEditar.bloques.map(b => ({
           id: b.id || undefined,
           nombre: b.nombre || '',
           descripcion: b.descripcion || '',
-          tipo_bloque: b.tipo_bloque || 'ACTIVIDAD',
           hora_inicio: b.hora_inicio || '08:00',
-          hora_fin: b.hora_fin || '09:00',
+          duracion_minutos: b.duracion_minutos || 30,
+          responsable_id: b.responsable_id || '',
           materiales_necesarios: b.materiales_necesarios || '',
-          otorga_puntaje: b.otorga_puntaje || false,
-          puntaje_maximo: b.puntaje_maximo || 0,
+          observaciones: b.observaciones || '',
+          objetivo_ids: b.objetivo_ids || [],
         }));
         replace(bloquesFormateados);
         console.log('Bloques cargados:', bloquesFormateados);
@@ -189,19 +212,61 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     }
   }, [open, programaEditar, setValue, replace, reset]);
 
+  // Recalcula hora_inicio en cadena: el primer bloque ancla la secuencia
+  // (su propia hora si la tiene, si no la hora de inicio del programa);
+  // los siguientes se calculan a partir de la duración del anterior.
+  const recalcularBloques = (bloques: BloqueFormData[]): BloqueFormData[] => {
+    const ancla = bloques[0]?.hora_inicio || watch('hora_inicio') || '08:00';
+    return recalcularHorarioSecuencial(bloques, ancla);
+  };
+
   const agregarBloque = () => {
-    const ultimoBloque = fields[fields.length - 1];
-    const defaultBloque: BloqueFormData = {
-      nombre: '',
-      descripcion: '',
-      tipo_bloque: 'ACTIVIDAD',
-      hora_inicio: ultimoBloque ? (bloquesWatch[fields.length - 1]?.hora_fin || '08:00') : '08:00',
-      hora_fin: '',
-      materiales_necesarios: '',
-      otorga_puntaje: false,
-      puntaje_maximo: 0,
-    };
-    append(defaultBloque);
+    replace(recalcularBloques([...bloquesWatch, bloqueVacio('08:00')]));
+  };
+
+  const removerBloque = (index: number) => {
+    replace(recalcularBloques(bloquesWatch.filter((_, i) => i !== index)));
+  };
+
+  const actualizarBloqueLocal = (index: number, cambios: Partial<BloqueFormData>) => {
+    const actualizados = bloquesWatch.map((b, i) => (i === index ? { ...b, ...cambios } : b));
+    const requiereRecalculo = 'hora_inicio' in cambios || 'duracion_minutos' in cambios;
+    replace(requiereRecalculo ? recalcularBloques(actualizados) : actualizados);
+  };
+
+  // Pegar bloques copiados desde Excel (ver hook usePasteRows)
+  const { handlePaste: handlePasteBloques } = usePasteRows<{
+    nombre: string;
+    descripcion: string;
+    hora_inicio: string;
+    duracion_minutos?: number;
+    materiales_necesarios: string;
+    observaciones: string;
+  }>(bloqueProgramaSheet, (bloquesPegados) => {
+    const nuevos = bloquesPegados.map((b) => ({
+      ...bloqueVacio(b.hora_inicio || '08:00'),
+      nombre: b.nombre,
+      descripcion: b.descripcion,
+      duracion_minutos: b.duracion_minutos || 30,
+      materiales_necesarios: b.materiales_necesarios,
+      observaciones: b.observaciones,
+    }));
+    const soloUnoVacio = fields.length === 1 && !bloquesWatch[0]?.nombre;
+    const base = soloUnoVacio ? [] : bloquesWatch;
+    replace(recalcularBloques([...base, ...nuevos]));
+  });
+
+  const onPasteBloques = (event: React.ClipboardEvent) => {
+    const resultado = handlePasteBloques(event);
+    if (!resultado) return;
+    if (resultado.rowsAdded > 0) {
+      toast.success(`${resultado.rowsAdded} bloque(s) agregado(s) desde Excel`);
+    }
+    if (resultado.errorMessages.length > 0) {
+      toast.error(`${resultado.errorMessages.length} fila(s) no se pudieron agregar`, {
+        description: resultado.errorMessages.slice(0, 3).join(' · '),
+      });
+    }
   };
 
   const siguientePaso = async () => {
@@ -220,7 +285,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   const onSubmit = async (data: ProgramaFormData) => {
     try {
       setGuardando(true);
-      
+
       if (esEdicion && programaEditar) {
         // MODO EDICIÓN: Actualizar programa existente con bloques
         await ActividadesExteriorService.actualizarProgramaCompleto(programaEditar.id, {
@@ -234,13 +299,13 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
             id: b.id, // Si tiene id, se actualiza; si no, se crea
             nombre: b.nombre,
             descripcion: b.descripcion,
-            tipo_bloque: b.tipo_bloque,
             hora_inicio: b.hora_inicio,
-            hora_fin: b.hora_fin,
+            duracion_minutos: b.duracion_minutos,
+            responsable_id: b.responsable_id || undefined,
             materiales_necesarios: b.materiales_necesarios,
+            observaciones: b.observaciones,
             orden: index + 1,
-            otorga_puntaje: b.otorga_puntaje,
-            puntaje_maximo: b.puntaje_maximo,
+            objetivo_ids: b.objetivo_ids,
           })),
         });
         toast.success('Programa actualizado exitosamente');
@@ -256,13 +321,13 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
           bloques: data.bloques.map((b, index) => ({
             nombre: b.nombre,
             descripcion: b.descripcion,
-            tipo_bloque: b.tipo_bloque,
             hora_inicio: b.hora_inicio,
-            hora_fin: b.hora_fin,
+            duracion_minutos: b.duracion_minutos,
+            responsable_id: b.responsable_id || undefined,
             materiales_necesarios: b.materiales_necesarios,
+            observaciones: b.observaciones,
             orden: index + 1,
-            otorga_puntaje: b.otorga_puntaje,
-            puntaje_maximo: b.puntaje_maximo,
+            objetivo_ids: b.objetivo_ids,
           })),
         });
         toast.success('Programa agregado exitosamente');
@@ -358,7 +423,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
                 <div className="space-y-2">
                   <Label htmlFor="fecha">Fecha *</Label>
-                  <Input 
+                  <Input
                     id="fecha"
                     type="date"
                     min={fechaInicio}
@@ -371,7 +436,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre / Tema del Día *</Label>
-                <Input 
+                <Input
                   id="nombre"
                   placeholder="Ej: Día de la Aventura, Noche de Fogata..."
                   {...register('nombre')}
@@ -381,7 +446,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="descripcion">Descripción</Label>
-                <Textarea 
+                <Textarea
                   id="descripcion"
                   placeholder="Objetivos y descripción general del programa..."
                   className="resize-none"
@@ -395,11 +460,11 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                   <Label htmlFor="hora_inicio">Hora de Inicio *</Label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
+                    <Input
                       id="hora_inicio"
-                      type="time" 
-                      className="pl-10" 
-                      {...register('hora_inicio')} 
+                      type="time"
+                      className="pl-10"
+                      {...register('hora_inicio')}
                     />
                   </div>
                   {errors.hora_inicio && <p className="text-sm text-red-500">{errors.hora_inicio.message}</p>}
@@ -409,11 +474,11 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                   <Label htmlFor="hora_fin">Hora de Fin</Label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
+                    <Input
                       id="hora_fin"
-                      type="time" 
-                      className="pl-10" 
-                      {...register('hora_fin')} 
+                      type="time"
+                      className="pl-10"
+                      {...register('hora_fin')}
                     />
                   </div>
                 </div>
@@ -423,12 +488,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
           {/* Paso 2: Bloques de actividades */}
           {paso === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4" onPaste={onPasteBloques}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium">Bloques de Actividades</h3>
                   <p className="text-sm text-muted-foreground">
-                    Agrega las actividades hora por hora
+                    Mismos campos que "Agregar Actividad" en Programación. También puedes copiar
+                    celdas desde Excel (nombre, descripción, hora_inicio, duracion_minutos,
+                    materiales_necesarios, observaciones) y pegarlas aquí con Ctrl+V.
                   </p>
                 </div>
                 <Button type="button" variant="outline" onClick={agregarBloque}>
@@ -457,7 +524,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-2">
                           <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-move" />
-                          
+
                           <div className="flex-1 space-y-3">
                             {/* Mostrar ID si existe (para debug en edición) */}
                             {bloquesWatch[index]?.id && (
@@ -465,44 +532,40 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                                 ID: {bloquesWatch[index].id?.slice(0, 8)}...
                               </Badge>
                             )}
-                            
-                            <div className="grid grid-cols-3 gap-3">
+
+                            <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
-                                <Label className="text-xs">Desde</Label>
-                                <Input 
-                                  type="time" 
-                                  {...register(`bloques.${index}.hora_inicio`)} 
+                                <Label className="text-xs">Hora de Inicio</Label>
+                                <Input
+                                  type="time"
+                                  disabled={index > 0}
+                                  value={bloquesWatch[index]?.hora_inicio || ''}
+                                  onChange={(e) => actualizarBloqueLocal(index, { hora_inicio: e.target.value })}
                                 />
+                                {index > 0 && (
+                                  <p className="text-[11px] text-gray-500">Se calcula según el bloque anterior.</p>
+                                )}
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-xs">Hasta</Label>
-                                <Input 
-                                  type="time" 
-                                  {...register(`bloques.${index}.hora_fin`)} 
+                                <Label className="text-xs">Duración (minutos)</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={bloquesWatch[index]?.duracion_minutos ?? ''}
+                                  onChange={(e) => actualizarBloqueLocal(index, {
+                                    duracion_minutos: e.target.value === '' ? 0 : parseInt(e.target.value, 10),
+                                  })}
                                 />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs">Tipo</Label>
-                                <Select 
-                                  value={bloquesWatch[index]?.tipo_bloque || 'ACTIVIDAD'} 
-                                  onValueChange={(v) => setValue(`bloques.${index}.tipo_bloque`, v)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Tipo" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {TIPOS_BLOQUE.map(t => (
-                                      <SelectItem key={t.value} value={t.value}>
-                                        {t.emoji} {t.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                {errors.bloques?.[index]?.duracion_minutos && (
+                                  <p className="text-xs text-red-500">
+                                    {errors.bloques[index]?.duracion_minutos?.message}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
                             <div className="space-y-1">
-                              <Input 
+                              <Input
                                 placeholder="Nombre de la actividad..."
                                 {...register(`bloques.${index}.nombre`)}
                               />
@@ -513,55 +576,67 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                               )}
                             </div>
 
-                            <Textarea 
+                            <Textarea
                               placeholder="Descripción (opcional)..."
                               className="resize-none"
                               rows={2}
                               {...register(`bloques.${index}.descripcion`)}
                             />
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`otorga-${index}`}
-                                    checked={bloquesWatch[index]?.otorga_puntaje || false}
-                                    onCheckedChange={(checked) => 
-                                      setValue(`bloques.${index}.otorga_puntaje`, !!checked)
-                                    }
-                                  />
-                                  <Label 
-                                    htmlFor={`otorga-${index}`}
-                                    className="flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <Trophy className="h-4 w-4 text-yellow-500" />
-                                    Otorga puntaje
-                                  </Label>
-                                </div>
-                                
-                                {bloquesWatch[index]?.otorga_puntaje && (
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-sm">Máx:</Label>
-                                    <Input 
-                                      type="number"
-                                      className="w-20"
-                                      {...register(`bloques.${index}.puntaje_maximo`, {
-                                        valueAsNumber: true
-                                      })}
-                                    />
-                                    <span className="text-sm text-muted-foreground">pts</span>
-                                  </div>
-                                )}
-                              </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5" /> Responsable
+                              </Label>
+                              <Select
+                                value={bloquesWatch[index]?.responsable_id || ''}
+                                onValueChange={(v) => setValue(`bloques.${index}.responsable_id`, v)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona un dirigente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {dirigentes.map((d) => (
+                                    <SelectItem key={d.id} value={d.id}>
+                                      {d.nombre}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
+                            <div className="space-y-1">
+                              <Label className="text-xs">Materiales</Label>
+                              <Input
+                                placeholder="Lista de materiales"
+                                {...register(`bloques.${index}.materiales_necesarios`)}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-xs">Observaciones</Label>
+                              <Textarea
+                                placeholder="Información adicional del bloque..."
+                                className="resize-none"
+                                rows={2}
+                                {...register(`bloques.${index}.observaciones`)}
+                              />
+                            </div>
+
+                            <SelectorObjetivosEducativos
+                              objetivoIds={bloquesWatch[index]?.objetivo_ids || []}
+                              onChange={(ids) => setValue(`bloques.${index}.objetivo_ids`, ids)}
+                            />
+
+                            <div className="flex justify-end">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => remove(index)}
+                                onClick={() => removerBloque(index)}
                                 className="text-red-500 hover:text-red-700"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Eliminar Bloque
                               </Button>
                             </div>
                           </div>
@@ -574,8 +649,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
               {fields.length > 0 && (
                 <Badge variant="outline" className="w-full justify-center py-2">
-                  {fields.length} bloque(s) • 
-                  {bloquesWatch.filter(b => b?.otorga_puntaje).length} con puntaje
+                  {fields.length} bloque(s)
                 </Badge>
               )}
             </div>
@@ -595,8 +669,8 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 Cancelar
               </Button>
               {paso < 2 ? (
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -608,10 +682,10 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 </Button>
               ) : (
                 <Button type="submit" disabled={guardando}>
-                  {guardando 
-                    ? 'Guardando...' 
-                    : esEdicion 
-                      ? 'Actualizar Programa' 
+                  {guardando
+                    ? 'Guardando...'
+                    : esEdicion
+                      ? 'Actualizar Programa'
                       : 'Guardar Programa'
                   }
                 </Button>

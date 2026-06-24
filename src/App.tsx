@@ -6,13 +6,14 @@ import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
 import InscripcionAnual from './components/Inscripcion/InscripcionAnual';
 import ConfiguracionDocumentosInscripcion from './components/Configuracion/ConfiguracionDocumentosInscripcion';
 import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
+import TiposActividadAireLibre from './components/Configuracion/TiposActividadAireLibre';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
 import ComitePadres from './components/ComitePadres/ComitePadres';
 import GestionDocumentos from './components/GestionDocumentos/GestionDocumentos';
 // Módulo de Dirigentes con nuevo diseño Glassmorphism (DNGI-02)
-import DirigentesV2 from './components/DirigentesV2';
+import Dirigentes from './components/Dirigentes';
 import Patrullas from './components/Patrullas/Patrullas';
 import Asistencia from './components/Asistencia/Asistencia';
 import Inventario from './components/Inventario/Inventario';
@@ -104,7 +105,7 @@ function AppContent() {
       case 'mapas':
         return <Maps />;
       case 'dirigentes':
-        return <DirigentesV2 />;
+        return <Dirigentes />;
       case 'comite-padres':
         return <ComitePadres />;
       case 'documentos':
@@ -117,6 +118,8 @@ function AppContent() {
         return <FinanzasDashboard />;
       case 'actividades-exterior':
         return <ActividadesExteriorDashboard />;
+      case 'config-tipos-actividad-aire-libre':
+        return <TiposActividadAireLibre />;
       case 'libro-oro':
         return <LibroOro />;
       case 'programa-semanal':
