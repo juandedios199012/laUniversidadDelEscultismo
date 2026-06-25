@@ -7,10 +7,20 @@
  * de Programación (nombre, descripción, hora_inicio + duración,
  * responsable, materiales, observaciones, Objetivos Educativos), para
  * que ambos formularios se mantengan en paridad.
+ *
+ * Los bloques se manejan con estado plano (useState), indexado por
+ * posición — igual que ProgramaSemanal.tsx — y NO con react-hook-form
+ * useFieldArray. useFieldArray genera un id interno nuevo en cada
+ * replace()/update(), lo que hacía que React desmontara y volviera a
+ * montar TODAS las tarjetas de bloques (con su <SelectorObjetivosEducativos>,
+ * que vuelve a pedir su catálogo al montarse) en cada tecla escrita —
+ * con varios bloques eso disparaba decenas de llamadas a la vez y
+ * colgaba la página. Con estado indexado por posición, React reconcilia
+ * por key=index y solo re-renderiza, sin desmontar nada.
  */
 
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -59,19 +69,8 @@ import SelectorObjetivosEducativos from '@/components/shared/SelectorObjetivosEd
 import ProgresionService from '@/services/progresionService';
 import { resolverMultiplesContraCatalogo, resolverUnoContraCatalogo } from '@/utils/matchTextoCatalogo';
 
-// Schema de validación para bloque (mismos campos que Actividad de Programación)
-const bloqueSchema = z.object({
-  id: z.string().optional(),
-  nombre: z.string().min(2, 'Mínimo 2 caracteres'),
-  descripcion: z.string().optional(),
-  hora_inicio: z.string().min(1, 'Requerido'),
-  duracion_minutos: z.number().min(1, 'Debe ser mayor a 0'),
-  responsable_id: z.string().optional(),
-  materiales_necesarios: z.string().optional(),
-  observaciones: z.string().optional(),
-  objetivo_ids: z.array(z.string()).optional().default([]),
-});
-
+// Schema de validación — solo Paso 1 (info del programa). Los bloques
+// (Paso 2) se validan a mano en validarBloques(), ver más abajo.
 const programaSchema = z.object({
   nombre: z.string().min(3, 'Mínimo 3 caracteres'),
   descripcion: z.string().optional(),
@@ -79,11 +78,21 @@ const programaSchema = z.object({
   fecha: z.string().min(1, 'Selecciona una fecha'),
   hora_inicio: z.string().min(1, 'La hora de inicio es obligatoria'),
   hora_fin: z.string().optional(),
-  bloques: z.array(bloqueSchema),
 });
 
-type BloqueFormData = z.infer<typeof bloqueSchema>;
 type ProgramaFormData = z.infer<typeof programaSchema>;
+
+interface BloqueFormData {
+  id?: string;
+  nombre: string;
+  descripcion: string;
+  hora_inicio: string;
+  duracion_minutos: number;
+  responsable_id: string;
+  materiales_necesarios: string;
+  observaciones: string;
+  objetivo_ids: string[];
+}
 
 interface NuevoProgramaDialogProps {
   open: boolean;
@@ -126,13 +135,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   const [paso, setPaso] = useState(1);
   const [guardando, setGuardando] = useState(false);
   const [dirigentes, setDirigentes] = useState<DirigentDisponible[]>([]);
+  const [bloques, setBloques] = useState<BloqueFormData[]>([]);
+  const [erroresBloques, setErroresBloques] = useState<string | null>(null);
 
   const esEdicion = !!programaEditar;
 
   const {
     register,
     handleSubmit,
-    control,
     watch,
     setValue,
     trigger,
@@ -147,18 +157,11 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
       fecha: '',
       hora_inicio: '06:00',
       hora_fin: '22:00',
-      bloques: [],
     },
     mode: 'onBlur',
   });
 
-  const { fields, replace, update } = useFieldArray({
-    control,
-    name: 'bloques',
-  });
-
   const tipoPrograma = watch('tipo');
-  const bloquesWatch = watch('bloques');
 
   // Dirigentes disponibles para asignar como responsable de un bloque
   useEffect(() => {
@@ -171,12 +174,8 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   // Cargar datos cuando es modo edición
   useEffect(() => {
     if (open && programaEditar) {
-      console.log('Cargando programa para edición:', programaEditar);
-
-      // Mapear tipo del programa
       const tipoMapeado = mapTipoFromDB(programaEditar.tipo);
 
-      // Cargar datos del programa
       setValue('nombre', programaEditar.nombre || '');
       setValue('descripcion', programaEditar.descripcion || '');
       setValue('tipo', tipoMapeado);
@@ -184,24 +183,19 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
       setValue('hora_inicio', programaEditar.hora_inicio || '06:00');
       setValue('hora_fin', programaEditar.hora_fin || '22:00');
 
-      // Cargar bloques existentes
-      if (programaEditar.bloques && programaEditar.bloques.length > 0) {
-        const bloquesFormateados: BloqueFormData[] = programaEditar.bloques.map(b => ({
-          id: b.id || undefined,
-          nombre: b.nombre || '',
-          descripcion: b.descripcion || '',
-          hora_inicio: b.hora_inicio || '08:00',
-          duracion_minutos: b.duracion_minutos || 30,
-          responsable_id: b.responsable_id || '',
-          materiales_necesarios: b.materiales_necesarios || '',
-          observaciones: b.observaciones || '',
-          objetivo_ids: b.objetivo_ids || [],
-        }));
-        replace(bloquesFormateados);
-        console.log('Bloques cargados:', bloquesFormateados);
-      }
+      const bloquesFormateados: BloqueFormData[] = (programaEditar.bloques || []).map(b => ({
+        id: b.id || undefined,
+        nombre: b.nombre || '',
+        descripcion: b.descripcion || '',
+        hora_inicio: b.hora_inicio || '08:00',
+        duracion_minutos: b.duracion_minutos || 30,
+        responsable_id: b.responsable_id || '',
+        materiales_necesarios: b.materiales_necesarios || '',
+        observaciones: b.observaciones || '',
+        objetivo_ids: b.objetivo_ids || [],
+      }));
+      setBloques(bloquesFormateados);
     } else if (open && !programaEditar) {
-      // Resetear para nuevo programa
       reset({
         nombre: '',
         descripcion: '',
@@ -209,41 +203,32 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
         fecha: '',
         hora_inicio: '06:00',
         hora_fin: '22:00',
-        bloques: [],
       });
+      setBloques([]);
     }
-  }, [open, programaEditar, setValue, replace, reset]);
+  }, [open, programaEditar, setValue, reset]);
 
   // Recalcula hora_inicio en cadena: el primer bloque ancla la secuencia
   // (su propia hora si la tiene, si no la hora de inicio del programa);
   // los siguientes se calculan a partir de la duración del anterior.
-  const recalcularBloques = (bloques: BloqueFormData[]): BloqueFormData[] => {
-    const ancla = bloques[0]?.hora_inicio || watch('hora_inicio') || '08:00';
-    return recalcularHorarioSecuencial(bloques, ancla);
+  const recalcularBloques = (lista: BloqueFormData[]): BloqueFormData[] => {
+    const ancla = lista[0]?.hora_inicio || watch('hora_inicio') || '08:00';
+    return recalcularHorarioSecuencial(lista, ancla);
   };
 
   const agregarBloque = () => {
-    replace(recalcularBloques([...bloquesWatch, bloqueVacio('08:00')]));
+    setBloques(prev => recalcularBloques([...prev, bloqueVacio('08:00')]));
   };
 
   const removerBloque = (index: number) => {
-    replace(recalcularBloques(bloquesWatch.filter((_, i) => i !== index)));
+    setBloques(prev => recalcularBloques(prev.filter((_, i) => i !== index)));
   };
 
-  // IMPORTANTE: usa update() fila por fila, nunca replace() aquí. replace()
-  // reemplaza el arreglo completo y React desmonta/remonta TODAS las
-  // tarjetas (incluido el <SelectorObjetivosEducativos> de cada una, que
-  // vuelve a pedir su catálogo al montarse) en cada tecla que se escribe en
-  // un input — con varios bloques eso dispara decenas de llamadas a la vez
-  // y cuelga la página. update() solo toca la fila indicada.
   const actualizarBloqueLocal = (index: number, cambios: Partial<BloqueFormData>) => {
-    const actualizados = bloquesWatch.map((b, i) => (i === index ? { ...b, ...cambios } : b));
-    const requiereRecalculo = 'hora_inicio' in cambios || 'duracion_minutos' in cambios;
-    const finales = requiereRecalculo ? recalcularBloques(actualizados) : actualizados;
-    finales.forEach((bloque, i) => {
-      if (JSON.stringify(bloque) !== JSON.stringify(bloquesWatch[i])) {
-        update(i, bloque);
-      }
+    setBloques(prev => {
+      const actualizados = prev.map((b, i) => (i === index ? { ...b, ...cambios } : b));
+      const requiereRecalculo = 'hora_inicio' in cambios || 'duracion_minutos' in cambios;
+      return requiereRecalculo ? recalcularBloques(actualizados) : actualizados;
     });
   };
 
@@ -276,9 +261,11 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
       responsable_id: resolverUnoContraCatalogo(b.responsable_nombre, dirigentes, (d) => d.nombre) || '',
     }));
 
-    const soloUnoVacio = fields.length === 1 && !bloquesWatch[0]?.nombre;
-    const base = soloUnoVacio ? [] : bloquesWatch;
-    replace(recalcularBloques([...base, ...nuevos]));
+    setBloques(prev => {
+      const soloUnoVacio = prev.length === 1 && !prev[0]?.nombre;
+      const base = soloUnoVacio ? [] : prev;
+      return recalcularBloques([...base, ...nuevos]);
+    });
   };
 
   // Pegar bloques copiados desde Excel (ver hook usePasteRows)
@@ -310,6 +297,19 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
     setTimeout(() => setZonaPegado(''), 0);
   };
 
+  const validarBloques = (): string | null => {
+    for (let i = 0; i < bloques.length; i++) {
+      const b = bloques[i];
+      if (!b.nombre || b.nombre.trim().length < 2) {
+        return `Bloque ${i + 1}: el nombre debe tener al menos 2 caracteres.`;
+      }
+      if (!b.duracion_minutos || b.duracion_minutos < 1) {
+        return `Bloque ${i + 1}: la duración debe ser mayor a 0.`;
+      }
+    }
+    return null;
+  };
+
   const siguientePaso = async () => {
     if (paso === 1) {
       const valid = await trigger(['nombre', 'tipo', 'fecha', 'hora_inicio']);
@@ -324,6 +324,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
   };
 
   const onSubmit = async (data: ProgramaFormData) => {
+    const errorBloques = validarBloques();
+    if (errorBloques) {
+      setErroresBloques(errorBloques);
+      toast.error(errorBloques);
+      return;
+    }
+    setErroresBloques(null);
+
     try {
       setGuardando(true);
 
@@ -336,7 +344,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
           fecha: data.fecha,
           hora_inicio: data.hora_inicio,
           hora_fin: data.hora_fin,
-          bloques: data.bloques.map((b, index) => ({
+          bloques: bloques.map((b, index) => ({
             id: b.id, // Si tiene id, se actualiza; si no, se crea
             nombre: b.nombre,
             descripcion: b.descripcion,
@@ -352,14 +360,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
         toast.success('Programa actualizado exitosamente');
       } else {
         // MODO CREACIÓN: Crear nuevo programa
-        await ActividadesExteriorService.agregarPrograma(actividadId, {
+        const result = await ActividadesExteriorService.agregarPrograma(actividadId, {
           nombre: data.nombre,
           descripcion: data.descripcion,
           tipo: data.tipo as TipoProgramaExterior,
           fecha: data.fecha,
           hora_inicio: data.hora_inicio,
           hora_fin: data.hora_fin,
-          bloques: data.bloques.map((b, index) => ({
+          bloques: bloques.map((b, index) => ({
             nombre: b.nombre,
             descripcion: b.descripcion,
             hora_inicio: b.hora_inicio,
@@ -371,10 +379,12 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
             objetivo_ids: b.objetivo_ids,
           })),
         });
+        void result;
         toast.success('Programa agregado exitosamente');
       }
 
       reset();
+      setBloques([]);
       setPaso(1);
       onOpenChange(false);
       onSuccess();
@@ -388,6 +398,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
 
   const handleClose = () => {
     reset();
+    setBloques([]);
     setPaso(1);
     onOpenChange(false);
   };
@@ -567,7 +578,11 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 />
               </div>
 
-              {fields.length === 0 ? (
+              {erroresBloques && (
+                <p className="text-sm text-red-500">{erroresBloques}</p>
+              )}
+
+              {bloques.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-8 text-center">
                     <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -582,17 +597,17 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {fields.map((field, index) => (
-                    <Card key={field.id} className="relative">
+                  {bloques.map((bloque, index) => (
+                    <Card key={index} className="relative">
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-2">
                           <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-move" />
 
                           <div className="flex-1 space-y-3">
                             {/* Mostrar ID si existe (para debug en edición) */}
-                            {bloquesWatch[index]?.id && (
+                            {bloque.id && (
                               <Badge variant="outline" className="text-xs">
-                                ID: {bloquesWatch[index].id?.slice(0, 8)}...
+                                ID: {bloque.id.slice(0, 8)}...
                               </Badge>
                             )}
 
@@ -602,7 +617,7 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                                 <Input
                                   type="time"
                                   disabled={index > 0}
-                                  value={bloquesWatch[index]?.hora_inicio || ''}
+                                  value={bloque.hora_inicio || ''}
                                   onChange={(e) => actualizarBloqueLocal(index, { hora_inicio: e.target.value })}
                                 />
                                 {index > 0 && (
@@ -614,36 +629,28 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                                 <Input
                                   type="number"
                                   min={1}
-                                  value={bloquesWatch[index]?.duracion_minutos ?? ''}
+                                  value={bloque.duracion_minutos ?? ''}
                                   onChange={(e) => actualizarBloqueLocal(index, {
                                     duracion_minutos: e.target.value === '' ? 0 : parseInt(e.target.value, 10),
                                   })}
                                 />
-                                {errors.bloques?.[index]?.duracion_minutos && (
-                                  <p className="text-xs text-red-500">
-                                    {errors.bloques[index]?.duracion_minutos?.message}
-                                  </p>
-                                )}
                               </div>
                             </div>
 
                             <div className="space-y-1">
                               <Input
                                 placeholder="Nombre de la actividad..."
-                                {...register(`bloques.${index}.nombre`)}
+                                value={bloque.nombre}
+                                onChange={(e) => actualizarBloqueLocal(index, { nombre: e.target.value })}
                               />
-                              {errors.bloques?.[index]?.nombre && (
-                                <p className="text-xs text-red-500">
-                                  {errors.bloques[index]?.nombre?.message}
-                                </p>
-                              )}
                             </div>
 
                             <Textarea
                               placeholder="Descripción (opcional)..."
                               className="resize-none"
                               rows={2}
-                              {...register(`bloques.${index}.descripcion`)}
+                              value={bloque.descripcion}
+                              onChange={(e) => actualizarBloqueLocal(index, { descripcion: e.target.value })}
                             />
 
                             <div className="space-y-1">
@@ -651,8 +658,8 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                                 <Users className="h-3.5 w-3.5" /> Responsable
                               </Label>
                               <Select
-                                value={bloquesWatch[index]?.responsable_id || ''}
-                                onValueChange={(v) => setValue(`bloques.${index}.responsable_id`, v)}
+                                value={bloque.responsable_id || ''}
+                                onValueChange={(v) => actualizarBloqueLocal(index, { responsable_id: v })}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Selecciona un dirigente" />
@@ -671,7 +678,8 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                               <Label className="text-xs">Materiales</Label>
                               <Input
                                 placeholder="Lista de materiales"
-                                {...register(`bloques.${index}.materiales_necesarios`)}
+                                value={bloque.materiales_necesarios}
+                                onChange={(e) => actualizarBloqueLocal(index, { materiales_necesarios: e.target.value })}
                               />
                             </div>
 
@@ -681,13 +689,14 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                                 placeholder="Información adicional del bloque..."
                                 className="resize-none"
                                 rows={2}
-                                {...register(`bloques.${index}.observaciones`)}
+                                value={bloque.observaciones}
+                                onChange={(e) => actualizarBloqueLocal(index, { observaciones: e.target.value })}
                               />
                             </div>
 
                             <SelectorObjetivosEducativos
-                              objetivoIds={bloquesWatch[index]?.objetivo_ids || []}
-                              onChange={(ids) => setValue(`bloques.${index}.objetivo_ids`, ids)}
+                              objetivoIds={bloque.objetivo_ids || []}
+                              onChange={(ids) => actualizarBloqueLocal(index, { objetivo_ids: ids })}
                             />
 
                             <div className="flex justify-end">
@@ -710,9 +719,9 @@ const NuevoProgramaDialog: React.FC<NuevoProgramaDialogProps> = ({
                 </div>
               )}
 
-              {fields.length > 0 && (
+              {bloques.length > 0 && (
                 <Badge variant="outline" className="w-full justify-center py-2">
-                  {fields.length} bloque(s)
+                  {bloques.length} bloque(s)
                 </Badge>
               )}
             </div>
