@@ -86,17 +86,17 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
     try {
       setLoading(true);
       
-      // Obtener scouts activos
+      // Obtener scouts activos. codigo_asociado vive en personas (se movió
+      // de scouts.codigo_asociado a personas.codigo_asociado), por eso se
+      // pide dentro de la relación, no como columna directa de scouts.
       const { data, error } = await supabase
         .from('scouts')
         .select(`
           id,
-          codigo_asociado,
           rama_actual,
-          persona:personas(nombres, apellidos)
+          persona:personas(nombres, apellidos, codigo_asociado)
         `)
-        .eq('estado', 'ACTIVO')
-        .order('codigo_asociado');
+        .eq('estado', 'ACTIVO');
 
       if (error) throw error;
 
@@ -105,12 +105,12 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
         const personaData = Array.isArray(s.persona) ? s.persona[0] : s.persona;
         return {
           id: s.id,
-          codigo: s.codigo_asociado || '',
+          codigo: personaData?.codigo_asociado || '',
           nombre: personaData ? `${personaData.nombres} ${personaData.apellidos}` : 'Sin nombre',
           rama: s.rama_actual || 'Sin rama',
           inscrito: participantesActuales.includes(s.id),
         };
-      });
+      }).sort((a, b) => a.codigo.localeCompare(b.codigo));
 
       setScouts(scoutsData);
     } catch (error) {
