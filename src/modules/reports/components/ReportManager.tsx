@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List, Info } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -100,6 +100,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [matrixMonth, setMatrixMonth] = useState<number>(new Date().getMonth() + 1);
   const [matrixQuarter, setMatrixQuarter] = useState<number>(Math.ceil((new Date().getMonth() + 1) / 3));
   const [matrixYear, setMatrixYear] = useState<number>(new Date().getFullYear());
+  const [matrixMinSessions, setMatrixMinSessions] = useState<number>(4);
 
   // Estado para el reporte "Persona" (DNGI-03): tipo de persona y selección
   const [personaEntityType, setPersonaEntityType] = useState<'SCOUT' | 'DIRIGENTE' | 'COMITE'>('SCOUT');
@@ -662,7 +663,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
-        <AttendanceMatrixTemplate data={matrixData} metadata={metadata} />,
+        <AttendanceMatrixTemplate data={matrixData} metadata={metadata} minSessions={matrixMinSessions} />,
         `matriz_asistencia_${dateFrom}_${dateTo}`
       );
     }
@@ -2215,6 +2216,30 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                     <option value="Comunidad">Comunidad</option>
                     <option value="Clan">Clan</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Minimo de sesiones activas */}
+              <div className="flex items-center gap-3">
+                <div className="w-48">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mín. sesiones activas (TOP 5)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={52}
+                    value={matrixMinSessions}
+                    onChange={(e) => setMatrixMinSessions(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="relative group mt-5">
+                  <Info className="w-5 h-5 text-cyan-500 cursor-help" />
+                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 text-center shadow-lg">
+                    Solo aparecen en el TOP 5 y en las Alertas los scouts con <strong> ≥ {matrixMinSessions} sesión{matrixMinSessions !== 1 ? 'es' : ''} activa{matrixMinSessions !== 1 ? 's' : ''}</strong> en el periodo. Ingresa un número ≥ 1.
+                    <span className="block mt-1 text-gray-400">Evita que scouts nuevos distorsionen el ranking.</span>
+                  </div>
                 </div>
               </div>
             </div>
