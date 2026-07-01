@@ -51,6 +51,8 @@ import {
 import DniCollectionTemplate from '../templates/pdf/DniCollectionTemplate';
 import DniScoutApoderadoTemplate from '../templates/pdf/DniScoutApoderadoTemplate';
 import { createDNGI03WordDocument } from '../templates/word/DNGI03WordTemplate';
+import AttendanceMatrixTemplate from '../templates/pdf/AttendanceMatrixTemplate';
+import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../services/attendanceMatrixService';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -92,6 +94,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [ramaFilter, setRamaFilter] = useState<string>('TODAS');
   const [availableRamas, setAvailableRamas] = useState<string[]>([]);
   const [selectedMassiveScoutId, setSelectedMassiveScoutId] = useState<string>('');
+
+  // Estado para el filtro de Matriz de Asistencia
+  const [matrixMode, setMatrixMode] = useState<'mes' | 'trimestre'>('mes');
+  const [matrixMonth, setMatrixMonth] = useState<number>(new Date().getMonth() + 1);
+  const [matrixQuarter, setMatrixQuarter] = useState<number>(Math.ceil((new Date().getMonth() + 1) / 3));
+  const [matrixYear, setMatrixYear] = useState<number>(new Date().getFullYear());
 
   // Estado para el reporte "Persona" (DNGI-03): tipo de persona y selección
   const [personaEntityType, setPersonaEntityType] = useState<'SCOUT' | 'DIRIGENTE' | 'COMITE'>('SCOUT');
@@ -259,6 +267,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'KPIs, tendencias, ranking por scout y alertas de inasistencia',
           icon: <TrendingUp className="w-6 h-6" />,
           color: 'teal',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.ATTENDANCE_MATRIX,
+          title: 'Matriz de Asistencia',
+          description: 'Scout x sesion: P/F/FJ/N/A, % rendimiento real, totales por fecha',
+          icon: <Calendar className="w-6 h-6" />,
+          color: 'cyan',
           badge: '¡Nuevo!'
         },
         {
@@ -455,6 +471,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.ATTENDANCE_ADVANCED:
           return await exportAttendanceAdvancedReport(format, metadata);
 
+        case ReportType.ATTENDANCE_MATRIX:
+          return await exportAttendanceMatrixReport(format, metadata);
+
         case ReportType.PROGRESS:
           return await exportProgressReport(format, metadata);
 
@@ -619,6 +638,54 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       <AttendanceAdvancedTemplate data={attendanceData} metadata={metadata} dateRange={dateRange} />,
       'reporte_asistencia_avanzado'
     );
+  };
+
+  // Exportar matriz de asistencia
+  const exportAttendanceMatrixReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const { dateFrom, dateTo } = matrixMode === 'mes'
+      ? monthToRange(matrixYear, matrixMonth)
+      : quarterToRange(matrixYear, matrixQuarter);
+
+    const rama = filters.rama || undefined;
+    const matrixData = await getAttendanceMatrixData(dateFrom, dateTo, rama);
+
+    if (matrixData.sessions.length === 0) {
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: 'No se encontraron sesiones en el periodo seleccionado',
+      };
+    }
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <AttendanceMatrixTemplate data={matrixData} metadata={metadata} />,
+        `matriz_asistencia_${dateFrom}_${dateTo}`
+      );
+    }
+
+    // Word export: text-based summary + per-scout list
+    const { scouts, sessions, globalRendimiento } = matrixData;
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Matriz de Asistencia por Scout', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Periodo: ${dateFrom} al ${dateTo}${rama ? ` | Rama: ${rama}` : ''}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Rendimiento global: ${globalRendimiento}% | Scouts: ${scouts.length} | Sesiones: ${sessions.length}` })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Resumen por Scout', bold: true, size: 26 })] }),
+          ...scouts.map(s => new Paragraph({
+            children: [new TextRun({
+              text: `${s.apellidos}, ${s.nombres} (${s.codigo}) — P:${s.presente} F:${s.falta} FJ:${s.justificado} NA:${s.na} | Rend: ${s.rendimiento}%`,
+            })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, `matriz_asistencia_${dateFrom}_${dateTo}`);
   };
 
   // Exportar reporte de progreso
@@ -2065,6 +2132,91 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   </select>
                 </div>
               )}
+            </div>
+          )}
+
+          {selectedReportType === ReportType.ATTENDANCE_MATRIX && (
+            <div className="space-y-4">
+              <p className="text-sm text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-lg px-3 py-2">
+                Matriz Scout x Sesion. Selecciona un mes o trimestre para limitar las columnas y evitar texto ilegible.
+              </p>
+
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMatrixMode('mes')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border ${matrixMode === 'mes' ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-white text-gray-600 border-gray-300 hover:border-cyan-400'}`}
+                >
+                  Por Mes
+                </button>
+                <button
+                  onClick={() => setMatrixMode('trimestre')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border ${matrixMode === 'trimestre' ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-white text-gray-600 border-gray-300 hover:border-cyan-400'}`}
+                >
+                  Por Trimestre
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Month or Quarter selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {matrixMode === 'mes' ? 'Mes' : 'Trimestre'}
+                  </label>
+                  {matrixMode === 'mes' ? (
+                    <select
+                      value={matrixMonth}
+                      onChange={(e) => setMatrixMonth(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    >
+                      {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={matrixQuarter}
+                      onChange={(e) => setMatrixQuarter(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    >
+                      <option value={1}>Q1 — Ene/Mar</option>
+                      <option value={2}>Q2 — Abr/Jun</option>
+                      <option value={3}>Q3 — Jul/Sep</option>
+                      <option value={4}>Q4 — Oct/Dic</option>
+                    </select>
+                  )}
+                </div>
+
+                {/* Year */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                  <select
+                    value={matrixYear}
+                    onChange={(e) => setMatrixYear(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    {[2023, 2024, 2025, 2026, 2027].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Rama */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rama (opcional)</label>
+                  <select
+                    value={filters.rama || ''}
+                    onChange={(e) => setFilters({ ...filters, rama: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="">Todas las ramas</option>
+                    <option value="Manada">Manada</option>
+                    <option value="Tropa">Tropa</option>
+                    <option value="Comunidad">Comunidad</option>
+                    <option value="Clan">Clan</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 

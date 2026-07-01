@@ -280,6 +280,13 @@ function toNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function fmtDateLocal(iso: string): string {
+  const parts = iso.split('T')[0].split('-');
+  if (parts.length !== 3) return iso;
+  const [y, m, d] = parts.map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-PE');
+}
+
 function normalizePuntajes(value: unknown): PuntajeItem[] {
   if (!Array.isArray(value)) return [];
   return value.map((p: any) => ({
@@ -406,7 +413,7 @@ const RankingPatrullasReportTemplate: React.FC<RankingPatrullasReportProps> = ({
           <Text style={styles.title}>Ranking de Patrullas</Text>
           {dateRange && (
             <Text style={styles.subtitle}>
-              Del {new Date(dateRange.from).toLocaleDateString('es-PE')} al {new Date(dateRange.to).toLocaleDateString('es-PE')}
+              Del {fmtDateLocal(dateRange.from)} al {fmtDateLocal(dateRange.to)}
             </Text>
           )}
           <Text style={styles.date}>Generado: {new Date(metadata.generatedAt).toLocaleDateString('es-PE')}</Text>
@@ -517,7 +524,7 @@ const RankingPatrullasReportTemplate: React.FC<RankingPatrullasReportProps> = ({
           <View style={styles.panel}>
             <Text style={styles.blockTitle}>3) Histograma de desempeño</Text>
             <Text style={[styles.smallText, { marginBottom: 6, color: '#64748b' }]}>
-              Alto: ≥{highThreshold} pts | Medio: {midThreshold}–{highThreshold - 1} pts | Bajo: &lt;{midThreshold} pts
+              {`Alto: >= ${highThreshold} pts | Medio: ${midThreshold}-${highThreshold - 1} pts | Bajo: < ${midThreshold} pts`}
             </Text>
             <View style={styles.histogramRow}>
               <Text style={styles.histogramLabel}>Alto (verde)</Text>

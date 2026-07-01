@@ -7,6 +7,7 @@ export enum ReportType {
   SCOUT_PROFILE = 'scout_profile',
   ATTENDANCE = 'attendance',
   ATTENDANCE_ADVANCED = 'attendance_advanced',
+  ATTENDANCE_MATRIX = 'attendance_matrix',
   PROGRESS = 'progress',
   GROUP_SUMMARY = 'group_summary',
   ACTIVITY_HISTORY = 'activity_history',
