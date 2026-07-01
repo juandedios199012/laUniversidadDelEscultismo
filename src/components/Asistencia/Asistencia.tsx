@@ -80,17 +80,23 @@ export default function Asistencia() {
 		setSelectedPatrulla('');
 		
 		try {
-			// Cargar scouts filtrados por la rama del programa
-			if (programa.rama) {
-				const scoutsPorRama = await AsistenciaService.obtenerScoutsPorRama(programa.rama);
-				setScoutsProgramaActual(scoutsPorRama || []);
-			} else {
-				// Si no hay rama, usar todos los scouts activos
-				setScoutsProgramaActual(scouts);
-			}
+			// Cargar scouts elegibles: solo los que ya habían ingresado al grupo en la fecha del programa
+			const { data: rawData, error: scoutsError } = await AsistenciaService.getScoutsElegiblesFecha(
+				programa.fecha,
+				programa.rama || undefined
+			);
+			if (scoutsError) throw scoutsError;
+			const elegibles = (rawData || []).map((s: any) => ({
+				id: s.scout_id,
+				nombres: s.nombres,
+				apellidos: s.apellidos,
+				rama_actual: s.rama_actual,
+				codigo_asociado: s.codigo_asociado,
+			}));
+			setScoutsProgramaActual(elegibles.length > 0 ? elegibles : scouts.filter(s => !programa.rama || s.rama_actual === programa.rama));
 		} catch (error) {
-			console.error('Error cargando scouts por rama:', error);
-			setScoutsProgramaActual(scouts);
+			console.error('Error cargando scouts elegibles:', error);
+			setScoutsProgramaActual(scouts.filter(s => !programa.rama || s.rama_actual === programa.rama));
 		}
 		
 		// Cargar asistencias ya guardadas para este programa
