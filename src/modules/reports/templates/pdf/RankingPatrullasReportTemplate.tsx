@@ -516,6 +516,9 @@ const RankingPatrullasReportTemplate: React.FC<RankingPatrullasReportProps> = ({
         <View style={styles.grid2}>
           <View style={styles.panel}>
             <Text style={styles.blockTitle}>3) Histograma de desempeño</Text>
+            <Text style={[styles.smallText, { marginBottom: 6, color: '#64748b' }]}>
+              Alto: ≥{highThreshold} pts | Medio: {midThreshold}–{highThreshold - 1} pts | Bajo: &lt;{midThreshold} pts
+            </Text>
             <View style={styles.histogramRow}>
               <Text style={styles.histogramLabel}>Alto (verde)</Text>
               <View style={[styles.trendTrack, { maxWidth: 120 }]}>

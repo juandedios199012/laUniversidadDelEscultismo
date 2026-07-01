@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, Users, CheckCircle, Clock, AlertCircle, 
-  Search, Filter, Download, CheckSquare, Square, MinusSquare
+import {
+  Calendar, Users, CheckCircle, Clock, AlertCircle,
+  Search, Filter, Download, CheckSquare, Square, MinusSquare, BarChart3
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
-import ScoutService from '../../services/scoutService';
 import { supabase } from '../../lib/supabase';
 
 // ==================== INTERFACES ====================
@@ -24,7 +23,6 @@ interface Scout {
   apellidos: string;
   rama_actual: string;
   codigo_asociado?: string;
-  estado: string;
 }
 
 interface AsistenciaRegistro {
@@ -72,6 +70,9 @@ export default function AsistenciaOptimizada() {
   useEffect(() => {
     if (programaSeleccionado) {
       cargarAsistenciasExistentes();
+      cargarScoutsElegibles(programaSeleccionado);
+    } else {
+      setScouts([]);
     }
   }, [programaSeleccionado]);
 
@@ -89,10 +90,6 @@ export default function AsistenciaOptimizada() {
 
       if (programasError) throw programasError;
       setProgramas(programasData || []);
-
-      // Cargar scouts activos (excluir inactivos, suspendidos, eliminados)
-      const scoutsData = await ScoutService.getScouts();
-      setScouts(scoutsData.filter(s => s.estado === 'ACTIVO'));
 
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -120,6 +117,30 @@ export default function AsistenciaOptimizada() {
 
     } catch (error) {
       console.error('Error al cargar asistencias:', error);
+    }
+  };
+
+  const cargarScoutsElegibles = async (programa: ProgramaSemanal) => {
+    try {
+      const { data, error } = await AsistenciaService.getScoutsElegiblesFecha(
+        programa.fecha_inicio,
+        programa.rama
+      );
+
+      if (error) throw error;
+
+      setScouts(
+        (data || []).map((s: any) => ({
+          id: s.scout_id,
+          nombres: s.nombres,
+          apellidos: s.apellidos,
+          rama_actual: s.rama_actual,
+          codigo_asociado: s.codigo_asociado,
+        }))
+      );
+    } catch (error) {
+      console.error('Error al cargar scouts elegibles:', error);
+      setScouts([]);
     }
   };
 
@@ -188,12 +209,11 @@ export default function AsistenciaOptimizada() {
   // ============= FILTRADO =============
   const scoutsFiltrados = scouts.filter(scout => {
     const matchRama = !ramaFiltro || scout.rama_actual === ramaFiltro;
-    const matchBusqueda = !busqueda || 
+    const matchBusqueda = !busqueda ||
       `${scout.nombres} ${scout.apellidos}`.toLowerCase().includes(busqueda.toLowerCase()) ||
       (scout.codigo_asociado || '').toLowerCase().includes(busqueda.toLowerCase());
-    const matchPrograma = !programaSeleccionado || scout.rama_actual === programaSeleccionado.rama;
-    
-    return matchRama && matchBusqueda && matchPrograma;
+
+    return matchRama && matchBusqueda;
   });
 
   // ============= ESTADÍSTICAS =============

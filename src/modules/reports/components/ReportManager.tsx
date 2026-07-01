@@ -26,6 +26,7 @@ import {
 } from '../services/reportDataService';
 import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
 import AttendanceReportTemplate from '../templates/pdf/AttendanceReportTemplate';
+import AttendanceAdvancedTemplate from '../templates/pdf/AttendanceAdvancedTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
 import InscripcionesReportTemplate from '../templates/pdf/InscripcionesReportTemplate';
@@ -253,6 +254,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           color: 'green',
         },
         {
+          type: ReportType.ATTENDANCE_ADVANCED,
+          title: 'Asistencia Avanzada',
+          description: 'KPIs, tendencias, ranking por scout y alertas de inasistencia',
+          icon: <TrendingUp className="w-6 h-6" />,
+          color: 'teal',
+          badge: '¡Nuevo!'
+        },
+        {
           type: ReportType.PROGRESS,
           title: 'Progresión Scout',
           description: 'Avance en especialidades y etapas',
@@ -443,6 +452,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.ATTENDANCE:
           return await exportAttendanceReport(format, metadata);
 
+        case ReportType.ATTENDANCE_ADVANCED:
+          return await exportAttendanceAdvancedReport(format, metadata);
+
         case ReportType.PROGRESS:
           return await exportProgressReport(format, metadata);
 
@@ -586,6 +598,27 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       const doc = createAttendanceReportDOCX(attendanceData, metadata, dateRange);
       return await generateAndDownloadDOCX(doc, 'reporte_asistencia');
     }
+  };
+
+  const exportAttendanceAdvancedReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const attendanceData = await getAttendanceData(filters);
+
+    if (attendanceData.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron datos de asistencia para el período seleccionado' };
+    }
+
+    const dateRange = {
+      from: filters.dateFrom || '2024-01-01',
+      to: filters.dateTo || new Date().toISOString().split('T')[0],
+    };
+
+    return await generateAndDownloadPDF(
+      <AttendanceAdvancedTemplate data={attendanceData} metadata={metadata} dateRange={dateRange} />,
+      'reporte_asistencia_avanzado'
+    );
   };
 
   // Exportar reporte de progreso

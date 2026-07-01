@@ -70,10 +70,21 @@ export default function AsistenciaScreen() {
     
     setLoading(true);
     try {
-      // Cargar scouts de la rama del programa
-      const data = await AsistenciaService.obtenerScoutsPorRama(programa.rama);
-      console.log('📦 Scouts recibidos:', data?.length || 0);
-      setScouts(data || []);
+      // Cargar scouts elegibles: solo los que ya habían ingresado al grupo en la fecha del programa
+      const { data: rawData, error: scoutsError } = await AsistenciaService.getScoutsElegiblesFecha(
+        programa.fecha_inicio,
+        programa.rama
+      );
+      if (scoutsError) throw scoutsError;
+      const data = (rawData || []).map((s: any) => ({
+        id: s.scout_id,
+        codigo_asociado: s.codigo_asociado,
+        nombres: s.nombres,
+        apellidos: s.apellidos,
+        rama_actual: s.rama_actual,
+      }));
+      console.log('📦 Scouts elegibles recibidos:', data.length);
+      setScouts(data);
       
       // Cargar asistencias existentes para este programa
       const asistenciasExistentes = await AsistenciaService.obtenerAsistenciasPorPrograma(programaId);
