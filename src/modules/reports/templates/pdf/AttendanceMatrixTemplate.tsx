@@ -37,6 +37,13 @@ function rendColor(r: number): string {
   return '#b91c1c';
 }
 
+function rankColor(rank: number): string {
+  if (rank === 1) return '#d97706'; // oro
+  if (rank === 2) return '#64748b'; // plata
+  if (rank === 3) return '#b45309'; // bronce
+  return '#6b7280';
+}
+
 // ─── date helpers ──────────────────────────────────────────────────────────
 const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -239,9 +246,25 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
   const pctF  = grandTotal > 0 ? Math.round((totalF  / grandTotal) * 100) : 0;
   const pctFJ = grandTotal > 0 ? Math.round((totalFJ / grandTotal) * 100) : 0;
 
-  // Top 5: scouts con >= minSessions sesiones activas, ordenados por rendimiento
-  const top5 = scouts.filter(s => s.totalEvaluadas >= minSessions).slice(0, 5);
-  const maxRendTop = Math.max(...top5.map(s => s.rendimiento), 1);
+  // TOP 5 con empates: incluye TODOS los que alcancen el rendimiento del puesto 5
+  const eligible = scouts.filter(s => s.totalEvaluadas >= minSessions);
+  const top5Threshold = eligible.length >= 5 ? eligible[4].rendimiento : -1;
+  const topScouts = eligible.length <= 5
+    ? eligible
+    : eligible.filter(s => s.rendimiento >= top5Threshold);
+  const hasTies = topScouts.length > 5;
+  const maxRendTop = Math.max(...topScouts.map(s => s.rendimiento), 1);
+
+  // Standard competition ranking: 1, 2, 3, 3, 5 ... (saltea rangos al romper empate)
+  const rankMap = new Map<string, number>();
+  let currentRank = 1;
+  topScouts.forEach((s, i) => {
+    if (i > 0 && s.rendimiento < topScouts[i - 1].rendimiento) currentRank = i + 1;
+    rankMap.set(s.id, currentRank);
+  });
+  // Detectar rangos compartidos por >1 scout
+  const rankCounts = new Map<number, number>();
+  rankMap.forEach(r => rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1));
 
   // Tendencia por sesion: % presentes de cada sesion
   const sessionTrend = sessions.map(sess => {
@@ -461,38 +484,50 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
 
           {/* Panel derecho: TOP 5 Ranking — Barras horizontales */}
           <View style={[S.panel, { flex: 1 }]}>
-            <Text style={S.sectionTitle}>Top 5 Scout — Mayor Rendimiento Real</Text>
+            <Text style={S.sectionTitle}>
+              {hasTies ? 'Top 5 (Con Empates) — Mayor Rendimiento Real' : 'Top 5 Scout — Mayor Rendimiento Real'}
+            </Text>
             <Text style={{ fontSize: 6.5, color: '#6b7280', marginBottom: 8 }}>
-              {`Solo scouts con >= ${minSessions} sesion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.`}
+              {`Solo scouts con >= ${minSessions} sesion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ' Se muestran todos los empatados en el puesto 5.' : ''}`}
             </Text>
 
-            {top5.length > 0 ? top5.map((s, i) => (
-              <View key={s.id} style={S.barRow}>
-                {/* Numero de posicion */}
-                <Text style={{ fontSize: 8, color: '#6b7280', width: 14, textAlign: 'right', marginRight: 4 }}>
-                  {`${i + 1}.`}
-                </Text>
-                {/* Nombre */}
-                <Text style={[S.barLabel, { width: 140 }]} numberOfLines={1}>
-                  {`${s.apellidos}, ${s.nombres}`}
-                </Text>
-                {/* Barra */}
-                <View style={S.barTrack}>
-                  <View style={[S.barFill, {
-                    backgroundColor: rendColor(s.rendimiento),
-                    width: `${Math.max(4, Math.round((s.rendimiento / maxRendTop) * 100))}%`,
-                  }]} />
+            {topScouts.length > 0 ? topScouts.map((s) => {
+              const rank = rankMap.get(s.id) ?? 1;
+              const empate = (rankCounts.get(rank) ?? 1) > 1;
+              return (
+                <View key={s.id} style={S.barRow}>
+                  {/* Numero de posicion con color de medalla */}
+                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: rankColor(rank), width: 18, textAlign: 'right', marginRight: 4 }}>
+                    {`${rank}.`}
+                  </Text>
+                  {/* Nombre */}
+                  <Text style={[S.barLabel, { width: 130 }]} numberOfLines={1}>
+                    {`${s.apellidos}, ${s.nombres}`}
+                  </Text>
+                  {/* Badge empate */}
+                  {empate ? (
+                    <View style={{ backgroundColor: '#fef9c3', borderWidth: 1, borderColor: '#fde047', borderRadius: 3, paddingLeft: 3, paddingRight: 3, marginRight: 4 }}>
+                      <Text style={{ fontSize: 5.5, color: '#92400e', fontFamily: 'Helvetica-Bold' }}>EMPATE</Text>
+                    </View>
+                  ) : <View style={{ width: 0 }} />}
+                  {/* Barra */}
+                  <View style={S.barTrack}>
+                    <View style={[S.barFill, {
+                      backgroundColor: rendColor(s.rendimiento),
+                      width: `${Math.max(4, Math.round((s.rendimiento / maxRendTop) * 100))}%`,
+                    }]} />
+                  </View>
+                  {/* Porcentaje */}
+                  <Text style={[S.barPct, { color: rendColor(s.rendimiento) }]}>
+                    {`${s.rendimiento}%`}
+                  </Text>
+                  {/* Detalle */}
+                  <Text style={{ fontSize: 6.5, color: '#9ca3af', width: 55, textAlign: 'right' }}>
+                    {`${s.presente}P / ${s.falta}F / ${s.justificado}FJ`}
+                  </Text>
                 </View>
-                {/* Porcentaje */}
-                <Text style={[S.barPct, { color: rendColor(s.rendimiento) }]}>
-                  {`${s.rendimiento}%`}
-                </Text>
-                {/* Detalle */}
-                <Text style={{ fontSize: 6.5, color: '#9ca3af', width: 55, textAlign: 'right' }}>
-                  {`${s.presente}P / ${s.falta}F / ${s.justificado}FJ`}
-                </Text>
-              </View>
-            )) : (
+              );
+            }) : (
               <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 10 }}>
                 {`No hay scouts con >= ${minSessions} sesiones activas en este periodo.`}
               </Text>
