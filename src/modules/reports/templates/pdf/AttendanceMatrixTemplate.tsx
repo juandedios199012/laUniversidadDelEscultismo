@@ -215,9 +215,10 @@ interface Props {
   data: AttendanceMatrixData;
   metadata: ReportMetadata;
   minSessions?: number;
+  topN?: number;
 }
 
-const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions = 4 }) => {
+const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions = 4, topN = 5 }) => {
   const { sessions, scouts, globalRendimiento, sessionTotals, dateFrom, dateTo, rama } = data;
   const nSess = sessions.length;
   const colW = sessionColW(nSess);
@@ -246,13 +247,13 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
   const pctF  = grandTotal > 0 ? Math.round((totalF  / grandTotal) * 100) : 0;
   const pctFJ = grandTotal > 0 ? Math.round((totalFJ / grandTotal) * 100) : 0;
 
-  // TOP 5 con empates: incluye TODOS los que alcancen el rendimiento del puesto 5
+  // TOP N con empates: incluye TODOS los que alcancen el rendimiento del puesto topN
   const eligible = scouts.filter(s => s.totalEvaluadas >= minSessions);
-  const top5Threshold = eligible.length >= 5 ? eligible[4].rendimiento : -1;
-  const topScouts = eligible.length <= 5
+  const topNThreshold = eligible.length >= topN ? eligible[topN - 1].rendimiento : -1;
+  const topScouts = eligible.length <= topN
     ? eligible
-    : eligible.filter(s => s.rendimiento >= top5Threshold);
-  const hasTies = topScouts.length > 5;
+    : eligible.filter(s => s.rendimiento >= topNThreshold);
+  const hasTies = topScouts.length > topN;
   const maxRendTop = Math.max(...topScouts.map(s => s.rendimiento), 1);
 
   // Standard competition ranking: 1, 2, 3, 3, 5 ... (saltea rangos al romper empate)
@@ -275,7 +276,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
   const maxTrend = Math.max(...sessionTrend.map(s => s.pct), 1);
   const VBAR_MAX_H = 90; // altura maxima en puntos para la barra mas alta
 
-  // Alertas: rendimiento < 60% con >= minSessions sesiones activas
+  // Alertas: rendimiento < 60% con >= minSessions reuniones activas
   const alerts = scouts.filter(s => s.rendimiento < 60 && s.totalEvaluadas >= minSessions);
 
   // Estado general
@@ -312,7 +313,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
                   <Text style={S.kpiValue}>{`${scouts.length}`}</Text>
                 </View>
                 <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Sesiones en Periodo</Text>
+                  <Text style={S.kpiLabel}>Reuniones en Periodo</Text>
                   <Text style={S.kpiValue}>{`${nSess}`}</Text>
                 </View>
                 <View style={S.kpiCard}>
@@ -371,7 +372,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
             {/* Fila de totales (ultima pagina de matriz) */}
             {isLast && scouts.length > 0 && (
               <View style={S.totalsRow}>
-                <Text style={[S.tdTotalLabel, { width: NAME_W + INGRESO_W }]}>TOTALES POR SESION</Text>
+                <Text style={[S.tdTotalLabel, { width: NAME_W + INGRESO_W }]}>TOTALES POR REUNION</Text>
                 {sessions.map(sess => {
                   const t = sessionTotals[sess.id] ?? { P: 0, F: 0, FJ: 0, NA: 0, total: 0 };
                   return (
@@ -414,7 +415,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
                   ))}
                 </View>
                 <Text style={S.formulaNote}>
-                  {`Formula % Rendimiento = Presentes / (Sesiones activas - Justificadas) x 100`}
+                  {`Formula % Rendimiento = Presentes / (Reuniones activas - Justificadas) x 100`}
                 </Text>
               </>
             )}
@@ -485,10 +486,10 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
           {/* Panel derecho: TOP 5 Ranking — Barras horizontales */}
           <View style={[S.panel, { flex: 1 }]}>
             <Text style={S.sectionTitle}>
-              {hasTies ? 'Top 5 (Con Empates) — Mayor Rendimiento Real' : 'Top 5 Scout — Mayor Rendimiento Real'}
+              {hasTies ? `Top ${topN} (Con Empates) — Mayor Rendimiento Real` : `Top ${topN} Scout — Mayor Rendimiento Real`}
             </Text>
             <Text style={{ fontSize: 6.5, color: '#6b7280', marginBottom: 8 }}>
-              {`Solo scouts con >= ${minSessions} sesion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ' Se muestran todos los empatados en el puesto 5.' : ''}`}
+              {`Solo scouts con >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ` Se muestran todos los empatados en el puesto ${topN}.` : ''}`}
             </Text>
 
             {topScouts.length > 0 ? topScouts.map((s) => {
@@ -529,7 +530,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
               );
             }) : (
               <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 10 }}>
-                {`No hay scouts con >= ${minSessions} sesiones activas en este periodo.`}
+                {`No hay scouts con >= ${minSessions} reuniones activas en este periodo.`}
               </Text>
             )}
           </View>
@@ -538,7 +539,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
 
         {/* ── Fila 2: Tendencia por sesion — Barras verticales ── */}
         <View style={[S.panel, { marginBottom: 10 }]}>
-          <Text style={S.sectionTitle}>Tendencia de Asistencia por Sesion (% presentes)</Text>
+          <Text style={S.sectionTitle}>Tendencia de Asistencia por Reunion (% presentes)</Text>
 
           {sessionTrend.length > 0 ? (
             <View style={[S.vBarArea, { height: VBAR_MAX_H + 30 }]}>
@@ -558,33 +559,33 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
               })}
             </View>
           ) : (
-            <Text style={{ fontSize: 8, color: '#9ca3af' }}>Sin datos de sesiones para graficar.</Text>
+            <Text style={{ fontSize: 8, color: '#9ca3af' }}>Sin datos de reuniones para graficar.</Text>
           )}
         </View>
 
         {/* ── Fila 3: Alertas automaticas ── */}
         <View style={S.alertBox}>
           <Text style={[S.sectionTitle, { color: '#92400e', marginTop: 0 }]}>
-            {`Alertas Automaticas — Scouts con rendimiento critico (<60%, min. ${minSessions} sesion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''})`}
+            {`Alertas Automaticas — Scouts con rendimiento critico (<60%, min. ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''})`}
           </Text>
 
           {alerts.length > 0 ? alerts.slice(0, 8).map(s => (
             <View key={s.id} style={S.alertRow}>
               <Text style={S.alertName}>{`${s.apellidos}, ${s.nombres} (${s.codigo})`}</Text>
               <Text style={[S.alertBadge, { color: rendColor(s.rendimiento) }]}>
-                {`${s.rendimiento}%  —  ${s.presente}P / ${s.falta}F / ${s.justificado}FJ de ${s.totalEvaluadas} sesiones activas`}
+                {`${s.rendimiento}%  —  ${s.presente}P / ${s.falta}F / ${s.justificado}FJ de ${s.totalEvaluadas} reuniones activas`}
               </Text>
             </View>
           )) : (
             <Text style={{ fontSize: 8, color: '#15803d' }}>
-              {`Sin alertas criticas. Todos los scouts con >= ${minSessions} sesiones activas superan el 60% de rendimiento.`}
+              {`Sin alertas criticas. Todos los scouts con >= ${minSessions} reuniones activas superan el 60% de rendimiento.`}
             </Text>
           )}
         </View>
 
         <View style={S.footer}>
           <Text style={S.footerText}>{`${metadata.organizacion} | ${metadata.version}`}</Text>
-          <Text style={S.footerText}>{`Formula: % Rend = Presentes / (Sesiones activas - Justificadas) x 100`}</Text>
+          <Text style={S.footerText}>{`Formula: % Rend = Presentes / (Reuniones activas - Justificadas) x 100`}</Text>
           <Text style={S.footerText}>{`Pag ${totalPages}/${totalPages}`}</Text>
         </View>
 
