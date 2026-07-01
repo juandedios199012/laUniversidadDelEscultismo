@@ -340,7 +340,7 @@ export default function PuntajesScreen() {
     
     // Cargar puntajes existentes para este bloque
     try {
-      const puntajesExistentes = await ActividadesExteriorService.obtenerPuntajesBloque(bloque.id);
+      const puntajesExistentes = await ActividadesExteriorService.obtenerPuntajesBloqueMapa(bloque.id);
       if (Object.keys(puntajesExistentes).length > 0) {
         setPuntajesAL(puntajesExistentes);
       }

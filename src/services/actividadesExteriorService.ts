@@ -1177,9 +1177,10 @@ export class ActividadesExteriorService {
   }
 
   /**
-   * Obtiene los puntajes registrados para un bloque específico
+   * Obtiene los puntajes de un bloque como mapa { patrulla_actividad_id: puntaje }
+   * Usar cuando se necesite acceso directo por ID sin iterar el array.
    */
-  static async obtenerPuntajesBloque(
+  static async obtenerPuntajesBloqueMapa(
     bloqueId: string
   ): Promise<Record<string, number>> {
     const { data, error } = await supabase.rpc('api_obtener_puntajes_bloque', {
@@ -1189,12 +1190,11 @@ export class ActividadesExteriorService {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al obtener puntajes');
 
-    // Convertir array a objeto { patrulla_actividad_id: puntaje }
-    const puntajes = data.puntajes || [];
+    const puntajes: Array<{ patrulla_actividad_id?: string; puntaje?: number }> = data.data || [];
     const resultado: Record<string, number> = {};
     for (const p of puntajes) {
       if (p.patrulla_actividad_id) {
-        resultado[p.patrulla_actividad_id] = p.puntaje;
+        resultado[p.patrulla_actividad_id] = p.puntaje ?? 0;
       }
     }
     return resultado;

@@ -293,13 +293,13 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
                   <Text style={S.kpiValue}>{`${nSess}`}</Text>
                 </View>
                 <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Rendimiento alto (>=80%)</Text>
+                  <Text style={S.kpiLabel}>{`Rendimiento alto (>=80%)`}</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>
                     {`${scouts.filter(s => s.rendimiento >= 80).length}`}
                   </Text>
                 </View>
                 <View style={S.kpiCardLast}>
-                  <Text style={S.kpiLabel}>Rendimiento bajo (<60%)</Text>
+                  <Text style={S.kpiLabel}>{`Rendimiento bajo (<60%)`}</Text>
                   <Text style={[S.kpiValue, { color: '#b91c1c' }]}>
                     {`${scouts.filter(s => s.rendimiento < 60 && s.totalEvaluadas > 0).length}`}
                   </Text>
