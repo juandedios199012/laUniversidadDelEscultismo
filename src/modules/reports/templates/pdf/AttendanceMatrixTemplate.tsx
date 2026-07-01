@@ -247,31 +247,29 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
   const pctF  = grandTotal > 0 ? Math.round((totalF  / grandTotal) * 100) : 0;
   const pctFJ = grandTotal > 0 ? Math.round((totalFJ / grandTotal) * 100) : 0;
 
-  // TOP N con empates.
-  // Regla: si el pool elegible no supera topN x 1.5, se muestran TODOS (pool pequeño).
-  // Solo se aplica el corte duro cuando hay significativamente más elegibles que el cap.
+  // TOP N con empates — algoritmo de referencia:
+  // Si hay <= topN elegibles se muestran todos; si hay más, se corta en el rendimiento
+  // del scout en posición topN e incluye a todos los que empaten en ese umbral.
   const eligible = scouts.filter(s => s.totalEvaluadas >= minSessions);
-  const softLimit = Math.ceil(topN * 1.5);
-  const applyHardCut = eligible.length > softLimit;
-  const topNThreshold = applyHardCut && eligible.length >= topN
-    ? eligible[topN - 1].rendimiento
-    : -1;
-  const topScouts = !applyHardCut
+  const topScouts = eligible.length <= topN
     ? eligible
-    : eligible.filter(s => s.rendimiento >= topNThreshold);
+    : eligible.filter(s => s.rendimiento >= eligible[topN - 1].rendimiento);
   const hasTies = topScouts.length > topN;
   const maxRendTop = Math.max(...topScouts.map(s => s.rendimiento), 1);
 
-  // Standard competition ranking: 1, 2, 3, 3, 5 ... (saltea rangos al romper empate)
-  const rankMap = new Map<string, number>();
-  let currentRank = 1;
-  topScouts.forEach((s, i) => {
-    if (i > 0 && s.rendimiento < topScouts[i - 1].rendimiento) currentRank = i + 1;
-    rankMap.set(s.id, currentRank);
+  // Rank visual: incrementa solo cuando cambia el rendimiento (estándar competición)
+  const rendimientoCount = new Map<number, number>();
+  topScouts.forEach(s => {
+    rendimientoCount.set(s.rendimiento, (rendimientoCount.get(s.rendimiento) ?? 0) + 1);
   });
-  // Detectar rangos compartidos por >1 scout
-  const rankCounts = new Map<number, number>();
-  rankMap.forEach(r => rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1));
+  const puestosMap = new Map<string, number>();
+  let _puestoVisual = 0;
+  let _ultimoRend: number | null = null;
+  topScouts.forEach((s, idx) => {
+    if (s.rendimiento !== _ultimoRend) _puestoVisual = idx + 1;
+    puestosMap.set(s.id, _puestoVisual);
+    _ultimoRend = s.rendimiento;
+  });
 
   // Tendencia por sesion: % presentes de cada sesion
   const sessionTrend = sessions.map(sess => {
@@ -492,21 +490,21 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
           {/* Panel derecho: TOP 5 Ranking — Barras horizontales */}
           <View style={[S.panel, { flex: 1 }]}>
             <Text style={S.sectionTitle}>
-              {!applyHardCut && topScouts.length > topN
-                ? `Top ${topN} — Todos los Elegibles (${topScouts.length})`
+              {eligible.length <= topN
+                ? `Top ${eligible.length} Scout — Mayor Rendimiento Real`
                 : hasTies
                   ? `Top ${topN} (Con Empates) — Mayor Rendimiento Real`
                   : `Top ${topN} Scout — Mayor Rendimiento Real`}
             </Text>
             <Text style={{ fontSize: 6.5, color: '#6b7280', marginBottom: 8 }}>
-              {!applyHardCut && topScouts.length > topN
-                ? `Se muestran los ${topScouts.length} scouts elegibles (todos cumplen >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''}). Pool pequeno: no se aplica corte.`
-                : `Solo scouts con >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ` Se muestran todos los empatados en el puesto ${topN}.` : ''}`}
+              {eligible.length <= topN
+                ? `Se muestran los ${eligible.length} scouts elegibles (todos cumplen >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''}).`
+                : `Solo scouts con >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ` Empate en el puesto ${topN}: se incluyen ${topScouts.length - topN} adicionales.` : ''}`}
             </Text>
 
             {topScouts.length > 0 ? topScouts.map((s) => {
-              const rank = rankMap.get(s.id) ?? 1;
-              const empate = (rankCounts.get(rank) ?? 1) > 1;
+              const rank = puestosMap.get(s.id) ?? 1;
+              const empate = (rendimientoCount.get(s.rendimiento) ?? 1) > 1;
               return (
                 <View key={s.id} style={S.barRow}>
                   {/* Numero de posicion con color de medalla */}
