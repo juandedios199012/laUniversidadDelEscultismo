@@ -247,10 +247,16 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
   const pctF  = grandTotal > 0 ? Math.round((totalF  / grandTotal) * 100) : 0;
   const pctFJ = grandTotal > 0 ? Math.round((totalFJ / grandTotal) * 100) : 0;
 
-  // TOP N con empates: incluye TODOS los que alcancen el rendimiento del puesto topN
+  // TOP N con empates.
+  // Regla: si el pool elegible no supera topN x 1.5, se muestran TODOS (pool pequeño).
+  // Solo se aplica el corte duro cuando hay significativamente más elegibles que el cap.
   const eligible = scouts.filter(s => s.totalEvaluadas >= minSessions);
-  const topNThreshold = eligible.length >= topN ? eligible[topN - 1].rendimiento : -1;
-  const topScouts = eligible.length <= topN
+  const softLimit = Math.ceil(topN * 1.5);
+  const applyHardCut = eligible.length > softLimit;
+  const topNThreshold = applyHardCut && eligible.length >= topN
+    ? eligible[topN - 1].rendimiento
+    : -1;
+  const topScouts = !applyHardCut
     ? eligible
     : eligible.filter(s => s.rendimiento >= topNThreshold);
   const hasTies = topScouts.length > topN;
@@ -486,10 +492,16 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
           {/* Panel derecho: TOP 5 Ranking — Barras horizontales */}
           <View style={[S.panel, { flex: 1 }]}>
             <Text style={S.sectionTitle}>
-              {hasTies ? `Top ${topN} (Con Empates) — Mayor Rendimiento Real` : `Top ${topN} Scout — Mayor Rendimiento Real`}
+              {!applyHardCut && topScouts.length > topN
+                ? `Top ${topN} — Todos los Elegibles (${topScouts.length})`
+                : hasTies
+                  ? `Top ${topN} (Con Empates) — Mayor Rendimiento Real`
+                  : `Top ${topN} Scout — Mayor Rendimiento Real`}
             </Text>
             <Text style={{ fontSize: 6.5, color: '#6b7280', marginBottom: 8 }}>
-              {`Solo scouts con >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ` Se muestran todos los empatados en el puesto ${topN}.` : ''}`}
+              {!applyHardCut && topScouts.length > topN
+                ? `Se muestran los ${topScouts.length} scouts elegibles (todos cumplen >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''}). Pool pequeno: no se aplica corte.`
+                : `Solo scouts con >= ${minSessions} reunion${minSessions !== 1 ? 'es' : ''} activa${minSessions !== 1 ? 's' : ''} en el periodo.${hasTies ? ` Se muestran todos los empatados en el puesto ${topN}.` : ''}`}
             </Text>
 
             {topScouts.length > 0 ? topScouts.map((s) => {
