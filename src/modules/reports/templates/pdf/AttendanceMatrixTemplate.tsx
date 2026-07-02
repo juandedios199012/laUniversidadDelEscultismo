@@ -444,8 +444,8 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
           </Text>
         </View>
 
-        {/* ── Fila 1: Distribucion global + TOP 5 ── */}
-        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        {/* ── Fila 1: Distribucion global + TOP N ── */}
+        <View style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start' }}>
 
           {/* Panel izquierdo: Grafico de Pastel (simulado) */}
           <View style={[S.panel, { width: 260, marginRight: 10 }]}>
