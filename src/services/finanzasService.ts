@@ -101,6 +101,7 @@ export interface NuevoMovimientoPersona {
   concepto: string;
   monto: number;
   cantidad?: number;
+  precio_unitario?: number;
   fecha?: string;
   notas?: string;
 }
@@ -123,6 +124,7 @@ export interface MovimientoPersona {
   concepto: string;
   monto: number;
   cantidad?: number;
+  precio_unitario?: number;
   fecha: string;
   notas?: string;
   created_at?: string;
@@ -177,6 +179,7 @@ export interface ConceptoFinanzas {
   id: string;
   descripcion: string;
   requiere_cantidad: boolean;
+  precio_unitario?: number;
   fecha: string;
   activo: boolean;
 }
@@ -202,6 +205,7 @@ export class FinanzasService {
     id?: string | null;
     descripcion: string;
     requiere_cantidad: boolean;
+    precio_unitario?: number;
     fecha: string;
     activo: boolean;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -209,6 +213,7 @@ export class FinanzasService {
       p_id: concepto.id || null,
       p_descripcion: concepto.descripcion,
       p_requiere_cantidad: concepto.requiere_cantidad,
+      p_precio_unitario: concepto.precio_unitario ?? null,
       p_fecha: concepto.fecha,
       p_activo: concepto.activo,
     });
@@ -562,6 +567,33 @@ export class FinanzasService {
     if (!data?.success) throw new Error(data?.error || 'Error al registrar movimiento');
 
     return { movimiento_id: data.movimiento_id, saldo_actual: data.saldo_actual };
+  }
+
+  /**
+   * Edita un movimiento ya registrado (monto, cantidad, precio_unitario,
+   * fecha, notas). Se usa para sumar cobros parciales de una misma venta
+   * en vez de crear un movimiento nuevo cada vez — persona, tipo y
+   * concepto quedan fijos.
+   */
+  static async actualizarMovimientoPersona(
+    movimientoId: string,
+    datos: {
+      monto: number;
+      cantidad?: number;
+      precio_unitario?: number;
+      fecha?: string;
+      notas?: string;
+    }
+  ): Promise<{ saldo_actual: number }> {
+    const { data, error } = await supabase.rpc('api_actualizar_movimiento_persona', {
+      p_id: movimientoId,
+      p_datos: datos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar movimiento');
+
+    return { saldo_actual: data.saldo_actual };
   }
 
   /**

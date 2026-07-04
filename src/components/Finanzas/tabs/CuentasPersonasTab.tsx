@@ -14,6 +14,8 @@ import {
   ArrowDownRight,
   Trash2,
   Loader2,
+  Pencil,
+  CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,7 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
   const [detallePersona, setDetallePersona] = useState<SaldoPersona | null>(null);
   const [movimientos, setMovimientos] = useState<MovimientoPersona[]>([]);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [movimientoAEditar, setMovimientoAEditar] = useState<MovimientoPersona | null>(null);
 
   const cargar = useCallback(async (texto?: string) => {
     try {
@@ -207,11 +210,18 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
         </div>
       )}
 
-      {/* Dialog: nuevo movimiento */}
+      {/* Dialog: nuevo movimiento / editar movimiento */}
       <MovimientoPersonaDialog
-        open={showNuevo}
-        onOpenChange={setShowNuevo}
+        open={showNuevo || !!movimientoAEditar}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowNuevo(false);
+            setMovimientoAEditar(null);
+          }
+        }}
         onSuccess={handleSuccess}
+        personaInicial={movimientoAEditar ? detallePersona : undefined}
+        movimientoEditar={movimientoAEditar}
       />
 
       {/* Dialog: detalle/historial de una persona */}
@@ -241,53 +251,84 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
             <p className="text-center text-muted-foreground py-8">Sin movimientos registrados.</p>
           ) : (
             <div className="space-y-2">
-              {movimientos.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`p-2 rounded-full ${
-                        m.tipo_movimiento === 'INGRESO' ? 'bg-emerald-100' : 'bg-rose-100'
-                      }`}
-                    >
-                      {m.tipo_movimiento === 'INGRESO' ? (
-                        <ArrowUpRight className="h-4 w-4 text-emerald-600" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4 text-rose-600" />
+              {movimientos.map((m) => {
+                const meta =
+                  m.cantidad != null && m.precio_unitario != null
+                    ? m.cantidad * m.precio_unitario
+                    : undefined;
+                const completo = meta != null && m.monto >= meta;
+                return (
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`p-2 rounded-full ${
+                          m.tipo_movimiento === 'INGRESO' ? 'bg-emerald-100' : 'bg-rose-100'
+                        }`}
+                      >
+                        {m.tipo_movimiento === 'INGRESO' ? (
+                          <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <ArrowDownRight className="h-4 w-4 text-rose-600" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{m.concepto}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-PE')}
+                          {m.notas ? ` · ${m.notas}` : ''}
+                        </p>
+                        {meta != null && (
+                          <p className="text-xs mt-0.5 flex items-center gap-1">
+                            <span className="text-muted-foreground">
+                              {formatMonto(m.monto)} / {formatMonto(meta)}
+                            </span>
+                            {completo ? (
+                              <span className="flex items-center gap-0.5 text-emerald-600 font-medium">
+                                <CheckCircle2 className="h-3 w-3" /> Completo
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 font-medium">Pendiente</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`font-semibold ${
+                          m.tipo_movimiento === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {m.tipo_movimiento === 'INGRESO' ? '+' : '-'}
+                        {formatMonto(m.monto)}
+                      </span>
+                      {puedeCrear && (
+                        <button
+                          type="button"
+                          onClick={() => setMovimientoAEditar(m)}
+                          className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Editar movimiento"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                      {puedeEliminar && (
+                        <button
+                          type="button"
+                          onClick={() => eliminarMovimiento(m.id)}
+                          className="p-1.5 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title="Eliminar movimiento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{m.concepto}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-PE')}
-                        {m.notas ? ` · ${m.notas}` : ''}
-                      </p>
-                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span
-                      className={`font-semibold ${
-                        m.tipo_movimiento === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
-                    >
-                      {m.tipo_movimiento === 'INGRESO' ? '+' : '-'}
-                      {formatMonto(m.monto)}
-                    </span>
-                    {puedeEliminar && (
-                      <button
-                        type="button"
-                        onClick={() => eliminarMovimiento(m.id)}
-                        className="p-1.5 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Eliminar movimiento"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
