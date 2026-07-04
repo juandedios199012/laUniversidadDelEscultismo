@@ -100,6 +100,7 @@ export interface NuevoMovimientoPersona {
   tipo_movimiento: TipoMovimientoPersona;
   concepto: string;
   monto: number;
+  cantidad?: number;
   fecha?: string;
   notas?: string;
 }
@@ -121,6 +122,7 @@ export interface MovimientoPersona {
   tipo_movimiento: TipoMovimientoPersona;
   concepto: string;
   monto: number;
+  cantidad?: number;
   fecha: string;
   notas?: string;
   created_at?: string;
@@ -174,7 +176,7 @@ export const METODOS_PAGO: { value: MetodoPago; label: string; emoji: string }[]
 export interface ConceptoFinanzas {
   id: string;
   descripcion: string;
-  cantidad?: number;
+  requiere_cantidad: boolean;
   fecha: string;
   activo: boolean;
 }
@@ -199,14 +201,14 @@ export class FinanzasService {
   static async upsertConceptoFinanzas(concepto: {
     id?: string | null;
     descripcion: string;
-    cantidad?: number;
+    requiere_cantidad: boolean;
     fecha: string;
     activo: boolean;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     const { data, error } = await supabase.rpc('api_upsert_concepto_finanzas', {
       p_id: concepto.id || null,
       p_descripcion: concepto.descripcion,
-      p_cantidad: concepto.cantidad ?? null,
+      p_requiere_cantidad: concepto.requiere_cantidad,
       p_fecha: concepto.fecha,
       p_activo: concepto.activo,
     });

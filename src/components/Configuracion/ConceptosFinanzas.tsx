@@ -10,7 +10,7 @@ interface ModalConceptoProps {
 
 const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar, onGuardado }) => {
   const [descripcion, setDescripcion] = useState(conceptoEditar?.descripcion ?? '');
-  const [cantidad, setCantidad] = useState(conceptoEditar?.cantidad?.toString() ?? '');
+  const [requiereCantidad, setRequiereCantidad] = useState(conceptoEditar?.requiere_cantidad ?? false);
   const [fecha, setFecha] = useState(conceptoEditar?.fecha ?? new Date().toISOString().split('T')[0]);
   const [activo, setActivo] = useState(conceptoEditar?.activo ?? true);
   const [guardando, setGuardando] = useState(false);
@@ -34,7 +34,7 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
       const resultado = await FinanzasService.upsertConceptoFinanzas({
         id: conceptoEditar?.id ?? null,
         descripcion: descripcion.trim(),
-        cantidad: cantidad.trim() ? parseInt(cantidad, 10) : undefined,
+        requiere_cantidad: requiereCantidad,
         fecha,
         activo,
       });
@@ -81,29 +81,27 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-              <input
-                type="number"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                placeholder="Opcional"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
           </div>
+
+          <label className="flex items-center gap-2 p-3 border rounded-lg">
+            <input
+              type="checkbox"
+              checked={requiereCantidad}
+              onChange={(e) => setRequiereCantidad(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="text-sm text-gray-700">Requiere Cantidad (pide un valor numérico al registrar el movimiento)</span>
+          </label>
 
           <label className="flex items-center gap-2 p-3 border rounded-lg">
             <input
@@ -246,7 +244,7 @@ const ConceptosFinanzas: React.FC = () => {
             <thead>
               <tr className="text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 <th className="text-left py-2 px-4">Descripción</th>
-                <th className="text-right py-2 px-4">Cantidad</th>
+                <th className="text-center py-2 px-4">Requiere Cantidad</th>
                 <th className="text-left py-2 px-4">Fecha</th>
                 <th className="text-center py-2 px-4">Activo</th>
                 <th className="text-right py-2 px-4">Acciones</th>
@@ -256,7 +254,13 @@ const ConceptosFinanzas: React.FC = () => {
               {conceptos.map((concepto) => (
                 <tr key={concepto.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-4 font-medium text-gray-900">{concepto.descripcion}</td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-600">{concepto.cantidad ?? '—'}</td>
+                  <td className="py-3 px-4 text-center">
+                    {concepto.requiere_cantidad ? (
+                      <Check className="h-4 w-4 text-green-600 inline" />
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{concepto.fecha}</td>
                   <td className="py-3 px-4 text-center">
                     {concepto.activo ? (

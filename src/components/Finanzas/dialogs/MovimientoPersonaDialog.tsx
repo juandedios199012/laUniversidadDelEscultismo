@@ -55,6 +55,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
   const [monto, setMonto] = useState<string>('');
   const [conceptoSel, setConceptoSel] = useState<string>('');
   const [conceptoOtro, setConceptoOtro] = useState<string>('');
+  const [cantidad, setCantidad] = useState<string>('');
   const [fecha, setFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notas, setNotas] = useState<string>('');
   const [guardando, setGuardando] = useState(false);
@@ -68,6 +69,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setMonto('');
       setConceptoSel('');
       setConceptoOtro('');
+      setCantidad('');
       setFecha(new Date().toISOString().split('T')[0]);
       setNotas('');
     }
@@ -89,12 +91,16 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
 
   const conceptoFinal = conceptoSel === OTRO ? conceptoOtro.trim() : conceptoSel;
   const montoNum = parseFloat(monto);
+  const conceptoObjSel = conceptosDisponibles.find((c) => c.descripcion === conceptoSel);
+  const requiereCantidad = conceptoObjSel?.requiere_cantidad ?? false;
+  const cantidadNum = parseInt(cantidad, 10);
 
   const puedeGuardar =
     !!persona &&
     !isNaN(montoNum) &&
     montoNum > 0 &&
     conceptoFinal.length > 0 &&
+    (!requiereCantidad || (!isNaN(cantidadNum) && cantidadNum > 0)) &&
     !guardando;
 
   const handleGuardar = async () => {
@@ -110,6 +116,10 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       toast.error('Indica el concepto del movimiento');
       return;
     }
+    if (requiereCantidad && (isNaN(cantidadNum) || cantidadNum <= 0)) {
+      toast.error('Este concepto requiere que indiques una cantidad válida');
+      return;
+    }
 
     try {
       setGuardando(true);
@@ -118,6 +128,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
         tipo_movimiento: tipo,
         concepto: conceptoFinal,
         monto: montoNum,
+        cantidad: requiereCantidad ? cantidadNum : undefined,
         fecha,
         notas: notas.trim() || undefined,
       });
@@ -222,7 +233,13 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
           {/* 4. Concepto / Categoría */}
           <div className="space-y-1.5">
             <Label>Concepto</Label>
-            <Select value={conceptoSel} onValueChange={setConceptoSel}>
+            <Select
+              value={conceptoSel}
+              onValueChange={(value) => {
+                setConceptoSel(value);
+                setCantidad('');
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un concepto..." />
               </SelectTrigger>
@@ -245,6 +262,23 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
               />
             )}
           </div>
+
+          {/* 4b. Cantidad — solo si el concepto elegido lo requiere */}
+          {requiereCantidad && (
+            <div className="space-y-1.5">
+              <Label htmlFor="mp-cantidad">Cantidad</Label>
+              <Input
+                id="mp-cantidad"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                placeholder="Ingresa la cantidad..."
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Notas opcionales */}
           <div className="space-y-1.5">
