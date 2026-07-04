@@ -177,7 +177,7 @@ export function PersonSearchCombobox({
                       {persona.roles && persona.roles.length > 0 && (
                         <div className="flex flex-wrap gap-1 shrink-0">
                           {persona.roles.slice(0, 2).map((rol, i) => (
-                            <PersonRoleBadge key={i} tipo={rol.tipo} />
+                            <PersonRoleBadge key={i} tipo={rol.tipo} detalle={rol.detalle} />
                           ))}
                         </div>
                       )}

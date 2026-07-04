@@ -70,6 +70,7 @@ export default function Asistencia() {
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
 	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
 	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
+	const [horaMarcadaMasiva, setHoraMarcadaMasiva] = useState<Record<string, string>>({});
 	const [scoutsProgramaActual, setScoutsProgramaActual] = useState<Scout[]>([]);
 	// ============= DETALLE PROGRAMA =============
 	const [asistenciasPrograma, setAsistenciasPrograma] = useState<any[]>([]);
@@ -113,11 +114,16 @@ export default function Asistencia() {
 		};
 		
 		const estadosGuardados: Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'> = {};
+		const horasMarcadas: Record<string, string> = {};
 		asistenciasGuardadas.forEach(asist => {
 			estadosGuardados[asist.scout_id] = estadoMapInverso[asist.estado_asistencia] || 'presente';
+			if (asist.hora_marcado) {
+				horasMarcadas[asist.scout_id] = asist.hora_marcado;
+			}
 		});
-		
+
 		setAsistenciaMasiva(estadosGuardados);
+		setHoraMarcadaMasiva(horasMarcadas);
 	};
 
 	const handleSelectPatrulla = (patrulla: string) => {
@@ -169,6 +175,7 @@ export default function Asistencia() {
 			setSelectedPrograma(null);
 			setSelectedPatrulla('');
 			setAsistenciaMasiva({});
+			setHoraMarcadaMasiva({});
 			setScoutsProgramaActual([]);
 			alert(`✅ Asistencia actualizada exitosamente (${registros.length} scouts)`);
 		} catch (error) {
@@ -626,6 +633,7 @@ export default function Asistencia() {
 											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
 											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rama</th>
 											<th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hora Marcada</th>
 											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hora Llegada</th>
 											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observaciones</th>
 										</tr>
@@ -649,6 +657,7 @@ export default function Asistencia() {
 															{estadoConfig.label}
 														</span>
 													</td>
+													<td className="px-6 py-4 text-sm text-gray-600">{asist.hora_marcado || '-'}</td>
 													<td className="px-6 py-4 text-sm text-gray-600">{asist.hora_llegada || '-'}</td>
 													<td className="px-6 py-4 text-sm text-gray-600">{asist.observaciones || '-'}</td>
 												</tr>
@@ -695,6 +704,7 @@ export default function Asistencia() {
 									setVistaActual('reuniones');
 									setSelectedPrograma(null);
 									setAsistenciaMasiva({});
+									setHoraMarcadaMasiva({});
 									setScoutsProgramaActual([]);
 								}}
 								className="px-4 py-2 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
@@ -814,6 +824,9 @@ export default function Asistencia() {
 															)}
 															</div>
 															<div className="text-sm text-gray-500">{scout.rama_actual}</div>
+															{tieneRegistro && horaMarcadaMasiva[scout.id] && (
+																<div className="text-xs text-gray-400">⏱ {horaMarcadaMasiva[scout.id]}</div>
+															)}
 														</div>
 													</div>
 												</td>

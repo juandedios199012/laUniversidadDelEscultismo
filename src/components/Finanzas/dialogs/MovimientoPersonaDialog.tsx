@@ -24,7 +24,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -32,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUpRight, ArrowDownRight, DollarSign, CheckCircle2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonSearchCombobox } from '@/components/shared/PersonSearch/PersonSearchCombobox';
 import { PersonaResult } from '@/services/personaService';
@@ -75,7 +74,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
   const [cantidad, setCantidad] = useState<string>('');
   const [precioUnitarioSnapshot, setPrecioUnitarioSnapshot] = useState<number | undefined>(undefined);
   const [fecha, setFecha] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [notas, setNotas] = useState<string>('');
   const [guardando, setGuardando] = useState(false);
   const [conceptosDisponibles, setConceptosDisponibles] = useState<ConceptoFinanzas[]>([]);
 
@@ -92,7 +90,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setCantidad(movimientoEditar.cantidad?.toString() ?? '');
       setPrecioUnitarioSnapshot(movimientoEditar.precio_unitario);
       setFecha(movimientoEditar.fecha);
-      setNotas(movimientoEditar.notas ?? '');
     } else {
       setTipo('INGRESO');
       setMonto('');
@@ -101,7 +98,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setCantidad('');
       setPrecioUnitarioSnapshot(undefined);
       setFecha(new Date().toISOString().split('T')[0]);
-      setNotas('');
     }
   }, [open, personaInicial, movimientoEditar]);
 
@@ -169,7 +165,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
           cantidad: requiereCantidad ? cantidadNum : undefined,
           precio_unitario: requiereCantidad ? precioUnitarioSnapshot : undefined,
           fecha,
-          notas: notas.trim() || undefined,
         });
         toast.success(`Movimiento actualizado. Nuevo saldo: ${formatMonto(saldo_actual)}`);
       } else {
@@ -181,7 +176,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
           cantidad: requiereCantidad ? cantidadNum : undefined,
           precio_unitario: requiereCantidad ? conceptoObjSel?.precio_unitario : undefined,
           fecha,
-          notas: notas.trim() || undefined,
         });
         toast.success(`${tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'} registrado. Nuevo saldo: ${formatMonto(saldo_actual)}`);
       }
@@ -199,8 +193,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-blue-600" />
+          <DialogTitle>
             {esEdicion ? 'Editar Movimiento' : 'Registrar Movimiento'}
           </DialogTitle>
           <DialogDescription>
@@ -359,18 +352,6 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
               </p>
             </div>
           )}
-
-          {/* Notas opcionales */}
-          <div className="space-y-1.5">
-            <Label htmlFor="mp-notas">Notas / referencia (opcional)</Label>
-            <Textarea
-              id="mp-notas"
-              rows={2}
-              placeholder="Detalle adicional, n° de operación, etc."
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-            />
-          </div>
         </div>
 
         <DialogFooter>

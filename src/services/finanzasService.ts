@@ -571,7 +571,7 @@ export class FinanzasService {
 
   /**
    * Edita un movimiento ya registrado (monto, cantidad, precio_unitario,
-   * fecha, notas). Se usa para sumar cobros parciales de una misma venta
+   * fecha). Se usa para sumar cobros parciales de una misma venta
    * en vez de crear un movimiento nuevo cada vez — persona, tipo y
    * concepto quedan fijos.
    */

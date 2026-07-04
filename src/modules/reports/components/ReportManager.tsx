@@ -53,6 +53,7 @@ import DniScoutApoderadoTemplate from '../templates/pdf/DniScoutApoderadoTemplat
 import { createDNGI03WordDocument } from '../templates/word/DNGI03WordTemplate';
 import AttendanceMatrixTemplate from '../templates/pdf/AttendanceMatrixTemplate';
 import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../services/attendanceMatrixService';
+import PersonasIngresosTemplate from '../templates/pdf/PersonasIngresosTemplate';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -376,6 +377,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
+          type: ReportType.PERSONAS_INGRESOS,
+          title: 'Personas e Ingresos',
+          description: 'Movimientos de Cuenta por Persona: ingresos, egresos y saldo por persona',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'teal',
+          badge: '¡Nuevo!'
+        },
+        {
           type: ReportType.REPORTE_ACTIVIDADES,
           title: 'Reporte de Actividades',
           description: 'Programas ejecutados y participación',
@@ -508,6 +517,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.REPORTE_FINANCIERO:
           return await exportFinancieroRamaReport(format, metadata);
+
+        case ReportType.PERSONAS_INGRESOS:
+          return await exportPersonasIngresosReport(format, metadata);
 
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
@@ -1231,6 +1243,41 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       ]}],
     });
     return await generateAndDownloadDOCX(doc, 'reporte_financiero');
+  };
+
+  // Exportar reporte de Personas e Ingresos (Finanzas > Cuenta por Persona)
+  const exportPersonasIngresosReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const { saldos, saldoGlobal } = await FinanzasService.listarSaldosPersonas();
+
+    const totalIngresos = saldos.reduce((s, p) => s + Number(p.total_ingresos || 0), 0);
+    const totalEgresos = saldos.reduce((s, p) => s + Number(p.total_egresos || 0), 0);
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <PersonasIngresosTemplate data={{ saldos, saldoGlobal }} metadata={metadata} />,
+        'personas_ingresos'
+      );
+    }
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Personas e Ingresos', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Personas con movimientos: ${saldos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Saldo global: S/ ${saldoGlobal.toFixed(2)}` })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Detalle por Persona', bold: true, size: 26 })] }),
+          ...saldos.map(p => new Paragraph({
+            children: [new TextRun({
+              text: `${p.apellidos}, ${p.nombres} — Ingresos: S/ ${Number(p.total_ingresos).toFixed(2)} | Egresos: S/ ${Number(p.total_egresos).toFixed(2)} | Saldo: S/ ${Number(p.saldo).toFixed(2)} | Mov.: ${p.movimientos_count}`,
+            })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, 'personas_ingresos');
   };
 
   const exportActividadesReport = async (
@@ -2545,6 +2592,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.PERSONAS_INGRESOS && (
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                💰 Este reporte lista a todas las personas con movimientos en Finanzas &gt; Cuenta por Persona, con sus ingresos, egresos y saldo acumulado a la fecha, sin filtros adicionales.
+              </p>
             </div>
           )}
 

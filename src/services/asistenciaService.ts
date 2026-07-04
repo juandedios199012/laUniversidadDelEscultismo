@@ -405,12 +405,13 @@ export class AsistenciaService {
     scout_id: string;
     estado_asistencia: string;
     hora_llegada?: string;
+    hora_marcado?: string;
     observaciones?: string;
   }>> {
     try {
       const { data, error } = await supabase
         .from('asistencias')
-        .select('scout_id, estado_asistencia, hora_llegada, observaciones')
+        .select('scout_id, estado_asistencia, hora_llegada, hora_marcado, observaciones')
         .eq('actividad_id', actividadId);
 
       if (error) throw error;

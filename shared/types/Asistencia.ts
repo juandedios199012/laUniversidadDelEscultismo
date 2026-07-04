@@ -12,6 +12,8 @@ export interface Asistencia {
   fecha: string;
   estado_asistencia: EstadoAsistencia;
   hora_llegada?: string;
+  /** Hora (hh:mm:ss) en que el estado pasó a PRESENTE/TARDANZA. La calcula un trigger en BD, no se envía desde el cliente. */
+  hora_marcado?: string;
   observaciones?: string;
   registrado_por?: string;
 }

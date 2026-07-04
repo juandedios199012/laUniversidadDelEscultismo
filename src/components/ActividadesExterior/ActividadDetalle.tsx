@@ -1002,7 +1002,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                           <td className="py-3 px-2">
                             <div>
                               <p className="font-medium">{p.scout_nombre}</p>
-                              <p className="text-xs text-muted-foreground">{p.scout_codigo}</p>
+                              <p className="text-xs text-muted-foreground">{p.codigo_asociado}</p>
                             </div>
                           </td>
                           <td 
