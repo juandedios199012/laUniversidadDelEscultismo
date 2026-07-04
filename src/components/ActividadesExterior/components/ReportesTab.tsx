@@ -36,6 +36,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { ANEXOS_AIRE_LIBRE } from '@/modules/reports/services/anexosAireLibreRegistry';
+import { ReportStatus } from '@/modules/reports/types/reportTypes';
 
 interface ReportesTabProps {
   actividad: ActividadExteriorCompleta;
@@ -131,6 +133,7 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
   const [camposSeleccionados, setCamposSeleccionados] = useState<string[]>([]);
   const [formatoExport, setFormatoExport] = useState<'pdf' | 'excel'>('pdf');
   const [exportando, setExportando] = useState(false);
+  const [generandoAnexoId, setGenerandoAnexoId] = useState<string | null>(null);
 
   useEffect(() => {
     cargarDatos();
@@ -153,6 +156,20 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
       console.error('Error cargando datos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generarAnexo = async (anexo: (typeof ANEXOS_AIRE_LIBRE)[number]) => {
+    setGenerandoAnexoId(anexo.id);
+    try {
+      const resultado = await anexo.generar(actividad.id);
+      if (resultado.status === ReportStatus.SUCCESS) {
+        toast.success(`${anexo.label} generado correctamente`);
+      } else {
+        toast.error(resultado.error || `No se pudo generar ${anexo.label}`);
+      }
+    } finally {
+      setGenerandoAnexoId(null);
     }
   };
 
@@ -632,6 +649,29 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Anexos oficiales (ASP) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileDown className="h-5 w-5" />
+            Anexos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {ANEXOS_AIRE_LIBRE.map((anexo) => (
+            <Button
+              key={anexo.id}
+              variant="outline"
+              disabled={generandoAnexoId !== null}
+              onClick={() => generarAnexo(anexo)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {generandoAnexoId === anexo.id ? 'Generando...' : anexo.label}
+            </Button>
+          ))}
         </CardContent>
       </Card>
 

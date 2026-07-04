@@ -5,6 +5,7 @@ import {
 import { saveAs } from 'file-saver';
 import type { CartaData } from './CartaOficialDocumento';
 import { fechaLarga } from './CartaOficialDocumento';
+import { CABECERA_BANNER_URL, CABECERA_EMBLEMA_URL } from './cabeceraDefaults';
 
 type DocxImageType = 'png' | 'jpg' | 'gif' | 'bmp';
 type FetchedImage = { data: ArrayBuffer; type: DocxImageType; width: number; height: number };
@@ -113,9 +114,11 @@ export async function descargarCartaWord(data: CartaData) {
   const justify = AlignmentType.JUSTIFIED;
 
   // Descarga las imágenes en paralelo (cabecera + firma).
+  // El banner y el emblema son assets fijos del grupo; logo_url/emblema_url
+  // de la plantilla solo se usan si alguna vez se necesita sobreescribirlos.
   const [banner, emblema, firma] = await Promise.all([
-    fetchImage(p?.logo_url),
-    fetchImage(p?.emblema_url),
+    fetchImage(p?.logo_url || CABECERA_BANNER_URL),
+    fetchImage(p?.emblema_url || CABECERA_EMBLEMA_URL),
     fetchImage(p?.firma_url_imagen),
   ]);
 

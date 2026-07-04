@@ -580,7 +580,10 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Punto de encuentro</h4>
-                    <p className="text-sm">{actividad.punto_encuentro || 'No especificado'}</p>
+                    <p className="text-sm">{actividad.punto_encuentro_lugar || actividad.punto_encuentro || 'No especificado'}</p>
+                    {actividad.punto_encuentro_referencia && (
+                      <p className="text-xs text-muted-foreground">{actividad.punto_encuentro_referencia}</p>
+                    )}
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Hora concentración</h4>
@@ -1646,17 +1649,26 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
             tipo: actividad.tipo,
             estado: actividad.estado,
             descripcion: actividad.descripcion,
+            participacion_asistencia: actividad.participacion_asistencia,
+            objetivo_general: actividad.objetivo_general,
+            objetivos_especificos: actividad.objetivos_especificos,
+            ods_seleccionados: actividad.ods_seleccionados,
+            cronograma_semanas: actividad.cronograma_semanas,
+            cronograma_actividades: actividad.cronograma_actividades,
             fecha_inicio: actividad.fecha_inicio,
             fecha_fin: actividad.fecha_fin,
             hora_concentracion: actividad.hora_concentracion,
-            punto_encuentro: actividad.punto_encuentro,
+            punto_encuentro_id: actividad.punto_encuentro_id,
             ubicacion: actividad.ubicacion,
             lugar_detalle: actividad.lugar_detalle,
-            max_participantes: actividad.max_participantes,
+            imagen_ubicacion_url: actividad.imagen_ubicacion_url,
             costo_por_participante: actividad.costo_por_participante,
             equipamiento_obligatorio: actividad.equipamiento_obligatorio,
             equipamiento_opcional: actividad.equipamiento_opcional,
             recomendaciones: actividad.recomendaciones,
+            staff: actividad.staff,
+            riesgo_evaluacion: actividad.riesgo_evaluacion,
+            riesgo_protocolo: actividad.riesgo_protocolo,
           }}
         />
       )}

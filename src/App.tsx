@@ -7,6 +7,10 @@ import InscripcionAnual from './components/Inscripcion/InscripcionAnual';
 import ConfiguracionDocumentosInscripcion from './components/Configuracion/ConfiguracionDocumentosInscripcion';
 import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
 import TiposActividadAireLibre from './components/Configuracion/TiposActividadAireLibre';
+import PuntosEncuentroAireLibre from './components/Configuracion/PuntosEncuentroAireLibre';
+import TiposCostoAireLibre from './components/Configuracion/TiposCostoAireLibre';
+import ComisionadoLocal from './components/Configuracion/ComisionadoLocal';
+import ConceptosFinanzas from './components/Configuracion/ConceptosFinanzas';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
@@ -116,10 +120,18 @@ function AppContent() {
         return <Inventario />;
       case 'finanzas':
         return <FinanzasDashboard />;
+      case 'config-conceptos-finanzas':
+        return <ConceptosFinanzas />;
       case 'actividades-exterior':
         return <ActividadesExteriorDashboard />;
       case 'config-tipos-actividad-aire-libre':
         return <TiposActividadAireLibre />;
+      case 'config-puntos-encuentro-aire-libre':
+        return <PuntosEncuentroAireLibre />;
+      case 'config-tipos-costo-aire-libre':
+        return <TiposCostoAireLibre />;
+      case 'config-comisionado-local':
+        return <ComisionadoLocal />;
       case 'libro-oro':
         return <LibroOro />;
       case 'programa-semanal':

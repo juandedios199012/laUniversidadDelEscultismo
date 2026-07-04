@@ -19,6 +19,27 @@ export interface TipoActividadAireLibre {
   total_uso?: number;
 }
 
+export interface PuntoEncuentroAireLibre {
+  id: string;
+  lugar: string;
+  referencia?: string;
+  activo: boolean;
+  total_uso?: number;
+}
+
+export interface TipoCostoAireLibre {
+  id: string;
+  descripcion: string;
+  activo: boolean;
+  total_uso?: number;
+}
+
+export interface CostoActividad {
+  tipo_costo_id: string;
+  descripcion?: string;
+  monto: number;
+}
+
 export type EstadoActividadExterior = 'borrador' | 'planificacion' | 'aprobado' | 'en_curso' | 'finalizado' | 'cancelado';
 
 export type TipoProgramaExterior = 'DIURNO' | 'NOCTURNO';
@@ -37,6 +58,47 @@ export interface RolStaff {
 
 // ============= INTERFACES =============
 
+export interface ObjetivoEspecificoActividad {
+  objetivo_especifico: string;
+  meta: string;
+}
+
+export interface ActividadGanttFila {
+  actividad: string;
+  semanas: boolean[];
+}
+
+export interface ResponsableActividad {
+  persona_id: string;
+  nombre: string;
+  rol: string;
+}
+
+export type SeveridadRiesgo = 'BAJO' | 'MEDIO' | 'ALTO';
+export type FrecuenciaRiesgo = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface RiesgoEvaluacion {
+  actividad_accion?: string;
+  lugar?: string;
+  peligro?: string;
+  riesgo?: string;
+  consecuencia?: string;
+  severidad?: SeveridadRiesgo;
+  frecuencia?: FrecuenciaRiesgo;
+  indice?: number;
+  acciones_preventivas?: string;
+}
+
+export interface RiesgoProtocolo {
+  nombre_procedimiento?: string;
+  responsable_persona_id?: string;
+  responsable_nombre?: string;
+  forma_contacto?: string;
+  pasos_a_realizar?: string;
+  acciones_preventivas?: string;
+  observaciones?: string;
+}
+
 export interface ActividadExteriorResumen {
   id: string;
   codigo: string;
@@ -48,7 +110,6 @@ export interface ActividadExteriorResumen {
   ubicacion: string;
   lugar_detalle?: string;
   costo_por_participante: number;
-  max_participantes?: number;
   participantes_count: number;
   staff_count: number;
   tiene_programa: boolean;
@@ -59,6 +120,9 @@ export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   descripcion?: string;
   hora_concentracion?: string;
   punto_encuentro?: string;
+  punto_encuentro_id?: string | null;
+  punto_encuentro_lugar?: string;
+  punto_encuentro_referencia?: string;
   coordenadas_gps?: string;
   cupo_minimo?: number;
   ramas_participantes?: string[];
@@ -70,6 +134,15 @@ export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   fecha_limite_inscripcion?: string;
   fecha_limite_pago?: string;
   notas_internas?: string;
+  participacion_asistencia?: string;
+  objetivo_general?: string;
+  objetivos_especificos?: ObjetivoEspecificoActividad[];
+  ods_seleccionados?: number[];
+  cronograma_semanas?: number;
+  cronograma_actividades?: ActividadGanttFila[];
+  imagen_ubicacion_url?: string;
+  riesgo_evaluacion?: RiesgoEvaluacion;
+  riesgo_protocolo?: RiesgoProtocolo;
   patrullas_actividad: PatrullaActividad[];
   programas: ProgramaActividad[];
   participantes: ParticipanteActividad[];
@@ -89,16 +162,24 @@ export interface NuevaActividadExterior {
   fecha_inicio: string;
   fecha_fin: string;
   hora_concentracion?: string;
-  punto_encuentro?: string;
+  punto_encuentro_id?: string | null;
   ubicacion: string;
   lugar_detalle?: string;
   coordenadas_gps?: string;
   costo_por_participante?: number;
-  max_participantes?: number;
   cupo_minimo?: number;
   equipamiento_obligatorio?: string;
   equipamiento_opcional?: string;
   recomendaciones?: string;
+  participacion_asistencia?: string;
+  objetivo_general?: string;
+  objetivos_especificos?: ObjetivoEspecificoActividad[];
+  ods_seleccionados?: number[];
+  cronograma_semanas?: number;
+  cronograma_actividades?: ActividadGanttFila[];
+  imagen_ubicacion_url?: string;
+  riesgo_evaluacion?: RiesgoEvaluacion;
+  riesgo_protocolo?: RiesgoProtocolo;
 }
 
 export interface ProgramaActividad {
@@ -151,6 +232,11 @@ export interface ParticipanteActividad {
   scout_id: string;
   scout_nombre: string;
   scout_codigo: string;
+  dni?: string;
+  edad?: number;
+  codigo_asociado?: string;
+  contacto_emergencia_telefono?: string;
+  celular?: string;
   estado_inscripcion?: string;
   confirmado: boolean;
   estado_autorizacion: EstadoAutorizacionExterior;
@@ -169,6 +255,10 @@ export interface StaffActividad {
   id: string;
   persona_id: string;
   nombre: string;
+  dni?: string;
+  edad?: number;
+  codigo_asociado?: string;
+  telefono_contacto?: string;
   rol: string;
   responsabilidades?: string;
   confirmado: boolean;
@@ -762,6 +852,29 @@ export const ESTADOS_ACTIVIDAD_EXTERIOR: { value: EstadoActividadExterior; label
   { value: 'cancelado', label: 'Cancelado', color: 'red' },
 ];
 
+// Catálogo fijo de los 17 Objetivos de Desarrollo Sostenible (ONU).
+// Contenido inmutable, no se administra desde la UI — usado en el paso
+// "ODS" del wizard de Aire Libre (selección múltiple por actividad).
+export const CATALOGO_ODS: { numero: number; nombre: string }[] = [
+  { numero: 1, nombre: 'Fin de la Pobreza' },
+  { numero: 2, nombre: 'Hambre Cero' },
+  { numero: 3, nombre: 'Salud y Bienestar' },
+  { numero: 4, nombre: 'Educación de Calidad' },
+  { numero: 5, nombre: 'Igualdad de Género' },
+  { numero: 6, nombre: 'Agua Limpia y Saneamiento' },
+  { numero: 7, nombre: 'Energía Asequible y No Contaminante' },
+  { numero: 8, nombre: 'Trabajo Decente y Crecimiento Económico' },
+  { numero: 9, nombre: 'Industria, Innovación e Infraestructura' },
+  { numero: 10, nombre: 'Reducción de las Desigualdades' },
+  { numero: 11, nombre: 'Ciudades y Comunidades Sostenibles' },
+  { numero: 12, nombre: 'Producción y Consumo Responsables' },
+  { numero: 13, nombre: 'Acción por el Clima' },
+  { numero: 14, nombre: 'Vida Submarina' },
+  { numero: 15, nombre: 'Vida de Ecosistemas Terrestres' },
+  { numero: 16, nombre: 'Paz, Justicia e Instituciones Sólidas' },
+  { numero: 17, nombre: 'Alianzas para Lograr los Objetivos' },
+];
+
 export const CATEGORIAS_PRESUPUESTO_ACTIVIDAD = [
   { value: 'TRANSPORTE', label: 'Transporte', emoji: '🚌' },
   { value: 'ALIMENTACION', label: 'Alimentación', emoji: '🍽️' },
@@ -943,6 +1056,117 @@ export class ActividadesExteriorService {
   }
 
   /**
+   * Catálogo de Puntos de Encuentro (Aire Libre)
+   */
+  static async listarPuntosEncuentroAireLibre(soloActivos = false): Promise<PuntoEncuentroAireLibre[]> {
+    const { data, error } = await supabase.rpc('api_listar_puntos_encuentro_aire_libre', {
+      p_solo_activos: soloActivos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar puntos de encuentro');
+
+    return data.puntos || [];
+  }
+
+  static async upsertPuntoEncuentroAireLibre(punto: {
+    id?: string | null;
+    lugar: string;
+    referencia?: string;
+    activo: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_punto_encuentro_aire_libre', {
+      p_id: punto.id || null,
+      p_lugar: punto.lugar,
+      p_referencia: punto.referencia || null,
+      p_activo: punto.activo,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarPuntoEncuentroAireLibre(id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_punto_encuentro_aire_libre', {
+      p_id: id,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Catálogo de Tipos de Costo (Aire Libre)
+   */
+  static async listarTiposCostoAireLibre(soloActivos = false): Promise<TipoCostoAireLibre[]> {
+    const { data, error } = await supabase.rpc('api_listar_tipos_costo_aire_libre', {
+      p_solo_activos: soloActivos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar tipos de costo');
+
+    return data.tipos || [];
+  }
+
+  static async upsertTipoCostoAireLibre(tipo: {
+    id?: string | null;
+    descripcion: string;
+    activo: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_tipo_costo_aire_libre', {
+      p_id: tipo.id || null,
+      p_descripcion: tipo.descripcion,
+      p_activo: tipo.activo,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarTipoCostoAireLibre(id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_tipo_costo_aire_libre', {
+      p_id: id,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Guarda (reemplaza) el detalle de costos de una actividad y recalcula
+   * costo_por_participante como la suma de los ítems.
+   */
+  static async guardarCostosActividad(
+    actividadId: string,
+    costos: { tipo_costo_id: string; monto: number }[]
+  ): Promise<{ costo_por_participante: number }> {
+    const { data, error } = await supabase.rpc('api_guardar_costos_actividad', {
+      p_actividad_id: actividadId,
+      p_costos: costos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al guardar los costos de la actividad');
+
+    return { costo_por_participante: data.costo_por_participante };
+  }
+
+  /**
+   * Obtiene el detalle de costos de una actividad (para precargar edición)
+   */
+  static async obtenerCostosActividad(actividadId: string): Promise<CostoActividad[]> {
+    const { data, error } = await supabase.rpc('api_obtener_costos_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener los costos de la actividad');
+
+    return data.data || [];
+  }
+
+  /**
    * Lista actividades con filtros
    */
   static async listarActividades(filtros: {
@@ -987,7 +1211,6 @@ export class ActividadesExteriorService {
       // Mapeo BD -> Frontend
       ubicacion: rawData.lugar || rawData.ubicacion || '',
       lugar_detalle: rawData.direccion || rawData.lugar_detalle || '',
-      max_participantes: rawData.cupo_maximo || rawData.max_participantes,
     };
   }
 
@@ -1027,11 +1250,10 @@ export class ActividadesExteriorService {
       fecha_inicio: updates.fecha_inicio,
       fecha_fin: updates.fecha_fin,
       hora_concentracion: updates.hora_concentracion,
-      punto_encuentro: updates.punto_encuentro,
+      punto_encuentro_id: updates.punto_encuentro_id,
       lugar: updates.ubicacion, // ubicacion -> lugar
       direccion: updates.lugar_detalle, // lugar_detalle -> direccion
       costo_por_participante: updates.costo_por_participante,
-      cupo_maximo: updates.max_participantes, // max_participantes -> cupo_maximo
       equipamiento_obligatorio: updates.equipamiento_obligatorio,
       equipamiento_opcional: updates.equipamiento_opcional,
       recomendaciones: updates.recomendaciones,
@@ -1895,12 +2117,17 @@ export class ActividadesExteriorService {
   static async subirArchivo(
     actividadId: string,
     file: File,
-    tipo: 'documento' | 'comprobante' = 'documento'
+    tipo: 'documento' | 'comprobante' | 'imagen' = 'documento'
   ): Promise<{ url: string; nombre: string }> {
+    const CARPETAS_POR_TIPO: Record<string, string> = {
+      documento: 'documentos',
+      comprobante: 'comprobantes',
+      imagen: 'imagenes',
+    };
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
     const fileName = `${timestamp}_${safeName}`;
-    const filePath = `actividades/${actividadId}/${tipo}s/${fileName}`;
+    const filePath = `actividades/${actividadId}/${CARPETAS_POR_TIPO[tipo]}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('finanzas')

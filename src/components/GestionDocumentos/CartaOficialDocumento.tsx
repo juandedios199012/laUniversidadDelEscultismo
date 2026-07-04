@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import type { PlantillaCarta, Institucion, EventoCarta } from '../../services/documentosService';
+import { CABECERA_BANNER_URL, CABECERA_EMBLEMA_URL } from './cabeceraDefaults';
 
 export interface CartaData {
   plantilla: PlantillaCarta | null;
@@ -116,13 +117,13 @@ const CartaOficialDocumento = forwardRef<HTMLDivElement, CartaData>(
 
     return (
       <div ref={ref} style={S.hoja}>
-        {/* 1. Cabecera de ancho completo: banner (izq.) + emblema (der.) */}
-        {(p?.logo_url || p?.emblema_url) ? (
-          <div style={S.cabecera}>
-            {p?.logo_url ? <img src={p.logo_url} alt="Banner" style={S.cabeceraBanner} /> : <span />}
-            {p?.emblema_url ? <img src={p.emblema_url} alt="Emblema" style={S.cabeceraEmblema} /> : <span />}
-          </div>
-        ) : null}
+        {/* 1. Cabecera de ancho completo: banner (izq.) + emblema (der.).
+               Son assets fijos del grupo; logo_url/emblema_url de la plantilla
+               solo se usan si alguna vez se necesita sobreescribirlos. */}
+        <div style={S.cabecera}>
+          <img src={p?.logo_url || CABECERA_BANNER_URL} alt="Banner SCOUTS Perú" style={S.cabeceraBanner} />
+          <img src={p?.emblema_url || CABECERA_EMBLEMA_URL} alt="Emblema Grupo Scout Lima 12" style={S.cabeceraEmblema} />
+        </div>
 
         {/* 2. Fecha y numeración */}
         <div style={S.fechaBlock}>

@@ -41,6 +41,7 @@ export interface PlantillaCarta {
   carta_prefijo?: string;
   firma_nombre?: string;
   firma_cargo?: string;
+  firma_dni?: string;
   firma_registro?: string;
   firma_url_imagen?: string;
   instagram?: string;

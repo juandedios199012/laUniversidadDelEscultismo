@@ -173,10 +173,7 @@ const ActividadCard: React.FC<{
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span>
-              {actividad.participantes_count} participantes
-              {actividad.max_participantes && ` / ${actividad.max_participantes}`}
-            </span>
+            <span>{actividad.participantes_count} participantes</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="text-sm font-medium">S/</span>

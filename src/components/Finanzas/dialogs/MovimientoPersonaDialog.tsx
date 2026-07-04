@@ -31,7 +31,7 @@ import { PersonaResult } from '@/services/personaService';
 import {
   FinanzasService,
   TipoMovimientoPersona,
-  CONCEPTOS_MOVIMIENTO_PERSONA,
+  ConceptoFinanzas,
 } from '@/services/finanzasService';
 
 interface MovimientoPersonaDialogProps {
@@ -58,6 +58,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
   const [fecha, setFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notas, setNotas] = useState<string>('');
   const [guardando, setGuardando] = useState(false);
+  const [conceptosDisponibles, setConceptosDisponibles] = useState<ConceptoFinanzas[]>([]);
 
   // Reset al abrir/cerrar
   useEffect(() => {
@@ -71,6 +72,20 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setNotas('');
     }
   }, [open, personaInicial]);
+
+  // Cargar catálogo de conceptos (activos) cada vez que se abre el diálogo
+  useEffect(() => {
+    if (!open) return;
+    let activo = true;
+    FinanzasService.listarConceptosFinanzas(true)
+      .then((conceptos) => {
+        if (activo) setConceptosDisponibles(conceptos);
+      })
+      .catch((err) => console.error('Error cargando conceptos:', err));
+    return () => {
+      activo = false;
+    };
+  }, [open]);
 
   const conceptoFinal = conceptoSel === OTRO ? conceptoOtro.trim() : conceptoSel;
   const montoNum = parseFloat(monto);
@@ -212,9 +227,9 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                 <SelectValue placeholder="Selecciona un concepto..." />
               </SelectTrigger>
               <SelectContent>
-                {CONCEPTOS_MOVIMIENTO_PERSONA.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.emoji} {c.label}
+                {conceptosDisponibles.map((c) => (
+                  <SelectItem key={c.id} value={c.descripcion}>
+                    {c.descripcion}
                   </SelectItem>
                 ))}
                 <SelectItem value={OTRO}>✏️ Otro...</SelectItem>

@@ -171,19 +171,59 @@ export const METODOS_PAGO: { value: MetodoPago; label: string; emoji: string }[]
   { value: 'OTRO', label: 'Otro', emoji: '💰' },
 ];
 
-// Conceptos sugeridos para movimientos por persona (extensible con "Otro")
-export const CONCEPTOS_MOVIMIENTO_PERSONA: { value: string; label: string; emoji: string }[] = [
-  { value: 'Sobrante de viaje', label: 'Sobrante de viaje', emoji: '🧳' },
-  { value: 'Actividad económica', label: 'Actividad económica', emoji: '💼' },
-  { value: 'Cuota ordinaria', label: 'Cuota ordinaria', emoji: '📅' },
-  { value: 'Venta de alimentos', label: 'Venta de alimentos', emoji: '🍔' },
-  { value: 'Sobrante de evento/paseo', label: 'Sobrante de evento/paseo', emoji: '🎉' },
-  { value: 'Cuota de membresía', label: 'Cuota de membresía', emoji: '🎟️' },
-];
+export interface ConceptoFinanzas {
+  id: string;
+  descripcion: string;
+  cantidad?: number;
+  fecha: string;
+  activo: boolean;
+}
 
 // ============= SERVICE CLASS =============
 
 export class FinanzasService {
+  /**
+   * Catálogo de Conceptos (Finanzas)
+   */
+  static async listarConceptosFinanzas(soloActivos = false): Promise<ConceptoFinanzas[]> {
+    const { data, error } = await supabase.rpc('api_listar_conceptos_finanzas', {
+      p_solo_activos: soloActivos,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al listar conceptos');
+
+    return data.conceptos || [];
+  }
+
+  static async upsertConceptoFinanzas(concepto: {
+    id?: string | null;
+    descripcion: string;
+    cantidad?: number;
+    fecha: string;
+    activo: boolean;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_upsert_concepto_finanzas', {
+      p_id: concepto.id || null,
+      p_descripcion: concepto.descripcion,
+      p_cantidad: concepto.cantidad ?? null,
+      p_fecha: concepto.fecha,
+      p_activo: concepto.activo,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async eliminarConceptoFinanzas(id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    const { data, error } = await supabase.rpc('api_eliminar_concepto_finanzas', {
+      p_id: id,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
   /**
    * Obtiene el resumen financiero general
    */

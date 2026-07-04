@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { 
+import {
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart, Target
+  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart, Target,
+  MapPin, User
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -82,6 +83,9 @@ const menuGroups: MenuGroup[] = [
       { id: 'asistencia',          label: 'Asistencia',  icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500',    modulo: 'asistencia'          },
       { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent,           gradient: 'from-green-600 to-teal-600',   modulo: 'actividades_exterior' },
       { id: 'config-tipos-actividad-aire-libre', label: 'Tipos de Actividad', icon: Settings, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
+      { id: 'config-puntos-encuentro-aire-libre', label: 'Puntos de Encuentro', icon: MapPin, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
+      { id: 'config-tipos-costo-aire-libre', label: 'Tipos de Costo', icon: Wallet, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
+      { id: 'config-comisionado-local', label: 'Comisionado Local', icon: User, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'mapas',               label: 'Mapas',       icon: Map,            gradient: 'from-emerald-500 to-teal-500', modulo: 'mapas'               },
     ],
   },
@@ -94,6 +98,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'libro-oro',  label: 'Libro de Oro', icon: Book,    gradient: 'from-yellow-500 to-orange-500', modulo: 'libro_oro'  },
       { id: 'inventario', label: 'Inventario',   icon: Package, gradient: 'from-gray-500 to-slate-500',    modulo: 'inventario' },
       { id: 'finanzas',   label: 'Finanzas',     icon: Wallet,  gradient: 'from-emerald-500 to-green-600', modulo: 'finanzas'   },
+      { id: 'config-conceptos-finanzas', label: 'Conceptos', icon: Settings, gradient: 'from-emerald-500 to-green-600', modulo: 'finanzas' },
       { id: 'documentos', label: 'Documentos',   icon: FileText, gradient: 'from-blue-500 to-indigo-500' },
     ],
   },

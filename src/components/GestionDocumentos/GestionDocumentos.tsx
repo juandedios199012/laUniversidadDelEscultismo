@@ -593,12 +593,12 @@ function PlantillaTab({ plantilla, onSaved }: { plantilla: PlantillaCarta | null
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
         <div>
-          <label className={labelCls}>URL del banner (cabecera izquierda)</label>
-          <input className={inputCls} placeholder="https://… banner SCOUTS Perú" value={form.logo_url || ''} onChange={(e) => set('logo_url', e.target.value)} />
+          <label className={labelCls}>URL del banner — opcional, sobrescribe el banner SCOUTS Perú por defecto</label>
+          <input className={inputCls} placeholder="Dejar vacío para usar el banner por defecto" value={form.logo_url || ''} onChange={(e) => set('logo_url', e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>URL del emblema (cabecera derecha)</label>
-          <input className={inputCls} placeholder="https://… emblema del grupo" value={form.emblema_url || ''} onChange={(e) => set('emblema_url', e.target.value)} />
+          <label className={labelCls}>URL del emblema — opcional, sobrescribe el emblema del grupo por defecto</label>
+          <input className={inputCls} placeholder="Dejar vacío para usar el emblema por defecto" value={form.emblema_url || ''} onChange={(e) => set('emblema_url', e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>Prefijo de carta</label>
@@ -615,6 +615,10 @@ function PlantillaTab({ plantilla, onSaved }: { plantilla: PlantillaCarta | null
         <div>
           <label className={labelCls}>Firma — cargo</label>
           <input className={inputCls} value={form.firma_cargo || ''} onChange={(e) => set('firma_cargo', e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Firma — DNI</label>
+          <input className={inputCls} placeholder="Usado también en el Anexo 1 de Aire Libre" value={form.firma_dni || ''} onChange={(e) => set('firma_dni', e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>Firma — registro</label>
