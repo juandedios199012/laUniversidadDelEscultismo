@@ -29,6 +29,15 @@ interface PersonSearchComboboxProps {
   personaVinculada?: PersonaResult | null;
   /** Permite desvincular la persona seleccionada */
   onDesvincular?: () => void;
+  /** Si es true, el badge de rol "Scout" muestra solo la rama (ej. "Tropa" en vez de "Scout Tropa") */
+  simplificarBadgeScout?: boolean;
+}
+
+function formatDetalleRol(rol: { tipo: string; detalle?: string }, simplificarBadgeScout?: boolean): string | undefined {
+  if (simplificarBadgeScout && rol.tipo === 'scout' && rol.detalle) {
+    return rol.detalle.replace(/^Scout\s*/i, '');
+  }
+  return rol.detalle;
 }
 
 export function PersonSearchCombobox({
@@ -38,6 +47,7 @@ export function PersonSearchCombobox({
   className = '',
   personaVinculada,
   onDesvincular,
+  simplificarBadgeScout = false,
 }: PersonSearchComboboxProps) {
   const { query, results, loading, error, setQuery, seleccionar, limpiar, modo } =
     usePersonSearch();
@@ -85,7 +95,7 @@ export function PersonSearchCombobox({
               {personaVinculada.roles && personaVinculada.roles.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {personaVinculada.roles.slice(0, 3).map((rol, i) => (
-                    <PersonRoleBadge key={i} tipo={rol.tipo} detalle={rol.detalle} />
+                    <PersonRoleBadge key={i} tipo={rol.tipo} detalle={formatDetalleRol(rol, simplificarBadgeScout)} />
                   ))}
                 </div>
               )}
@@ -177,7 +187,7 @@ export function PersonSearchCombobox({
                       {persona.roles && persona.roles.length > 0 && (
                         <div className="flex flex-wrap gap-1 shrink-0">
                           {persona.roles.slice(0, 2).map((rol, i) => (
-                            <PersonRoleBadge key={i} tipo={rol.tipo} detalle={rol.detalle} />
+                            <PersonRoleBadge key={i} tipo={rol.tipo} detalle={formatDetalleRol(rol, simplificarBadgeScout)} />
                           ))}
                         </div>
                       )}

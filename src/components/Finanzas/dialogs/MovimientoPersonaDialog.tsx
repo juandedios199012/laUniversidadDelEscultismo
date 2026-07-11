@@ -217,6 +217,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                 personaVinculada={persona}
                 onDesvincular={() => setPersona(null)}
                 placeholder="Buscar por nombre o N° documento..."
+                simplificarBadgeScout
               />
             )}
           </div>

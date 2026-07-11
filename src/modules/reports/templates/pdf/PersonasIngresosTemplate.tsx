@@ -52,6 +52,7 @@ const S = StyleSheet.create({
   },
   headerTitle: { fontSize: 13, color: '#ffffff', fontFamily: 'Helvetica-Bold' },
   headerSub: { fontSize: 7.5, color: '#bfdbfe', textAlign: 'right' },
+  subtitleNote: { fontSize: 7, color: '#6b7280', marginBottom: 6 },
 
   kpiRow: { flexDirection: 'row', marginBottom: 7 },
   kpiCard: {
@@ -157,6 +158,12 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
             </View>
 
             {isFirst && (
+              <Text style={S.subtitleNote}>
+                {`Acumulado de TODOS los conceptos registrados en Finanzas > Cuenta por Persona a la fecha de generación (no corresponde a una sola actividad).`}
+              </Text>
+            )}
+
+            {isFirst && (
               <View style={S.kpiRow}>
                 <View style={S.kpiCard}>
                   <Text style={S.kpiLabel}>Personas con Movimientos</Text>
@@ -189,7 +196,7 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
               <Text style={[S.th, { width: NUM_W }]}>Ingresos</Text>
               <Text style={[S.th, { width: NUM_W }]}>Egresos</Text>
               <Text style={[S.th, { width: NUM_W }]}>Saldo</Text>
-              <Text style={[S.th, { width: MOV_W }]}>Mov.</Text>
+              <Text style={[S.th, { width: MOV_W }]}>N° Mov.</Text>
               <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Última Fecha</Text>
             </View>
 
