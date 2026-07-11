@@ -20,7 +20,6 @@ import {
 import { saveAs } from 'file-saver';
 import {
   ScoutReportData,
-  AttendanceData,
   ProgressData,
   ReportMetadata,
   ReportGenerationResult,
@@ -177,61 +176,6 @@ export function createScoutReportDOCX(
 }
 
 /**
- * Genera reporte de asistencia en formato DOCX
- */
-export function createAttendanceReportDOCX(
-  attendanceData: AttendanceData[],
-  metadata: ReportMetadata,
-  dateRange: { from: string; to: string }
-): Document {
-  const doc = new Document({
-    sections: [
-      {
-        properties: {},
-        children: [
-          // Título
-          new Paragraph({
-            text: 'REPORTE DE ASISTENCIA',
-            heading: HeadingLevel.HEADING_1,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 400 },
-          }),
-
-          // Metadata
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Periodo: ${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`,
-                size: 22,
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-          }),
-
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Generado: ${formatDate(metadata.generatedAt)}`,
-                size: 20,
-                italics: true,
-              }),
-            ],
-            alignment: AlignmentType.RIGHT,
-            spacing: { after: 400 },
-          }),
-
-          // Tabla de asistencia
-          createAttendanceTable(attendanceData),
-        ],
-      },
-    ],
-  });
-
-  return doc;
-}
-
-/**
  * Genera reporte de progreso en formato DOCX
  */
 export function createProgressReportDOCX(
@@ -308,99 +252,6 @@ function createInfoTable(data: [string, string][]): Table {
           ],
         })
     ),
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1 },
-      bottom: { style: BorderStyle.SINGLE, size: 1 },
-      left: { style: BorderStyle.SINGLE, size: 1 },
-      right: { style: BorderStyle.SINGLE, size: 1 },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-    },
-  });
-}
-
-/**
- * Crea una tabla de asistencia
- */
-function createAttendanceTable(data: AttendanceData[]): Table {
-  const headerRow = new TableRow({
-    children: [
-      new TableCell({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'Fecha', bold: true })],
-          }),
-        ],
-        shading: { fill: '0066CC', type: ShadingType.SOLID },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'Scout', bold: true })],
-          }),
-        ],
-        shading: { fill: '0066CC', type: ShadingType.SOLID },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'Estado', bold: true })],
-          }),
-        ],
-        shading: { fill: '0066CC', type: ShadingType.SOLID },
-      }),
-      new TableCell({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'Observaciones', bold: true })],
-          }),
-        ],
-        shading: { fill: '0066CC', type: ShadingType.SOLID },
-      }),
-    ],
-  });
-
-  const dataRows = data.map(
-    (item) =>
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [new Paragraph({ text: formatDate(item.fecha) })],
-          }),
-          new TableCell({
-            children: [new Paragraph({ text: item.scoutNombre })],
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: item.presente
-                      ? 'Presente'
-                      : item.justificado
-                      ? 'Justificado'
-                      : 'Ausente',
-                    bold: true,
-                    color: item.presente
-                      ? '27AE60'
-                      : item.justificado
-                      ? 'F39C12'
-                      : 'E74C3C',
-                  }),
-                ],
-              }),
-            ],
-          }),
-          new TableCell({
-            children: [new Paragraph({ text: item.motivo || '-' })],
-          }),
-        ],
-      })
-  );
-
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [headerRow, ...dataRows],
     borders: {
       top: { style: BorderStyle.SINGLE, size: 1 },
       bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -518,6 +369,5 @@ export default {
   generateDOCX,
   generateAndDownloadDOCX,
   createScoutReportDOCX,
-  createAttendanceReportDOCX,
   createProgressReportDOCX,
 };

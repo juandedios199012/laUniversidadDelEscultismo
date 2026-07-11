@@ -7,13 +7,11 @@ import React, { useState, useEffect } from 'react';
 import { PDFViewer } from '@react-pdf/renderer';
 import { Eye, X, Search } from 'lucide-react';
 import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
-import AttendanceReportTemplate from '../templates/pdf/AttendanceReportTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import DNGI03Template from '../templates/pdf/DNGI03Template';
 import ScoutService from '../../../services/scoutService';
-import { 
-  getScoutData, 
-  getAttendanceData, 
+import {
+  getScoutData,
   getProgressData
 } from '../services/reportDataService';
 import { generateReportMetadata } from '../services/pdfService';
@@ -99,18 +97,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ className = '' }) 
           }
           break;
 
-        case ReportType.ATTENDANCE:
-          const attendanceData = await getAttendanceData({
-            dateFrom: '2024-01-01',
-            dateTo: '2024-12-31',
-          });
-          setPreviewData({
-            data: attendanceData,
-            metadata,
-            dateRange: { from: '2024-01-01', to: '2024-12-31' },
-          });
-          break;
-
         case ReportType.PROGRESS:
           const progressData = await getProgressData({});
           setPreviewData({ data: progressData, metadata });
@@ -153,15 +139,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ className = '' }) 
           <ScoutReportTemplate
             scout={previewData.scout}
             metadata={previewData.metadata}
-          />
-        );
-
-      case ReportType.ATTENDANCE:
-        return (
-          <AttendanceReportTemplate
-            data={previewData.data}
-            metadata={previewData.metadata}
-            dateRange={previewData.dateRange}
           />
         );
 
@@ -224,7 +201,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ className = '' }) 
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value={ReportType.SCOUT_PROFILE}>Perfil de Scout</option>
-              <option value={ReportType.ATTENDANCE}>Asistencia</option>
               <option value={ReportType.PROGRESS}>Progreso</option>
               <option value={ReportType.DNGI03}>📄 DNGI-03 - Registro Institucional</option>
             </select>

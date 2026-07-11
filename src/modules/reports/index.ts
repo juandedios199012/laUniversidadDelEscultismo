@@ -11,7 +11,6 @@ export { default as ScoutsExcelReport } from './components/ScoutsExcelReport';
 
 // Plantillas PDF
 export { default as ScoutReportTemplate } from './templates/pdf/ScoutReportTemplate';
-export { default as AttendanceReportTemplate } from './templates/pdf/AttendanceReportTemplate';
 export { default as ProgressReportTemplate } from './templates/pdf/ProgressReportTemplate';
 export { default as DNGI03Template } from './templates/pdf/DNGI03Template';
 export { default as HistoriaMedicaReportTemplate } from './templates/pdf/HistoriaMedicaReportTemplate';

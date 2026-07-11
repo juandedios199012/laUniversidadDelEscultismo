@@ -459,24 +459,6 @@ export async function getRankingPatrullas(
 }
 
 /**
- * Obtiene contactos de emergencia de scouts
- */
-export async function getContactosEmergencia(rama?: string): Promise<any[]> {
-  try {
-    const { data, error } = await supabase.rpc('api_obtener_reporte_contactos_emergencia', {
-      p_rama: rama || null,
-    });
-
-    if (error) throw error;
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching contactos emergencia:', error);
-    throw error;
-  }
-}
-
-/**
  * Obtiene documentación pendiente de scouts
  */
 export async function getDocumentacionPendiente(ano?: number): Promise<any[]> {
@@ -660,7 +642,6 @@ export default {
   // Nuevos servicios
   getInscripcionesAnuales,
   getRankingPatrullas,
-  getContactosEmergencia,
   getDocumentacionPendiente,
   getHistoriaMedicaData,
 };

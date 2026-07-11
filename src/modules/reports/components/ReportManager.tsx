@@ -15,7 +15,7 @@ import {
 } from '../types/reportTypes';
 import { ReportExportButton } from './ReportExportButton';
 import { generateAndDownloadPDF, generatePDF, generateReportMetadata } from '../services/pdfService';
-import { generateAndDownloadDOCX, createScoutReportDOCX, createAttendanceReportDOCX, createProgressReportDOCX } from '../services/docxService';
+import { generateAndDownloadDOCX, createScoutReportDOCX, createProgressReportDOCX } from '../services/docxService';
 import { ScoutsExcelReport } from './ScoutsExcelReport';
 import { EspecialidadesExcelReport } from './EspecialidadesExcelReport';
 import { EspecialidadesDetalleExcelReport } from './EspecialidadesDetalleExcelReport';
@@ -25,12 +25,10 @@ import {
   getProgressData,
 } from '../services/reportDataService';
 import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
-import AttendanceReportTemplate from '../templates/pdf/AttendanceReportTemplate';
 import AttendanceAdvancedTemplate from '../templates/pdf/AttendanceAdvancedTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
 import InscripcionesReportTemplate from '../templates/pdf/InscripcionesReportTemplate';
-import ContactosEmergenciaReportTemplate from '../templates/pdf/ContactosEmergenciaReportTemplate';
 import DocumentacionPendienteReportTemplate from '../templates/pdf/DocumentacionPendienteReportTemplate';
 import RankingPatrullasReportTemplate from '../templates/pdf/RankingPatrullasReportTemplate';
 import GenericSummaryReportTemplate from '../templates/pdf/GenericSummaryReportTemplate';
@@ -44,7 +42,6 @@ import InventarioService from '../../../services/inventarioService';
 import {
   getInscripcionesAnuales,
   getRankingPatrullas,
-  getContactosEmergencia,
   getDocumentacionPendiente,
 } from '../services/reportDataService';
 // Imports para reportes masivos
@@ -54,6 +51,7 @@ import { createDNGI03WordDocument } from '../templates/word/DNGI03WordTemplate';
 import AttendanceMatrixTemplate from '../templates/pdf/AttendanceMatrixTemplate';
 import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../services/attendanceMatrixService';
 import PersonasIngresosTemplate from '../templates/pdf/PersonasIngresosTemplate';
+import MovimientosPorTipoTemplate from '../templates/pdf/MovimientosPorTipoTemplate';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -109,6 +107,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [dirigentesList, setDirigentesList] = useState<any[]>([]);
   const [comiteList, setComiteList] = useState<any[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
+
+  // Estado para el filtro del reporte "Movimientos por Tipo"
+  const [movimientoTipoFilter, setMovimientoTipoFilter] = useState<'TODOS' | 'INGRESO' | 'EGRESO'>('TODOS');
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -258,13 +259,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           color: 'blue',
         },
         {
-          type: ReportType.ATTENDANCE,
-          title: 'Asistencia',
-          description: 'Registro de asistencias por periodo',
-          icon: <Calendar className="w-6 h-6" />,
-          color: 'green',
-        },
-        {
           type: ReportType.ATTENDANCE_ADVANCED,
           title: 'Asistencia Avanzada',
           description: 'KPIs, tendencias, ranking por scout y alertas de inasistencia',
@@ -324,14 +318,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
-          type: ReportType.CONTACTOS_EMERGENCIA,
-          title: 'Contactos de Emergencia',
-          description: 'Datos médicos y contactos familiares',
-          icon: <Users className="w-6 h-6" />,
-          color: 'red',
-          badge: 'Nuevo'
-        },
-        {
           type: ReportType.DOCUMENTACION_PENDIENTE,
           title: 'Documentación Pendiente',
           description: 'Scouts con docs o pagos incompletos',
@@ -382,6 +368,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'Movimientos de Cuenta por Persona: ingresos, egresos y saldo por persona',
           icon: <CreditCard className="w-6 h-6" />,
           color: 'teal',
+          badge: '¡Nuevo!'
+        },
+        {
+          type: ReportType.MOVIMIENTOS_POR_TIPO,
+          title: 'Movimientos por Tipo',
+          description: 'Detalle de movimientos de Cuenta por Persona filtrado por Ingreso o Egreso',
+          icon: <List className="w-6 h-6" />,
+          color: 'sky',
           badge: '¡Nuevo!'
         },
         {
@@ -476,9 +470,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.SCOUT_PROFILE:
           return await exportScoutReport(format, metadata);
 
-        case ReportType.ATTENDANCE:
-          return await exportAttendanceReport(format, metadata);
-
         case ReportType.ATTENDANCE_ADVANCED:
           return await exportAttendanceAdvancedReport(format, metadata);
 
@@ -496,9 +487,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.INSCRIPCIONES_ANUALES:
           return await exportInscripcionesAnualesReport(format, metadata);
-
-        case ReportType.CONTACTOS_EMERGENCIA:
-          return await exportContactosEmergenciaReport(format, metadata);
 
         case ReportType.DOCUMENTACION_PENDIENTE:
           return await exportDocumentacionPendienteReport(format, metadata);
@@ -520,6 +508,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.PERSONAS_INGRESOS:
           return await exportPersonasIngresosReport(format, metadata);
+
+        case ReportType.MOVIMIENTOS_POR_TIPO:
+          return await exportMovimientosPorTipoReport(format, metadata);
 
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
@@ -595,41 +586,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         doc,
         `reporte_scout_${scoutData.numeroRegistro}`
       );
-    }
-  };
-
-  // Exportar reporte de asistencia
-  const exportAttendanceReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const attendanceData = await getAttendanceData(filters);
-    
-    if (attendanceData.length === 0) {
-      return {
-        status: 'error' as any,
-        fileName: 'error',
-        error: 'No se encontraron datos de asistencia',
-      };
-    }
-
-    const dateRange = {
-      from: filters.dateFrom || '2024-01-01',
-      to: filters.dateTo || new Date().toISOString().split('T')[0],
-    };
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <AttendanceReportTemplate
-          data={attendanceData}
-          metadata={metadata}
-          dateRange={dateRange}
-        />,
-        'reporte_asistencia'
-      );
-    } else {
-      const doc = createAttendanceReportDOCX(attendanceData, metadata, dateRange);
-      return await generateAndDownloadDOCX(doc, 'reporte_asistencia');
     }
   };
 
@@ -1001,34 +957,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     return await generateAndDownloadDOCX(doc, `reporte_inscripciones_${ano}`);
   };
 
-  const exportContactosEmergenciaReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const data = await getContactosEmergencia(filters.rama || undefined);
-    if (data.length === 0) {
-      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron contactos de emergencia' };
-    }
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <ContactosEmergenciaReportTemplate data={data} metadata={metadata} rama={filters.rama} />,
-        'reporte_contactos_emergencia'
-      );
-    }
-
-    const doc = new Document({
-      sections: [{ children: [
-        new Paragraph({ children: [new TextRun({ text: 'Reporte de Contactos de Emergencia', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [] }),
-        ...data.slice(0, 100).map((s: any) => new Paragraph({
-          children: [new TextRun({ text: `${s.codigoScout} | ${s.nombreScout} ${s.apellidoScout}` })],
-        })),
-      ]}],
-    });
-    return await generateAndDownloadDOCX(doc, 'reporte_contactos_emergencia');
-  };
-
   const exportDocumentacionPendienteReport = async (
     format: ExportFormat,
     metadata: any
@@ -1278,6 +1206,48 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       }],
     });
     return await generateAndDownloadDOCX(doc, 'personas_ingresos');
+  };
+
+  // Exportar reporte de Movimientos por Tipo (Finanzas > Cuenta por Persona, filtrado por Ingreso/Egreso)
+  const exportMovimientosPorTipoReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const tipo = movimientoTipoFilter === 'TODOS' ? undefined : movimientoTipoFilter;
+    const { movimientos, totalIngresos, totalEgresos } = await FinanzasService.listarMovimientosPorTipo(tipo);
+
+    if (movimientos.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron movimientos para el filtro seleccionado' };
+    }
+
+    const fileName = `movimientos_${movimientoTipoFilter.toLowerCase()}`;
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <MovimientosPorTipoTemplate
+          data={{ movimientos, totalIngresos, totalEgresos, tipoFiltro: movimientoTipoFilter }}
+          metadata={metadata}
+        />,
+        fileName
+      );
+    }
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Movimientos por Tipo', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Filtro: ${movimientoTipoFilter} | Movimientos: ${movimientos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)}` })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Detalle de Movimientos', bold: true, size: 26 })] }),
+          ...movimientos.map(m => new Paragraph({
+            children: [new TextRun({
+              text: `${m.apellidos}, ${m.nombres} — ${m.tipo_movimiento} — ${m.concepto} — S/ ${Number(m.monto).toFixed(2)} — ${m.fecha}`,
+            })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, fileName);
   };
 
   const exportActividadesReport = async (
@@ -2322,8 +2292,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {(selectedReportType === ReportType.ATTENDANCE ||
-            selectedReportType === ReportType.ATTENDANCE_ADVANCED ||
+          {(selectedReportType === ReportType.ATTENDANCE_ADVANCED ||
             selectedReportType === ReportType.PROGRESS) && (
             <div className="space-y-4">
               {selectedReportType === ReportType.ATTENDANCE_ADVANCED && (
@@ -2359,6 +2328,26 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.MOVIMIENTOS_POR_TIPO && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Movimiento
+              </label>
+              <select
+                value={movimientoTipoFilter}
+                onChange={(e) => setMovimientoTipoFilter(e.target.value as 'TODOS' | 'INGRESO' | 'EGRESO')}
+                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="TODOS">Todos</option>
+                <option value="INGRESO">Ingreso</option>
+                <option value="EGRESO">Egreso</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                Filtra el detalle de movimientos de Cuenta por Persona para hacer seguimiento específico por tipo.
+              </p>
             </div>
           )}
 
@@ -2399,27 +2388,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   <option value="Comite">Comite</option>
                 </select>
               </div>
-            </div>
-          )}
-
-          {selectedReportType === ReportType.CONTACTOS_EMERGENCIA && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rama (opcional)
-              </label>
-              <select
-                value={filters.rama || ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, rama: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Todas las ramas</option>
-                <option value="Manada">Manada</option>
-                <option value="Tropa">Tropa</option>
-                <option value="Comunidad">Comunidad</option>
-                <option value="Clan">Clan</option>
-              </select>
             </div>
           )}
 

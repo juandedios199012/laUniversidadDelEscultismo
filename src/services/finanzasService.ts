@@ -130,6 +130,21 @@ export interface MovimientoPersona {
   created_at?: string;
 }
 
+export interface MovimientoPersonaConTitular {
+  id: string;
+  tipo_movimiento: TipoMovimientoPersona;
+  concepto: string;
+  monto: number;
+  cantidad?: number;
+  precio_unitario?: number;
+  fecha: string;
+  notas?: string;
+  persona_id: string;
+  nombres: string;
+  apellidos: string;
+  numero_documento?: string;
+}
+
 export interface MovimientosPersonaDetalle {
   persona: {
     persona_id: string;
@@ -624,6 +639,27 @@ export class FinanzasService {
     if (!data?.success) throw new Error(data?.error || 'Error al obtener movimientos');
 
     return { persona: data.persona, saldo: data.saldo, data: data.data || [] };
+  }
+
+  /**
+   * Lista el detalle de movimientos de TODAS las personas, opcionalmente
+   * filtrado por tipo (INGRESO/EGRESO), para el reporte "Movimientos por Tipo".
+   */
+  static async listarMovimientosPorTipo(
+    tipoMovimiento?: TipoMovimientoPersona
+  ): Promise<{ movimientos: MovimientoPersonaConTitular[]; totalIngresos: number; totalEgresos: number }> {
+    const { data, error } = await supabase.rpc('api_listar_movimientos_todas_personas', {
+      p_tipo_movimiento: tipoMovimiento || null,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener movimientos');
+
+    return {
+      movimientos: data.data || [],
+      totalIngresos: data.total_ingresos || 0,
+      totalEgresos: data.total_egresos || 0,
+    };
   }
 
   /**

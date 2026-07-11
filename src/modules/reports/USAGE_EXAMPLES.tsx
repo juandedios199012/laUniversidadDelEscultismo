@@ -11,20 +11,17 @@ import {
   
   // Plantillas PDF
   ScoutReportTemplate,
-  AttendanceReportTemplate,
   ProgressReportTemplate,
-  
+
   // Servicios
   generateAndDownloadPDF,
   generateAndDownloadDOCX,
   createScoutReportDOCX,
-  // createAttendanceReportDOCX, // Usado en ejemplos comentados
   // createProgressReportDOCX, // Usado en ejemplos comentados
   generateReportMetadata,
-  
+
   // Servicios de datos
   getScoutData,
-  getAttendanceData,
   getProgressData,
   
   // Tipos
@@ -104,40 +101,6 @@ export async function Example3_ScoutWord(scoutId: string) {
     await generateAndDownloadDOCX(
       doc,
       `reporte_scout_${scoutData.numeroRegistro}`
-    );
-  } catch (error) {
-    console.error('Error generando reporte:', error);
-  }
-}
-
-// ============================================
-// EJEMPLO 4: Generar reporte de asistencia
-// ============================================
-
-export async function Example4_AttendanceReport() {
-  try {
-    // Obtener datos de asistencia filtrados
-    const attendanceData = await getAttendanceData({
-      dateFrom: '2024-01-01',
-      dateTo: '2024-12-31',
-    });
-
-    if (attendanceData.length === 0) {
-      console.log('No hay datos de asistencia');
-      return;
-    }
-
-    const metadata = generateReportMetadata();
-    const dateRange = { from: '2024-01-01', to: '2024-12-31' };
-
-    // Generar PDF
-    await generateAndDownloadPDF(
-      <AttendanceReportTemplate 
-        data={attendanceData}
-        metadata={metadata}
-        dateRange={dateRange}
-      />,
-      'reporte_asistencia_2024'
     );
   } catch (error) {
     console.error('Error generando reporte:', error);

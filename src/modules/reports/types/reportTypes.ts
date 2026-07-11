@@ -5,7 +5,6 @@
 // Tipos de reportes disponibles
 export enum ReportType {
   SCOUT_PROFILE = 'scout_profile',
-  ATTENDANCE = 'attendance',
   ATTENDANCE_ADVANCED = 'attendance_advanced',
   ATTENDANCE_MATRIX = 'attendance_matrix',
   PROGRESS = 'progress',
@@ -15,13 +14,13 @@ export enum ReportType {
   // Nuevos reportes (Opción C)
   INSCRIPCIONES_ANUALES = 'inscripciones_anuales',
   RANKING_PATRULLAS = 'ranking_patrullas',
-  CONTACTOS_EMERGENCIA = 'contactos_emergencia',
   DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
   DASHBOARD_EJECUTIVO = 'dashboard_ejecutivo',
   REPORTE_FINANCIERO = 'reporte_financiero',
   REPORTE_FINANCIERO_INSCRIPCION = 'reporte_financiero_inscripcion',
   REPORTE_FINANCIERO_RAMA = 'reporte_financiero_rama',
   PERSONAS_INGRESOS = 'personas_ingresos',
+  MOVIMIENTOS_POR_TIPO = 'movimientos_por_tipo',
   REPORTE_ACTIVIDADES = 'reporte_actividades',
   REPORTE_INVENTARIO = 'reporte_inventario',
   // Reporte Excel con todos los campos
@@ -299,33 +298,6 @@ export interface PuntosPatrullaData {
   }[];
   totalPuntos: number;
   posicion: number;
-}
-
-// Datos de Contacto de Emergencia (Nuevo)
-export interface ContactoEmergenciaData {
-  scoutId: string;
-  codigoScout: string;
-  nombreScout: string;
-  apellidoScout: string;
-  rama: string;
-  contactos: {
-    nombre: string;
-    apellido: string;
-    parentesco: string;
-    celular: string;
-    celularSecundario?: string;
-    telefono?: string;
-    correo?: string;
-    esPrincipal: boolean;
-    autorizadoRecoger: boolean;
-  }[];
-  datosMedicos: {
-    grupoSanguineo?: string;
-    factorSanguineo?: string;
-    seguroMedico?: string;
-    tipoDiscapacidad?: string;
-    alergias?: string;
-  };
 }
 
 // Datos de Documentación Pendiente (Nuevo)
