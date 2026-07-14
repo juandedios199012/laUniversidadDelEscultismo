@@ -115,6 +115,7 @@ export interface SaldoPersona {
   total_ingresos: number;
   total_egresos: number;
   saldo: number;
+  ganancia_neta: number;
   movimientos_count: number;
   ultima_fecha?: string;
 }
@@ -644,7 +645,7 @@ export class FinanzasService {
    */
   static async listarSaldosPersonas(
     busqueda?: string
-  ): Promise<{ saldos: SaldoPersona[]; saldoGlobal: number }> {
+  ): Promise<{ saldos: SaldoPersona[]; saldoGlobal: number; gananciaNetaGlobal: number }> {
     const { data, error } = await supabase.rpc('api_listar_saldos_personas', {
       p_busqueda: busqueda || null,
     });
@@ -652,7 +653,11 @@ export class FinanzasService {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al obtener saldos');
 
-    return { saldos: data.data || [], saldoGlobal: data.saldo_global || 0 };
+    return {
+      saldos: data.data || [],
+      saldoGlobal: data.saldo_global || 0,
+      gananciaNetaGlobal: data.ganancia_neta_global || 0,
+    };
   }
 
   /**

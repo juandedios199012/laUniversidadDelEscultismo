@@ -47,6 +47,7 @@ interface CuentasPersonasTabProps {
 const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, puedeEliminar }) => {
   const [saldos, setSaldos] = useState<SaldoPersona[]>([]);
   const [saldoGlobal, setSaldoGlobal] = useState(0);
+  const [gananciaNetaGlobal, setGananciaNetaGlobal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [showNuevo, setShowNuevo] = useState(false);
@@ -60,9 +61,10 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
   const cargar = useCallback(async (texto?: string) => {
     try {
       setLoading(true);
-      const { saldos: data, saldoGlobal: total } = await FinanzasService.listarSaldosPersonas(texto);
+      const { saldos: data, saldoGlobal: total, gananciaNetaGlobal: gananciaNeta } = await FinanzasService.listarSaldosPersonas(texto);
       setSaldos(data);
       setSaldoGlobal(total);
+      setGananciaNetaGlobal(gananciaNeta);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al cargar saldos');
     } finally {
@@ -130,6 +132,12 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
               {formatMonto(saldoGlobal)}
             </p>
           </div>
+          <div className="text-right border-l pl-3">
+            <p className="text-xs text-muted-foreground">Ganancia neta total</p>
+            <p className="text-lg font-bold text-emerald-700">
+              {formatMonto(gananciaNetaGlobal)}
+            </p>
+          </div>
           {puedeCrear && (
             <Button onClick={() => setShowNuevo(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -193,6 +201,11 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                 <p className={`text-xl font-bold ${s.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {formatMonto(s.saldo)}
                 </p>
+                {s.ganancia_neta !== 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ganancia neta: <span className="font-medium text-emerald-700">{formatMonto(s.ganancia_neta)}</span>
+                  </p>
+                )}
               </div>
               <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1 text-emerald-600">
@@ -240,6 +253,14 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
               >
                 {formatMonto(detallePersona?.saldo ?? 0)}
               </span>
+              {(detallePersona?.ganancia_neta ?? 0) !== 0 && (
+                <>
+                  {' · Ganancia neta: '}
+                  <span className="font-semibold text-emerald-700">
+                    {formatMonto(detallePersona?.ganancia_neta ?? 0)}
+                  </span>
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 

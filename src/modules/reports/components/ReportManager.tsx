@@ -2411,6 +2411,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
+          {selectedReportType === ReportType.INGRESOS_POR_CONCEPTO && (
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                💰 Este reporte agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado) y neto (ganancia ya descontada la inversión) de cada uno, sin filtros adicionales.
+              </p>
+            </div>
+          )}
+
           {selectedReportType === ReportType.INSCRIPCIONES_ANUALES && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
