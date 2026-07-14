@@ -256,6 +256,10 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                   m.cantidad != null && m.precio_unitario != null
                     ? m.cantidad * m.precio_unitario
                     : undefined;
+                const acumuladoNeto =
+                  m.cantidad != null && m.ganancia_unitaria != null
+                    ? m.cantidad * m.ganancia_unitaria
+                    : undefined;
                 const completo = meta != null && m.monto >= meta;
                 return (
                   <div
@@ -283,7 +287,7 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                         {meta != null && (
                           <p className="text-xs mt-0.5 flex items-center gap-1">
                             <span className="text-muted-foreground">
-                              {formatMonto(m.monto)} / {formatMonto(meta)}
+                              Bruto {formatMonto(m.monto)} / {formatMonto(meta)}
                             </span>
                             {completo ? (
                               <span className="flex items-center gap-0.5 text-emerald-600 font-medium">
@@ -292,6 +296,11 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                             ) : (
                               <span className="text-gray-400 font-medium">Pendiente</span>
                             )}
+                          </p>
+                        )}
+                        {acumuladoNeto != null && (
+                          <p className="text-xs mt-0.5 text-muted-foreground">
+                            Neto: <span className="font-medium text-emerald-700">{formatMonto(acumuladoNeto)}</span>
                           </p>
                         )}
                       </div>

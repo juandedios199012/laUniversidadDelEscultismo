@@ -12,6 +12,7 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
   const [descripcion, setDescripcion] = useState(conceptoEditar?.descripcion ?? '');
   const [requiereCantidad, setRequiereCantidad] = useState(conceptoEditar?.requiere_cantidad ?? false);
   const [precioUnitario, setPrecioUnitario] = useState(conceptoEditar?.precio_unitario?.toString() ?? '');
+  const [gananciaUnitaria, setGananciaUnitaria] = useState(conceptoEditar?.ganancia_unitaria?.toString() ?? '');
   const [fecha, setFecha] = useState(conceptoEditar?.fecha ?? new Date().toISOString().split('T')[0]);
   const [activo, setActivo] = useState(conceptoEditar?.activo ?? true);
   const [guardando, setGuardando] = useState(false);
@@ -37,6 +38,7 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
         descripcion: descripcion.trim(),
         requiere_cantidad: requiereCantidad,
         precio_unitario: requiereCantidad && precioUnitario.trim() ? parseFloat(precioUnitario) : undefined,
+        ganancia_unitaria: requiereCantidad && gananciaUnitaria.trim() ? parseFloat(gananciaUnitaria) : undefined,
         fecha,
         activo,
       });
@@ -107,13 +109,27 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
 
           {requiereCantidad && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Unitario (S/)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Venta (S/)</label>
               <input
                 type="number"
                 step="0.01"
                 value={precioUnitario}
                 onChange={(e) => setPrecioUnitario(e.target.value)}
                 placeholder="Opcional — cantidad × precio = meta de venta"
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          )}
+
+          {requiereCantidad && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ganancia Unitaria (S/)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={gananciaUnitaria}
+                onChange={(e) => setGananciaUnitaria(e.target.value)}
+                placeholder="Opcional — ganancia neta por unidad (ya sin inversión)"
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -261,7 +277,8 @@ const ConceptosFinanzas: React.FC = () => {
               <tr className="text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 <th className="text-left py-2 px-4">Descripción</th>
                 <th className="text-center py-2 px-4">Requiere Cantidad</th>
-                <th className="text-right py-2 px-4">Precio Unit.</th>
+                <th className="text-right py-2 px-4">Precio de Venta</th>
+                <th className="text-right py-2 px-4">Ganancia Unit.</th>
                 <th className="text-left py-2 px-4">Fecha</th>
                 <th className="text-center py-2 px-4">Activo</th>
                 <th className="text-right py-2 px-4">Acciones</th>
@@ -280,6 +297,9 @@ const ConceptosFinanzas: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-gray-600">
                     {concepto.precio_unitario != null ? `S/ ${concepto.precio_unitario.toFixed(2)}` : '—'}
+                  </td>
+                  <td className="py-3 px-4 text-right text-sm text-gray-600">
+                    {concepto.ganancia_unitaria != null ? `S/ ${concepto.ganancia_unitaria.toFixed(2)}` : '—'}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{concepto.fecha}</td>
                   <td className="py-3 px-4 text-center">

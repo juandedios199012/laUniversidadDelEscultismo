@@ -102,6 +102,7 @@ export interface NuevoMovimientoPersona {
   monto: number;
   cantidad?: number;
   precio_unitario?: number;
+  ganancia_unitaria?: number;
   fecha?: string;
   notas?: string;
 }
@@ -125,6 +126,7 @@ export interface MovimientoPersona {
   monto: number;
   cantidad?: number;
   precio_unitario?: number;
+  ganancia_unitaria?: number;
   fecha: string;
   notas?: string;
   created_at?: string;
@@ -137,12 +139,34 @@ export interface MovimientoPersonaConTitular {
   monto: number;
   cantidad?: number;
   precio_unitario?: number;
+  ganancia_unitaria?: number;
   fecha: string;
   notas?: string;
   persona_id: string;
   nombres: string;
   apellidos: string;
   numero_documento?: string;
+}
+
+export interface IngresoPorConceptoDetalle {
+  id: string;
+  concepto: string;
+  monto: number;
+  cantidad?: number;
+  precio_unitario?: number;
+  ganancia_unitaria?: number;
+  fecha: string;
+  persona_id: string;
+  nombres: string;
+  apellidos: string;
+}
+
+export interface IngresoPorConceptoResumen {
+  concepto: string;
+  movimientos_count: number;
+  total_cantidad: number;
+  total_monto: number;
+  total_ganancia_neta: number;
 }
 
 export interface MovimientosPersonaDetalle {
@@ -195,6 +219,7 @@ export interface ConceptoFinanzas {
   descripcion: string;
   requiere_cantidad: boolean;
   precio_unitario?: number;
+  ganancia_unitaria?: number;
   fecha: string;
   activo: boolean;
 }
@@ -221,6 +246,7 @@ export class FinanzasService {
     descripcion: string;
     requiere_cantidad: boolean;
     precio_unitario?: number;
+    ganancia_unitaria?: number;
     fecha: string;
     activo: boolean;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -231,6 +257,7 @@ export class FinanzasService {
       p_precio_unitario: concepto.precio_unitario ?? null,
       p_fecha: concepto.fecha,
       p_activo: concepto.activo,
+      p_ganancia_unitaria: concepto.ganancia_unitaria ?? null,
     });
 
     if (error) throw error;
@@ -596,6 +623,7 @@ export class FinanzasService {
       monto: number;
       cantidad?: number;
       precio_unitario?: number;
+      ganancia_unitaria?: number;
       fecha?: string;
       notas?: string;
     }
@@ -672,6 +700,31 @@ export class FinanzasService {
 
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al eliminar movimiento');
+  }
+
+  /**
+   * Lista los ingresos (INGRESO) de TODAS las personas agrupables por
+   * concepto, para el reporte "Ingresos por Concepto": detalle
+   * ordenado por concepto + subtotales (cantidad, ingreso bruto y
+   * ganancia neta) por concepto.
+   */
+  static async listarIngresosPorConcepto(): Promise<{
+    detalle: IngresoPorConceptoDetalle[];
+    resumen: IngresoPorConceptoResumen[];
+    totalIngresos: number;
+    totalGananciaNeta: number;
+  }> {
+    const { data, error } = await supabase.rpc('api_listar_ingresos_por_concepto');
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener ingresos por concepto');
+
+    return {
+      detalle: data.detalle || [],
+      resumen: data.resumen || [],
+      totalIngresos: data.total_ingresos || 0,
+      totalGananciaNeta: data.total_ganancia_neta || 0,
+    };
   }
 }
 

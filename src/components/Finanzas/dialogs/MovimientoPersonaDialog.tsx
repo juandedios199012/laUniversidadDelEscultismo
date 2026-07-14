@@ -73,6 +73,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
   const [conceptoOtro, setConceptoOtro] = useState<string>('');
   const [cantidad, setCantidad] = useState<string>('');
   const [precioUnitarioSnapshot, setPrecioUnitarioSnapshot] = useState<number | undefined>(undefined);
+  const [gananciaUnitariaSnapshot, setGananciaUnitariaSnapshot] = useState<number | undefined>(undefined);
   const [fecha, setFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [guardando, setGuardando] = useState(false);
   const [conceptosDisponibles, setConceptosDisponibles] = useState<ConceptoFinanzas[]>([]);
@@ -89,6 +90,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setConceptoSel(movimientoEditar.concepto);
       setCantidad(movimientoEditar.cantidad?.toString() ?? '');
       setPrecioUnitarioSnapshot(movimientoEditar.precio_unitario);
+      setGananciaUnitariaSnapshot(movimientoEditar.ganancia_unitaria);
       setFecha(movimientoEditar.fecha);
     } else {
       setTipo('INGRESO');
@@ -97,6 +99,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
       setConceptoOtro('');
       setCantidad('');
       setPrecioUnitarioSnapshot(undefined);
+      setGananciaUnitariaSnapshot(undefined);
       setFecha(new Date().toISOString().split('T')[0]);
     }
   }, [open, personaInicial, movimientoEditar]);
@@ -123,12 +126,19 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
     : (conceptoObjSel?.requiere_cantidad ?? false);
   const cantidadNum = parseInt(cantidad, 10);
 
-  // Precio unitario: en edición se usa el snapshot ya guardado en el
-  // movimiento (no el del catálogo, que pudo haber cambiado desde entonces).
+  // Precio unitario / ganancia unitaria: en edición se usa el snapshot ya
+  // guardado en el movimiento (no el del catálogo, que pudo haber cambiado
+  // desde entonces).
   const precioUnitario = esEdicion ? precioUnitarioSnapshot : conceptoObjSel?.precio_unitario;
+  const gananciaUnitaria = esEdicion ? gananciaUnitariaSnapshot : conceptoObjSel?.ganancia_unitaria;
   const meta = requiereCantidad && precioUnitario && !isNaN(cantidadNum) ? cantidadNum * precioUnitario : undefined;
-  const acumulado = !isNaN(montoNum) ? montoNum : 0;
-  const completo = meta != null && acumulado >= meta;
+  // Acumulada Bruto: lo cobrado hasta ahora (monto). Acumulado Neto: la
+  // ganancia real ya descontada la inversión (cantidad × ganancia_unitaria
+  // del concepto elegido).
+  const acumuladoBruto = !isNaN(montoNum) ? montoNum : 0;
+  const acumuladoNeto =
+    requiereCantidad && gananciaUnitaria != null && !isNaN(cantidadNum) ? cantidadNum * gananciaUnitaria : undefined;
+  const completo = meta != null && acumuladoBruto >= meta;
 
   const puedeGuardar =
     !!persona &&
@@ -164,6 +174,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
           monto: montoNum,
           cantidad: requiereCantidad ? cantidadNum : undefined,
           precio_unitario: requiereCantidad ? precioUnitarioSnapshot : undefined,
+          ganancia_unitaria: requiereCantidad ? gananciaUnitariaSnapshot : undefined,
           fecha,
         });
         toast.success(`Movimiento actualizado. Nuevo saldo: ${formatMonto(saldo_actual)}`);
@@ -175,6 +186,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
           monto: montoNum,
           cantidad: requiereCantidad ? cantidadNum : undefined,
           precio_unitario: requiereCantidad ? conceptoObjSel?.precio_unitario : undefined,
+          ganancia_unitaria: requiereCantidad ? conceptoObjSel?.ganancia_unitaria : undefined,
           fecha,
         });
         toast.success(`${tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'} registrado. Nuevo saldo: ${formatMonto(saldo_actual)}`);
@@ -337,7 +349,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
               {meta != null && (
                 <div className="flex items-center justify-between text-xs px-1">
                   <span className="text-muted-foreground">
-                    Meta: <span className="font-medium text-foreground">{formatMonto(meta)}</span> · Acumulado {formatMonto(acumulado)}
+                    Meta: <span className="font-medium text-foreground">{formatMonto(meta)}</span> · Acumulada Bruto {formatMonto(acumuladoBruto)}
                   </span>
                   {completo ? (
                     <span className="flex items-center gap-1 text-emerald-600 font-medium">
@@ -346,6 +358,11 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                   ) : (
                     <span className="text-gray-400 font-medium">Pendiente</span>
                   )}
+                </div>
+              )}
+              {acumuladoNeto != null && (
+                <div className="text-xs px-1 text-muted-foreground">
+                  Acumulado Neto: <span className="font-medium text-emerald-700">{formatMonto(acumuladoNeto)}</span>
                 </div>
               )}
               <p className="text-xs text-muted-foreground">

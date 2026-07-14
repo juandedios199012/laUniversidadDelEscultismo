@@ -52,6 +52,7 @@ import AttendanceMatrixTemplate from '../templates/pdf/AttendanceMatrixTemplate'
 import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../services/attendanceMatrixService';
 import PersonasIngresosTemplate from '../templates/pdf/PersonasIngresosTemplate';
 import MovimientosPorTipoTemplate from '../templates/pdf/MovimientosPorTipoTemplate';
+import IngresosPorConceptoTemplate from '../templates/pdf/IngresosPorConceptoTemplate';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -379,6 +380,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: '¡Nuevo!'
         },
         {
+          type: ReportType.INGRESOS_POR_CONCEPTO,
+          title: 'Ingresos por Concepto',
+          description: 'Seguimiento de ingresos de Cuenta por Persona agrupados por Concepto: bruto cobrado y ganancia neta',
+          icon: <TrendingUp className="w-6 h-6" />,
+          color: 'teal',
+          badge: '¡Nuevo!'
+        },
+        {
           type: ReportType.REPORTE_ACTIVIDADES,
           title: 'Reporte de Actividades',
           description: 'Programas ejecutados y participación',
@@ -511,6 +520,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.MOVIMIENTOS_POR_TIPO:
           return await exportMovimientosPorTipoReport(format, metadata);
+
+        case ReportType.INGRESOS_POR_CONCEPTO:
+          return await exportIngresosPorConceptoReport(format, metadata);
 
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
@@ -1242,6 +1254,54 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           ...movimientos.map(m => new Paragraph({
             children: [new TextRun({
               text: `${m.apellidos}, ${m.nombres} — ${m.tipo_movimiento} — ${m.concepto} — S/ ${Number(m.monto).toFixed(2)} — ${m.fecha}`,
+            })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, fileName);
+  };
+
+  // Exportar reporte de Ingresos por Concepto (Finanzas > Cuenta por Persona, agrupado por Concepto)
+  const exportIngresosPorConceptoReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    const { detalle, resumen, totalIngresos, totalGananciaNeta } = await FinanzasService.listarIngresosPorConcepto();
+
+    if (detalle.length === 0) {
+      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron ingresos registrados' };
+    }
+
+    const fileName = 'ingresos_por_concepto';
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <IngresosPorConceptoTemplate
+          data={{ detalle, resumen, totalIngresos, totalGananciaNeta }}
+          metadata={metadata}
+        />,
+        fileName
+      );
+    }
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Ingresos por Concepto', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Conceptos: ${resumen.length} | Movimientos: ${detalle.length} | Ingresos Brutos: S/ ${totalIngresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)}` })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Resumen por Concepto', bold: true, size: 26 })] }),
+          ...resumen.map(r => new Paragraph({
+            children: [new TextRun({
+              text: `${r.concepto} — Movimientos: ${r.movimientos_count} | Cantidad: ${r.total_cantidad} | Bruto: S/ ${Number(r.total_monto).toFixed(2)} | Neto: S/ ${Number(r.total_ganancia_neta).toFixed(2)}`,
+            })],
+          })),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Detalle de Movimientos', bold: true, size: 26 })] }),
+          ...detalle.map(m => new Paragraph({
+            children: [new TextRun({
+              text: `${m.apellidos}, ${m.nombres} — ${m.concepto} — S/ ${Number(m.monto).toFixed(2)} — ${m.fecha}`,
             })],
           })),
         ],

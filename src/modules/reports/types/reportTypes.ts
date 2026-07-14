@@ -21,6 +21,7 @@ export enum ReportType {
   REPORTE_FINANCIERO_RAMA = 'reporte_financiero_rama',
   PERSONAS_INGRESOS = 'personas_ingresos',
   MOVIMIENTOS_POR_TIPO = 'movimientos_por_tipo',
+  INGRESOS_POR_CONCEPTO = 'ingresos_por_concepto',
   REPORTE_ACTIVIDADES = 'reporte_actividades',
   REPORTE_INVENTARIO = 'reporte_inventario',
   // Reporte Excel con todos los campos
