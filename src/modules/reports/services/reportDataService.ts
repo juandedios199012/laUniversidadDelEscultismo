@@ -413,28 +413,6 @@ export async function getMultipleScoutsData(
 }
 
 /**
- * Obtiene datos de inscripciones anuales
- */
-export async function getInscripcionesAnuales(
-  ano?: number,
-  rama?: string
-): Promise<any[]> {
-  try {
-    const { data, error } = await supabase.rpc('api_obtener_reporte_inscripciones_anuales', {
-      p_ano: ano || new Date().getFullYear(),
-      p_rama: rama || null,
-    });
-
-    if (error) throw error;
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching inscripciones anuales:', error);
-    throw error;
-  }
-}
-
-/**
  * Obtiene ranking de patrullas con sus puntos
  */
 export async function getRankingPatrullas(
@@ -454,24 +432,6 @@ export async function getRankingPatrullas(
     return data || [];
   } catch (error) {
     console.error('Error fetching ranking patrullas:', error);
-    throw error;
-  }
-}
-
-/**
- * Obtiene documentación pendiente de scouts
- */
-export async function getDocumentacionPendiente(ano?: number): Promise<any[]> {
-  try {
-    const { data, error } = await supabase.rpc('api_obtener_reporte_documentacion_pendiente', {
-      p_ano: ano || new Date().getFullYear(),
-    });
-
-    if (error) throw error;
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching documentacion pendiente:', error);
     throw error;
   }
 }
@@ -640,8 +600,6 @@ export default {
   getActivityHistory,
   getMultipleScoutsData,
   // Nuevos servicios
-  getInscripcionesAnuales,
   getRankingPatrullas,
-  getDocumentacionPendiente,
   getHistoriaMedicaData,
 };

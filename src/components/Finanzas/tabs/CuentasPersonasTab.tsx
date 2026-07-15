@@ -271,39 +271,43 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
             <DialogTitle>
               {detallePersona?.nombres} {detallePersona?.apellidos}
             </DialogTitle>
-            <DialogDescription>
-              Saldo actual:{' '}
-              <span
-                className={`font-semibold ${
-                  (detallePersona?.saldo ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}
-              >
-                {formatMonto(detallePersona?.saldo ?? 0)}
-              </span>
-              {(detallePersona?.ganancia_neta ?? 0) !== 0 && (
-                <>
-                  {' · Ganancia neta: '}
-                  <span className="font-semibold text-emerald-700">
-                    {formatMonto(detallePersona?.ganancia_neta ?? 0)}
+            <DialogDescription asChild>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>
+                  Saldo actual:{' '}
+                  <span
+                    className={`font-semibold ${
+                      (detallePersona?.saldo ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {formatMonto(detallePersona?.saldo ?? 0)}
                   </span>
-                </>
-              )}
-              {(detallePersona?.inversion ?? 0) !== 0 && (
-                <>
-                  {' · Inversión: '}
-                  <span className="font-semibold text-rose-700">
-                    {formatMonto(detallePersona?.inversion ?? 0)}
+                </span>
+                {(detallePersona?.ganancia_neta ?? 0) !== 0 && (
+                  <span>
+                    Ganancia neta:{' '}
+                    <span className="font-semibold text-emerald-700">
+                      {formatMonto(detallePersona?.ganancia_neta ?? 0)}
+                    </span>
                   </span>
-                </>
-              )}
-              {(detallePersona?.deuda ?? 0) !== 0 && (
-                <>
-                  {' · Deuda por cobrar: '}
-                  <span className="font-semibold text-amber-600">
-                    {formatMonto(detallePersona?.deuda ?? 0)}
+                )}
+                {(detallePersona?.inversion ?? 0) !== 0 && (
+                  <span>
+                    Inversión:{' '}
+                    <span className="font-semibold text-rose-700">
+                      {formatMonto(detallePersona?.inversion ?? 0)}
+                    </span>
                   </span>
-                </>
-              )}
+                )}
+                {(detallePersona?.deuda ?? 0) !== 0 && (
+                  <span>
+                    Deuda por cobrar:{' '}
+                    <span className="font-semibold text-amber-600">
+                      {formatMonto(detallePersona?.deuda ?? 0)}
+                    </span>
+                  </span>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
 

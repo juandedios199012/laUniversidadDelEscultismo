@@ -24,12 +24,10 @@ import {
   getAttendanceData,
   getProgressData,
 } from '../services/reportDataService';
-import ScoutReportTemplate from '../templates/pdf/ScoutReportTemplate';
+import DNGI03Template from '../templates/pdf/DNGI03Template';
 import AttendanceAdvancedTemplate from '../templates/pdf/AttendanceAdvancedTemplate';
 import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
-import InscripcionesReportTemplate from '../templates/pdf/InscripcionesReportTemplate';
-import DocumentacionPendienteReportTemplate from '../templates/pdf/DocumentacionPendienteReportTemplate';
 import RankingPatrullasReportTemplate from '../templates/pdf/RankingPatrullasReportTemplate';
 import GenericSummaryReportTemplate from '../templates/pdf/GenericSummaryReportTemplate';
 import { getEspecialidadesReportData } from '../services/especialidadesDataService';
@@ -40,9 +38,7 @@ import ReportsService from '../../../services/reportsService';
 import FinanzasService, { ConceptoFinanzas } from '../../../services/finanzasService';
 import InventarioService from '../../../services/inventarioService';
 import {
-  getInscripcionesAnuales,
   getRankingPatrullas,
-  getDocumentacionPendiente,
 } from '../services/reportDataService';
 // Imports para reportes masivos
 import DniCollectionTemplate from '../templates/pdf/DniCollectionTemplate';
@@ -53,6 +49,8 @@ import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../servic
 import PersonasIngresosTemplate from '../templates/pdf/PersonasIngresosTemplate';
 import MovimientosPorTipoTemplate from '../templates/pdf/MovimientosPorTipoTemplate';
 import IngresosPorConceptoTemplate from '../templates/pdf/IngresosPorConceptoTemplate';
+import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
+import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -325,22 +323,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: '¡Nuevo!'
         },
         {
-          type: ReportType.INSCRIPCIONES_ANUALES,
-          title: 'Inscripciones Anuales',
-          description: 'Estado de pagos y documentación',
-          icon: <FileText className="w-6 h-6" />,
-          color: 'yellow',
-          badge: 'Nuevo'
-        },
-        {
-          type: ReportType.DOCUMENTACION_PENDIENTE,
-          title: 'Documentación Pendiente',
-          description: 'Scouts con docs o pagos incompletos',
-          icon: <FileText className="w-6 h-6" />,
-          color: 'orange',
-          badge: 'Nuevo'
-        },
-        {
           type: ReportType.RANKING_PATRULLAS,
           title: 'Ranking de Patrullas',
           description: 'Puntajes y posiciones por rama',
@@ -359,14 +341,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'KPIs, tendencias y alertas del grupo',
           icon: <TrendingUp className="w-6 h-6" />,
           color: 'emerald',
-          badge: 'Nuevo'
-        },
-        {
-          type: ReportType.REPORTE_FINANCIERO_INSCRIPCION,
-          title: 'Finanzas de Inscripción (Grupo)',
-          description: 'Ingresos por Inscripción Anual del grupo scout',
-          icon: <FileText className="w-6 h-6" />,
-          color: 'teal',
           badge: 'Nuevo'
         },
         {
@@ -508,20 +482,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.ESPECIALIDADES_DETALLE:
           return await exportEspecialidadesDetalleReport(format, metadata);
 
-        case ReportType.INSCRIPCIONES_ANUALES:
-          return await exportInscripcionesAnualesReport(format, metadata);
-
-        case ReportType.DOCUMENTACION_PENDIENTE:
-          return await exportDocumentacionPendienteReport(format, metadata);
-
         case ReportType.RANKING_PATRULLAS:
           return await exportRankingPatrullasReport(format, metadata);
 
         case ReportType.DASHBOARD_EJECUTIVO:
           return await exportDashboardEjecutivoReport(format, metadata);
-
-        case ReportType.REPORTE_FINANCIERO_INSCRIPCION:
-          return await exportFinancieroInscripcionReport(format, metadata);
 
         case ReportType.REPORTE_FINANCIERO_RAMA:
           return await exportFinancieroRamaReport(format, metadata);
@@ -603,7 +568,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
-        <ScoutReportTemplate scout={scoutData} metadata={metadata} />,
+        <DNGI03Template
+          scout={scoutData}
+          metadata={metadata}
+          additionalData={{
+            tipoRegistro: 'Renovación',
+            fechaRegistro: new Date().toLocaleDateString('es-PE'),
+          }}
+        />,
         `reporte_scout_${scoutData.numeroRegistro}`
       );
     } else {
@@ -954,64 +926,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     return await generateAndDownloadDOCX(doc, fileName);
   };
 
-  const exportInscripcionesAnualesReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const ano = filters.year || new Date().getFullYear();
-    const data = await getInscripcionesAnuales(ano, filters.rama || undefined);
-    if (data.length === 0) {
-      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron inscripciones para el filtro seleccionado' };
-    }
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <InscripcionesReportTemplate data={data} metadata={metadata} ano={ano} />,
-        `reporte_inscripciones_${ano}`
-      );
-    }
-
-    const doc = new Document({
-      sections: [{ children: [
-        new Paragraph({ children: [new TextRun({ text: `Reporte de Inscripciones ${ano}`, bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [] }),
-        ...data.slice(0, 120).map((i: any) => new Paragraph({
-          children: [new TextRun({ text: `${i.codigoScout} | ${i.nombreCompleto} | ${i.rama} | ${i.estadoPago}` })],
-        })),
-      ]}],
-    });
-    return await generateAndDownloadDOCX(doc, `reporte_inscripciones_${ano}`);
-  };
-
-  const exportDocumentacionPendienteReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const ano = filters.year || new Date().getFullYear();
-    const data = await getDocumentacionPendiente(ano);
-    if (data.length === 0) {
-      return { status: 'error' as any, fileName: 'error', error: 'No se encontraron pendientes para el período seleccionado' };
-    }
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <DocumentacionPendienteReportTemplate data={data} metadata={metadata} ano={ano} />,
-        `reporte_documentacion_pendiente_${ano}`
-      );
-    }
-
-    const doc = new Document({
-      sections: [{ children: [
-        new Paragraph({ children: [new TextRun({ text: `Documentación Pendiente ${ano}`, bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [] }),
-        ...data.slice(0, 120).map((d: any) => new Paragraph({
-          children: [new TextRun({ text: `${d.codigoScout} | ${d.nombreCompleto} | ${d.documentosFaltantes?.join(', ') || 'Sin detalle'}` })],
-        })),
-      ]}],
-    });
-    return await generateAndDownloadDOCX(doc, `reporte_documentacion_pendiente_${ano}`);
-  };
-
   const exportRankingPatrullasReport = async (
     format: ExportFormat,
     metadata: any
@@ -1106,52 +1020,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     return await generateAndDownloadDOCX(doc, 'dashboard_ejecutivo');
   };
 
-  const exportFinancieroInscripcionReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const ano = filters.year || new Date().getFullYear();
-    const data = await getInscripcionesAnuales(ano, filters.rama || undefined);
-
-    const totalInscritos = data.length;
-    const pagados = data.filter((d: any) => d.estadoPago === 'PAGADO');
-    const pendientes = data.filter((d: any) => d.estadoPago !== 'PAGADO');
-    const totalPagado = pagados.reduce((sum: number, d: any) => sum + Number(d.montoInscripcion || 0), 0);
-    const totalPendiente = pendientes.reduce((sum: number, d: any) => sum + Number(d.montoInscripcion || 0), 0);
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <GenericSummaryReportTemplate
-          title="Finanzas de Inscripción (Grupo)"
-          subtitle={`Año ${ano}${filters.rama ? ` • Rama: ${filters.rama}` : ''}`}
-          metadata={metadata}
-          summary={[
-            { label: 'Inscritos', value: totalInscritos },
-            { label: 'Pagados', value: pagados.length },
-            { label: 'Pendientes', value: pendientes.length },
-            { label: 'Ingresos cobrados', value: `S/ ${totalPagado.toFixed(2)}` },
-            { label: 'Por cobrar', value: `S/ ${totalPendiente.toFixed(2)}` },
-          ]}
-          rows={data.slice(0, 40).map((d: any) => ({
-            label: `${d.codigoScout} | ${d.nombreCompleto}`,
-            value: `${d.estadoPago} • S/ ${Number(d.montoInscripcion || 0).toFixed(2)}`,
-          }))}
-        />,
-        `reporte_financiero_inscripcion_${ano}`
-      );
-    }
-
-    const doc = new Document({
-      sections: [{ children: [
-        new Paragraph({ children: [new TextRun({ text: 'Finanzas de Inscripción (Grupo)', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [new TextRun({ text: `Año: ${ano}` })] }),
-        new Paragraph({ children: [new TextRun({ text: `Inscritos: ${totalInscritos} | Pagados: ${pagados.length} | Pendientes: ${pendientes.length}` })] }),
-        new Paragraph({ children: [new TextRun({ text: `Cobrado: S/ ${totalPagado.toFixed(2)} | Por cobrar: S/ ${totalPendiente.toFixed(2)}` })] }),
-      ]}],
-    });
-    return await generateAndDownloadDOCX(doc, `reporte_financiero_inscripcion_${ano}`);
-  };
-
   const exportFinancieroRamaReport = async (
     format: ExportFormat,
     metadata: any
@@ -1170,20 +1038,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
-        <GenericSummaryReportTemplate
-          title="Reporte Financiero"
-          subtitle={`Periodo: ${fechaInicio} a ${fechaFin}`}
+        <FinancieroRamaTemplate
+          data={{ transacciones, total, totalIngresos, totalEgresos, periodo: `${fechaInicio} a ${fechaFin}` }}
           metadata={metadata}
-          summary={[
-            { label: 'Transacciones', value: total },
-            { label: 'Ingresos', value: `S/ ${totalIngresos.toFixed(2)}` },
-            { label: 'Egresos', value: `S/ ${totalEgresos.toFixed(2)}` },
-            { label: 'Balance', value: `S/ ${(totalIngresos - totalEgresos).toFixed(2)}` },
-          ]}
-          rows={transacciones.slice(0, 40).map(t => ({
-            label: `${t.fecha_transaccion} | ${t.descripcion || t.categoria}`,
-            value: `${t.tipo} S/ ${Number(t.monto || 0).toFixed(2)}`,
-          }))}
         />,
         'reporte_financiero'
       );
@@ -1328,24 +1185,32 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
+    // El filtro visible para este reporte es Fecha Desde/Fecha Hasta (no Año/Rama),
+    // así que se envían esos valores a la RPC en vez de filters.year/filters.rama
+    // (que pertenecen a otros reportes y nunca se setean para este).
     const anio = filters.year || new Date().getFullYear();
-    const rama = filters.rama || undefined;
-    
+    const fechaDesde = filters.dateFrom || undefined;
+    const fechaHasta = filters.dateTo || undefined;
+
     const reporte = await ReportsService.getReporteActividadesGerencial({
-      ano: anio,
-      rama: rama
+      ano: fechaDesde || fechaHasta ? undefined : anio,
+      fecha_desde: fechaDesde,
+      fecha_hasta: fechaHasta,
     });
 
     const operacionales = reporte?.kpis_operacionales || {};
     const financieros = reporte?.kpis_financieros || {};
     const impacto = reporte?.kpis_impacto || {};
     const topActividades = impacto?.top_actividades || [];
+    const periodoLabel = fechaDesde || fechaHasta
+      ? `${fechaDesde || '...'} a ${fechaHasta || '...'}`
+      : `Año ${anio}`;
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
         <GenericSummaryReportTemplate
           title="Reporte de Actividades - Metricas Gerenciales"
-          subtitle={`Año ${anio}${rama ? ` - Rama: ${rama}` : ''}`}
+          subtitle={periodoLabel}
           metadata={metadata}
           summary={[
             { label: 'Total Actividades', value: operacionales.total_actividades ?? 0 },
@@ -1377,7 +1242,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     const doc = new Document({
       sections: [{ children: [
         new Paragraph({ children: [new TextRun({ text: 'Reporte de Actividades - Metricas Gerenciales', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [new TextRun({ text: `Año ${anio}${rama ? ` - Rama: ${rama}` : ''}`, size: 24 })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [new TextRun({ text: periodoLabel, size: 24 })], alignment: AlignmentType.CENTER }),
         new Paragraph({ children: [] }),
         new Paragraph({ children: [new TextRun({ text: 'KPIs OPERACIONALES', bold: true, size: 24 })] }),
         new Paragraph({ children: [new TextRun({ text: `Total Actividades: ${operacionales.total_actividades ?? 0}` })] }),
@@ -1406,25 +1271,21 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
-    const items = await InventarioService.getAllItems();
+    const allItems = await InventarioService.getAllItems();
+    const items = allItems.filter((i) =>
+      (!filters.categoria || i.categoria === filters.categoria) &&
+      (!filters.estado || i.estado === filters.estado)
+    );
     const total = items.length;
-    const disponibles = items.filter((i: any) => i.estado === 'DISPONIBLE').length;
-    const prestados = items.filter((i: any) => i.estado === 'PRESTADO').length;
+    const disponibles = items.filter((i) => i.estado === 'disponible').length;
+    const prestados = items.filter((i) => i.estado === 'prestado').length;
+    const valorTotal = items.reduce((sum, i) => sum + Number(i.costo || 0) * Number(i.cantidad || 0), 0);
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
-        <GenericSummaryReportTemplate
-          title="Reporte de Inventario"
+        <InventarioReportTemplate
+          data={{ items, total, disponibles, prestados, valorTotal }}
           metadata={metadata}
-          summary={[
-            { label: 'Items totales', value: total },
-            { label: 'Disponibles', value: disponibles },
-            { label: 'Prestados', value: prestados },
-          ]}
-          rows={items.slice(0, 40).map((i: any) => ({
-            label: `${i.codigo || ''} ${i.nombre || 'Item'}`,
-            value: `${i.categoria || ''} | ${i.estado || ''}`,
-          }))}
         />,
         'reporte_inventario'
       );
@@ -1433,7 +1294,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     const doc = new Document({
       sections: [{ children: [
         new Paragraph({ children: [new TextRun({ text: 'Reporte de Inventario', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
-        ...items.slice(0, 120).map((i: any) => new Paragraph({ children: [new TextRun({ text: `${i.codigo || ''} | ${i.nombre || 'Item'} | ${i.categoria || '-'} | ${i.estado || '-'}` })] })),
+        new Paragraph({ children: [new TextRun({ text: `Items: ${total} | Disponibles: ${disponibles} | Prestados: ${prestados} | Valor Total: S/ ${valorTotal.toFixed(2)}` })] }),
+        new Paragraph({ children: [] }),
+        ...items.map((i) => new Paragraph({ children: [new TextRun({ text: `${i.nombre} | ${i.categoria} | Cant.: ${i.cantidad} | ${i.estado} | ${i.ubicacion || '-'}` })] })),
       ]}],
     });
     return await generateAndDownloadDOCX(doc, 'reporte_inventario');
@@ -2446,67 +2309,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {selectedReportType === ReportType.INSCRIPCIONES_ANUALES && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Año
-                </label>
-                <input
-                  type="number"
-                  min="2020"
-                  max="2030"
-                  value={filters.year || new Date().getFullYear()}
-                  onChange={(e) =>
-                    setFilters({ ...filters, year: parseInt(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rama/Perfil (opcional)
-                </label>
-                <select
-                  value={filters.rama || ''}
-                  onChange={(e) =>
-                    setFilters({ ...filters, rama: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todas las ramas</option>
-                  <option value="Manada">Manada</option>
-                  <option value="Tropa">Tropa</option>
-                  <option value="Comunidad">Comunidad</option>
-                  <option value="Clan">Clan</option>
-                  <option value="Dirigentes">Dirigentes</option>
-                  <option value="Comite">Comite</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {selectedReportType === ReportType.DOCUMENTACION_PENDIENTE && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Año
-              </label>
-              <input
-                type="number"
-                min="2020"
-                max="2030"
-                value={filters.year || new Date().getFullYear()}
-                onChange={(e) =>
-                  setFilters({ ...filters, year: parseInt(e.target.value) })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Mostrará scouts con documentos o pagos pendientes
-              </p>
-            </div>
-          )}
-
           {selectedReportType === ReportType.RANKING_PATRULLAS && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -2561,44 +2363,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               <p className="text-sm text-blue-800">
                 📊 Este reporte mostrará KPIs generales del grupo (scouts activos, asistencia promedio, tendencias) sin filtros adicionales.
               </p>
-            </div>
-          )}
-
-          {selectedReportType === ReportType.REPORTE_FINANCIERO_INSCRIPCION && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Año
-                </label>
-                <input
-                  type="number"
-                  min="2020"
-                  max="2030"
-                  value={filters.year || new Date().getFullYear()}
-                  onChange={(e) =>
-                    setFilters({ ...filters, year: parseInt(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rama (opcional)
-                </label>
-                <select
-                  value={filters.rama || ''}
-                  onChange={(e) =>
-                    setFilters({ ...filters, rama: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todas las ramas</option>
-                  <option value="Manada">Manada</option>
-                  <option value="Tropa">Tropa</option>
-                  <option value="Comunidad">Comunidad</option>
-                  <option value="Clan">Clan</option>
-                </select>
-              </div>
             </div>
           )}
 
@@ -2711,12 +2475,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todas las categorías</option>
-                  <option value="CAMPING">Camping</option>
-                  <option value="DEPORTE">Deporte</option>
-                  <option value="COCINA">Cocina</option>
-                  <option value="SEGURIDAD">Seguridad</option>
-                  <option value="CEREMONIAL">Ceremonial</option>
-                  <option value="OTRO">Otro</option>
+                  <option value="material_scout">Material Scout</option>
+                  <option value="camping">Camping</option>
+                  <option value="ceremonial">Ceremonial</option>
+                  <option value="deportivo">Deportivo</option>
+                  <option value="primeros_auxilios">Primeros Auxilios</option>
+                  <option value="administrativo">Administrativo</option>
                 </select>
               </div>
               <div>
@@ -2731,10 +2495,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todos los estados</option>
-                  <option value="DISPONIBLE">Disponible</option>
-                  <option value="PRESTADO">Prestado</option>
-                  <option value="EN_MANTENIMIENTO">En Mantenimiento</option>
-                  <option value="DAÑADO">Dañado</option>
+                  <option value="disponible">Disponible</option>
+                  <option value="prestado">Prestado</option>
+                  <option value="mantenimiento">Mantenimiento</option>
+                  <option value="perdido">Perdido</option>
+                  <option value="baja">Baja</option>
                 </select>
               </div>
             </div>

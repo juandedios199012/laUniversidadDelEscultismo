@@ -1,26 +1,23 @@
 /**
- * Plantilla PDF - Movimientos por Tipo (landscape A4)
- * Detalle de movimientos (INGRESO/EGRESO) de Finanzas > Cuenta por
- * Persona, filtrable por tipo, para seguimiento más específico que
- * el resumen agregado de "Personas e Ingresos".
+ * Plantilla PDF - Finanzas Operativas / Rama (landscape A4)
+ * Detalle de transacciones del módulo Finanzas (transacciones_financieras)
+ * por período. Modelada sobre PersonasIngresosTemplate.
  */
 
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { MovimientoPersonaConTitular } from '../../../../services/finanzasService';
+import { Transaccion } from '../../../../services/finanzasService';
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NAME_W = 175;
-const TIPO_W = 55;
-const CONCEPTO_W = 170;
-const MONTO_W = 70;
-const NETO_W = 70;
-const INV_W = 70;
-const FALTANTE_W = 70;
-const FECHA_W = 60;
+const FECHA_W = 70;
+const DESC_W = 250;
+const CAT_W = 110;
+const TIPO_W = 70;
+const MONTO_W = 90;
+const RESP_W = 140;
 const ROW_H = 18;
-const ROWS_PER_PAGE = 24;
+const ROWS_PER_PAGE = 22;
 
 const money = (n: number): string => `S/ ${Number(n || 0).toFixed(2)}`;
 
@@ -29,12 +26,6 @@ const fmtFecha = (iso?: string): string => {
   const p = iso.split('T')[0].split('-');
   if (p.length < 3) return iso;
   return `${p[2]}/${p[1]}/${p[0]}`;
-};
-
-const TIPO_LABEL: Record<string, string> = {
-  TODOS: 'Todos',
-  INGRESO: 'Ingreso',
-  EGRESO: 'Egreso',
 };
 
 const S = StyleSheet.create({
@@ -134,24 +125,22 @@ const S = StyleSheet.create({
 
 interface Props {
   data: {
-    movimientos: MovimientoPersonaConTitular[];
+    transacciones: Transaccion[];
+    total: number;
     totalIngresos: number;
     totalEgresos: number;
-    totalGananciaNeta: number;
-    totalInversion: number;
-    totalDeuda: number;
-    tipoFiltro: 'TODOS' | 'INGRESO' | 'EGRESO';
+    periodo: string;
   };
   metadata: ReportMetadata;
 }
 
-const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
-  const { movimientos, totalIngresos, totalEgresos, totalGananciaNeta, totalInversion, totalDeuda, tipoFiltro } = data;
-  const neto = totalIngresos - totalEgresos;
+const FinancieroRamaTemplate: React.FC<Props> = ({ data, metadata }) => {
+  const { transacciones, total, totalIngresos, totalEgresos, periodo } = data;
+  const balance = totalIngresos - totalEgresos;
 
-  const chunks: MovimientoPersonaConTitular[][] = [];
-  for (let i = 0; i < Math.max(movimientos.length, 1); i += ROWS_PER_PAGE) {
-    chunks.push(movimientos.slice(i, i + ROWS_PER_PAGE));
+  const chunks: Transaccion[][] = [];
+  for (let i = 0; i < Math.max(transacciones.length, 1); i += ROWS_PER_PAGE) {
+    chunks.push(transacciones.slice(i, i + ROWS_PER_PAGE));
   }
   if (chunks.length === 0) chunks.push([]);
   const totalPages = chunks.length;
@@ -167,7 +156,7 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
         return (
           <Page key={pageIdx} size="A4" orientation="landscape" style={S.page}>
             <View style={S.headerBar}>
-              <Text style={S.headerTitle}>Movimientos por Tipo — Cuenta por Persona</Text>
+              <Text style={S.headerTitle}>Finanzas Operativas (Rama)</Text>
               <Text style={S.headerSub}>
                 {`Generado: ${genDate} | Pag ${pageIdx + 1}/${totalPages}`}
               </Text>
@@ -175,118 +164,83 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
 
             {isFirst && (
               <Text style={S.subtitleNote}>
-                {`Detalle de movimientos individuales de Finanzas > Cuenta por Persona | Filtro: ${TIPO_LABEL[tipoFiltro]}`}
+                {`Detalle de transacciones del módulo Finanzas | Periodo: ${periodo}${transacciones.length < total ? ` | Mostrando ${transacciones.length} de ${total}` : ''}`}
               </Text>
             )}
 
             {isFirst && (
               <View style={S.kpiRow}>
                 <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Movimientos</Text>
-                  <Text style={S.kpiValue}>{`${movimientos.length}`}</Text>
+                  <Text style={S.kpiLabel}>Transacciones</Text>
+                  <Text style={S.kpiValue}>{`${total}`}</Text>
                 </View>
                 <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Total Ingresos</Text>
+                  <Text style={S.kpiLabel}>Ingresos</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>{money(totalIngresos)}</Text>
                 </View>
                 <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Total Egresos</Text>
+                  <Text style={S.kpiLabel}>Egresos</Text>
                   <Text style={[S.kpiValue, { color: '#b91c1c' }]}>{money(totalEgresos)}</Text>
                 </View>
-                <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Neto (Ingresos - Egresos)</Text>
-                  <Text style={[S.kpiValue, { color: neto >= 0 ? '#15803d' : '#b91c1c' }]}>
-                    {money(neto)}
-                  </Text>
-                </View>
-                <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Ganancia Neta</Text>
-                  <Text style={[S.kpiValue, { color: '#15803d' }]}>
-                    {money(totalGananciaNeta)}
-                  </Text>
-                </View>
-                <View style={S.kpiCard}>
-                  <Text style={S.kpiLabel}>Inversión</Text>
-                  <Text style={[S.kpiValue, { color: '#b91c1c' }]}>
-                    {money(totalInversion)}
-                  </Text>
-                </View>
                 <View style={S.kpiCardLast}>
-                  <Text style={S.kpiLabel}>Deuda por Cobrar</Text>
-                  <Text style={[S.kpiValue, { color: '#d97706' }]}>
-                    {money(totalDeuda)}
+                  <Text style={S.kpiLabel}>Balance</Text>
+                  <Text style={[S.kpiValue, { color: balance >= 0 ? '#15803d' : '#b91c1c' }]}>
+                    {money(balance)}
                   </Text>
                 </View>
               </View>
             )}
 
             <View style={S.tableHeader}>
-              <Text style={[S.thLeft, { width: NAME_W }]}>Persona</Text>
+              <Text style={[S.th, { width: FECHA_W }]}>Fecha</Text>
+              <Text style={[S.thLeft, { width: DESC_W }]}>Concepto</Text>
+              <Text style={[S.th, { width: CAT_W }]}>Categoría</Text>
               <Text style={[S.th, { width: TIPO_W }]}>Tipo</Text>
-              <Text style={[S.thLeft, { width: CONCEPTO_W }]}>Concepto</Text>
               <Text style={[S.th, { width: MONTO_W }]}>Monto</Text>
-              <Text style={[S.th, { width: NETO_W }]}>Ganancia Neta</Text>
-              <Text style={[S.th, { width: INV_W }]}>Inversión</Text>
-              <Text style={[S.th, { width: FALTANTE_W }]}>Faltante</Text>
-              <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Fecha</Text>
+              <Text style={[S.thLeft, { width: RESP_W, borderRightWidth: 0 }]}>Responsable</Text>
             </View>
 
-            {pageRows.map((m, rowIdx) => {
+            {pageRows.map((t, rowIdx) => {
               const absIdx = pageIdx * ROWS_PER_PAGE + rowIdx;
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
-              const esIngreso = m.tipo_movimiento === 'INGRESO';
-              const ganNeta = m.cantidad != null && m.ganancia_unitaria != null ? m.cantidad * m.ganancia_unitaria : undefined;
-              const inv = m.cantidad != null && m.precio_unitario != null && m.ganancia_unitaria != null
-                ? m.cantidad * (m.precio_unitario - m.ganancia_unitaria)
-                : undefined;
-              const meta = m.cantidad != null && m.precio_unitario != null ? m.cantidad * m.precio_unitario : undefined;
-              const faltante = meta != null && m.monto < meta ? meta - m.monto : undefined;
+              const esIngreso = t.tipo === 'INGRESO';
               return (
-                <View key={m.id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
-                    {`${m.apellidos}, ${m.nombres}`}
+                <View key={t.id} style={rowStyle}>
+                  <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H }]}>
+                    {fmtFecha(t.fecha_transaccion)}
+                  </Text>
+                  <Text style={[S.tdLeft, { width: DESC_W, height: ROW_H }]} numberOfLines={1}>
+                    {t.descripcion || t.concepto || '—'}
+                  </Text>
+                  <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]} numberOfLines={1}>
+                    {t.categoria}
                   </Text>
                   <Text style={[S.tdCenter, { width: TIPO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c', fontFamily: 'Helvetica-Bold' }]}>
                     {esIngreso ? 'Ingreso' : 'Egreso'}
                   </Text>
-                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]} numberOfLines={1}>
-                    {m.concepto}
-                  </Text>
                   <Text style={[S.tdMonto, { width: MONTO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c' }]}>
-                    {money(m.monto)}
+                    {money(t.monto)}
                   </Text>
-                  <Text style={[S.tdMonto, { width: NETO_W, height: ROW_H, color: '#15803d' }]}>
-                    {ganNeta != null ? money(ganNeta) : '—'}
-                  </Text>
-                  <Text style={[S.tdMonto, { width: INV_W, height: ROW_H, color: '#b91c1c' }]}>
-                    {inv != null ? money(inv) : '—'}
-                  </Text>
-                  <Text style={[S.tdMonto, { width: FALTANTE_W, height: ROW_H, color: '#d97706' }]}>
-                    {faltante != null ? money(faltante) : '—'}
-                  </Text>
-                  <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H, borderRightWidth: 0 }]}>
-                    {fmtFecha(m.fecha)}
+                  <Text style={[S.tdLeft, { width: RESP_W, height: ROW_H, borderRightWidth: 0 }]} numberOfLines={1}>
+                    {t.responsable_nombre || '—'}
                   </Text>
                 </View>
               );
             })}
 
-            {isFirst && movimientos.length === 0 && (
+            {isFirst && transacciones.length === 0 && (
               <View style={{ padding: 20, alignItems: 'center' }}>
                 <Text style={{ fontSize: 11, color: '#6b7280' }}>
-                  No se encontraron movimientos para el filtro seleccionado.
+                  No se encontraron transacciones para el período seleccionado.
                 </Text>
               </View>
             )}
 
-            {isLast && movimientos.length > 0 && (
+            {isLast && transacciones.length > 0 && (
               <View style={S.totalsRow}>
-                <Text style={[S.tdTotalLabel, { width: NAME_W + TIPO_W + CONCEPTO_W }]}>TOTALES</Text>
-                <Text style={[S.tdTotalMonto, { width: MONTO_W, color: neto >= 0 ? '#15803d' : '#b91c1c' }]}>{money(neto)}</Text>
-                <Text style={[S.tdTotalMonto, { width: NETO_W, color: '#15803d' }]}>{money(totalGananciaNeta)}</Text>
-                <Text style={[S.tdTotalMonto, { width: INV_W, color: '#b91c1c' }]}>{money(totalInversion)}</Text>
-                <Text style={[S.tdTotalMonto, { width: FALTANTE_W, color: '#d97706' }]}>{money(totalDeuda)}</Text>
-                <View style={{ width: FECHA_W }} />
+                <Text style={[S.tdTotalLabel, { width: FECHA_W + DESC_W + CAT_W + TIPO_W }]}>TOTALES</Text>
+                <Text style={[S.tdTotalMonto, { width: MONTO_W, color: balance >= 0 ? '#15803d' : '#b91c1c' }]}>{money(balance)}</Text>
+                <View style={{ width: RESP_W }} />
               </View>
             )}
 
@@ -301,4 +255,4 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
   );
 };
 
-export default MovimientosPorTipoTemplate;
+export default FinancieroRamaTemplate;

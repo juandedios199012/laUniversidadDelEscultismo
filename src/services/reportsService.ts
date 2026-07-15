@@ -298,9 +298,15 @@ export class ReportsService {
   }> {
     try {
       const { data, error } = await supabase
-        .rpc('generar_dashboard_ejecutivo');
+        .rpc('generar_dashboard_ejecutivo', { p_periodo_dias: 30 });
 
       if (error) throw error;
+      if (!data?.kpis_principales) {
+        throw new Error(
+          'La función generar_dashboard_ejecutivo no devolvió kpis_principales — probablemente hay una versión antigua ' +
+          'de la función instalada en la base de datos (revisar database/generar_dashboard_ejecutivo.sql).'
+        );
+      }
       return data;
     } catch (error) {
       console.error('❌ Error al generar dashboard ejecutivo:', error);

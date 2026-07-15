@@ -12,12 +12,9 @@ export enum ReportType {
   ACTIVITY_HISTORY = 'activity_history',
   DNGI03 = 'dngi03',
   // Nuevos reportes (Opción C)
-  INSCRIPCIONES_ANUALES = 'inscripciones_anuales',
   RANKING_PATRULLAS = 'ranking_patrullas',
-  DOCUMENTACION_PENDIENTE = 'documentacion_pendiente',
   DASHBOARD_EJECUTIVO = 'dashboard_ejecutivo',
   REPORTE_FINANCIERO = 'reporte_financiero',
-  REPORTE_FINANCIERO_INSCRIPCION = 'reporte_financiero_inscripcion',
   REPORTE_FINANCIERO_RAMA = 'reporte_financiero_rama',
   PERSONAS_INGRESOS = 'personas_ingresos',
   MOVIMIENTOS_POR_TIPO = 'movimientos_por_tipo',
@@ -267,24 +264,6 @@ export interface ReportTemplate {
   customizable: boolean;
 }
 
-// Datos de Inscripciones Anuales (Nuevo)
-export interface InscripcionAnualData {
-  id: string;
-  scoutId: string;
-  codigoScout: string;
-  nombreCompleto: string;
-  rama: string;
-  ano: number;
-  fechaInscripcion: string;
-  montoInscripcion: number;
-  fechaPago?: string;
-  estadoPago: string;
-  documentosCompletos: boolean;
-  certificadoMedico: boolean;
-  autorizacionPadres: boolean;
-  activo: boolean;
-}
-
 // Datos de Puntos de Patrulla (Nuevo)
 export interface PuntosPatrullaData {
   patrullaId: string;
@@ -299,20 +278,6 @@ export interface PuntosPatrullaData {
   }[];
   totalPuntos: number;
   posicion: number;
-}
-
-// Datos de Documentación Pendiente (Nuevo)
-export interface DocumentacionPendienteData {
-  scoutId: string;
-  codigoScout: string;
-  nombreCompleto: string;
-  rama: string;
-  ano: number;
-  documentosFaltantes: string[];
-  certificadoMedico: boolean;
-  autorizacionPadres: boolean;
-  estadoPago: string;
-  fechaLimite?: string;
 }
 
 // Datos de Especialidades (Dashboard para Dirigentes y Padres)
