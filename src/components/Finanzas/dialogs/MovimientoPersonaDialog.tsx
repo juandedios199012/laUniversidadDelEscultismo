@@ -138,7 +138,15 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
   const acumuladoBruto = !isNaN(montoNum) ? montoNum : 0;
   const acumuladoNeto =
     requiereCantidad && gananciaUnitaria != null && !isNaN(cantidadNum) ? cantidadNum * gananciaUnitaria : undefined;
+  // Inversión: costo unitario implícito (precio_unitario - ganancia_unitaria) × cantidad.
+  // No es un movimiento de caja — es lo que ya se descontó para llegar al Acumulado Neto.
+  const inversion =
+    requiereCantidad && precioUnitario != null && gananciaUnitaria != null && !isNaN(cantidadNum)
+      ? cantidadNum * (precioUnitario - gananciaUnitaria)
+      : undefined;
   const completo = meta != null && acumuladoBruto >= meta;
+  // Faltante: lo que todavía se le debe cobrar a la persona para llegar a la Meta.
+  const faltante = meta != null && !completo ? meta - acumuladoBruto : undefined;
 
   const puedeGuardar =
     !!persona &&
@@ -356,13 +364,21 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                       <CheckCircle2 className="h-3.5 w-3.5" /> Completo
                     </span>
                   ) : (
-                    <span className="text-gray-400 font-medium">Pendiente</span>
+                    <span className="text-amber-600 font-medium">
+                      Faltante {faltante != null ? formatMonto(faltante) : ''}
+                    </span>
                   )}
                 </div>
               )}
               {acumuladoNeto != null && (
                 <div className="text-xs px-1 text-muted-foreground">
                   Acumulado Neto: <span className="font-medium text-emerald-700">{formatMonto(acumuladoNeto)}</span>
+                  {inversion != null && (
+                    <>
+                      {' · Inversión: '}
+                      <span className="font-medium text-rose-700">{formatMonto(inversion)}</span>
+                    </>
+                  )}
                 </div>
               )}
               <p className="text-xs text-muted-foreground">

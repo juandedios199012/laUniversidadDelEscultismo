@@ -37,7 +37,7 @@ import { supabase } from '../../../lib/supabase';
 import DirigenteService from '../../../services/dirigenteService';
 import ComitePadresService from '../../../services/comitePadresService';
 import ReportsService from '../../../services/reportsService';
-import FinanzasService from '../../../services/finanzasService';
+import FinanzasService, { ConceptoFinanzas } from '../../../services/finanzasService';
 import InventarioService from '../../../services/inventarioService';
 import {
   getInscripcionesAnuales,
@@ -112,12 +112,26 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Estado para el filtro del reporte "Movimientos por Tipo"
   const [movimientoTipoFilter, setMovimientoTipoFilter] = useState<'TODOS' | 'INGRESO' | 'EGRESO'>('TODOS');
 
+  // Estado para el filtro de Concepto del reporte "Ingresos por Concepto"
+  const [ingresosConceptoFilter, setIngresosConceptoFilter] = useState<string>('');
+  const [conceptosFinanzasList, setConceptosFinanzasList] = useState<ConceptoFinanzas[]>([]);
+
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
     loadScouts();
     loadRamas();
     loadDirigentesYComite();
+    loadConceptosFinanzas();
   }, []);
+
+  const loadConceptosFinanzas = async () => {
+    try {
+      const conceptos = await FinanzasService.listarConceptosFinanzas(false);
+      setConceptosFinanzasList(conceptos);
+    } catch (error) {
+      console.error('Error cargando conceptos de finanzas:', error);
+    }
+  };
   
   const loadRamas = async () => {
     const ramas = await getAvailableRamas();
@@ -1190,14 +1204,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
-    const { saldos, saldoGlobal, gananciaNetaGlobal } = await FinanzasService.listarSaldosPersonas();
+    const { saldos, saldoGlobal, gananciaNetaGlobal, inversionGlobal, deudaGlobal } = await FinanzasService.listarSaldosPersonas();
 
     const totalIngresos = saldos.reduce((s, p) => s + Number(p.total_ingresos || 0), 0);
     const totalEgresos = saldos.reduce((s, p) => s + Number(p.total_egresos || 0), 0);
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
-        <PersonasIngresosTemplate data={{ saldos, saldoGlobal, gananciaNetaGlobal }} metadata={metadata} />,
+        <PersonasIngresosTemplate data={{ saldos, saldoGlobal, gananciaNetaGlobal, inversionGlobal, deudaGlobal }} metadata={metadata} />,
         'personas_ingresos'
       );
     }
@@ -1206,12 +1220,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       sections: [{
         children: [
           new Paragraph({ children: [new TextRun({ text: 'Personas e Ingresos', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
-          new Paragraph({ children: [new TextRun({ text: `Personas con movimientos: ${saldos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Saldo global: S/ ${saldoGlobal.toFixed(2)} | Ganancia Neta: S/ ${gananciaNetaGlobal.toFixed(2)}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Personas con movimientos: ${saldos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Saldo global: S/ ${saldoGlobal.toFixed(2)} | Ganancia Neta: S/ ${gananciaNetaGlobal.toFixed(2)} | Inversión: S/ ${inversionGlobal.toFixed(2)} | Deuda por cobrar: S/ ${deudaGlobal.toFixed(2)}` })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: 'Detalle por Persona', bold: true, size: 26 })] }),
           ...saldos.map(p => new Paragraph({
             children: [new TextRun({
-              text: `${p.apellidos}, ${p.nombres} — Ingresos: S/ ${Number(p.total_ingresos).toFixed(2)} | Egresos: S/ ${Number(p.total_egresos).toFixed(2)} | Saldo: S/ ${Number(p.saldo).toFixed(2)} | Ganancia Neta: S/ ${Number(p.ganancia_neta).toFixed(2)} | Mov.: ${p.movimientos_count}`,
+              text: `${p.apellidos}, ${p.nombres} — Ingresos: S/ ${Number(p.total_ingresos).toFixed(2)} | Egresos: S/ ${Number(p.total_egresos).toFixed(2)} | Saldo: S/ ${Number(p.saldo).toFixed(2)} | Ganancia Neta: S/ ${Number(p.ganancia_neta).toFixed(2)} | Inversión: S/ ${Number(p.inversion).toFixed(2)} | Deuda: S/ ${Number(p.deuda).toFixed(2)} | Mov.: ${p.movimientos_count}`,
             })],
           })),
         ],
@@ -1226,7 +1240,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     metadata: any
   ): Promise<ReportGenerationResult> => {
     const tipo = movimientoTipoFilter === 'TODOS' ? undefined : movimientoTipoFilter;
-    const { movimientos, totalIngresos, totalEgresos, totalGananciaNeta } = await FinanzasService.listarMovimientosPorTipo(tipo);
+    const { movimientos, totalIngresos, totalEgresos, totalGananciaNeta, totalInversion, totalDeuda } = await FinanzasService.listarMovimientosPorTipo(tipo);
 
     if (movimientos.length === 0) {
       return { status: 'error' as any, fileName: 'error', error: 'No se encontraron movimientos para el filtro seleccionado' };
@@ -1237,7 +1251,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
         <MovimientosPorTipoTemplate
-          data={{ movimientos, totalIngresos, totalEgresos, totalGananciaNeta, tipoFiltro: movimientoTipoFilter }}
+          data={{ movimientos, totalIngresos, totalEgresos, totalGananciaNeta, totalInversion, totalDeuda, tipoFiltro: movimientoTipoFilter }}
           metadata={metadata}
         />,
         fileName
@@ -1248,7 +1262,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       sections: [{
         children: [
           new Paragraph({ children: [new TextRun({ text: 'Movimientos por Tipo', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
-          new Paragraph({ children: [new TextRun({ text: `Filtro: ${movimientoTipoFilter} | Movimientos: ${movimientos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Filtro: ${movimientoTipoFilter} | Movimientos: ${movimientos.length} | Ingresos: S/ ${totalIngresos.toFixed(2)} | Egresos: S/ ${totalEgresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)} | Inversión: S/ ${totalInversion.toFixed(2)} | Deuda por cobrar: S/ ${totalDeuda.toFixed(2)}` })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: 'Detalle de Movimientos', bold: true, size: 26 })] }),
           ...movimientos.map(m => new Paragraph({
@@ -1267,7 +1281,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
-    const { detalle, resumen, totalIngresos, totalGananciaNeta } = await FinanzasService.listarIngresosPorConcepto();
+    const { detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda } = await FinanzasService.listarIngresosPorConcepto(ingresosConceptoFilter || undefined);
 
     if (detalle.length === 0) {
       return { status: 'error' as any, fileName: 'error', error: 'No se encontraron ingresos registrados' };
@@ -1278,7 +1292,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
         <IngresosPorConceptoTemplate
-          data={{ detalle, resumen, totalIngresos, totalGananciaNeta }}
+          data={{ detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda, conceptoFiltro: ingresosConceptoFilter || 'Todos' }}
           metadata={metadata}
         />,
         fileName
@@ -1289,12 +1303,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       sections: [{
         children: [
           new Paragraph({ children: [new TextRun({ text: 'Ingresos por Concepto', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
-          new Paragraph({ children: [new TextRun({ text: `Conceptos: ${resumen.length} | Movimientos: ${detalle.length} | Ingresos Brutos: S/ ${totalIngresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Filtro: ${ingresosConceptoFilter || 'Todos'} | Conceptos: ${resumen.length} | Movimientos: ${detalle.length} | Ingresos Brutos: S/ ${totalIngresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)} | Inversión: S/ ${totalInversion.toFixed(2)} | Deuda por cobrar: S/ ${totalDeuda.toFixed(2)}` })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: 'Resumen por Concepto', bold: true, size: 26 })] }),
           ...resumen.map(r => new Paragraph({
             children: [new TextRun({
-              text: `${r.concepto} — Movimientos: ${r.movimientos_count} | Cantidad: ${r.total_cantidad} | Bruto: S/ ${Number(r.total_monto).toFixed(2)} | Neto: S/ ${Number(r.total_ganancia_neta).toFixed(2)}`,
+              text: `${r.concepto} — Movimientos: ${r.movimientos_count} | Cantidad: ${r.total_cantidad} | Bruto: S/ ${Number(r.total_monto).toFixed(2)} | Neto: S/ ${Number(r.total_ganancia_neta).toFixed(2)} | Inversión: S/ ${Number(r.total_inversion).toFixed(2)} | Deuda: S/ ${Number(r.total_deuda).toFixed(2)}`,
             })],
           })),
           new Paragraph({ children: [] }),
@@ -2412,9 +2426,22 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           )}
 
           {selectedReportType === ReportType.INGRESOS_POR_CONCEPTO && (
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
-                💰 Este reporte agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado) y neto (ganancia ya descontada la inversión) de cada uno, sin filtros adicionales.
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Concepto
+              </label>
+              <select
+                value={ingresosConceptoFilter}
+                onChange={(e) => setIngresosConceptoFilter(e.target.value)}
+                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Todos</option>
+                {conceptosFinanzasList.map((c) => (
+                  <option key={c.id} value={c.descripcion}>{c.descripcion}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                Agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado), neto (ya descontada la inversión) y deuda por cobrar de cada uno. Filtra por un concepto específico o deja "Todos" para verlos todos.
               </p>
             </div>
           )}

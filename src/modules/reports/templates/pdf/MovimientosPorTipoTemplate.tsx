@@ -11,13 +11,15 @@ import { MovimientoPersonaConTitular } from '../../../../services/finanzasServic
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NAME_W = 180;
-const DOC_W = 80;
-const TIPO_W = 70;
-const CONCEPTO_W = 180;
-const MONTO_W = 90;
-const NETO_W = 90;
-const FECHA_W = 80;
+const NAME_W = 145;
+const DOC_W = 65;
+const TIPO_W = 55;
+const CONCEPTO_W = 135;
+const MONTO_W = 70;
+const NETO_W = 70;
+const INV_W = 70;
+const FALTANTE_W = 70;
+const FECHA_W = 60;
 const ROW_H = 18;
 const ROWS_PER_PAGE = 24;
 
@@ -137,13 +139,15 @@ interface Props {
     totalIngresos: number;
     totalEgresos: number;
     totalGananciaNeta: number;
+    totalInversion: number;
+    totalDeuda: number;
     tipoFiltro: 'TODOS' | 'INGRESO' | 'EGRESO';
   };
   metadata: ReportMetadata;
 }
 
 const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
-  const { movimientos, totalIngresos, totalEgresos, totalGananciaNeta, tipoFiltro } = data;
+  const { movimientos, totalIngresos, totalEgresos, totalGananciaNeta, totalInversion, totalDeuda, tipoFiltro } = data;
   const neto = totalIngresos - totalEgresos;
 
   const chunks: MovimientoPersonaConTitular[][] = [];
@@ -196,10 +200,22 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
                     {money(neto)}
                   </Text>
                 </View>
-                <View style={S.kpiCardLast}>
+                <View style={S.kpiCard}>
                   <Text style={S.kpiLabel}>Ganancia Neta</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>
                     {money(totalGananciaNeta)}
+                  </Text>
+                </View>
+                <View style={S.kpiCard}>
+                  <Text style={S.kpiLabel}>Inversión</Text>
+                  <Text style={[S.kpiValue, { color: '#b91c1c' }]}>
+                    {money(totalInversion)}
+                  </Text>
+                </View>
+                <View style={S.kpiCardLast}>
+                  <Text style={S.kpiLabel}>Deuda por Cobrar</Text>
+                  <Text style={[S.kpiValue, { color: '#d97706' }]}>
+                    {money(totalDeuda)}
                   </Text>
                 </View>
               </View>
@@ -212,6 +228,8 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
               <Text style={[S.thLeft, { width: CONCEPTO_W }]}>Concepto</Text>
               <Text style={[S.th, { width: MONTO_W }]}>Monto</Text>
               <Text style={[S.th, { width: NETO_W }]}>Ganancia Neta</Text>
+              <Text style={[S.th, { width: INV_W }]}>Inversión</Text>
+              <Text style={[S.th, { width: FALTANTE_W }]}>Faltante</Text>
               <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Fecha</Text>
             </View>
 
@@ -220,6 +238,11 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
               const esIngreso = m.tipo_movimiento === 'INGRESO';
               const ganNeta = m.cantidad != null && m.ganancia_unitaria != null ? m.cantidad * m.ganancia_unitaria : undefined;
+              const inv = m.cantidad != null && m.precio_unitario != null && m.ganancia_unitaria != null
+                ? m.cantidad * (m.precio_unitario - m.ganancia_unitaria)
+                : undefined;
+              const meta = m.cantidad != null && m.precio_unitario != null ? m.cantidad * m.precio_unitario : undefined;
+              const faltante = meta != null && m.monto < meta ? meta - m.monto : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
                   <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
@@ -239,6 +262,12 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
                   </Text>
                   <Text style={[S.tdMonto, { width: NETO_W, height: ROW_H, color: '#15803d' }]}>
                     {ganNeta != null ? money(ganNeta) : '—'}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: INV_W, height: ROW_H, color: '#b91c1c' }]}>
+                    {inv != null ? money(inv) : '—'}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: FALTANTE_W, height: ROW_H, color: '#d97706' }]}>
+                    {faltante != null ? money(faltante) : '—'}
                   </Text>
                   <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H, borderRightWidth: 0 }]}>
                     {fmtFecha(m.fecha)}
@@ -260,6 +289,8 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
                 <Text style={[S.tdTotalLabel, { width: NAME_W + DOC_W + TIPO_W + CONCEPTO_W }]}>TOTALES</Text>
                 <Text style={[S.tdTotalMonto, { width: MONTO_W, color: neto >= 0 ? '#15803d' : '#b91c1c' }]}>{money(neto)}</Text>
                 <Text style={[S.tdTotalMonto, { width: NETO_W, color: '#15803d' }]}>{money(totalGananciaNeta)}</Text>
+                <Text style={[S.tdTotalMonto, { width: INV_W, color: '#b91c1c' }]}>{money(totalInversion)}</Text>
+                <Text style={[S.tdTotalMonto, { width: FALTANTE_W, color: '#d97706' }]}>{money(totalDeuda)}</Text>
                 <View style={{ width: FECHA_W }} />
               </View>
             )}

@@ -13,20 +13,24 @@ import { IngresoPorConceptoDetalle, IngresoPorConceptoResumen } from '../../../.
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NAME_W = 190;
-const CONCEPTO_W = 210;
-const CANTIDAD_W = 60;
-const MONTO_W = 90;
-const NETO_W = 90;
-const FECHA_W = 80;
+const NAME_W = 155;
+const CONCEPTO_W = 170;
+const CANTIDAD_W = 50;
+const MONTO_W = 70;
+const NETO_W = 70;
+const INV_W = 70;
+const DEUDA_W = 70;
+const FECHA_W = 60;
 const ROW_H = 18;
 const ROWS_PER_PAGE = 24;
 
-const RES_CONCEPTO_W = 260;
-const RES_COUNT_W = 90;
-const RES_CANTIDAD_W = 90;
-const RES_BRUTO_W = 120;
-const RES_NETO_W = 120;
+const RES_CONCEPTO_W = 180;
+const RES_COUNT_W = 65;
+const RES_CANTIDAD_W = 65;
+const RES_BRUTO_W = 90;
+const RES_NETO_W = 90;
+const RES_INV_W = 90;
+const RES_DEUDA_W = 90;
 
 const money = (n: number): string => `S/ ${Number(n || 0).toFixed(2)}`;
 
@@ -139,12 +143,15 @@ interface Props {
     resumen: IngresoPorConceptoResumen[];
     totalIngresos: number;
     totalGananciaNeta: number;
+    totalInversion: number;
+    totalDeuda: number;
+    conceptoFiltro?: string;
   };
   metadata: ReportMetadata;
 }
 
 const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
-  const { detalle, resumen, totalIngresos, totalGananciaNeta } = data;
+  const { detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda, conceptoFiltro } = data;
 
   const chunks: IngresoPorConceptoDetalle[][] = [];
   for (let i = 0; i < Math.max(detalle.length, 1); i += ROWS_PER_PAGE) {
@@ -172,7 +179,7 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
 
             {isFirst && (
               <Text style={S.subtitleNote}>
-                {'Seguimiento de ingresos de Finanzas > Cuenta por Persona agrupados por Concepto (bruto = cobrado, neto = ganancia ya descontada la inversión)'}
+                {`Seguimiento de ingresos de Finanzas > Cuenta por Persona agrupados por Concepto (bruto = cobrado, neto = ganancia ya descontada la inversión) | Filtro: ${conceptoFiltro || 'Todos'}`}
               </Text>
             )}
 
@@ -190,9 +197,17 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={S.kpiLabel}>Ingresos Brutos</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>{money(totalIngresos)}</Text>
                 </View>
-                <View style={S.kpiCardLast}>
+                <View style={S.kpiCard}>
                   <Text style={S.kpiLabel}>Ganancia Neta</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>{money(totalGananciaNeta)}</Text>
+                </View>
+                <View style={S.kpiCard}>
+                  <Text style={S.kpiLabel}>Inversión</Text>
+                  <Text style={[S.kpiValue, { color: '#b91c1c' }]}>{money(totalInversion)}</Text>
+                </View>
+                <View style={S.kpiCardLast}>
+                  <Text style={S.kpiLabel}>Deuda por Cobrar</Text>
+                  <Text style={[S.kpiValue, { color: '#d97706' }]}>{money(totalDeuda)}</Text>
                 </View>
               </View>
             )}
@@ -205,7 +220,9 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.th, { width: RES_COUNT_W }]}>Movimientos</Text>
                   <Text style={[S.th, { width: RES_CANTIDAD_W }]}>Cantidad</Text>
                   <Text style={[S.th, { width: RES_BRUTO_W }]}>Ingreso Bruto</Text>
-                  <Text style={[S.th, { width: RES_NETO_W, borderRightWidth: 0 }]}>Ganancia Neta</Text>
+                  <Text style={[S.th, { width: RES_NETO_W }]}>Ganancia Neta</Text>
+                  <Text style={[S.th, { width: RES_INV_W }]}>Inversión</Text>
+                  <Text style={[S.th, { width: RES_DEUDA_W, borderRightWidth: 0 }]}>Deuda</Text>
                 </View>
                 {resumen.map((r, idx) => (
                   <View key={r.concepto} style={idx % 2 === 0 ? S.trEven : S.trOdd}>
@@ -217,8 +234,14 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                     <Text style={[S.tdMonto, { width: RES_BRUTO_W, height: ROW_H, color: '#15803d' }]}>
                       {money(r.total_monto)}
                     </Text>
-                    <Text style={[S.tdMonto, { width: RES_NETO_W, height: ROW_H, color: '#15803d', borderRightWidth: 0 }]}>
+                    <Text style={[S.tdMonto, { width: RES_NETO_W, height: ROW_H, color: '#15803d' }]}>
                       {money(r.total_ganancia_neta)}
+                    </Text>
+                    <Text style={[S.tdMonto, { width: RES_INV_W, height: ROW_H, color: '#b91c1c' }]}>
+                      {money(r.total_inversion)}
+                    </Text>
+                    <Text style={[S.tdMonto, { width: RES_DEUDA_W, height: ROW_H, color: '#d97706', borderRightWidth: 0 }]}>
+                      {money(r.total_deuda)}
                     </Text>
                   </View>
                 ))}
@@ -238,6 +261,8 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
               <Text style={[S.th, { width: CANTIDAD_W }]}>Cantidad</Text>
               <Text style={[S.th, { width: MONTO_W }]}>Monto (Bruto)</Text>
               <Text style={[S.th, { width: NETO_W }]}>Ganancia Neta</Text>
+              <Text style={[S.th, { width: INV_W }]}>Inversión</Text>
+              <Text style={[S.th, { width: DEUDA_W }]}>Deuda</Text>
               <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Fecha</Text>
             </View>
 
@@ -245,6 +270,11 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
               const absIdx = pageIdx * ROWS_PER_PAGE + rowIdx;
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
               const neto = m.cantidad != null && m.ganancia_unitaria != null ? m.cantidad * m.ganancia_unitaria : undefined;
+              const inv = m.cantidad != null && m.precio_unitario != null && m.ganancia_unitaria != null
+                ? m.cantidad * (m.precio_unitario - m.ganancia_unitaria)
+                : undefined;
+              const meta = m.cantidad != null && m.precio_unitario != null ? m.cantidad * m.precio_unitario : undefined;
+              const deuda = meta != null && m.monto < meta ? meta - m.monto : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
                   <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
@@ -261,6 +291,12 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                   </Text>
                   <Text style={[S.tdMonto, { width: NETO_W, height: ROW_H, color: '#15803d' }]}>
                     {neto != null ? money(neto) : '—'}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: INV_W, height: ROW_H, color: '#b91c1c' }]}>
+                    {inv != null ? money(inv) : '—'}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: DEUDA_W, height: ROW_H, color: '#d97706' }]}>
+                    {deuda != null ? money(deuda) : '—'}
                   </Text>
                   <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H, borderRightWidth: 0 }]}>
                     {fmtFecha(m.fecha)}
@@ -282,6 +318,8 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                 <Text style={[S.tdTotalLabel, { width: NAME_W + CONCEPTO_W + CANTIDAD_W }]}>TOTALES</Text>
                 <Text style={[S.tdTotalMonto, { width: MONTO_W, color: '#15803d' }]}>{money(totalIngresos)}</Text>
                 <Text style={[S.tdTotalMonto, { width: NETO_W, color: '#15803d' }]}>{money(totalGananciaNeta)}</Text>
+                <Text style={[S.tdTotalMonto, { width: INV_W, color: '#b91c1c' }]}>{money(totalInversion)}</Text>
+                <Text style={[S.tdTotalMonto, { width: DEUDA_W, color: '#d97706' }]}>{money(totalDeuda)}</Text>
                 <View style={{ width: FECHA_W }} />
               </View>
             )}

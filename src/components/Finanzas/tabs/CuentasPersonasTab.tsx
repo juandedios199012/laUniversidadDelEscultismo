@@ -48,6 +48,8 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
   const [saldos, setSaldos] = useState<SaldoPersona[]>([]);
   const [saldoGlobal, setSaldoGlobal] = useState(0);
   const [gananciaNetaGlobal, setGananciaNetaGlobal] = useState(0);
+  const [inversionGlobal, setInversionGlobal] = useState(0);
+  const [deudaGlobal, setDeudaGlobal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [showNuevo, setShowNuevo] = useState(false);
@@ -61,10 +63,12 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
   const cargar = useCallback(async (texto?: string) => {
     try {
       setLoading(true);
-      const { saldos: data, saldoGlobal: total, gananciaNetaGlobal: gananciaNeta } = await FinanzasService.listarSaldosPersonas(texto);
+      const { saldos: data, saldoGlobal: total, gananciaNetaGlobal: gananciaNeta, inversionGlobal: inversion, deudaGlobal: deuda } = await FinanzasService.listarSaldosPersonas(texto);
       setSaldos(data);
       setSaldoGlobal(total);
       setGananciaNetaGlobal(gananciaNeta);
+      setInversionGlobal(inversion);
+      setDeudaGlobal(deuda);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al cargar saldos');
     } finally {
@@ -138,6 +142,18 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
               {formatMonto(gananciaNetaGlobal)}
             </p>
           </div>
+          <div className="text-right border-l pl-3">
+            <p className="text-xs text-muted-foreground">Inversión total</p>
+            <p className="text-lg font-bold text-rose-700">
+              {formatMonto(inversionGlobal)}
+            </p>
+          </div>
+          <div className="text-right border-l pl-3">
+            <p className="text-xs text-muted-foreground">Deuda por cobrar</p>
+            <p className="text-lg font-bold text-amber-600">
+              {formatMonto(deudaGlobal)}
+            </p>
+          </div>
           {puedeCrear && (
             <Button onClick={() => setShowNuevo(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -204,6 +220,17 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                 {s.ganancia_neta !== 0 && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Ganancia neta: <span className="font-medium text-emerald-700">{formatMonto(s.ganancia_neta)}</span>
+                    {s.inversion !== 0 && (
+                      <>
+                        {' · Inversión: '}
+                        <span className="font-medium text-rose-700">{formatMonto(s.inversion)}</span>
+                      </>
+                    )}
+                  </p>
+                )}
+                {s.deuda !== 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Deuda por cobrar: <span className="font-medium text-amber-600">{formatMonto(s.deuda)}</span>
                   </p>
                 )}
               </div>
@@ -261,6 +288,22 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                   </span>
                 </>
               )}
+              {(detallePersona?.inversion ?? 0) !== 0 && (
+                <>
+                  {' · Inversión: '}
+                  <span className="font-semibold text-rose-700">
+                    {formatMonto(detallePersona?.inversion ?? 0)}
+                  </span>
+                </>
+              )}
+              {(detallePersona?.deuda ?? 0) !== 0 && (
+                <>
+                  {' · Deuda por cobrar: '}
+                  <span className="font-semibold text-amber-600">
+                    {formatMonto(detallePersona?.deuda ?? 0)}
+                  </span>
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -281,7 +324,12 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                   m.cantidad != null && m.ganancia_unitaria != null
                     ? m.cantidad * m.ganancia_unitaria
                     : undefined;
+                const inversion =
+                  m.cantidad != null && m.precio_unitario != null && m.ganancia_unitaria != null
+                    ? m.cantidad * (m.precio_unitario - m.ganancia_unitaria)
+                    : undefined;
                 const completo = meta != null && m.monto >= meta;
+                const faltante = meta != null && !completo ? meta - m.monto : undefined;
                 return (
                   <div
                     key={m.id}
@@ -315,13 +363,21 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
                                 <CheckCircle2 className="h-3 w-3" /> Completo
                               </span>
                             ) : (
-                              <span className="text-gray-400 font-medium">Pendiente</span>
+                              <span className="text-amber-600 font-medium">
+                                Faltante {faltante != null ? formatMonto(faltante) : ''}
+                              </span>
                             )}
                           </p>
                         )}
                         {acumuladoNeto != null && (
                           <p className="text-xs mt-0.5 text-muted-foreground">
                             Neto: <span className="font-medium text-emerald-700">{formatMonto(acumuladoNeto)}</span>
+                            {inversion != null && (
+                              <>
+                                {' · Inversión: '}
+                                <span className="font-medium text-rose-700">{formatMonto(inversion)}</span>
+                              </>
+                            )}
                           </p>
                         )}
                       </div>

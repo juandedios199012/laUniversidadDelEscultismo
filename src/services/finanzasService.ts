@@ -116,6 +116,8 @@ export interface SaldoPersona {
   total_egresos: number;
   saldo: number;
   ganancia_neta: number;
+  inversion: number;
+  deuda: number;
   movimientos_count: number;
   ultima_fecha?: string;
 }
@@ -168,6 +170,8 @@ export interface IngresoPorConceptoResumen {
   total_cantidad: number;
   total_monto: number;
   total_ganancia_neta: number;
+  total_inversion: number;
+  total_deuda: number;
 }
 
 export interface MovimientosPersonaDetalle {
@@ -645,7 +649,13 @@ export class FinanzasService {
    */
   static async listarSaldosPersonas(
     busqueda?: string
-  ): Promise<{ saldos: SaldoPersona[]; saldoGlobal: number; gananciaNetaGlobal: number }> {
+  ): Promise<{
+    saldos: SaldoPersona[];
+    saldoGlobal: number;
+    gananciaNetaGlobal: number;
+    inversionGlobal: number;
+    deudaGlobal: number;
+  }> {
     const { data, error } = await supabase.rpc('api_listar_saldos_personas', {
       p_busqueda: busqueda || null,
     });
@@ -657,6 +667,8 @@ export class FinanzasService {
       saldos: data.data || [],
       saldoGlobal: data.saldo_global || 0,
       gananciaNetaGlobal: data.ganancia_neta_global || 0,
+      inversionGlobal: data.inversion_global || 0,
+      deudaGlobal: data.deuda_global || 0,
     };
   }
 
@@ -685,6 +697,8 @@ export class FinanzasService {
     totalIngresos: number;
     totalEgresos: number;
     totalGananciaNeta: number;
+    totalInversion: number;
+    totalDeuda: number;
   }> {
     const { data, error } = await supabase.rpc('api_listar_movimientos_todas_personas', {
       p_tipo_movimiento: tipoMovimiento || null,
@@ -698,6 +712,8 @@ export class FinanzasService {
       totalIngresos: data.total_ingresos || 0,
       totalEgresos: data.total_egresos || 0,
       totalGananciaNeta: data.total_ganancia_neta || 0,
+      totalInversion: data.total_inversion || 0,
+      totalDeuda: data.total_deuda || 0,
     };
   }
 
@@ -716,16 +732,21 @@ export class FinanzasService {
   /**
    * Lista los ingresos (INGRESO) de TODAS las personas agrupables por
    * concepto, para el reporte "Ingresos por Concepto": detalle
-   * ordenado por concepto + subtotales (cantidad, ingreso bruto y
-   * ganancia neta) por concepto.
+   * ordenado por concepto + subtotales (cantidad, ingreso bruto,
+   * ganancia neta, inversión y deuda) por concepto. Se puede acotar a
+   * un concepto específico con el parámetro `concepto`.
    */
-  static async listarIngresosPorConcepto(): Promise<{
+  static async listarIngresosPorConcepto(concepto?: string): Promise<{
     detalle: IngresoPorConceptoDetalle[];
     resumen: IngresoPorConceptoResumen[];
     totalIngresos: number;
     totalGananciaNeta: number;
+    totalInversion: number;
+    totalDeuda: number;
   }> {
-    const { data, error } = await supabase.rpc('api_listar_ingresos_por_concepto');
+    const { data, error } = await supabase.rpc('api_listar_ingresos_por_concepto', {
+      p_concepto: concepto || null,
+    });
 
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al obtener ingresos por concepto');
@@ -735,6 +756,8 @@ export class FinanzasService {
       resumen: data.resumen || [],
       totalIngresos: data.total_ingresos || 0,
       totalGananciaNeta: data.total_ganancia_neta || 0,
+      totalInversion: data.total_inversion || 0,
+      totalDeuda: data.total_deuda || 0,
     };
   }
 }

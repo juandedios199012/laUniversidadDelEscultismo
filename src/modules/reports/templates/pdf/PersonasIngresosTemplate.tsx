@@ -10,12 +10,13 @@ import { SaldoPersona } from '../../../../services/finanzasService';
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NAME_W = 190;
-const DOC_W = 90;
-const NUM_W = 95;
-const NETO_W = 85;
-const MOV_W = 55;
-const FECHA_W = 75;
+const NAME_W = 200;
+const NUM_W = 80;
+const NETO_W = 70;
+const INV_W = 70;
+const DEUDA_W = 70;
+const MOV_W = 45;
+const FECHA_W = 65;
 const ROW_H = 18;
 const ROWS_PER_PAGE = 24;
 
@@ -123,12 +124,14 @@ interface Props {
     saldos: SaldoPersona[];
     saldoGlobal: number;
     gananciaNetaGlobal: number;
+    inversionGlobal: number;
+    deudaGlobal: number;
   };
   metadata: ReportMetadata;
 }
 
 const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
-  const { saldos, saldoGlobal, gananciaNetaGlobal } = data;
+  const { saldos, saldoGlobal, gananciaNetaGlobal, inversionGlobal, deudaGlobal } = data;
 
   const totalIngresos = saldos.reduce((s, p) => s + Number(p.total_ingresos || 0), 0);
   const totalEgresos = saldos.reduce((s, p) => s + Number(p.total_egresos || 0), 0);
@@ -189,6 +192,14 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={S.kpiLabel}>Ganancia Neta Total</Text>
                   <Text style={[S.kpiValue, { color: '#15803d' }]}>{money(gananciaNetaGlobal)}</Text>
                 </View>
+                <View style={S.kpiCard}>
+                  <Text style={S.kpiLabel}>Inversión Total</Text>
+                  <Text style={[S.kpiValue, { color: '#b91c1c' }]}>{money(inversionGlobal)}</Text>
+                </View>
+                <View style={S.kpiCard}>
+                  <Text style={S.kpiLabel}>Deuda por Cobrar</Text>
+                  <Text style={[S.kpiValue, { color: '#d97706' }]}>{money(deudaGlobal)}</Text>
+                </View>
                 <View style={S.kpiCardLast}>
                   <Text style={S.kpiLabel}>Promedio por Persona</Text>
                   <Text style={S.kpiValue}>{money(promedioPorPersona)}</Text>
@@ -198,11 +209,12 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
 
             <View style={S.tableHeader}>
               <Text style={[S.thLeft, { width: NAME_W }]}>Persona</Text>
-              <Text style={[S.th, { width: DOC_W }]}>N° Documento</Text>
               <Text style={[S.th, { width: NUM_W }]}>Ingresos</Text>
               <Text style={[S.th, { width: NUM_W }]}>Egresos</Text>
               <Text style={[S.th, { width: NUM_W }]}>Saldo</Text>
               <Text style={[S.th, { width: NETO_W }]}>Ganancia Neta</Text>
+              <Text style={[S.th, { width: INV_W }]}>Inversión</Text>
+              <Text style={[S.th, { width: DEUDA_W }]}>Deuda</Text>
               <Text style={[S.th, { width: MOV_W }]}>N° Mov.</Text>
               <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Última Fecha</Text>
             </View>
@@ -215,9 +227,6 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
                     {`${p.apellidos}, ${p.nombres}`}
                   </Text>
-                  <Text style={[S.tdCenter, { width: DOC_W, height: ROW_H }]}>
-                    {p.numero_documento || '—'}
-                  </Text>
                   <Text style={[S.tdMonto, { width: NUM_W, height: ROW_H, color: '#15803d' }]}>
                     {money(p.total_ingresos)}
                   </Text>
@@ -229,6 +238,12 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
                   </Text>
                   <Text style={[S.tdMonto, { width: NETO_W, height: ROW_H, color: '#15803d' }]}>
                     {money(p.ganancia_neta)}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: INV_W, height: ROW_H, color: '#b91c1c' }]}>
+                    {money(p.inversion)}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: DEUDA_W, height: ROW_H, color: '#d97706' }]}>
+                    {money(p.deuda)}
                   </Text>
                   <Text style={[S.tdCenter, { width: MOV_W, height: ROW_H }]}>
                     {`${p.movimientos_count}`}
@@ -250,13 +265,15 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
 
             {isLast && saldos.length > 0 && (
               <View style={S.totalsRow}>
-                <Text style={[S.tdTotalLabel, { width: NAME_W + DOC_W }]}>TOTALES</Text>
+                <Text style={[S.tdTotalLabel, { width: NAME_W }]}>TOTALES</Text>
                 <Text style={[S.tdTotalMonto, { width: NUM_W, color: '#15803d' }]}>{money(totalIngresos)}</Text>
                 <Text style={[S.tdTotalMonto, { width: NUM_W, color: '#b91c1c' }]}>{money(totalEgresos)}</Text>
                 <Text style={[S.tdTotalMonto, { width: NUM_W, color: saldoGlobal >= 0 ? '#15803d' : '#b91c1c' }]}>
                   {money(saldoGlobal)}
                 </Text>
                 <Text style={[S.tdTotalMonto, { width: NETO_W, color: '#15803d' }]}>{money(gananciaNetaGlobal)}</Text>
+                <Text style={[S.tdTotalMonto, { width: INV_W, color: '#b91c1c' }]}>{money(inversionGlobal)}</Text>
+                <Text style={[S.tdTotalMonto, { width: DEUDA_W, color: '#d97706' }]}>{money(deudaGlobal)}</Text>
                 <Text style={[S.tdTotalMonto, { width: MOV_W }]}>{`${totalMovimientos}`}</Text>
                 <View style={{ width: FECHA_W }} />
               </View>
