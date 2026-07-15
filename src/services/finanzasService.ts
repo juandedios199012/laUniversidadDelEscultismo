@@ -680,7 +680,12 @@ export class FinanzasService {
    */
   static async listarMovimientosPorTipo(
     tipoMovimiento?: TipoMovimientoPersona
-  ): Promise<{ movimientos: MovimientoPersonaConTitular[]; totalIngresos: number; totalEgresos: number }> {
+  ): Promise<{
+    movimientos: MovimientoPersonaConTitular[];
+    totalIngresos: number;
+    totalEgresos: number;
+    totalGananciaNeta: number;
+  }> {
     const { data, error } = await supabase.rpc('api_listar_movimientos_todas_personas', {
       p_tipo_movimiento: tipoMovimiento || null,
     });
@@ -692,6 +697,7 @@ export class FinanzasService {
       movimientos: data.data || [],
       totalIngresos: data.total_ingresos || 0,
       totalEgresos: data.total_egresos || 0,
+      totalGananciaNeta: data.total_ganancia_neta || 0,
     };
   }
 

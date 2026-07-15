@@ -13,11 +13,12 @@ import { IngresoPorConceptoDetalle, IngresoPorConceptoResumen } from '../../../.
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NAME_W = 220;
-const CONCEPTO_W = 260;
-const CANTIDAD_W = 70;
-const MONTO_W = 100;
-const FECHA_W = 90;
+const NAME_W = 190;
+const CONCEPTO_W = 210;
+const CANTIDAD_W = 60;
+const MONTO_W = 90;
+const NETO_W = 90;
+const FECHA_W = 80;
 const ROW_H = 18;
 const ROWS_PER_PAGE = 24;
 
@@ -235,13 +236,15 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
               <Text style={[S.thLeft, { width: NAME_W }]}>Persona</Text>
               <Text style={[S.thLeft, { width: CONCEPTO_W }]}>Concepto</Text>
               <Text style={[S.th, { width: CANTIDAD_W }]}>Cantidad</Text>
-              <Text style={[S.th, { width: MONTO_W }]}>Monto</Text>
+              <Text style={[S.th, { width: MONTO_W }]}>Monto (Bruto)</Text>
+              <Text style={[S.th, { width: NETO_W }]}>Ganancia Neta</Text>
               <Text style={[S.th, { width: FECHA_W, borderRightWidth: 0 }]}>Fecha</Text>
             </View>
 
             {pageRows.map((m, rowIdx) => {
               const absIdx = pageIdx * ROWS_PER_PAGE + rowIdx;
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
+              const neto = m.cantidad != null && m.ganancia_unitaria != null ? m.cantidad * m.ganancia_unitaria : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
                   <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
@@ -255,6 +258,9 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                   </Text>
                   <Text style={[S.tdMonto, { width: MONTO_W, height: ROW_H, color: '#15803d' }]}>
                     {money(m.monto)}
+                  </Text>
+                  <Text style={[S.tdMonto, { width: NETO_W, height: ROW_H, color: '#15803d' }]}>
+                    {neto != null ? money(neto) : '—'}
                   </Text>
                   <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H, borderRightWidth: 0 }]}>
                     {fmtFecha(m.fecha)}
@@ -275,6 +281,7 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
               <View style={S.totalsRow}>
                 <Text style={[S.tdTotalLabel, { width: NAME_W + CONCEPTO_W + CANTIDAD_W }]}>TOTALES</Text>
                 <Text style={[S.tdTotalMonto, { width: MONTO_W, color: '#15803d' }]}>{money(totalIngresos)}</Text>
+                <Text style={[S.tdTotalMonto, { width: NETO_W, color: '#15803d' }]}>{money(totalGananciaNeta)}</Text>
                 <View style={{ width: FECHA_W }} />
               </View>
             )}
