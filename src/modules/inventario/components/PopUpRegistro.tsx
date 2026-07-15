@@ -5,8 +5,9 @@ import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 import type { InventarioItem } from '../../../lib/supabase';
 
-// Valores exactos del ENUM categoria_inventario_enum en la DB
-type Categoria = 'CAMPING' | 'CEREMONIAL' | 'DEPORTE' | 'SEGURIDAD' | 'COCINA' | 'EDUCATIVO' | 'OTRO';
+// Valores exactos del ENUM inventario_categoria en la DB (ver src/lib/supabase.ts).
+// Coinciden con los que usan Inventario.tsx (getCategoriaIcon) y el reporte PDF.
+type Categoria = 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo';
 
 interface FormData {
   nombre: string;
@@ -27,13 +28,12 @@ interface PopUpRegistroProps {
 }
 
 const CATEGORIAS: { value: Categoria; label: string; emoji: string }[] = [
-  { value: 'CAMPING',    label: 'Camping / Material Scout', emoji: '⛺' },
-  { value: 'CEREMONIAL', label: 'Ceremonial',               emoji: '🎖️' },
-  { value: 'DEPORTE',    label: 'Deportivo',                emoji: '⚽' },
-  { value: 'SEGURIDAD',  label: 'Primeros Auxilios',        emoji: '🏥' },
-  { value: 'COCINA',     label: 'Cocina / Alimentación',    emoji: '🍳' },
-  { value: 'EDUCATIVO',  label: 'Material Educativo',       emoji: '📚' },
-  { value: 'OTRO',       label: 'Otro / Administrativo',    emoji: '📋' },
+  { value: 'material_scout',     label: 'Material Scout',      emoji: '🏕️' },
+  { value: 'camping',            label: 'Camping',              emoji: '⛺' },
+  { value: 'ceremonial',         label: 'Ceremonial',           emoji: '🎖️' },
+  { value: 'deportivo',          label: 'Deportivo',            emoji: '⚽' },
+  { value: 'primeros_auxilios',  label: 'Primeros Auxilios',    emoji: '🏥' },
+  { value: 'administrativo',     label: 'Administrativo',       emoji: '📋' },
 ];
 
 const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
@@ -56,13 +56,14 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
   const [formData, setFormData] = useState<FormData>({
     nombre:                  itemToEdit?.nombre ?? '',
     descripcion:             itemToEdit?.descripcion ?? '',
-    categoria:               (itemToEdit?.categoria as Categoria) ?? 'CAMPING',
+    // .toLowerCase() por si el item quedó guardado con un valor legado en mayúsculas
+    categoria:               (itemToEdit?.categoria?.toLowerCase() as Categoria) ?? 'camping',
     estadoConservacion:      10,
     situacionObservaciones:  itemToEdit?.observaciones ?? '',
     ubicacionInicial:        itemToEdit?.ubicacion ?? '',
-    cantidadInicial:         (itemToEdit as any)?.cantidad_disponible ?? itemToEdit?.cantidad ?? 1,
+    cantidadInicial:         itemToEdit?.cantidad ?? (itemToEdit as any)?.cantidad_disponible ?? 1,
     fechaIngreso:            new Date().toISOString().split('T')[0],
-    valorUnitario:           (itemToEdit as any)?.valor_unitario ?? (itemToEdit as any)?.costo ?? 0,
+    valorUnitario:           itemToEdit?.costo ?? (itemToEdit as any)?.valor_unitario ?? 0,
   });
 
   const [saving, setSaving] = useState(false);
@@ -109,6 +110,8 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
           nombre:      formData.nombre.trim(),
           descripcion: formData.descripcion.trim() || undefined,
           categoria:   formData.categoria,
+          cantidad:    formData.cantidadInicial,
+          costo:       formData.valorUnitario,
           ubicacion:   formData.ubicacionInicial || itemToEdit.ubicacion,
           observaciones:
             formData.situacionObservaciones.trim() ||
@@ -376,26 +379,29 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
           </fieldset>
           )}
 
-          {/* CUSTODIO Y VALOR — solo en modo edición */}
+          {/* CANTIDAD, CUSTODIO Y VALOR — solo en modo edición */}
           {modoEdicion && (
           <fieldset className="border border-gray-200 p-4 rounded-lg">
             <legend className="text-xs font-semibold px-2 text-gray-500 uppercase tracking-wide">
-              Ubicación y Valor
+              Cantidad, Ubicación y Valor
             </legend>
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1">Custodiado por</label>
-                <ComboboxUbicaciones
-                  ubicaciones={personas}
-                  loading={loadingUbicaciones}
-                  value={formData.ubicacionInicial}
-                  onChange={(nombre) =>
-                    setFormData(prev => ({ ...prev, ubicacionInicial: nombre }))
-                  }
-                  placeholder="Buscar scout, dirigente o comité..."
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="cantidadInicial">
+                  Cantidad <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="cantidadInicial"
+                  name="cantidadInicial"
+                  min="0"
+                  required
+                  value={formData.cantidadInicial}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="col-span-2">
+              <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="valorUnitario">
                   Valor Unitario (S/.)
                 </label>
@@ -409,6 +415,18 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">Custodiado por</label>
+                <ComboboxUbicaciones
+                  ubicaciones={personas}
+                  loading={loadingUbicaciones}
+                  value={formData.ubicacionInicial}
+                  onChange={(nombre) =>
+                    setFormData(prev => ({ ...prev, ubicacionInicial: nombre }))
+                  }
+                  placeholder="Buscar scout, dirigente o comité..."
                 />
               </div>
             </div>

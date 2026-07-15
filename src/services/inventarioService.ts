@@ -110,11 +110,18 @@ export class InventarioService {
           nombre: item.nombre,
           categoria: item.categoria,
           descripcion: item.descripcion || null,
-          // DB has only cantidad_disponible (no cantidad_total)
+          // Columnas reales que lee la UI (InventarioItem en src/lib/supabase.ts):
+          // "cantidad_disponible"/"valor_unitario"/"estado_item" son de un esquema
+          // viejo y no son las que se muestran en la lista ni en los reportes.
+          cantidad: item.cantidad,
+          cantidad_minima: item.cantidad_minima ?? 1,
           cantidad_disponible: item.cantidad,
           ubicacion: item.ubicacion || null,
+          costo: item.costo || 0,
           valor_unitario: item.costo || 0,
+          proveedor: item.proveedor || null,
           observaciones: item.observaciones || item.situacion_observaciones || null,
+          estado: 'disponible',
           estado_item: 'DISPONIBLE',
         })
         .select('id')

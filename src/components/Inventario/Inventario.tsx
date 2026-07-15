@@ -581,6 +581,7 @@ const Inventario: React.FC = () => {
                 <option value="ceremonial">Ceremonial</option>
                 <option value="deportivo">Deportivo</option>
                 <option value="primeros_auxilios">Primeros Auxilios</option>
+                <option value="administrativo">Administrativo</option>
               </select>
             </div>
 

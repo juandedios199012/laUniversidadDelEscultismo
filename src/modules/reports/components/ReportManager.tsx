@@ -15,18 +15,16 @@ import {
 } from '../types/reportTypes';
 import { ReportExportButton } from './ReportExportButton';
 import { generateAndDownloadPDF, generatePDF, generateReportMetadata } from '../services/pdfService';
-import { generateAndDownloadDOCX, createScoutReportDOCX, createProgressReportDOCX } from '../services/docxService';
+import { generateAndDownloadDOCX, createScoutReportDOCX } from '../services/docxService';
 import { ScoutsExcelReport } from './ScoutsExcelReport';
 import { EspecialidadesExcelReport } from './EspecialidadesExcelReport';
 import { EspecialidadesDetalleExcelReport } from './EspecialidadesDetalleExcelReport';
 import {
   getScoutData,
   getAttendanceData,
-  getProgressData,
 } from '../services/reportDataService';
 import DNGI03Template from '../templates/pdf/DNGI03Template';
 import AttendanceAdvancedTemplate from '../templates/pdf/AttendanceAdvancedTemplate';
-import ProgressReportTemplate from '../templates/pdf/ProgressReportTemplate';
 import EspecialidadesReportTemplate from '../templates/pdf/EspecialidadesReportTemplate';
 import RankingPatrullasReportTemplate from '../templates/pdf/RankingPatrullasReportTemplate';
 import GenericSummaryReportTemplate from '../templates/pdf/GenericSummaryReportTemplate';
@@ -288,13 +286,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: '¡Nuevo!'
         },
         {
-          type: ReportType.PROGRESS,
-          title: 'Progresión Scout',
-          description: 'Avance en especialidades y etapas',
-          icon: <TrendingUp className="w-6 h-6" />,
-          color: 'purple',
-        },
-        {
           type: ReportType.ESPECIALIDADES,
           title: 'Especialidades Scout',
           description: 'Progreso y estadísticas de especialidades por rama',
@@ -472,9 +463,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.ATTENDANCE_MATRIX:
           return await exportAttendanceMatrixReport(format, metadata);
-
-        case ReportType.PROGRESS:
-          return await exportProgressReport(format, metadata);
 
         case ReportType.ESPECIALIDADES:
           return await exportEspecialidadesReport(format, metadata);
@@ -657,31 +645,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   };
 
   // Exportar reporte de progreso
-  const exportProgressReport = async (
-    format: ExportFormat,
-    metadata: any
-  ): Promise<ReportGenerationResult> => {
-    const progressData = await getProgressData(filters);
-    
-    if (progressData.length === 0) {
-      return {
-        status: 'error' as any,
-        fileName: 'error',
-        error: 'No se encontraron datos de progreso',
-      };
-    }
-
-    if (format === ExportFormat.PDF) {
-      return await generateAndDownloadPDF(
-        <ProgressReportTemplate data={progressData} metadata={metadata} />,
-        'reporte_progreso'
-      );
-    } else {
-      const doc = createProgressReportDOCX(progressData, metadata);
-      return await generateAndDownloadDOCX(doc, 'reporte_progreso');
-    }
-  };
-
   // Exportar reporte de especialidades (Dashboard para dirigentes y padres)
   const exportEspecialidadesReport = async (
     format: ExportFormat,
@@ -2229,14 +2192,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
-          {(selectedReportType === ReportType.ATTENDANCE_ADVANCED ||
-            selectedReportType === ReportType.PROGRESS) && (
+          {selectedReportType === ReportType.ATTENDANCE_ADVANCED && (
             <div className="space-y-4">
-              {selectedReportType === ReportType.ATTENDANCE_ADVANCED && (
-                <p className="text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2">
-                  Reporte avanzado: KPIs globales, tendencia mensual, ranking de scouts por tasa de asistencia y alertas automáticas de inasistencia.
-                </p>
-              )}
+              <p className="text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2">
+                Reporte avanzado: KPIs globales, tendencia mensual, ranking de scouts por tasa de asistencia y alertas automáticas de inasistencia.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
