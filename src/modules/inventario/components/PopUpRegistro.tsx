@@ -5,9 +5,8 @@ import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
 import type { InventarioItem } from '../../../lib/supabase';
 
-// Valores exactos del ENUM inventario_categoria en la DB (ver src/lib/supabase.ts).
-// Coinciden con los que usan Inventario.tsx (getCategoriaIcon) y el reporte PDF.
-type Categoria = 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo';
+// Valores exactos del ENUM categoria_inventario_enum en la DB (verificado en producción).
+type Categoria = 'CAMPING' | 'DEPORTE' | 'COCINA' | 'SEGURIDAD' | 'EDUCATIVO' | 'CEREMONIAL' | 'OTRO';
 
 interface FormData {
   nombre: string;
@@ -28,12 +27,13 @@ interface PopUpRegistroProps {
 }
 
 const CATEGORIAS: { value: Categoria; label: string; emoji: string }[] = [
-  { value: 'material_scout',     label: 'Material Scout',      emoji: '🏕️' },
-  { value: 'camping',            label: 'Camping',              emoji: '⛺' },
-  { value: 'ceremonial',         label: 'Ceremonial',           emoji: '🎖️' },
-  { value: 'deportivo',          label: 'Deportivo',            emoji: '⚽' },
-  { value: 'primeros_auxilios',  label: 'Primeros Auxilios',    emoji: '🏥' },
-  { value: 'administrativo',     label: 'Administrativo',       emoji: '📋' },
+  { value: 'CAMPING',     label: 'Camping / Material Scout', emoji: '⛺' },
+  { value: 'CEREMONIAL',  label: 'Ceremonial',               emoji: '🎖️' },
+  { value: 'DEPORTE',     label: 'Deportivo',                emoji: '⚽' },
+  { value: 'SEGURIDAD',   label: 'Primeros Auxilios',        emoji: '🏥' },
+  { value: 'COCINA',      label: 'Cocina / Alimentación',    emoji: '🍳' },
+  { value: 'EDUCATIVO',   label: 'Material Educativo',       emoji: '📚' },
+  { value: 'OTRO',        label: 'Otro / Administrativo',    emoji: '📋' },
 ];
 
 const ESTADO_LABELS: Record<number, { label: string; color: string }> = {
@@ -56,14 +56,13 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
   const [formData, setFormData] = useState<FormData>({
     nombre:                  itemToEdit?.nombre ?? '',
     descripcion:             itemToEdit?.descripcion ?? '',
-    // .toLowerCase() por si el item quedó guardado con un valor legado en mayúsculas
-    categoria:               (itemToEdit?.categoria?.toLowerCase() as Categoria) ?? 'camping',
+    categoria:               (itemToEdit?.categoria?.toUpperCase() as Categoria) ?? 'CAMPING',
     estadoConservacion:      10,
     situacionObservaciones:  itemToEdit?.observaciones ?? '',
     ubicacionInicial:        itemToEdit?.ubicacion ?? '',
-    cantidadInicial:         itemToEdit?.cantidad ?? (itemToEdit as any)?.cantidad_disponible ?? 1,
+    cantidadInicial:         itemToEdit?.cantidad_disponible ?? 1,
     fechaIngreso:            new Date().toISOString().split('T')[0],
-    valorUnitario:           itemToEdit?.costo ?? (itemToEdit as any)?.valor_unitario ?? 0,
+    valorUnitario:           itemToEdit?.valor_unitario ?? 0,
   });
 
   const [saving, setSaving] = useState(false);
@@ -107,16 +106,16 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
       if (modoEdicion && itemToEdit) {
         // ---- MODO EDICIÓN ----
         const result = await InventarioService.updateItem(itemToEdit.id, {
-          nombre:      formData.nombre.trim(),
-          descripcion: formData.descripcion.trim() || undefined,
-          categoria:   formData.categoria,
-          cantidad:    formData.cantidadInicial,
-          costo:       formData.valorUnitario,
-          ubicacion:   formData.ubicacionInicial || itemToEdit.ubicacion,
+          nombre:              formData.nombre.trim(),
+          descripcion:         formData.descripcion.trim() || undefined,
+          categoria:           formData.categoria,
+          cantidad_disponible: formData.cantidadInicial,
+          valor_unitario:      formData.valorUnitario,
+          ubicacion:           formData.ubicacionInicial || itemToEdit.ubicacion,
           observaciones:
             formData.situacionObservaciones.trim() ||
             `Estado de conservación: ${formData.estadoConservacion}/10`,
-        } as any);
+        });
         if (!result.success) throw new Error(result.error || 'Error al actualizar');
       } else {
         // ---- MODO CREACIÓN ----

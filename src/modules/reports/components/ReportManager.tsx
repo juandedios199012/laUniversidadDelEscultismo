@@ -33,7 +33,7 @@ import { supabase } from '../../../lib/supabase';
 import DirigenteService from '../../../services/dirigenteService';
 import ComitePadresService from '../../../services/comitePadresService';
 import ReportsService from '../../../services/reportsService';
-import FinanzasService, { ConceptoFinanzas } from '../../../services/finanzasService';
+import FinanzasService, { ConceptoFinanzas, SaldoPersona } from '../../../services/finanzasService';
 import InventarioService from '../../../services/inventarioService';
 import {
   getRankingPatrullas,
@@ -47,16 +47,15 @@ import { getAttendanceMatrixData, monthToRange, quarterToRange } from '../servic
 import PersonasIngresosTemplate from '../templates/pdf/PersonasIngresosTemplate';
 import MovimientosPorTipoTemplate from '../templates/pdf/MovimientosPorTipoTemplate';
 import IngresosPorConceptoTemplate from '../templates/pdf/IngresosPorConceptoTemplate';
+import EstadoCuentaPersonaTemplate from '../templates/pdf/EstadoCuentaPersonaTemplate';
 import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
 import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
-  getAllFamiliaresWithDni,
   getScoutsWithApoderadoDni,
   generateMasiveReportMetadata,
   getAvailableRamas,
-  splitPersonasForPdf,
 } from '../services/masiveReportService';
 
 interface Scout {
@@ -112,12 +111,17 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [ingresosConceptoFilter, setIngresosConceptoFilter] = useState<string>('');
   const [conceptosFinanzasList, setConceptosFinanzasList] = useState<ConceptoFinanzas[]>([]);
 
+  // Estado para el filtro de Persona del reporte "Estado de Cuenta por Persona"
+  const [estadoCuentaPersonaId, setEstadoCuentaPersonaId] = useState<string>('');
+  const [personasConMovimientosList, setPersonasConMovimientosList] = useState<SaldoPersona[]>([]);
+
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
     loadScouts();
     loadRamas();
     loadDirigentesYComite();
     loadConceptosFinanzas();
+    loadPersonasConMovimientos();
   }, []);
 
   const loadConceptosFinanzas = async () => {
@@ -128,7 +132,16 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       console.error('Error cargando conceptos de finanzas:', error);
     }
   };
-  
+
+  const loadPersonasConMovimientos = async () => {
+    try {
+      const { saldos } = await FinanzasService.listarSaldosPersonas();
+      setPersonasConMovimientosList(saldos);
+    } catch (error) {
+      console.error('Error cargando personas con movimientos:', error);
+    }
+  };
+
   const loadRamas = async () => {
     const ramas = await getAvailableRamas();
     setAvailableRamas(ramas);
@@ -367,6 +380,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: '¡Nuevo!'
         },
         {
+          type: ReportType.ESTADO_CUENTA_PERSONA,
+          title: 'Estado de Cuenta por Persona',
+          description: 'Ingresos, egresos, saldo a favor y deuda de una persona específica, con el concepto de cada movimiento',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'emerald',
+          badge: '¡Nuevo!'
+        },
+        {
           type: ReportType.REPORTE_ACTIVIDADES,
           title: 'Reporte de Actividades',
           description: 'Programas ejecutados y participación',
@@ -393,30 +414,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           description: 'Documentos de identidad de scouts (PDF único)',
           icon: <CreditCard className="w-6 h-6" />,
           color: 'sky',
-          badge: '¡Nuevo!'
-        },
-        {
-          type: ReportType.DNI_SCOUTS_SPLIT,
-          title: 'DNI Scouts (múltiples PDF)',
-          description: 'DNI dividido en archivos de máx. 600KB',
-          icon: <CreditCard className="w-6 h-6" />,
-          color: 'cyan',
-          badge: '¡Nuevo!'
-        },
-        {
-          type: ReportType.DNI_FAMILIARES,
-          title: 'DNI de Familiares',
-          description: 'Documentos de identidad de familiares',
-          icon: <CreditCard className="w-6 h-6" />,
-          color: 'fuchsia',
-          badge: '¡Nuevo!'
-        },
-        {
-          type: ReportType.DNI_FAMILIARES_SPLIT,
-          title: 'DNI Familiares (múltiples PDF)',
-          description: 'DNI dividido en archivos de máx. 600KB',
-          icon: <CreditCard className="w-6 h-6" />,
-          color: 'purple',
           badge: '¡Nuevo!'
         },
         {
@@ -491,6 +488,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         case ReportType.INGRESOS_POR_CONCEPTO:
           return await exportIngresosPorConceptoReport(format, metadata);
 
+        case ReportType.ESTADO_CUENTA_PERSONA:
+          return await exportEstadoCuentaPersonaReport(format, metadata);
+
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
 
@@ -499,15 +499,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.DNI_SCOUTS:
           return await exportDniScouts(format);
-          
-        case ReportType.DNI_SCOUTS_SPLIT:
-          return await exportDniScoutsSplit(format);
-
-        case ReportType.DNI_FAMILIARES:
-          return await exportDniFamiliares(format);
-          
-        case ReportType.DNI_FAMILIARES_SPLIT:
-          return await exportDniFamiliaresSplit(format);
 
         case ReportType.DNGI03_WORD_POR_SCOUT:
           return await exportDngi03WordPorScout(format);
@@ -1144,6 +1135,57 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     return await generateAndDownloadDOCX(doc, fileName);
   };
 
+  // Exportar Estado de Cuenta de una Persona (Finanzas > Cuenta por Persona, una sola persona)
+  const exportEstadoCuentaPersonaReport = async (
+    format: ExportFormat,
+    metadata: any
+  ): Promise<ReportGenerationResult> => {
+    if (!estadoCuentaPersonaId) {
+      return { status: 'error' as any, fileName: 'error', error: 'Selecciona una persona para generar su estado de cuenta' };
+    }
+
+    const { persona, saldo, data: movimientos } = await FinanzasService.listarMovimientosPersona(estadoCuentaPersonaId);
+
+    const totalIngresos = movimientos.reduce((s, m) => s + (m.tipo_movimiento === 'INGRESO' ? Number(m.monto || 0) : 0), 0);
+    const totalEgresos = movimientos.reduce((s, m) => s + (m.tipo_movimiento === 'EGRESO' ? Number(m.monto || 0) : 0), 0);
+    const totalDeuda = movimientos.reduce((s, m) => {
+      if (m.tipo_movimiento !== 'INGRESO' || m.cantidad == null || m.precio_unitario == null) return s;
+      const meta = m.cantidad * m.precio_unitario;
+      return s + Math.max(meta - Number(m.monto || 0), 0);
+    }, 0);
+
+    const nombreArchivo = sanitizeFilePart(`${persona.apellidos}_${persona.nombres}`) || 'persona';
+    const fileName = `estado_cuenta_${nombreArchivo}`;
+
+    if (format === ExportFormat.PDF) {
+      return await generateAndDownloadPDF(
+        <EstadoCuentaPersonaTemplate
+          data={{ persona, movimientos, totalIngresos, totalEgresos, saldo, totalDeuda }}
+          metadata={metadata}
+        />,
+        fileName
+      );
+    }
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: 'Estado de Cuenta', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `${persona.apellidos}, ${persona.nombres}${persona.numero_documento ? ` — Doc.: ${persona.numero_documento}` : ''}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Total Ingresos: S/ ${totalIngresos.toFixed(2)} | Total Egresos: S/ ${totalEgresos.toFixed(2)} | Saldo a Favor: S/ ${saldo.toFixed(2)} | Deuda Pendiente: S/ ${totalDeuda.toFixed(2)}` })] }),
+          new Paragraph({ children: [] }),
+          new Paragraph({ children: [new TextRun({ text: 'Detalle de Movimientos', bold: true, size: 26 })] }),
+          ...movimientos.map(m => new Paragraph({
+            children: [new TextRun({
+              text: `${m.tipo_movimiento} — ${m.concepto} — S/ ${Number(m.monto).toFixed(2)} — ${m.fecha}`,
+            })],
+          })),
+        ],
+      }],
+    });
+    return await generateAndDownloadDOCX(doc, fileName);
+  };
+
   const exportActividadesReport = async (
     format: ExportFormat,
     metadata: any
@@ -1237,12 +1279,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     const allItems = await InventarioService.getAllItems();
     const items = allItems.filter((i) =>
       (!filters.categoria || i.categoria === filters.categoria) &&
-      (!filters.estado || i.estado === filters.estado)
+      (!filters.estado || i.estado_item === filters.estado)
     );
     const total = items.length;
-    const disponibles = items.filter((i) => i.estado === 'disponible').length;
-    const prestados = items.filter((i) => i.estado === 'prestado').length;
-    const valorTotal = items.reduce((sum, i) => sum + Number(i.costo || 0) * Number(i.cantidad || 0), 0);
+    const disponibles = items.filter((i) => i.estado_item === 'DISPONIBLE').length;
+    const prestados = items.filter((i) => i.estado_item === 'PRESTADO').length;
+    const valorTotal = items.reduce((sum, i) => sum + Number(i.valor_unitario || 0) * Number(i.cantidad_disponible || 0), 0);
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
@@ -1259,7 +1301,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         new Paragraph({ children: [new TextRun({ text: 'Reporte de Inventario', bold: true, size: 34 })], alignment: AlignmentType.CENTER }),
         new Paragraph({ children: [new TextRun({ text: `Items: ${total} | Disponibles: ${disponibles} | Prestados: ${prestados} | Valor Total: S/ ${valorTotal.toFixed(2)}` })] }),
         new Paragraph({ children: [] }),
-        ...items.map((i) => new Paragraph({ children: [new TextRun({ text: `${i.nombre} | ${i.categoria} | Cant.: ${i.cantidad} | ${i.estado} | ${i.ubicacion || '-'}` })] })),
+        ...items.map((i) => new Paragraph({ children: [new TextRun({ text: `${i.nombre} | ${i.categoria} | Cant.: ${i.cantidad_disponible} | ${i.estado_item} | ${i.ubicacion || '-'}` })] })),
       ]}],
     });
     return await generateAndDownloadDOCX(doc, 'reporte_inventario');
@@ -1333,171 +1375,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       }
     } catch (error) {
       console.error('Error exportando DNI de scouts:', error);
-      return {
-        status: 'error' as any,
-        fileName: 'error',
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      };
-    }
-  };
-
-  // Exportar DNI de Scouts dividido en múltiples PDFs (máx 600KB cada uno)
-  const exportDniScoutsSplit = async (_format: ExportFormat): Promise<ReportGenerationResult> => {
-    try {
-      const { personas } = await getAllScoutsWithDni(ramaFilter);
-      
-      if (personas.length === 0) {
-        showError("No hay scouts con documentos de identidad cargados");
-        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
-      }
-
-      const grupos = splitPersonasForPdf(personas);
-      const metadata = generateMasiveReportMetadata();
-      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
-      const fechaStr = new Date().toISOString().split('T')[0];
-      
-      info(`Se generarán ${grupos.length} archivo(s) PDF para ${personas.length} scouts.`);
-
-      // Generar cada PDF secuencialmente
-      for (let i = 0; i < grupos.length; i++) {
-        const grupo = grupos[i];
-        if (grupo.length === 0) continue;
-        
-        const fileName = `DNI_Scouts${ramaSuffix}_Parte${i + 1}de${grupos.length}_${fechaStr}`;
-        await generateAndDownloadPDF(
-          <DniCollectionTemplate personas={grupo} tipo="scouts" metadata={metadata} />,
-          fileName
-        );
-        
-        // Pequeña pausa entre descargas para evitar problemas
-        if (i < grupos.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-
-      return { status: 'success' as any, fileName: `DNI_Scouts${ramaSuffix}_${grupos.length}archivos.zip` };
-    } catch (error) {
-      console.error('Error exportando DNI de scouts (split):', error);
-      return {
-        status: 'error' as any,
-        fileName: 'error',
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      };
-    }
-  };
-
-  const exportDniFamiliares = async (format: ExportFormat): Promise<ReportGenerationResult> => {
-    try {
-      const { personas, showAlert, alertMessage } = await getAllFamiliaresWithDni(ramaFilter);
-      
-      if (personas.length === 0) {
-        showError("No hay familiares con documentos de identidad cargados");
-        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
-      }
-
-      // Mostrar alerta en UI antes de generar
-      if (showAlert) {
-        info(alertMessage || "El archivo supera el límite recomendado de 600KB. Se generará de todas formas.");
-      }
-
-      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
-      const fileName = `DNI_Familiares${ramaSuffix}_${new Date().toISOString().split('T')[0]}`;
-      const metadata = generateMasiveReportMetadata();
-      
-      if (format === 'pdf') {
-        const result = await generateAndDownloadPDF(
-          <DniCollectionTemplate personas={personas} tipo="familiares" metadata={metadata} />,
-          fileName
-        );
-        return { status: result.status, fileName: result.fileName };
-      } else {
-        // Para Word, crear documento con información
-        const doc = new Document({
-          sections: [{
-            properties: {},
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: 'DNI de Familiares', bold: true, size: 32 })],
-                alignment: AlignmentType.CENTER,
-              }),
-              new Paragraph({ children: [new TextRun({ text: `Generado: ${new Date().toLocaleDateString('es-PE')}`, size: 20 })] }),
-              new Paragraph({ children: [] }),
-              ...personas.flatMap(persona => [
-                new Paragraph({
-                  children: [new TextRun({ text: `${persona.nombres} ${persona.apellidos} - ${persona.parentesco || 'Sin parentesco'}`, bold: true, size: 24 })],
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `Scout relacionado: ${persona.scoutAsociado || 'No especificado'}` })],
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `DNI Anverso: ${persona.dniAnversoUrl ? 'Cargado' : 'No disponible'}` })],
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `DNI Reverso: ${persona.dniReversoUrl ? 'Cargado' : 'No disponible'}` })],
-                }),
-                new Paragraph({ children: [] }),
-              ]),
-            ],
-          }],
-        });
-
-        const blob = await Packer.toBlob(doc);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}.docx`;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        return { status: 'success' as any, fileName: `${fileName}.docx` };
-      }
-    } catch (error) {
-      console.error('Error exportando DNI de familiares:', error);
-      return {
-        status: 'error' as any,
-        fileName: 'error',
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      };
-    }
-  };
-
-  // Exportar DNI de Familiares dividido en múltiples PDFs (máx 600KB cada uno)
-  const exportDniFamiliaresSplit = async (_format: ExportFormat): Promise<ReportGenerationResult> => {
-    try {
-      const { personas } = await getAllFamiliaresWithDni(ramaFilter);
-      
-      if (personas.length === 0) {
-        showError("No hay familiares con documentos de identidad cargados");
-        return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
-      }
-
-      const grupos = splitPersonasForPdf(personas);
-      const metadata = generateMasiveReportMetadata();
-      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
-      const fechaStr = new Date().toISOString().split('T')[0];
-      
-      info(`Se generarán ${grupos.length} archivo(s) PDF para ${personas.length} familiares.`);
-
-      // Generar cada PDF secuencialmente
-      for (let i = 0; i < grupos.length; i++) {
-        const grupo = grupos[i];
-        if (grupo.length === 0) continue;
-        
-        const fileName = `DNI_Familiares${ramaSuffix}_Parte${i + 1}de${grupos.length}_${fechaStr}`;
-        await generateAndDownloadPDF(
-          <DniCollectionTemplate personas={grupo} tipo="familiares" metadata={metadata} />,
-          fileName
-        );
-        
-        // Pequeña pausa entre descargas para evitar problemas
-        if (i < grupos.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-
-      return { status: 'success' as any, fileName: `DNI_Familiares${ramaSuffix}_${grupos.length}archivos.zip` };
-    } catch (error) {
-      console.error('Error exportando DNI de familiares (split):', error);
       return {
         status: 'error' as any,
         fileName: 'error',
@@ -1934,10 +1811,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           )}
 
           {/* Filtro de rama para reportes masivos de DNI */}
-          {(selectedReportType === ReportType.DNI_SCOUTS || 
-            selectedReportType === ReportType.DNI_SCOUTS_SPLIT ||
-            selectedReportType === ReportType.DNI_FAMILIARES ||
-            selectedReportType === ReportType.DNI_FAMILIARES_SPLIT ||
+          {(selectedReportType === ReportType.DNI_SCOUTS ||
             selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
             selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
             <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-4">
@@ -2269,6 +2143,29 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             </div>
           )}
 
+          {selectedReportType === ReportType.ESTADO_CUENTA_PERSONA && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Persona
+              </label>
+              <select
+                value={estadoCuentaPersonaId}
+                onChange={(e) => setEstadoCuentaPersonaId(e.target.value)}
+                className="w-full md:w-96 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Selecciona una persona</option>
+                {personasConMovimientosList.map((p) => (
+                  <option key={p.persona_id} value={p.persona_id}>
+                    {p.apellidos}, {p.nombres}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                Genera el estado de cuenta individual de Finanzas &gt; Cuenta por Persona: sus ingresos y egresos (con el concepto de cada uno), su saldo a favor y su deuda pendiente. Pensado para entregar a la persona o su familia.
+              </p>
+            </div>
+          )}
+
           {selectedReportType === ReportType.RANKING_PATRULLAS && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -2435,12 +2332,13 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todas las categorías</option>
-                  <option value="material_scout">Material Scout</option>
-                  <option value="camping">Camping</option>
-                  <option value="ceremonial">Ceremonial</option>
-                  <option value="deportivo">Deportivo</option>
-                  <option value="primeros_auxilios">Primeros Auxilios</option>
-                  <option value="administrativo">Administrativo</option>
+                  <option value="CAMPING">Camping / Material Scout</option>
+                  <option value="CEREMONIAL">Ceremonial</option>
+                  <option value="DEPORTE">Deportivo</option>
+                  <option value="SEGURIDAD">Primeros Auxilios</option>
+                  <option value="COCINA">Cocina / Alimentación</option>
+                  <option value="EDUCATIVO">Material Educativo</option>
+                  <option value="OTRO">Otro / Administrativo</option>
                 </select>
               </div>
               <div>
@@ -2455,11 +2353,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Todos los estados</option>
-                  <option value="disponible">Disponible</option>
-                  <option value="prestado">Prestado</option>
-                  <option value="mantenimiento">Mantenimiento</option>
-                  <option value="perdido">Perdido</option>
-                  <option value="baja">Baja</option>
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="PRESTADO">Prestado</option>
+                  <option value="EN_MANTENIMIENTO">En Mantenimiento</option>
+                  <option value="DAÑADO">Dañado</option>
+                  <option value="PERDIDO">Perdido</option>
                 </select>
               </div>
             </div>

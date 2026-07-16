@@ -10,39 +10,39 @@ import { InventarioItem } from '../../../../lib/supabase';
 import { ReportMetadata } from '../../types/reportTypes';
 
 const PAD = 20;
-const NOMBRE_W = 200;
-const CAT_W = 120;
-const CANT_W = 60;
-const MIN_W = 70;
-const ESTADO_W = 90;
-const UBIC_W = 130;
-const COSTO_W = 80;
+const NOMBRE_W = 220;
+const CAT_W = 140;
+const CANT_W = 70;
+const ESTADO_W = 100;
+const UBIC_W = 150;
+const COSTO_W = 90;
 const ROW_H = 18;
 const ROWS_PER_PAGE = 22;
 
 const CATEGORIA_LABEL: Record<string, string> = {
-  material_scout: 'Material Scout',
-  camping: 'Camping',
-  ceremonial: 'Ceremonial',
-  deportivo: 'Deportivo',
-  primeros_auxilios: 'Primeros Auxilios',
-  administrativo: 'Administrativo',
+  CAMPING: 'Camping / Material Scout',
+  CEREMONIAL: 'Ceremonial',
+  DEPORTE: 'Deportivo',
+  SEGURIDAD: 'Primeros Auxilios',
+  COCINA: 'Cocina / Alimentación',
+  EDUCATIVO: 'Material Educativo',
+  OTRO: 'Otro / Administrativo',
 };
 
 const ESTADO_LABEL: Record<string, string> = {
-  disponible: 'Disponible',
-  prestado: 'Prestado',
-  mantenimiento: 'Mantenimiento',
-  perdido: 'Perdido',
-  baja: 'Baja',
+  DISPONIBLE: 'Disponible',
+  PRESTADO: 'Prestado',
+  EN_MANTENIMIENTO: 'En Mantenimiento',
+  DAÑADO: 'Dañado',
+  PERDIDO: 'Perdido',
 };
 
 const ESTADO_COLOR: Record<string, string> = {
-  disponible: '#15803d',
-  prestado: '#b45309',
-  mantenimiento: '#1d4ed8',
-  perdido: '#b91c1c',
-  baja: '#6b7280',
+  DISPONIBLE: '#15803d',
+  PRESTADO: '#b45309',
+  EN_MANTENIMIENTO: '#1d4ed8',
+  DAÑADO: '#c2410c',
+  PERDIDO: '#b91c1c',
 };
 
 const money = (n?: number): string => `S/ ${Number(n || 0).toFixed(2)}`;
@@ -211,16 +211,14 @@ const InventarioReportTemplate: React.FC<Props> = ({ data, metadata }) => {
               <Text style={[S.thLeft, { width: NOMBRE_W }]}>Nombre</Text>
               <Text style={[S.th, { width: CAT_W }]}>Categoría</Text>
               <Text style={[S.th, { width: CANT_W }]}>Cantidad</Text>
-              <Text style={[S.th, { width: MIN_W }]}>Cant. Mínima</Text>
               <Text style={[S.th, { width: ESTADO_W }]}>Estado</Text>
               <Text style={[S.thLeft, { width: UBIC_W }]}>Ubicación</Text>
-              <Text style={[S.th, { width: COSTO_W, borderRightWidth: 0 }]}>Costo</Text>
+              <Text style={[S.th, { width: COSTO_W, borderRightWidth: 0 }]}>Valor Unitario</Text>
             </View>
 
             {pageRows.map((item, rowIdx) => {
               const absIdx = pageIdx * ROWS_PER_PAGE + rowIdx;
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
-              const bajoMinimo = item.cantidad <= item.cantidad_minima;
               return (
                 <View key={item.id} style={rowStyle}>
                   <Text style={[S.tdName, { width: NOMBRE_W, height: ROW_H }]} numberOfLines={1}>
@@ -229,20 +227,17 @@ const InventarioReportTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]} numberOfLines={1}>
                     {CATEGORIA_LABEL[item.categoria] || item.categoria}
                   </Text>
-                  <Text style={[S.tdCenter, { width: CANT_W, height: ROW_H, color: bajoMinimo ? '#b91c1c' : '#111827', fontFamily: bajoMinimo ? 'Helvetica-Bold' : 'Helvetica' }]}>
-                    {item.cantidad}
+                  <Text style={[S.tdCenter, { width: CANT_W, height: ROW_H }]}>
+                    {item.cantidad_disponible}
                   </Text>
-                  <Text style={[S.tdCenter, { width: MIN_W, height: ROW_H }]}>
-                    {item.cantidad_minima}
-                  </Text>
-                  <Text style={[S.tdCenter, { width: ESTADO_W, height: ROW_H, color: ESTADO_COLOR[item.estado] || '#4b5563', fontFamily: 'Helvetica-Bold' }]}>
-                    {ESTADO_LABEL[item.estado] || item.estado}
+                  <Text style={[S.tdCenter, { width: ESTADO_W, height: ROW_H, color: ESTADO_COLOR[item.estado_item] || '#4b5563', fontFamily: 'Helvetica-Bold' }]}>
+                    {ESTADO_LABEL[item.estado_item] || item.estado_item}
                   </Text>
                   <Text style={[S.tdLeft, { width: UBIC_W, height: ROW_H }]} numberOfLines={1}>
                     {item.ubicacion || '—'}
                   </Text>
                   <Text style={[S.tdMonto, { width: COSTO_W, height: ROW_H, borderRightWidth: 0 }]}>
-                    {item.costo != null ? money(item.costo) : '—'}
+                    {item.valor_unitario != null ? money(item.valor_unitario) : '—'}
                   </Text>
                 </View>
               );
@@ -258,7 +253,7 @@ const InventarioReportTemplate: React.FC<Props> = ({ data, metadata }) => {
 
             {isLast && items.length > 0 && (
               <View style={S.totalsRow}>
-                <Text style={[S.tdTotalLabel, { width: NOMBRE_W + CAT_W + CANT_W + MIN_W + ESTADO_W + UBIC_W }]}>TOTALES</Text>
+                <Text style={[S.tdTotalLabel, { width: NOMBRE_W + CAT_W + CANT_W + ESTADO_W + UBIC_W }]}>TOTALES</Text>
                 <Text style={[S.tdTotalMonto, { width: COSTO_W, borderRightWidth: 0 }]}>{money(valorTotal)}</Text>
               </View>
             )}

@@ -445,8 +445,10 @@ export interface Database {
       };
     };
     Enums: {
-      inventario_categoria: 'material_scout' | 'camping' | 'ceremonial' | 'deportivo' | 'primeros_auxilios' | 'administrativo';
-      inventario_estado: 'disponible' | 'prestado' | 'mantenimiento' | 'perdido' | 'baja';
+      // Valores reales del ENUM categoria_inventario_enum en la DB (verificado en producción).
+      inventario_categoria: 'CAMPING' | 'DEPORTE' | 'COCINA' | 'SEGURIDAD' | 'EDUCATIVO' | 'CEREMONIAL' | 'OTRO';
+      // Valores reales del ENUM estado_item_enum en la DB (verificado en producción). No existe 'BAJA'.
+      inventario_estado: 'DISPONIBLE' | 'PRESTADO' | 'EN_MANTENIMIENTO' | 'DAÑADO' | 'PERDIDO';
       movimiento_tipo: 'entrada' | 'salida' | 'prestamo' | 'devolucion' | 'baja' | 'ajuste';
     };
   };
@@ -454,18 +456,22 @@ export interface Database {
 
 export interface InventarioItem {
   id: string;
+  codigo_item: string;
   nombre: string;
   categoria: Database['public']['Enums']['inventario_categoria'];
   descripcion?: string;
-  cantidad: number;
+  marca?: string;
+  modelo?: string;
+  numero_serie?: string;
+  cantidad_disponible: number;
   cantidad_minima: number;
-  estado: Database['public']['Enums']['inventario_estado'];
+  estado_item: Database['public']['Enums']['inventario_estado'];
   ubicacion?: string;
-  costo?: number;
+  valor_unitario?: number;
+  fecha_adquisicion?: string;
   proveedor?: string;
-  responsable_id?: string;
+  garantia_meses?: number;
   observaciones?: string;
-  imagen_url?: string;
   created_at: string;
   updated_at: string;
 }

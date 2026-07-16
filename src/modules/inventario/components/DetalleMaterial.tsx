@@ -40,16 +40,29 @@ function parseUbicacionAnterior(observaciones?: string): string {
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  disponible: 'bg-green-100 text-green-800',
   DISPONIBLE: 'bg-green-100 text-green-800',
-  prestado: 'bg-yellow-100 text-yellow-800',
   PRESTADO: 'bg-yellow-100 text-yellow-800',
-  mantenimiento: 'bg-blue-100 text-blue-800',
-  MANTENIMIENTO: 'bg-blue-100 text-blue-800',
-  perdido: 'bg-red-100 text-red-800',
+  EN_MANTENIMIENTO: 'bg-blue-100 text-blue-800',
+  DAÑADO: 'bg-orange-100 text-orange-800',
   PERDIDO: 'bg-red-100 text-red-800',
-  baja: 'bg-gray-100 text-gray-800',
-  BAJA: 'bg-gray-100 text-gray-800',
+};
+
+const ESTADO_LABELS_MATERIAL: Record<string, string> = {
+  DISPONIBLE: 'Disponible',
+  PRESTADO: 'Prestado',
+  EN_MANTENIMIENTO: 'En Mantenimiento',
+  DAÑADO: 'Dañado',
+  PERDIDO: 'Perdido',
+};
+
+const CATEGORIA_LABELS_MATERIAL: Record<string, string> = {
+  CAMPING: 'Camping / Material Scout',
+  CEREMONIAL: 'Ceremonial',
+  DEPORTE: 'Deportivo',
+  SEGURIDAD: 'Primeros Auxilios',
+  COCINA: 'Cocina / Alimentación',
+  EDUCATIVO: 'Material Educativo',
+  OTRO: 'Otro / Administrativo',
 };
 
 function formatDate(dateString: string): string {
@@ -76,9 +89,7 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const { historial, loading, error: kardexError } = useHistorialKardex(material.id);
 
-  // The DB stores cantidad_total/cantidad_disponible; fall back to cantidad for legacy data
-  const stockActual = (material as any).cantidad_disponible ?? (material as any).cantidad_total ?? material.cantidad;
-  const stockTotal = (material as any).cantidad_total ?? material.cantidad;
+  const stockActual = material.cantidad_disponible;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -92,8 +103,8 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 leading-tight">{material.nombre}</h2>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
-                {material.categoria.replace(/_/g, ' ')}
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                {CATEGORIA_LABELS_MATERIAL[material.categoria] || material.categoria}
               </span>
             </div>
           </div>
@@ -152,18 +163,15 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl mb-4">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Estado</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${ESTADO_COLORS[(material as any).estado_item ?? material.estado ?? ''] || 'bg-gray-100 text-gray-700'}`}>
-                  {((material as any).estado_item ?? material.estado ?? '—').toLowerCase()}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${ESTADO_COLORS[material.estado_item] || 'bg-gray-100 text-gray-700'}`}>
+                  {ESTADO_LABELS_MATERIAL[material.estado_item] || material.estado_item}
                 </span>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Stock Calculado Total</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Stock Disponible</p>
                 <p className="text-lg font-bold text-green-700">
                   {stockActual}
-                  {stockTotal !== stockActual && (
-                    <span className="text-sm text-gray-400 font-normal"> / {stockTotal} total</span>
-                  )}
                   <span className="text-sm text-gray-400 font-normal"> u.</span>
                 </p>
               </div>
@@ -180,19 +188,12 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
                 <p className="text-sm text-gray-700">{material.ubicacion || 'Sin registros'}</p>
               </div>
 
-              {(material as any).valor_unitario != null && (material as any).valor_unitario > 0 && (
+              {material.valor_unitario != null && material.valor_unitario > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Valor Unitario</p>
                   <p className="text-sm text-gray-700">
-                    S/. {Number((material as any).valor_unitario).toFixed(2)}
+                    S/. {Number(material.valor_unitario).toFixed(2)}
                   </p>
-                </div>
-              )}
-
-              {material.costo != null && material.costo > 0 && !(material as any).valor_unitario && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Costo</p>
-                  <p className="text-sm text-gray-700">S/. {material.costo.toFixed(2)}</p>
                 </div>
               )}
 

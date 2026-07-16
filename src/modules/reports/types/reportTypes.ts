@@ -19,6 +19,7 @@ export enum ReportType {
   PERSONAS_INGRESOS = 'personas_ingresos',
   MOVIMIENTOS_POR_TIPO = 'movimientos_por_tipo',
   INGRESOS_POR_CONCEPTO = 'ingresos_por_concepto',
+  ESTADO_CUENTA_PERSONA = 'estado_cuenta_persona',
   REPORTE_ACTIVIDADES = 'reporte_actividades',
   REPORTE_INVENTARIO = 'reporte_inventario',
   // Reporte Excel con todos los campos
@@ -31,9 +32,6 @@ export enum ReportType {
   HISTORIA_MEDICA = 'historia_medica',
   // Reportes masivos de impresión
   DNI_SCOUTS = 'dni_scouts',
-  DNI_SCOUTS_SPLIT = 'dni_scouts_split',
-  DNI_FAMILIARES = 'dni_familiares',
-  DNI_FAMILIARES_SPLIT = 'dni_familiares_split',
   DNGI03_WORD_POR_SCOUT = 'dngi03_word_por_scout',
   DNI_SCOUT_APODERADO_POR_SCOUT = 'dni_scout_apoderado_por_scout',
 }
