@@ -428,12 +428,18 @@ class ScoutService {
     ocupacion?: string;
     centro_laboral?: string;
     religion?: string;
+    estatura_cm?: number | null;
+    peso_kg?: number | null;
     grupo_sanguineo?: string;
     factor_sanguineo?: string;
     seguro_medico?: string;
     tipo_discapacidad?: string;
     carnet_conadis?: string;
     descripcion_discapacidad?: string;
+    condiciones?: Array<{ condicion?: string; fecha_atencion?: string }>;
+    alergias?: Array<{ alergia?: string; mencionar?: string }>;
+    medicamentos?: Array<{ medicamento?: string; dosis?: string; frecuencia?: string; activo?: boolean; fecha_inicio_duracion?: string }>;
+    vacunas?: Array<{ vacuna?: string; fecha_ultima_dosis?: string }>;
     rama_actual?: string;
     codigo_asociado?: string;
     fecha_ingreso?: string;
@@ -486,12 +492,18 @@ class ScoutService {
         ocupacion: scoutData.ocupacion,
         centro_laboral: scoutData.centro_laboral,
         religion: scoutData.religion,
+        estatura_cm: scoutData.estatura_cm,
+        peso_kg: scoutData.peso_kg,
         grupo_sanguineo: scoutData.grupo_sanguineo,
         factor_sanguineo: scoutData.factor_sanguineo,
         seguro_medico: scoutData.seguro_medico,
         tipo_discapacidad: scoutData.tipo_discapacidad,
         carnet_conadis: scoutData.carnet_conadis,
         descripcion_discapacidad: scoutData.descripcion_discapacidad,
+        condiciones: scoutData.condiciones || [],
+        alergias: scoutData.alergias || [],
+        medicamentos: scoutData.medicamentos || [],
+        vacunas: scoutData.vacunas || [],
         rama_actual: ramaDb,
         codigo_asociado: scoutData.codigo_asociado,
         fecha_ingreso: scoutData.fecha_ingreso || null,
@@ -579,12 +591,18 @@ class ScoutService {
     rama_actual?: string;
     codigo_asociado?: string;
     religion?: string;
+    estatura_cm?: number | null;
+    peso_kg?: number | null;
     grupo_sanguineo?: string;
     factor_sanguineo?: string;
     seguro_medico?: string;
     tipo_discapacidad?: string;
     carnet_conadis?: string;
     descripcion_discapacidad?: string;
+    condiciones?: Array<{ condicion?: string; fecha_atencion?: string }>;
+    alergias?: Array<{ alergia?: string; mencionar?: string }>;
+    medicamentos?: Array<{ medicamento?: string; dosis?: string; frecuencia?: string; activo?: boolean; fecha_inicio_duracion?: string }>;
+    vacunas?: Array<{ vacuna?: string; fecha_ultima_dosis?: string }>;
     estado?: string;
     // Datos del Familiar/Apoderado principal (legacy)
     familiar_nombres?: string;
@@ -649,12 +667,18 @@ class ScoutService {
             rama_actual: updates.rama_actual,
             codigo_asociado: updates.codigo_asociado,
             religion: updates.religion,
+            estatura_cm: updates.estatura_cm,
+            peso_kg: updates.peso_kg,
             grupo_sanguineo: updates.grupo_sanguineo,
             factor_sanguineo: updates.factor_sanguineo,
             seguro_medico: updates.seguro_medico,
             tipo_discapacidad: updates.tipo_discapacidad,
             carnet_conadis: updates.carnet_conadis,
             descripcion_discapacidad: updates.descripcion_discapacidad,
+            condiciones: updates.condiciones || [],
+            alergias: updates.alergias || [],
+            medicamentos: updates.medicamentos || [],
+            vacunas: updates.vacunas || [],
             estado: updates.estado,
             // Datos del Familiar/Apoderado principal (legacy)
             familiar_nombres: updates.familiar_nombres,

@@ -53,6 +53,12 @@ export interface Scout {
   tipo_discapacidad?: string;
   carnet_conadis?: string;
   descripcion_discapacidad?: string;
+  estatura_cm?: number;
+  peso_kg?: number;
+  condiciones?: Array<{ id?: string; condicion?: string; fecha_atencion?: string }>;
+  alergias?: Array<{ id?: string; alergia?: string; mencionar?: string }>;
+  medicamentos?: Array<{ id?: string; medicamento?: string; dosis?: string; frecuencia?: string; activo?: boolean; fecha_inicio_duracion?: string }>;
+  vacunas?: Array<{ id?: string; vacuna?: string; fecha_ultima_dosis?: string }>;
   fecha_ingreso?: string;
   rama_actual?: 'Manada' | 'Tropa' | 'Caminantes' | 'Clan' | 'Dirigentes';
   estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO' | 'ELIMINADO';
