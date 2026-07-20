@@ -297,10 +297,10 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '25%' }]}>
-              <Text>Fecha de Nacimiento:</Text>
+              <Text>Lugar y Fecha de Nacimiento:</Text>
             </View>
             <View style={[styles.valueCellLast, { width: '75%' }]}>
-              <Text>{formatDate(data.fechaNacimiento)}</Text>
+              <Text>{data.distrito || ''} - {formatDate(data.fechaNacimiento)}</Text>
             </View>
           </View>
 

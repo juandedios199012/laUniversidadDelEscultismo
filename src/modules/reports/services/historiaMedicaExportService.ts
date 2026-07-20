@@ -251,7 +251,7 @@ export async function exportarHistoriaMedicaDOCX(
               rows: [
                 new TableRow({ children: [lbl('Fecha de llenado:', 25), val(data.fechaLlenado ? new Date(data.fechaLlenado).toLocaleDateString('es-PE') : '', 75)] }),
                 new TableRow({ children: [lbl('Nombre Completo:', 25), val(data.nombreCompleto, 75)] }),
-                new TableRow({ children: [lbl('Fecha de Nacimiento:', 25), val(data.fechaNacimiento ? new Date(data.fechaNacimiento).toLocaleDateString('es-PE') : '', 75)] }),
+                new TableRow({ children: [lbl('Lugar y Fecha de Nacimiento:', 25), val(`${data.distrito || ''} - ${data.fechaNacimiento ? new Date(data.fechaNacimiento).toLocaleDateString('es-PE') : ''}`, 75)] }),
                 new TableRow({ children: [lbl('Edad:', 12), val(`${data.edad} años`, 21), lbl('DNI:', 12), val(data.numeroDocumento, 55)] }),
                 new TableRow({ children: [lbl('Estatura (m):', 15), val(data.estaturaCm ? data.estaturaCm.toFixed(2) : '', 18), lbl('Peso (kg):', 12), val(data.pesoKg?.toString(), 55)] }),
                 new TableRow({ children: [lbl('Grupo sanguineo y Rh:', 25), val(`${data.grupoSanguineo || ''} ${data.factorSanguineo || ''}`.trim(), 25), lbl('Genero:', 12), val(data.sexo === 'M' ? 'Masculino' : data.sexo === 'F' ? 'Femenino' : data.sexo, 38)] }),
