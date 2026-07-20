@@ -159,9 +159,17 @@ export async function exportarHistoriaMedicaDOCX(
       right: { style: BorderStyle.SINGLE, size: 4, color: BORDER_HEX },
     });
 
+    // NOTA: columnSpan es imprescindible además de width. La tabla usa una
+    // grilla fija de 100 columnas (columnWidths más abajo); sin columnSpan,
+    // Word no sabe cuántas columnas de esa grilla ocupa cada celda cuando
+    // las filas de una misma tabla tienen distinta cantidad de celdas
+    // (ej. una fila de 2 celdas y otra de 4), y termina angostando la
+    // última celda de la fila.
+
     // Celda "etiqueta" (fondo azul, texto blanco en negrita) — como labelCell del PDF
     const lbl = (text: string, widthPct: number) => new TableCell({
       width: { size: widthPct, type: WidthType.PERCENTAGE },
+      columnSpan: widthPct,
       shading: { type: ShadingType.SOLID, fill: PRIMARY_HEX, color: PRIMARY_HEX },
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 60, right: 60 },
@@ -171,6 +179,7 @@ export async function exportarHistoriaMedicaDOCX(
     // Celda "valor" (fondo blanco) — como valueCell del PDF
     const val = (text: string | undefined, widthPct: number) => new TableCell({
       width: { size: widthPct, type: WidthType.PERCENTAGE },
+      columnSpan: widthPct,
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 60, right: 60 },
       children: [new Paragraph({ children: [new TextRun({ text: text || '', size: 18 })] })],
@@ -179,6 +188,7 @@ export async function exportarHistoriaMedicaDOCX(
     // Celda de encabezado de tabla (fondo azul, centrado) — como tableHeaderCell del PDF
     const head = (text: string, widthPct: number) => new TableCell({
       width: { size: widthPct, type: WidthType.PERCENTAGE },
+      columnSpan: widthPct,
       shading: { type: ShadingType.SOLID, fill: PRIMARY_HEX, color: PRIMARY_HEX },
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 40, right: 40 },
@@ -188,6 +198,7 @@ export async function exportarHistoriaMedicaDOCX(
     // Celda SI/NO
     const check = (mark: boolean, widthPct: number) => new TableCell({
       width: { size: widthPct, type: WidthType.PERCENTAGE },
+      columnSpan: widthPct,
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 20, right: 20 },
       children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: mark ? 'X' : '', bold: true, size: 16 })] })],
@@ -196,6 +207,7 @@ export async function exportarHistoriaMedicaDOCX(
     // Celda simple bordeada, sin fondo
     const plain = (text: string | undefined, widthPct: number) => new TableCell({
       width: { size: widthPct, type: WidthType.PERCENTAGE },
+      columnSpan: widthPct,
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 40, right: 40 },
       children: [new Paragraph({ children: [new TextRun({ text: text || '', size: 16 })] })],
