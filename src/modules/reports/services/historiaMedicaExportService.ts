@@ -291,14 +291,14 @@ export async function exportarHistoriaMedicaDOCX(
               layout: TableLayoutType.FIXED,
               columnWidths: new Array(100).fill(50),
               rows: [
-                new TableRow({ children: [head('SI', 10), head('NO', 10), head('CONDICION', 55), head('Fecha de Atencion', 25)] }),
+                new TableRow({ children: [head('SI', 6), head('NO', 6), head('CONDICION', 66), head('Fecha de Atencion', 22)] }),
                 ...CONDICIONES_FIJAS.map((item) => {
                   const encontrada = data.condiciones.find(c => item.nombres.some(n => c.condicion?.toLowerCase().includes(n)));
-                  return new TableRow({ children: [check(!!encontrada, 10), check(!encontrada, 10), plain(item.fila, 55), plain(encontrada?.fechaAtencion, 25)] });
+                  return new TableRow({ children: [check(!!encontrada, 6), check(!encontrada, 6), plain(item.fila, 66), plain(encontrada?.fechaAtencion, 22)] });
                 }),
                 (() => {
                   const otra = data.condiciones.find(c => c.condicion?.toLowerCase().includes('otra condici'));
-                  return new TableRow({ children: [check(!!otra, 10), check(!otra, 10), plain('Otra condicion no mencionada en la presente lista:', 55), plain(otra?.fechaAtencion, 25)] });
+                  return new TableRow({ children: [check(!!otra, 6), check(!otra, 6), plain('Otra condicion no mencionada en la presente lista:', 66), plain(otra?.fechaAtencion, 22)] });
                 })(),
               ],
             }),
@@ -312,12 +312,12 @@ export async function exportarHistoriaMedicaDOCX(
               layout: TableLayoutType.FIXED,
               columnWidths: new Array(100).fill(50),
               rows: [
-                new TableRow({ children: [head('SI', 10), head('NO', 10), head('ALERGIAS O REACCIONES', 35), head('MENCIONAR', 45)] }),
+                new TableRow({ children: [head('SI', 6), head('NO', 6), head('ALERGIAS O REACCIONES', 28), head('MENCIONAR', 60)] }),
                 ...ALERGIAS_FIJAS.map((item) => {
                   const enFila = data.alergias.filter(a => item.nombres.some(n => a.alergia?.toLowerCase().includes(n)));
                   const tieneSI = enFila.length > 0;
                   const mencionar = enFila.map(a => a.mencionar || '').filter(Boolean).join(', ');
-                  return new TableRow({ children: [check(tieneSI, 10), check(!tieneSI, 10), plain(item.fila, 35), plain(mencionar, 45)] });
+                  return new TableRow({ children: [check(tieneSI, 6), check(!tieneSI, 6), plain(item.fila, 28), plain(mencionar, 60)] });
                 }),
               ],
             }),
@@ -378,10 +378,10 @@ export async function exportarHistoriaMedicaDOCX(
               layout: TableLayoutType.FIXED,
               columnWidths: new Array(100).fill(50),
               rows: [
-                new TableRow({ children: [head('SI', 10), head('NO', 10), head('VACUNA', 45), head('FECHA (ULTIMA DOSIS)', 35)] }),
+                new TableRow({ children: [head('SI', 6), head('NO', 6), head('VACUNA', 33), head('FECHA (ULTIMA DOSIS)', 55)] }),
                 ...VACUNAS_FIJAS.map((item) => {
                   const encontrada = data.vacunas.find(v => item.nombres.some(n => v.vacuna?.toLowerCase().includes(n)));
-                  return new TableRow({ children: [check(!!encontrada, 10), check(!encontrada, 10), plain(item.fila, 45), plain(encontrada?.fechaUltimaDosis, 35)] });
+                  return new TableRow({ children: [check(!!encontrada, 6), check(!encontrada, 6), plain(item.fila, 33), plain(encontrada?.fechaUltimaDosis, 55)] });
                 }),
               ],
             }),
