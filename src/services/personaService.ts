@@ -175,6 +175,17 @@ export class PersonaService {
       });
     }
 
+    // La búsqueda por nombre devuelve el rol de scout como "rol_scout" (no "es_scout").
+    // Normalizamos a la misma forma que usa la búsqueda por documento.
+    const esScout = raw.es_scout ?? (raw.rol_scout
+      ? {
+          scout_id: raw.rol_scout.scout_id,
+          codigo: raw.rol_scout.codigo,
+          rama: raw.rol_scout.rama,
+          estado: raw.rol_scout.estado,
+        }
+      : null);
+
     return {
       persona_id:      raw.persona_id,
       nombres:         raw.nombres ?? '',
@@ -187,7 +198,7 @@ export class PersonaService {
       es_familiar_de:  raw.es_familiar_de ?? [],
       es_dirigente:    raw.es_dirigente ?? null,
       es_comite_padres:raw.es_comite_padres ?? null,
-      es_scout:        raw.es_scout ?? null,
+      es_scout:        esScout,
       roles,
     };
   }

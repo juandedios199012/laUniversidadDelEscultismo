@@ -120,6 +120,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
   // Estado para el filtro de Persona (buscador) del reporte "Historia Médica"
   const [historiaMedicaPersona, setHistoriaMedicaPersona] = useState<PersonaResult | null>(null);
+  const [historiaMedicaFechaLlenado, setHistoriaMedicaFechaLlenado] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -1219,7 +1222,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       };
     }
 
-    const options = { organizacion: 'Grupo Scout Lima 12' };
+    const options = {
+      organizacion: 'Grupo Scout Lima 12',
+      fechaLlenado: historiaMedicaFechaLlenado || undefined,
+    };
 
     if (format === ExportFormat.PDF) {
       return await exportarHistoriaMedicaPDF(scoutId, historiaMedicaPersona.persona_id, options);
@@ -2209,11 +2215,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           )}
 
           {selectedReportType === ReportType.HISTORIA_MEDICA && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Persona
-              </label>
-              <div className="w-full md:w-96">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Persona
+                </label>
                 <PersonSearchCombobox
                   placeholder="Buscar por nombre o N° documento..."
                   onSelect={(persona) => setHistoriaMedicaPersona(persona)}
@@ -2221,13 +2227,27 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   onDesvincular={() => setHistoriaMedicaPersona(null)}
                   simplificarBadgeScout
                 />
+                {historiaMedicaPersona && !historiaMedicaPersona.es_scout && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Esta persona no está registrada como Scout. La Historia Médica solo está disponible para Scouts.
+                  </p>
+                )}
               </div>
-              {historiaMedicaPersona && !historiaMedicaPersona.es_scout && (
-                <p className="text-xs text-amber-600 mt-2">
-                  Esta persona no está registrada como Scout. La Historia Médica solo está disponible para Scouts.
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de Llenado
+                </label>
+                <input
+                  type="date"
+                  value={historiaMedicaFechaLlenado}
+                  onChange={(e) => setHistoriaMedicaFechaLlenado(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Fecha que aparecerá impresa en el documento (por defecto, hoy).
                 </p>
-              )}
-              <p className="text-xs text-gray-500 mt-2">
+              </div>
+              <p className="text-xs text-gray-500 md:col-span-2">
                 Genera la ficha médica completa del scout (ANEXO 10/11): datos personales, condiciones, alergias, medicamentos y vacunas.
               </p>
             </div>

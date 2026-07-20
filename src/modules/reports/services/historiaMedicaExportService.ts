@@ -36,18 +36,24 @@ export async function exportarHistoriaMedicaPDF(
   options?: {
     logoUrl?: string;
     organizacion?: string;
+    fechaLlenado?: string;
   }
 ): Promise<ReportGenerationResult> {
   try {
     // 1. Obtener datos de la historia médica
     const data = await getHistoriaMedicaData(scoutId, personaId);
-    
+
     if (!data) {
       return {
         status: ReportStatus.ERROR,
         fileName: 'historia_medica.pdf',
         error: 'No se encontró información de historia médica para este scout',
       };
+    }
+
+    // 1b. Permitir sobreescribir la fecha de llenado (ej. imprimir con la fecha de hoy)
+    if (options?.fechaLlenado) {
+      data.fechaLlenado = options.fechaLlenado;
     }
 
     // 2. Preparar metadatos
@@ -89,6 +95,7 @@ export async function exportarHistoriaMedicaDOCX(
   personaId: string,
   options?: {
     organizacion?: string;
+    fechaLlenado?: string;
   }
 ): Promise<ReportGenerationResult> {
   try {
@@ -110,7 +117,12 @@ export async function exportarHistoriaMedicaDOCX(
       };
     }
 
-    // 1b. Marca de agua (header flotante detrás del texto, se repite en cada página)
+    // 1b. Permitir sobreescribir la fecha de llenado (ej. imprimir con la fecha de hoy)
+    if (options?.fechaLlenado) {
+      data.fechaLlenado = options.fechaLlenado;
+    }
+
+    // 1c. Marca de agua (header flotante detrás del texto, se repite en cada página)
     const watermarkHeader = () => new Header({
       children: [
         new Paragraph({
@@ -174,6 +186,7 @@ export async function exportarHistoriaMedicaDOCX(
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               rows: [
+                createTableRow('Fecha de Llenado', data.fechaLlenado ? new Date(data.fechaLlenado).toLocaleDateString('es-PE') : 'N/A'),
                 createTableRow('Nombre Completo', data.nombreCompleto),
                 createTableRow('Código Scout', data.codigoScout || 'N/A'),
                 createTableRow('Fecha de Nacimiento', data.fechaNacimiento ? new Date(data.fechaNacimiento).toLocaleDateString('es-PE') : 'N/A'),
