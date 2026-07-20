@@ -175,15 +175,69 @@ export const datosReligiososSchema = z.object({
 });
 
 /**
+ * Health Data Section - Condición Médica (lista)
+ * fecha_atencion se maneja como texto libre, no como fecha estricta
+ */
+export const saludCondicionSchema = z.object({
+  condicion: z.string().max(150, "Máximo 150 caracteres").optional(),
+  fecha_atencion: z.string().max(50, "Máximo 50 caracteres").optional(),
+});
+
+/**
+ * Health Data Section - Alergia (lista)
+ */
+export const saludAlergiaSchema = z.object({
+  alergia: z.string().max(150, "Máximo 150 caracteres").optional(),
+  mencionar: z.string().max(500, "Máximo 500 caracteres").optional(),
+});
+
+/**
+ * Health Data Section - Medicamento (lista)
+ * fecha_inicio_duracion se maneja como texto libre, no como fecha estricta
+ */
+export const saludMedicamentoSchema = z.object({
+  medicamento: z.string().max(150, "Máximo 150 caracteres").optional(),
+  dosis: z.string().max(50, "Máximo 50 caracteres").optional(),
+  frecuencia: z.string().max(100, "Máximo 100 caracteres").optional(),
+  activo: z.boolean().optional().default(true),
+  fecha_inicio_duracion: z.string().max(100, "Máximo 100 caracteres").optional(),
+});
+
+/**
+ * Health Data Section - Vacuna (lista)
+ * fecha_ultima_dosis se maneja como texto libre, no como fecha estricta
+ */
+export const saludVacunaSchema = z.object({
+  vacuna: z.string().max(150, "Máximo 150 caracteres").optional(),
+  fecha_ultima_dosis: z.string().max(50, "Máximo 50 caracteres").optional(),
+});
+
+/**
  * Health Data Section
  */
 export const datosSaludSchema = z.object({
+  estatura_cm: z
+    .union([z.string(), z.number()])
+    .transform((val) => (val === "" || val === null || val === undefined ? undefined : Number(val)))
+    .pipe(z.number().min(0.5, "Estatura mínima 0.50m").max(2.5, "Estatura máxima 2.50m").optional())
+    .optional()
+    .nullable(),
+  peso_kg: z
+    .union([z.string(), z.number()])
+    .transform((val) => (val === "" || val === null || val === undefined ? undefined : Number(val)))
+    .pipe(z.number().min(10, "Peso mínimo 10kg").max(300, "Peso máximo 300kg").optional())
+    .optional()
+    .nullable(),
   grupo_sanguineo: GrupoSanguineoEnum.optional(),
   factor_sanguineo: FactorSanguineoEnum.optional(),
   seguro_medico: z.string().max(100, "Nombre muy largo").optional(),
   tipo_discapacidad: z.string().optional(),
   carnet_conadis: z.string().max(20, "Carnet muy largo").optional(),
   descripcion_discapacidad: z.string().max(500, "Descripción muy larga").optional(),
+  condiciones: z.array(saludCondicionSchema).default([]),
+  alergias: z.array(saludAlergiaSchema).default([]),
+  medicamentos: z.array(saludMedicamentoSchema).default([]),
+  vacunas: z.array(saludVacunaSchema).default([]),
 });
 
 /**
@@ -243,6 +297,14 @@ export const familiarItemSchema = z.object({
 });
 
 export type FamiliarItem = z.infer<typeof familiarItemSchema>;
+
+/**
+ * Tipos para las listas del Step Salud
+ */
+export type SaludCondicionData = z.infer<typeof saludCondicionSchema>;
+export type SaludAlergiaData = z.infer<typeof saludAlergiaSchema>;
+export type SaludMedicamentoData = z.infer<typeof saludMedicamentoSchema>;
+export type SaludVacunaData = z.infer<typeof saludVacunaSchema>;
 
 /**
  * Schema para array de familiares
@@ -311,12 +373,18 @@ export const defaultScoutFormValues: ScoutFormData = {
   ocupacion: "",
   centro_laboral: "",
   religion: "",
+  estatura_cm: undefined,
+  peso_kg: undefined,
   grupo_sanguineo: "",
   factor_sanguineo: "",
   seguro_medico: "",
   tipo_discapacidad: "",
   carnet_conadis: "",
   descripcion_discapacidad: "",
+  condiciones: [],
+  alergias: [],
+  medicamentos: [],
+  vacunas: [],
   rama_actual: "",
   rama: "",
   codigo_asociado: "",
@@ -325,6 +393,32 @@ export const defaultScoutFormValues: ScoutFormData = {
   cargo_patrulla: "MIEMBRO",
   // Familiares (array vacío por defecto)
   familiares: [],
+};
+
+/**
+ * Valores por defecto para un nuevo ítem de cada lista del Step Salud
+ */
+export const defaultSaludCondicion: SaludCondicionData = {
+  condicion: "",
+  fecha_atencion: "",
+};
+
+export const defaultSaludAlergia: SaludAlergiaData = {
+  alergia: "",
+  mencionar: "",
+};
+
+export const defaultSaludMedicamento: SaludMedicamentoData = {
+  medicamento: "",
+  dosis: "",
+  frecuencia: "",
+  activo: true,
+  fecha_inicio_duracion: "",
+};
+
+export const defaultSaludVacuna: SaludVacunaData = {
+  vacuna: "",
+  fecha_ultima_dosis: "",
 };
 
 // ============================================

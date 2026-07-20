@@ -2,10 +2,17 @@
  * Health Data Section Component
  */
 
-import { UseFormReturn } from "react-hook-form";
-import { Heart } from "lucide-react";
-import { ScoutFormData } from "../schemas/scoutFormSchema";
-import { TextField, SelectField, TextareaField } from "./FormFields";
+import { UseFormReturn, useFieldArray } from "react-hook-form";
+import { Heart, AlertTriangle, Pill, Syringe, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  ScoutFormData,
+  defaultSaludCondicion,
+  defaultSaludAlergia,
+  defaultSaludMedicamento,
+  defaultSaludVacuna,
+} from "../schemas/scoutFormSchema";
+import { TextField, SelectField, TextareaField, CheckboxField } from "./FormFields";
 import { FormSection } from "./FormSection";
 
 interface DatosSaludProps {
@@ -41,7 +48,12 @@ const DISCAPACIDAD_OPTIONS = [
 
 export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSaludProps) {
   const tipoDiscapacidad = form.watch("tipo_discapacidad");
-  
+
+  const condicionesArray = useFieldArray({ control: form.control, name: "condiciones" });
+  const alergiasArray = useFieldArray({ control: form.control, name: "alergias" });
+  const medicamentosArray = useFieldArray({ control: form.control, name: "medicamentos" });
+  const vacunasArray = useFieldArray({ control: form.control, name: "vacunas" });
+
   return (
     <FormSection
       title="Datos de Salud"
@@ -52,6 +64,31 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
       errorCount={errorCount}
     >
       <div className="space-y-6">
+        {/* Datos Físicos */}
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">
+            Datos Físicos
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TextField
+              control={form.control}
+              name="estatura_cm"
+              label="Estatura (m)"
+              type="number"
+              placeholder="1.70"
+              step="0.01"
+            />
+            <TextField
+              control={form.control}
+              name="peso_kg"
+              label="Peso (kg)"
+              type="number"
+              placeholder="65"
+              step="0.1"
+            />
+          </div>
+        </div>
+
         {/* Blood Type - 2 columnas */}
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-3">
@@ -114,6 +151,234 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
                 placeholder="Describa brevemente las consideraciones especiales que debemos tener en cuenta..."
                 rows={3}
               />
+            </div>
+          )}
+        </div>
+
+        {/* Condiciones Médicas */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Heart className="h-4 w-4 text-red-500" />
+              Condiciones Médicas
+            </h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => condicionesArray.append(defaultSaludCondicion)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+          {condicionesArray.fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay condiciones médicas registradas</p>
+          ) : (
+            <div className="space-y-4">
+              {condicionesArray.fields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-destructive"
+                    onClick={() => condicionesArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextField
+                      control={form.control}
+                      name={`condiciones.${index}.condicion`}
+                      label="Condición"
+                      placeholder="Ej: Asma"
+                    />
+                    <TextField
+                      control={form.control}
+                      name={`condiciones.${index}.fecha_atencion`}
+                      label="Fecha de Atención"
+                      placeholder="Ej: 15/03/2024"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Alergias */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              Alergias
+            </h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => alergiasArray.append(defaultSaludAlergia)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+          {alergiasArray.fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay alergias registradas</p>
+          ) : (
+            <div className="space-y-4">
+              {alergiasArray.fields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-destructive"
+                    onClick={() => alergiasArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextField
+                      control={form.control}
+                      name={`alergias.${index}.alergia`}
+                      label="Alergia"
+                      placeholder="Ej: Penicilina"
+                    />
+                    <TextField
+                      control={form.control}
+                      name={`alergias.${index}.mencionar`}
+                      label="Mencionar"
+                      placeholder="Detalles adicionales..."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Medicamentos */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Pill className="h-4 w-4 text-blue-500" />
+              Medicamentos
+            </h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => medicamentosArray.append(defaultSaludMedicamento)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+          {medicamentosArray.fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay medicamentos registrados</p>
+          ) : (
+            <div className="space-y-4">
+              {medicamentosArray.fields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-destructive"
+                    onClick={() => medicamentosArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <TextField
+                      control={form.control}
+                      name={`medicamentos.${index}.medicamento`}
+                      label="Medicamento"
+                      placeholder="Nombre del medicamento"
+                    />
+                    <TextField
+                      control={form.control}
+                      name={`medicamentos.${index}.dosis`}
+                      label="Dosis"
+                      placeholder="Ej: 500mg"
+                    />
+                    <TextField
+                      control={form.control}
+                      name={`medicamentos.${index}.frecuencia`}
+                      label="Frecuencia"
+                      placeholder="Ej: Cada 8 horas"
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <TextField
+                      control={form.control}
+                      name={`medicamentos.${index}.fecha_inicio_duracion`}
+                      label="Fecha de Inicio y Duración"
+                      placeholder="Ej: Desde 01/2024, por 3 meses"
+                    />
+                    <CheckboxField
+                      control={form.control}
+                      name={`medicamentos.${index}.activo`}
+                      label="Medicamento activo"
+                      description="¿Está tomando actualmente este medicamento?"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Vacunas */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Syringe className="h-4 w-4 text-green-500" />
+              Vacunas
+            </h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => vacunasArray.append(defaultSaludVacuna)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+          {vacunasArray.fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay vacunas registradas</p>
+          ) : (
+            <div className="space-y-4">
+              {vacunasArray.fields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-destructive"
+                    onClick={() => vacunasArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextField
+                      control={form.control}
+                      name={`vacunas.${index}.vacuna`}
+                      label="Vacuna"
+                      placeholder="Ej: COVID-19"
+                    />
+                    <TextField
+                      control={form.control}
+                      name={`vacunas.${index}.fecha_ultima_dosis`}
+                      label="Fecha Última Dosis"
+                      placeholder="Ej: 15/03/2024"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
