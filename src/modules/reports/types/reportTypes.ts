@@ -314,48 +314,37 @@ export interface EspecialidadesScoutData {
 }
 
 // ============= HISTORIA MÉDICA REPORT DATA =============
+// Fuente: Step Salud del módulo Scout (personas / salud_*), NO el modal
+// "Historia Médica" (historias_medicas / historia_*), que ya no se usa.
 
 // Condición médica para reporte
 export interface CondicionMedicaReportData {
-  nombre: string;
-  tipo: string;
-  fechaDiagnostico?: string;
-  tratamiento?: string;
-  medicoTratante?: string;
-  notas?: string;
-  activa: boolean;
+  condicion: string;
+  /** Texto libre, no fecha estricta (Step Salud) */
+  fechaAtencion?: string;
 }
 
 // Alergia para reporte
 export interface AlergiaReportData {
-  nombre: string;
-  tipo: string;
-  reaccion?: string;
-  tratamientoEmergencia?: string;
+  alergia: string;
   mencionar?: string;
 }
 
 // Medicamento para reporte
 export interface MedicamentoReportData {
-  nombre: string;
-  dosis: string;
-  frecuencia: string;
-  viaAdministracion?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-  motivo?: string;
-  prescritoPor?: string;
+  medicamento: string;
+  dosis?: string;
+  frecuencia?: string;
   activo: boolean;
+  /** Texto libre, no fecha estricta (Step Salud) */
+  fechaInicioDuracion?: string;
 }
 
 // Vacuna para reporte
 export interface VacunaReportData {
-  nombre: string;
-  fechaAplicacion?: string;
-  dosisNumero?: number;
-  lote?: string;
-  establecimiento?: string;
-  proximaDosis?: string;
+  vacuna: string;
+  /** Texto libre, no fecha estricta (Step Salud) */
+  fechaUltimaDosis?: string;
 }
 
 // Datos completos de Historia Médica para reportes
@@ -393,25 +382,22 @@ export interface HistoriaMedicaReportData {
     celular: string;
   };
   
-  // Cabecera de historia médica
+  // Fecha impresa en el documento (editable al exportar, no viene de BD)
   fechaLlenado: string;
-  lugarNacimiento?: string;
   estaturaCm?: number;
   pesoKg?: number;
-  
-  // Seguro y atención médica
+
+  // Seguro médico (Step Salud)
   seguroMedico?: string;
-  numeroPoliza?: string;
-  medicoCabecera?: string;
-  telefonoMedico?: string;
-  hospitalPreferencia?: string;
-  
-  // Datos de sangre
+
+  // Datos de sangre (Step Salud)
   grupoSanguineo?: string;
   factorSanguineo?: string;
-  
-  // Observaciones
-  observacionesGenerales?: string;
+
+  // Discapacidad (Step Salud)
+  tipoDiscapacidad?: string;
+  carnetConadis?: string;
+  descripcionDiscapacidad?: string;
   
   // Listas
   condiciones: CondicionMedicaReportData[];

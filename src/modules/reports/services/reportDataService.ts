@@ -441,10 +441,14 @@ export async function getRankingPatrullas(
  */
 export async function getHistoriaMedicaData(
   scoutId: string,
-  personaId: string
+  _personaId: string
 ): Promise<HistoriaMedicaReportData | null> {
   try {
-    // 1. Obtener datos del scout usando RPC (incluye familiares)
+    // Fuente única: api_obtener_scout, que ya incluye datos personales,
+    // contacto, familiares y el Step Salud completo (estatura, peso,
+    // seguro médico, discapacidad, condiciones, alergias, medicamentos
+    // y vacunas). Ya NO se usa el modal "Historia Médica"
+    // (historias_medicas / api_obtener_historia_medica).
     const { data: scoutRpcData, error: scoutError } = await supabase
       .rpc('api_obtener_scout', {
         p_scout_id: scoutId
@@ -456,32 +460,10 @@ export async function getHistoriaMedicaData(
     }
 
     const scoutData = scoutRpcData.data;
-    console.log('📋 Scout RPC Response:', scoutData);
 
-    // 2. Obtener historia médica completa usando RPC
-    const { data: historiaRpcData } = await supabase
-      .rpc('api_obtener_historia_medica', {
-        p_persona_id: personaId
-      });
-
-    // Debug: ver qué retorna el RPC
-    console.log('📋 Historia Médica RPC Response:', JSON.stringify(historiaRpcData, null, 2));
-
-    // Extraer datos de la respuesta del RPC
-    const historiaData = historiaRpcData?.success ? historiaRpcData.data?.cabecera : null;
-    const condiciones = historiaRpcData?.success ? historiaRpcData.data?.condiciones || [] : [];
-    const alergias = historiaRpcData?.success ? historiaRpcData.data?.alergias || [] : [];
-    const medicamentos = historiaRpcData?.success ? historiaRpcData.data?.medicamentos || [] : [];
-    const vacunas = historiaRpcData?.success ? historiaRpcData.data?.vacunas || [] : [];
-
-    // Debug: ver datos extraídos
-    console.log('📋 Datos extraídos - Cabecera:', historiaData);
-    console.log('📋 Condiciones:', condiciones);
-
-    // 3. Extraer familiares del scout (ya vienen en la respuesta del RPC)
+    // Familiares del scout (ya vienen en la respuesta del RPC)
     const familiares = scoutData?.familiares || [];
-    console.log('📋 Familiares del scout:', familiares);
-    
+
     // Tomar primer familiar como contacto emergencia, segundo como alternativo
     const contactoEmergencia = familiares[0];
     const contactoAlternativo = familiares[1];
@@ -507,7 +489,7 @@ export async function getHistoriaMedicaData(
       rama: scoutData.rama_actual || scoutData.rama || '',
       patrulla: scoutData.patrulla || '',
       telefonoCasa: scoutData.telefono || '', // Teléfono fijo del scout
-      
+
       // Contacto de emergencia (Familiar 1)
       contactoEmergencia: contactoEmergencia ? {
         nombre: contactoEmergencia.nombre_completo || `${contactoEmergencia.nombres || ''} ${contactoEmergencia.apellidos || ''}`.trim(),
@@ -517,71 +499,54 @@ export async function getHistoriaMedicaData(
         direccion: contactoEmergencia.direccion || '',
         numeroDocumento: contactoEmergencia.numero_documento || '',
       } : undefined,
-      
+
       // Contacto alternativo (Familiar 2)
       contactoAlternativo: contactoAlternativo ? {
         nombre: contactoAlternativo.nombre_completo || `${contactoAlternativo.nombres || ''} ${contactoAlternativo.apellidos || ''}`.trim(),
         parentesco: contactoAlternativo.parentesco || '',
         celular: contactoAlternativo.celular || '',
       } : undefined,
-      
-      // Cabecera
-      fechaLlenado: historiaData?.fecha_llenado || new Date().toISOString().split('T')[0],
-      lugarNacimiento: historiaData?.lugar_nacimiento,
-      estaturaCm: historiaData?.estatura_cm,
-      pesoKg: historiaData?.peso_kg,
-      
-      // Seguro
-      seguroMedico: historiaData?.seguro_medico,
-      numeroPoliza: historiaData?.numero_poliza,
-      medicoCabecera: historiaData?.medico_cabecera,
-      telefonoMedico: historiaData?.telefono_medico,
-      hospitalPreferencia: historiaData?.hospital_preferencia,
-      
-      // Sangre
+
+      // Fecha impresa en el documento; se sobreescribe siempre al exportar
+      // (ver options.fechaLlenado en historiaMedicaExportService)
+      fechaLlenado: new Date().toISOString().split('T')[0],
+      estaturaCm: scoutData.estatura_cm != null ? Number(scoutData.estatura_cm) : undefined,
+      pesoKg: scoutData.peso_kg != null ? Number(scoutData.peso_kg) : undefined,
+
+      // Seguro médico (Step Salud)
+      seguroMedico: scoutData.seguro_medico,
+
+      // Sangre (Step Salud)
       grupoSanguineo: scoutData.grupo_sanguineo,
       factorSanguineo: scoutData.factor_sanguineo,
-      
-      observacionesGenerales: historiaData?.observaciones_generales,
-      
-      // Listas
-      condiciones: (condiciones || []).map((c: any) => ({
-        nombre: c.nombre,
-        tipo: c.tipo || 'CONTROLADA',
-        fechaDiagnostico: c.fecha_diagnostico,
-        tratamiento: c.tratamiento,
-        medicoTratante: c.medico_tratante,
-        notas: c.notas,
-        activa: c.activa ?? true,
+
+      // Discapacidad (Step Salud)
+      tipoDiscapacidad: scoutData.tipo_discapacidad,
+      carnetConadis: scoutData.carnet_conadis,
+      descripcionDiscapacidad: scoutData.descripcion_discapacidad,
+
+      // Listas (Step Salud)
+      condiciones: (scoutData.condiciones || []).map((c: any) => ({
+        condicion: c.condicion || '',
+        fechaAtencion: c.fecha_atencion,
       })),
-      
-      alergias: (alergias || []).map((a: any) => ({
-        nombre: a.nombre,
-        tipo: a.tipo || 'OTRA',
-        reaccion: a.reaccion,
-        tratamientoEmergencia: a.tratamiento_emergencia,
+
+      alergias: (scoutData.alergias || []).map((a: any) => ({
+        alergia: a.alergia || '',
         mencionar: a.mencionar,
       })),
-      
-      medicamentos: (medicamentos || []).map((m: any) => ({
-        nombre: m.nombre,
+
+      medicamentos: (scoutData.medicamentos || []).map((m: any) => ({
+        medicamento: m.medicamento || '',
         dosis: m.dosis,
         frecuencia: m.frecuencia,
-        viaAdministracion: m.via_administracion,
-        fechaInicio: m.fecha_inicio,
-        fechaFin: m.fecha_fin,
-        motivo: m.motivo,
-        prescritoPor: m.prescrito_por,
         activo: m.activo ?? true,
+        fechaInicioDuracion: m.fecha_inicio_duracion,
       })),
-      
-      vacunas: (vacunas || []).map((v: any) => ({
-        nombre: v.nombre,
-        fechaAplicacion: v.fecha_aplicacion,
-        dosisNumero: v.dosis_numero,
-        lote: v.lote,
-        establecimiento: v.establecimiento,
-        proximaDosis: v.proxima_dosis,
+
+      vacunas: (scoutData.vacunas || []).map((v: any) => ({
+        vacuna: v.vacuna || '',
+        fechaUltimaDosis: v.fecha_ultima_dosis,
       })),
     };
 

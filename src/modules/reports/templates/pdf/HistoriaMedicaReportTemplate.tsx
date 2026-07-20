@@ -1,8 +1,9 @@
 /**
  * Plantilla PDF para Historia Medica
  * Documento de Ficha Medica Scout
- * Basado en ANEXO 10/11 - Asociacion de Scouts del Peru
- * 
+ * Basado en ANEXO 08 - Asociacion de Scouts del Peru
+ * Fuente de datos: Registro Scout / Step Salud (NO el modal Historia Medica)
+ *
  * @react-pdf/renderer - No soporta emojis, usar texto plano
  */
 
@@ -46,49 +47,23 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
 
-  // HEADER con logo
+  // HEADER (solo titulo, sin espacio para imagen)
   header: {
-    flexDirection: 'row',
     marginBottom: 15,
-    alignItems: 'flex-start',
   },
-  
-  logoContainer: {
-    width: 70,
-    marginRight: 15,
-  },
-  
-  logoImage: {
-    width: 60,
-    height: 70,
-  },
-  
-  logoPlaceholder: {
-    width: 60,
-    height: 70,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  titleContainer: {
-    flex: 1,
-  },
-  
+
   mainTitle: {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.primary,
     textAlign: 'center',
-    marginTop: 20,
   },
-  
+
   // SECCIONES
   section: {
     marginBottom: 12,
   },
-  
+
   sectionTitle: {
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
@@ -96,26 +71,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textDecoration: 'underline',
   },
-  
-  // TABLA ESTILO ANEXO 10
+
+  // TABLA ESTILO ANEXO 08
   table: {
     width: '100%',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  
+
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     minHeight: 22,
   },
-  
+
   tableRowLast: {
     flexDirection: 'row',
     minHeight: 22,
   },
-  
+
   // Header azul de tabla
   tableHeaderCell: {
     backgroundColor: COLORS.primary,
@@ -125,7 +100,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     justifyContent: 'center',
   },
-  
+
   // Celda de label azul
   labelCell: {
     backgroundColor: COLORS.primary,
@@ -137,7 +112,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: COLORS.border,
   },
-  
+
   // Celda de valor
   valueCell: {
     backgroundColor: '#FFFFFF',
@@ -147,14 +122,14 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: COLORS.border,
   },
-  
+
   valueCellLast: {
     backgroundColor: '#FFFFFF',
     padding: 5,
     fontSize: 9,
     justifyContent: 'center',
   },
-  
+
   // Tabla de condiciones (SI/NO)
   checkboxCell: {
     width: 30,
@@ -165,7 +140,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: COLORS.border,
   },
-  
+
   condicionCell: {
     flex: 1,
     padding: 5,
@@ -173,30 +148,25 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: COLORS.border,
   },
-  
+
   fechaCell: {
     width: 120,
     padding: 5,
     fontSize: 8,
   },
-  
-  // FOOTER
+
+  // FOOTER (solo numero de pagina, sin texto de ANEXO)
   footer: {
     position: 'absolute',
     bottom: 20,
     left: 30,
     right: 30,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     fontSize: 8,
     color: '#666',
   },
-  
-  footerTitle: {
-    color: COLORS.primary,
-    fontSize: 7,
-  },
-  
+
   // AVISO CONFIDENCIAL
   confidencialBox: {
     backgroundColor: COLORS.lightBlue,
@@ -206,42 +176,46 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginBottom: 15,
   },
-  
+
   confidencialText: {
     color: COLORS.primary,
     fontSize: 8,
     fontStyle: 'italic',
     textAlign: 'center',
   },
-  
+
   // FIRMAS
   firmaContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 30,
   },
-  
+
   firmaBox: {
     width: '45%',
   },
-  
+
   firmaLinea: {
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     marginBottom: 5,
     height: 40,
   },
-  
+
   firmaLabel: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
   },
-  
+
   firmaSubLabel: {
     fontSize: 7,
     marginTop: 2,
   },
-  
+
+  firmaSubLabelBold: {
+    fontFamily: 'Helvetica-Bold',
+  },
+
   // Nota responsabilidad
   responsabilidadBox: {
     borderWidth: 1,
@@ -249,20 +223,12 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 15,
   },
-  
+
   responsabilidadText: {
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'justify',
     lineHeight: 1.4,
-  },
-  
-  // Empty state
-  emptyText: {
-    fontSize: 8,
-    color: '#666',
-    fontStyle: 'italic',
-    padding: 5,
   },
 });
 
@@ -281,17 +247,6 @@ const formatDate = (dateStr?: string): string => {
   }
 };
 
-// Función para obtener prescriptores de medicamentos concatenados
-const getPrescriptores = (medicamentos: { prescritoPor?: string }[]): string => {
-  const prescriptores = medicamentos
-    .map(m => m.prescritoPor)
-    .filter((p): p is string => !!p && p.trim() !== '')
-    .filter((value, index, self) => self.indexOf(value) === index); // Eliminar duplicados
-  
-  if (prescriptores.length === 0) return '';
-  return prescriptores.join('; ');
-};
-
 // Función para formatear grupo sanguíneo con factor
 const formatGrupoSanguineo = (grupo?: string, factor?: string): string => {
   if (!grupo) return '';
@@ -303,37 +258,21 @@ const formatGrupoSanguineo = (grupo?: string, factor?: string): string => {
 interface HistoriaMedicaReportTemplateProps {
   data: HistoriaMedicaReportData;
   metadata: ReportMetadata;
-  logoUrl?: string;
 }
 
 export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplateProps> = ({
   data,
-  metadata,
-  logoUrl,
 }) => {
   return (
     <Document>
       {/* PÁGINA 1: Información General / Historial de Salud */}
       <Page size="A4" style={styles.page}>
         <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
-        {/* Header con Logo */}
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            {logoUrl ? (
-              <Image src={logoUrl} style={styles.logoImage} />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Text style={{ fontSize: 6, color: '#999', textAlign: 'center' }}>
-                  Scouts{'\n'}del Peru
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.titleContainer}>
-            <Text style={styles.mainTitle}>
-              ANEXO 10 - FICHA MEDICA: INFORMACION GENERAL / HISTORIAL DE SALUD
-            </Text>
-          </View>
+          <Text style={styles.mainTitle}>
+            ANEXO 08 - FICHA MEDICA: INFORMACION GENERAL / HISTORIAL DE SALUD
+          </Text>
         </View>
 
         {/* Tabla Datos Personales */}
@@ -346,7 +285,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{formatDate(data.fechaLlenado)}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '25%' }]}>
               <Text>Nombre Completo:</Text>
@@ -355,16 +294,16 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.nombreCompleto || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '25%' }]}>
-              <Text>Lugar y Fecha de Nacimiento:</Text>
+              <Text>Fecha de Nacimiento:</Text>
             </View>
             <View style={[styles.valueCellLast, { width: '75%' }]}>
-              <Text>{data.lugarNacimiento || ''} - {formatDate(data.fechaNacimiento)}</Text>
+              <Text>{formatDate(data.fechaNacimiento)}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Edad:</Text>
@@ -379,7 +318,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.numeroDocumento || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '15%' }]}>
               <Text>Estatura (m):</Text>
@@ -394,7 +333,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.pesoKg || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '25%' }]}>
               <Text>Grupo sanguineo y Rh:</Text>
@@ -409,7 +348,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.sexo === 'M' ? 'Masculino' : data.sexo === 'F' ? 'Femenino' : data.sexo || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '15%' }]}>
               <Text>Direccion:</Text>
@@ -418,7 +357,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.direccion || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRow}>
             <View style={[styles.labelCell, { width: '12%' }]}>
               <Text>Distrito:</Text>
@@ -439,7 +378,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.departamento || ''}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tableRowLast}>
             <View style={[styles.labelCell, { width: '25%' }]}>
               <Text>Compania de Seguros:</Text>
@@ -448,10 +387,10 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text>{data.seguroMedico || ''}</Text>
             </View>
             <View style={[styles.labelCell, { width: '12%' }]}>
-              <Text>N Poliza:</Text>
+              <Text>Nº Póliza:</Text>
             </View>
             <View style={[styles.valueCellLast, { width: '38%' }]}>
-              <Text>{data.numeroPoliza || ''}</Text>
+              <Text></Text>
             </View>
           </View>
         </View>
@@ -461,7 +400,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={[styles.sectionTitle, { textDecoration: 'none', fontFamily: 'Helvetica-Bold' }]}>
             EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:
           </Text>
-          
+
           <View style={styles.table}>
             <View style={styles.tableRow}>
               <View style={[styles.labelCell, { width: '20%' }]}>
@@ -477,7 +416,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>{data.contactoEmergencia?.parentesco || ''}</Text>
               </View>
             </View>
-            
+
             <View style={styles.tableRow}>
               <View style={[styles.labelCell, { width: '20%' }]}>
                 <Text>Direccion:</Text>
@@ -486,7 +425,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>{data.direccion || ''}</Text>
               </View>
             </View>
-            
+
             <View style={styles.tableRow}>
               <View style={[styles.labelCell, { width: '20%' }]}>
                 <Text>Telefono casa:</Text>
@@ -501,7 +440,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>{data.contactoEmergencia?.celular || ''}</Text>
               </View>
             </View>
-            
+
             <View style={styles.tableRow}>
               <View style={[styles.labelCell, { width: '35%' }]}>
                 <Text>Nombre de contacto alternativo:</Text>
@@ -510,7 +449,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>{data.contactoAlternativo?.nombre || ''}</Text>
               </View>
             </View>
-            
+
             <View style={styles.tableRowLast}>
               <View style={[styles.labelCell, { width: '20%' }]}>
                 <Text>Parentesco:</Text>
@@ -536,7 +475,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
             Actualmente recibe o ha recibido tratamiento para alguna de las siguientes condiciones?
           </Text>
-          
+
           <View style={styles.table}>
             {/* Header */}
             <View style={styles.tableRow}>
@@ -553,7 +492,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>Fecha de Atencion</Text>
               </View>
             </View>
-            
+
             {/* Mapear condiciones por nombre a las filas del cuadro */}
             {[
               { fila: 'Diabetes Mellitus', nombres: ['diabetes'] },
@@ -564,11 +503,11 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               { fila: 'Tratamiento psicologico o psiquiatrico', nombres: ['psicolog', 'psiquiat'] },
               { fila: 'Cirugias y hospitalizaciones', nombres: ['cirug', 'hospital'] },
             ].map((item, idx) => {
-              const condicionEncontrada = data.condiciones.find(c => 
-                item.nombres.some(n => c.nombre?.toLowerCase().includes(n))
+              const condicionEncontrada = data.condiciones.find(c =>
+                item.nombres.some(n => c.condicion?.toLowerCase().includes(n))
               );
               const tieneSI = !!condicionEncontrada;
-              
+
               return (
                 <View key={idx} style={styles.tableRow}>
                   <View style={styles.checkboxCell}>
@@ -581,19 +520,19 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                     <Text>{item.fila}</Text>
                   </View>
                   <View style={styles.fechaCell}>
-                    <Text>{condicionEncontrada?.fechaDiagnostico ? formatDate(condicionEncontrada.fechaDiagnostico) : ''}</Text>
+                    <Text>{condicionEncontrada?.fechaAtencion || ''}</Text>
                   </View>
                 </View>
               );
             })}
-            
+
             {/* Otra condición no mencionada en la presente lista */}
             {(() => {
-              const otraCondicion = data.condiciones.find(c => 
-                c.nombre?.toLowerCase().includes('otra condici')
+              const otraCondicion = data.condiciones.find(c =>
+                c.condicion?.toLowerCase().includes('otra condici')
               );
               const tieneOtra = !!otraCondicion;
-              
+
               return (
                 <View style={styles.tableRowLast}>
                   <View style={styles.checkboxCell}>
@@ -604,14 +543,9 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                   </View>
                   <View style={styles.condicionCell}>
                     <Text>Otra condicion no mencionada en la presente lista:</Text>
-                    {tieneOtra && otraCondicion?.tratamiento && (
-                      <Text style={{ fontSize: 7, marginTop: 2 }}>
-                        {otraCondicion.tratamiento}
-                      </Text>
-                    )}
                   </View>
                   <View style={styles.fechaCell}>
-                    <Text>{tieneOtra && otraCondicion?.fechaDiagnostico ? formatDate(otraCondicion.fechaDiagnostico) : ''}</Text>
+                    <Text>{tieneOtra ? otraCondicion?.fechaAtencion || '' : ''}</Text>
                   </View>
                 </View>
               );
@@ -621,7 +555,6 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerTitle}>ANEXO 11 - Ficha Medica ({metadata.organizacion})</Text>
           <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
         </View>
       </Page>
@@ -629,20 +562,6 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
       {/* PÁGINA 2: Alergias y Medicamentos */}
       <Page size="A4" style={styles.page}>
         <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
-        {/* Header con Logo */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            {logoUrl ? (
-              <Image src={logoUrl} style={styles.logoImage} />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Text style={{ fontSize: 6, color: '#999', textAlign: 'center' }}>
-                  Scouts{'\n'}del Peru
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
 
         {/* Alergias */}
         <View style={styles.section}>
@@ -652,7 +571,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
             Tiene alergias, o presenta reaccion adversa a alguno de los siguientes?
           </Text>
-          
+
           <View style={styles.table}>
             <View style={styles.tableRow}>
               <View style={[styles.tableHeaderCell, { width: 30 }]}>
@@ -668,7 +587,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>MENCIONAR</Text>
               </View>
             </View>
-            
+
             {/* Mapear alergias por nombre a las filas del cuadro */}
             {[
               { fila: 'Medicamentos', nombres: ['medicamentos', 'medicamento', 'penicilina', 'aspirina', 'ibuprofeno', 'sulfas', 'anestésico', 'anestesico', 'otros medicamentos'] },
@@ -677,12 +596,12 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               { fila: 'Picaduras / mordeduras de insectos', nombres: ['picaduras', 'insectos', 'mordeduras', 'insecto', 'picadura'] },
               { fila: 'Sustancias u otros', nombres: ['sustancias', 'otros', 'otra', 'látex', 'latex', 'níquel', 'niquel', 'cosméticos', 'cosmeticos', 'contacto'] },
             ].map((item, idx) => {
-              const alergiasEnFila = data.alergias.filter(a => 
-                item.nombres.some(n => a.nombre?.toLowerCase().includes(n))
+              const alergiasEnFila = data.alergias.filter(a =>
+                item.nombres.some(n => a.alergia?.toLowerCase().includes(n))
               );
               const tieneSI = alergiasEnFila.length > 0;
               const mencionar = alergiasEnFila.map(a => a.mencionar || '').filter(Boolean).join(', ');
-              
+
               return (
                 <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
                   <View style={styles.checkboxCell}>
@@ -708,7 +627,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={[styles.sectionTitle, { textDecoration: 'underline' }]}>
             REGISTRE LOS MEDICAMENTOS ADMINISTRADOS ACTUALMENTE, INCLUYENDO MEDICAMENTOS SIN RECETA MEDICA
           </Text>
-          
+
           {data.medicamentos.filter(m => m.activo).length === 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
               <View style={{ width: 12, height: 12, borderWidth: 1, borderColor: '#000', marginRight: 5, alignItems: 'center', justifyContent: 'center' }}>
@@ -717,11 +636,11 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text style={{ fontSize: 8 }}>MARQUE AQUI SI NO SE TOMAN MEDICAMENTOS RUTINARIAMENTE</Text>
             </View>
           )}
-          
+
           <Text style={{ fontSize: 7, marginBottom: 5, fontStyle: 'italic' }}>
             Si necesita espacio adicional, por favor indiquelo en una hoja aparte, firmela y anexela.
           </Text>
-          
+
           <View style={styles.table}>
             <View style={styles.tableRow}>
               <View style={[styles.tableHeaderCell, { width: '25%', borderRightWidth: 1, borderRightColor: '#fff' }]}>
@@ -737,12 +656,12 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>FECHA DE INICIO Y DURACION</Text>
               </View>
             </View>
-            
+
             {data.medicamentos.filter(m => m.activo).length > 0 ? (
               data.medicamentos.filter(m => m.activo).map((med, idx, arr) => (
                 <View key={idx} style={idx === arr.length - 1 ? styles.tableRowLast : styles.tableRow}>
                   <View style={[styles.valueCell, { width: '25%' }]}>
-                    <Text>{med.nombre}</Text>
+                    <Text>{med.medicamento}</Text>
                   </View>
                   <View style={[styles.valueCell, { width: '15%' }]}>
                     <Text>{med.dosis}</Text>
@@ -751,7 +670,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                     <Text>{med.frecuencia}</Text>
                   </View>
                   <View style={[styles.valueCellLast, { width: '40%' }]}>
-                    <Text>{med.fechaInicio ? formatDate(med.fechaInicio) : ''}</Text>
+                    <Text>{med.fechaInicioDuracion || ''}</Text>
                   </View>
                 </View>
               ))
@@ -772,7 +691,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
         {/* Caja de autorización */}
         <View style={{ borderWidth: 1, borderColor: COLORS.border, padding: 8, marginTop: 15 }}>
           <Text style={{ fontSize: 8 }}>
-            La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad): {getPrescriptores(data.medicamentos)}
+            La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad):
           </Text>
           <View style={{ height: 20 }} />
         </View>
@@ -786,7 +705,6 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerTitle}>ANEXO 11 - Ficha Medica (Normas para Actividades Externas y/o al Aire Libre de la ASP)</Text>
           <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
         </View>
       </Page>
@@ -794,20 +712,6 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
       {/* PÁGINA 3: Vacunas y Firmas */}
       <Page size="A4" style={styles.page}>
         <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
-        {/* Header con Logo */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            {logoUrl ? (
-              <Image src={logoUrl} style={styles.logoImage} />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Text style={{ fontSize: 6, color: '#999', textAlign: 'center' }}>
-                  Scouts{'\n'}del Peru
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
 
         {/* Vacunas */}
         <View style={styles.section}>
@@ -817,7 +721,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
             Ha recibido alguna de las siguientes vacunas?
           </Text>
-          
+
           <View style={styles.table}>
             <View style={styles.tableRow}>
               <View style={[styles.tableHeaderCell, { width: 30 }]}>
@@ -833,13 +737,13 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                 <Text>FECHA (ULTIMA DOSIS)</Text>
               </View>
             </View>
-            
+
             {[
-              { nombre: 'Antiamarilica (fiebre amarilla)', vacuna: data.vacunas.find(v => v.nombre.toLowerCase().includes('amaril') || v.nombre.toLowerCase().includes('fiebre')) },
-              { nombre: 'Hepatitis B', vacuna: data.vacunas.find(v => v.nombre.toLowerCase().includes('hepatitis')) },
-              { nombre: 'Influenza', vacuna: data.vacunas.find(v => v.nombre.toLowerCase().includes('influenza') || v.nombre.toLowerCase().includes('gripe')) },
-              { nombre: 'COVID - 19', vacuna: data.vacunas.find(v => v.nombre.toLowerCase().includes('covid')) },
-              { nombre: 'Neumococo', vacuna: data.vacunas.find(v => v.nombre.toLowerCase().includes('neumococo') || v.nombre.toLowerCase().includes('neumonia')) },
+              { nombre: 'Antiamarilica (fiebre amarilla)', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('amaril') || v.vacuna.toLowerCase().includes('fiebre')) },
+              { nombre: 'Hepatitis B', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('hepatitis')) },
+              { nombre: 'Influenza', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('influenza') || v.vacuna.toLowerCase().includes('gripe')) },
+              { nombre: 'COVID - 19', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('covid')) },
+              { nombre: 'Neumococo', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('neumococo') || v.vacuna.toLowerCase().includes('neumonia')) },
             ].map((item, idx) => (
               <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
                 <View style={styles.checkboxCell}>
@@ -852,7 +756,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
                   <Text>{item.nombre}</Text>
                 </View>
                 <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
-                  <Text>{item.vacuna?.fechaAplicacion ? formatDate(item.vacuna.fechaAplicacion) : ''}</Text>
+                  <Text>{item.vacuna?.fechaUltimaDosis || ''}</Text>
                 </View>
               </View>
             ))}
@@ -866,7 +770,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               Restriccion fisica, psicologica, neurologica u otra del participante, si existiese, en:
             </Text>
             <Text style={{ fontSize: 9, minHeight: 50 }}>
-              {data.observacionesGenerales || ''}
+              {data.descripcionDiscapacidad || ''}
             </Text>
           </View>
         </View>
@@ -883,28 +787,42 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', marginBottom: 20 }}>
             FIRMAS DE CONSENTIMIENTO INFORMADO (firmar la que corresponda)
           </Text>
-          
+
           <View style={styles.firmaContainer}>
             <View style={styles.firmaBox}>
               <View style={styles.firmaLinea} />
               <Text style={styles.firmaLabel}>Firma del participante mayor de edad</Text>
-              <Text style={styles.firmaSubLabel}>Nombres y Apellidos: {data.nombreCompleto || '_____________________'}</Text>
-              <Text style={styles.firmaSubLabel}>DNI: {data.numeroDocumento || '_____________________'}</Text>
+              <Text style={styles.firmaSubLabel}>
+                <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos: </Text>
+                {data.nombreCompleto || '_____________________'}
+              </Text>
+              <Text style={styles.firmaSubLabel}>
+                <Text style={styles.firmaSubLabelBold}>DNI: </Text>
+                {data.numeroDocumento || '_____________________'}
+              </Text>
             </View>
-            
+
             <View style={styles.firmaBox}>
               <View style={styles.firmaLinea} />
               <Text style={styles.firmaLabel}>Firma del padre o tutor del participante menor de edad</Text>
-              <Text style={styles.firmaSubLabel}>Nombres y Apellidos: {data.contactoEmergencia?.nombre || '_____________________'}</Text>
-              <Text style={styles.firmaSubLabel}>DNI: {data.contactoEmergencia?.numeroDocumento || '_____________________'}</Text>
-              <Text style={[styles.firmaSubLabel, { marginTop: 5 }]}>Nombres y Apellidos del menor: {data.nombreCompleto || '_____________________'}</Text>
+              <Text style={styles.firmaSubLabel}>
+                <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos: </Text>
+                {data.contactoEmergencia?.nombre || '_____________________'}
+              </Text>
+              <Text style={styles.firmaSubLabel}>
+                <Text style={styles.firmaSubLabelBold}>DNI: </Text>
+                {data.contactoEmergencia?.numeroDocumento || '_____________________'}
+              </Text>
+              <Text style={[styles.firmaSubLabel, { marginTop: 5 }]}>
+                <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos del menor: </Text>
+                {data.nombreCompleto || '_____________________'}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerTitle}>ANEXO 11 - Ficha Medica (Normas para Actividades Externas y/o al Aire Libre de la ASP)</Text>
           <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
         </View>
       </Page>
