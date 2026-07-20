@@ -7,6 +7,25 @@ import { generateAndDownloadPDF } from './pdfService';
 import { getHistoriaMedicaData } from './reportDataService';
 import { ReportMetadata, ReportGenerationResult, ReportStatus } from '../types/reportTypes';
 import { HistoriaMedicaReportTemplate } from '../templates/pdf/HistoriaMedicaReportTemplate';
+import { marcaAguaFichaMedicaBase64 } from '../../../assets/images/marcaAguaFichaMedicaBase64';
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const b64 = base64.replace(/^data:image\/\w+;base64,/, '');
+  const binaryString = atob(b64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function detectImageType(base64: string): 'png' | 'jpg' | 'gif' | 'bmp' {
+  const normalized = (base64 || '').toLowerCase();
+  if (normalized.startsWith('data:image/jpeg') || normalized.startsWith('data:image/jpg')) return 'jpg';
+  if (normalized.startsWith('data:image/gif')) return 'gif';
+  if (normalized.startsWith('data:image/bmp')) return 'bmp';
+  return 'png';
+}
 
 /**
  * Genera y descarga el PDF de Historia Médica de un scout
@@ -74,12 +93,15 @@ export async function exportarHistoriaMedicaDOCX(
 ): Promise<ReportGenerationResult> {
   try {
     // Importar módulo docx dinámicamente
-    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, HeadingLevel } = await import('docx');
+    const {
+      Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, HeadingLevel,
+      Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom,
+    } = await import('docx');
     const { saveAs } = await import('file-saver');
-    
+
     // 1. Obtener datos
     const data = await getHistoriaMedicaData(scoutId, personaId);
-    
+
     if (!data) {
       return {
         status: ReportStatus.ERROR,
@@ -87,6 +109,28 @@ export async function exportarHistoriaMedicaDOCX(
         error: 'No se encontró información de historia médica para este scout',
       };
     }
+
+    // 1b. Marca de agua (header flotante detrás del texto, se repite en cada página)
+    const watermarkHeader = () => new Header({
+      children: [
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: base64ToUint8Array(marcaAguaFichaMedicaBase64),
+              type: detectImageType(marcaAguaFichaMedicaBase64),
+              transformation: { width: 794, height: 1123 },
+              floating: {
+                horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: 0 },
+                verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: 0 },
+                allowOverlap: true,
+                lockAnchor: false,
+                behindDocument: true,
+              },
+            }),
+          ],
+        }),
+      ],
+    });
 
     // 2. Función helper para crear filas de tabla
     const createTableRow = (label: string, value: string) => {
@@ -108,6 +152,7 @@ export async function exportarHistoriaMedicaDOCX(
     const doc = new Document({
       sections: [
         {
+          headers: { default: watermarkHeader() },
           children: [
             // Título
             new Paragraph({

@@ -3,7 +3,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List, Info } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List, Info, Heart } from 'lucide-react';
+import { PersonSearchCombobox } from '@/components/shared/PersonSearch';
+import type { PersonaResult } from '@/services/personaService';
 import { useToast } from '@/hooks/useToast';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -50,6 +52,7 @@ import IngresosPorConceptoTemplate from '../templates/pdf/IngresosPorConceptoTem
 import EstadoCuentaPersonaTemplate from '../templates/pdf/EstadoCuentaPersonaTemplate';
 import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
 import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
+import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX } from '../services/historiaMedicaExportService';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -114,6 +117,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Estado para el filtro de Persona del reporte "Estado de Cuenta por Persona"
   const [estadoCuentaPersonaId, setEstadoCuentaPersonaId] = useState<string>('');
   const [personasConMovimientosList, setPersonasConMovimientosList] = useState<SaldoPersona[]>([]);
+
+  // Estado para el filtro de Persona (buscador) del reporte "Historia Médica"
+  const [historiaMedicaPersona, setHistoriaMedicaPersona] = useState<PersonaResult | null>(null);
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -313,6 +319,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           color: 'indigo',
           badge: '¡Nuevo!'
         },
+        {
+          type: ReportType.HISTORIA_MEDICA,
+          title: 'Historia Médica',
+          description: 'Ficha médica completa de un scout: condiciones, alergias, medicamentos y vacunas',
+          icon: <Heart className="w-6 h-6" />,
+          color: 'red',
+          badge: '¡Nuevo!'
+        },
       ]
     },
     {
@@ -490,6 +504,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.ESTADO_CUENTA_PERSONA:
           return await exportEstadoCuentaPersonaReport(format, metadata);
+
+        case ReportType.HISTORIA_MEDICA:
+          return await exportHistoriaMedicaReport(format);
 
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
@@ -1184,6 +1201,31 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       }],
     });
     return await generateAndDownloadDOCX(doc, fileName);
+  };
+
+  const exportHistoriaMedicaReport = async (
+    format: ExportFormat
+  ): Promise<ReportGenerationResult> => {
+    if (!historiaMedicaPersona) {
+      return { status: 'error' as any, fileName: 'error', error: 'Busca y selecciona una persona para generar su Historia Médica' };
+    }
+
+    const scoutId = historiaMedicaPersona.es_scout?.scout_id;
+    if (!scoutId) {
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: 'La Historia Médica solo está disponible para personas registradas como Scout',
+      };
+    }
+
+    const options = { organizacion: 'Grupo Scout Lima 12' };
+
+    if (format === ExportFormat.PDF) {
+      return await exportarHistoriaMedicaPDF(scoutId, historiaMedicaPersona.persona_id, options);
+    }
+
+    return await exportarHistoriaMedicaDOCX(scoutId, historiaMedicaPersona.persona_id, options);
   };
 
   const exportActividadesReport = async (
@@ -2162,6 +2204,31 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </select>
               <p className="text-xs text-gray-500 mt-2">
                 Genera el estado de cuenta individual de Finanzas &gt; Cuenta por Persona: sus ingresos y egresos (con el concepto de cada uno), su saldo a favor y su deuda pendiente. Pensado para entregar a la persona o su familia.
+              </p>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.HISTORIA_MEDICA && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Persona
+              </label>
+              <div className="w-full md:w-96">
+                <PersonSearchCombobox
+                  placeholder="Buscar por nombre o N° documento..."
+                  onSelect={(persona) => setHistoriaMedicaPersona(persona)}
+                  personaVinculada={historiaMedicaPersona}
+                  onDesvincular={() => setHistoriaMedicaPersona(null)}
+                  simplificarBadgeScout
+                />
+              </div>
+              {historiaMedicaPersona && !historiaMedicaPersona.es_scout && (
+                <p className="text-xs text-amber-600 mt-2">
+                  Esta persona no está registrada como Scout. La Historia Médica solo está disponible para Scouts.
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Genera la ficha médica completa del scout (ANEXO 10/11): datos personales, condiciones, alergias, medicamentos y vacunas.
               </p>
             </div>
           )}

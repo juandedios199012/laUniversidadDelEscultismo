@@ -16,6 +16,7 @@ import {
   Image,
 } from '@react-pdf/renderer';
 import { HistoriaMedicaReportData, ReportMetadata } from '../../types/reportTypes';
+import { marcaAguaFichaMedicaBase64 } from '../../../../assets/images/marcaAguaFichaMedicaBase64';
 
 // Colores oficiales del documento
 const COLORS = {
@@ -35,7 +36,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica',
     fontSize: 9,
   },
-  
+
+  watermark: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 595,
+    height: 842,
+    zIndex: -1,
+  },
+
   // HEADER con logo
   header: {
     flexDirection: 'row',
@@ -305,6 +315,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
     <Document>
       {/* PÁGINA 1: Información General / Historial de Salud */}
       <Page size="A4" style={styles.page}>
+        <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
         {/* Header con Logo */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -617,6 +628,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
       {/* PÁGINA 2: Alergias y Medicamentos */}
       <Page size="A4" style={styles.page}>
+        <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
         {/* Header con Logo */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -781,6 +793,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
       {/* PÁGINA 3: Vacunas y Firmas */}
       <Page size="A4" style={styles.page}>
+        <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
         {/* Header con Logo */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
