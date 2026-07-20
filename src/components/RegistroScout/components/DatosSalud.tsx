@@ -2,6 +2,7 @@
  * Health Data Section Component
  */
 
+import { useEffect, useState } from "react";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
 import { Heart, AlertTriangle, Pill, Syringe, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,11 @@ import {
 } from "../schemas/scoutFormSchema";
 import { TextField, SelectField, TextareaField, CheckboxField } from "./FormFields";
 import { FormSection } from "./FormSection";
+import HistoriaMedicaService, {
+  type CatalogoCondicion,
+  type CatalogoAlergia,
+  type CatalogoVacuna,
+} from "@/services/historiaMedicaService";
 
 interface DatosSaludProps {
   form: UseFormReturn<ScoutFormData>;
@@ -53,6 +59,24 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
   const alergiasArray = useFieldArray({ control: form.control, name: "alergias" });
   const medicamentosArray = useFieldArray({ control: form.control, name: "medicamentos" });
   const vacunasArray = useFieldArray({ control: form.control, name: "vacunas" });
+
+  const [catalogoCondiciones, setCatalogoCondiciones] = useState<CatalogoCondicion[]>([]);
+  const [catalogoAlergias, setCatalogoAlergias] = useState<CatalogoAlergia[]>([]);
+  const [catalogoVacunas, setCatalogoVacunas] = useState<CatalogoVacuna[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      HistoriaMedicaService.obtenerCatalogoCondiciones(),
+      HistoriaMedicaService.obtenerCatalogoAlergias(),
+      HistoriaMedicaService.obtenerCatalogoVacunas(),
+    ])
+      .then(([condiciones, alergias, vacunas]) => {
+        setCatalogoCondiciones(condiciones);
+        setCatalogoAlergias(alergias);
+        setCatalogoVacunas(vacunas);
+      })
+      .catch((err) => console.error("Error cargando catálogos de salud:", err));
+  }, []);
 
   return (
     <FormSection
@@ -188,11 +212,12 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <TextField
+                    <SelectField
                       control={form.control}
                       name={`condiciones.${index}.condicion`}
                       label="Condición"
-                      placeholder="Ej: Asma"
+                      placeholder="Seleccione una condición"
+                      options={catalogoCondiciones.map((c) => ({ value: c.nombre, label: c.nombre }))}
                     />
                     <TextField
                       control={form.control}
@@ -240,11 +265,12 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <TextField
+                    <SelectField
                       control={form.control}
                       name={`alergias.${index}.alergia`}
                       label="Alergia"
-                      placeholder="Ej: Penicilina"
+                      placeholder="Seleccione una alergia"
+                      options={catalogoAlergias.map((a) => ({ value: a.nombre, label: a.nombre }))}
                     />
                     <TextField
                       control={form.control}
@@ -364,11 +390,12 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <TextField
+                    <SelectField
                       control={form.control}
                       name={`vacunas.${index}.vacuna`}
                       label="Vacuna"
-                      placeholder="Ej: COVID-19"
+                      placeholder="Seleccione una vacuna"
+                      options={catalogoVacunas.map((v) => ({ value: v.nombre, label: v.nombre }))}
                     />
                     <TextField
                       control={form.control}
