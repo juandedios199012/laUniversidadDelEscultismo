@@ -101,7 +101,7 @@ export async function exportarHistoriaMedicaDOCX(
     const {
       Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType,
       Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom,
-      BorderStyle, ShadingType,
+      BorderStyle, ShadingType, TableLayoutType,
     } = await import('docx');
     const { saveAs } = await import('file-saver');
 
@@ -120,6 +120,9 @@ export async function exportarHistoriaMedicaDOCX(
     if (options?.fechaLlenado) {
       data.fechaLlenado = options.fechaLlenado;
     }
+
+    // Un menor de edad no debe firmar como "participante mayor de edad"
+    const esMayorDeEdad = data.edad >= 18;
 
     // 1c. Marca de agua (header flotante detrás del texto, se repite en cada página)
     const watermarkHeader = () => new Header({
@@ -248,6 +251,8 @@ export async function exportarHistoriaMedicaDOCX(
             // Datos Personales
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [lbl('Fecha de llenado:', 25), val(data.fechaLlenado ? new Date(data.fechaLlenado).toLocaleDateString('es-PE') : '', 75)] }),
                 new TableRow({ children: [lbl('Nombre Completo:', 25), val(data.nombreCompleto, 75)] }),
@@ -266,6 +271,8 @@ export async function exportarHistoriaMedicaDOCX(
             seccionTitulo('EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:'),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [lbl('Nombre:', 20), val(data.contactoEmergencia?.nombre, 45), lbl('Parentesco:', 15), val(data.contactoEmergencia?.parentesco, 20)] }),
                 new TableRow({ children: [lbl('Direccion:', 20), val(data.direccion, 80)] }),
@@ -281,6 +288,8 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ children: [new TextRun({ text: '¿Actualmente recibe o ha recibido tratamiento para alguna de las siguientes condiciones?', size: 16, italics: true })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [head('SI', 10), head('NO', 10), head('CONDICION', 55), head('Fecha de Atencion', 25)] }),
                 ...CONDICIONES_FIJAS.map((item) => {
@@ -300,6 +309,8 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ children: [new TextRun({ text: '¿Tiene alergias, o presenta reaccion adversa a alguno de los siguientes?', size: 16, italics: true })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [head('SI', 10), head('NO', 10), head('ALERGIAS O REACCIONES', 35), head('MENCIONAR', 45)] }),
                 ...ALERGIAS_FIJAS.map((item) => {
@@ -316,6 +327,8 @@ export async function exportarHistoriaMedicaDOCX(
             seccionTitulo('MEDICAMENTOS ADMINISTRADOS ACTUALMENTE (INCLUYENDO SIN RECETA MEDICA)'),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [head('MEDICAMENTO', 25), head('DOSIS', 15), head('FRECUENCIA', 20), head('FECHA DE INICIO Y DURACION', 40)] }),
                 ...(data.medicamentos.filter(m => m.activo).length > 0
@@ -335,6 +348,8 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ text: '' }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               borders: allBorders(),
               rows: [
                 new TableRow({
@@ -360,6 +375,8 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ children: [new TextRun({ text: '¿Ha recibido alguna de las siguientes vacunas?', size: 16, italics: true })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               rows: [
                 new TableRow({ children: [head('SI', 10), head('NO', 10), head('VACUNA', 45), head('FECHA (ULTIMA DOSIS)', 35)] }),
                 ...VACUNAS_FIJAS.map((item) => {
@@ -373,6 +390,8 @@ export async function exportarHistoriaMedicaDOCX(
             // Restricciones
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               borders: allBorders(),
               rows: [
                 new TableRow({
@@ -392,6 +411,8 @@ export async function exportarHistoriaMedicaDOCX(
             // Confidencialidad
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               borders: allBorders(),
               rows: [
                 new TableRow({
@@ -421,6 +442,8 @@ export async function exportarHistoriaMedicaDOCX(
             }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
               borders: { top: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, bottom: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, left: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, right: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX } },
               rows: [
                 new TableRow({
@@ -432,8 +455,8 @@ export async function exportarHistoriaMedicaDOCX(
                         new Paragraph({ text: '' }),
                         new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER_HEX } }, children: [new TextRun({ text: ' ' })] }),
                         new Paragraph({ children: [new TextRun({ text: 'Firma del participante mayor de edad', bold: true, size: 16 })], spacing: { before: 100 } }),
-                        new Paragraph({ children: [new TextRun({ text: 'Nombres y Apellidos: ', bold: true, size: 14 }), new TextRun({ text: data.nombreCompleto || '', size: 14 })] }),
-                        new Paragraph({ children: [new TextRun({ text: 'DNI: ', bold: true, size: 14 }), new TextRun({ text: data.numeroDocumento || '', size: 14 })] }),
+                        new Paragraph({ children: [new TextRun({ text: 'Nombres y Apellidos: ', bold: true, size: 14 }), new TextRun({ text: esMayorDeEdad ? (data.nombreCompleto || '') : '', size: 14 })] }),
+                        new Paragraph({ children: [new TextRun({ text: 'DNI: ', bold: true, size: 14 }), new TextRun({ text: esMayorDeEdad ? (data.numeroDocumento || '') : '', size: 14 })] }),
                       ],
                     }),
                     new TableCell({

@@ -263,6 +263,8 @@ interface HistoriaMedicaReportTemplateProps {
 export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplateProps> = ({
   data,
 }) => {
+  const esMayorDeEdad = data.edad >= 18;
+
   return (
     <Document>
       {/* PÁGINA 1: Información General / Historial de Salud */}
@@ -794,11 +796,11 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               <Text style={styles.firmaLabel}>Firma del participante mayor de edad</Text>
               <Text style={styles.firmaSubLabel}>
                 <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos: </Text>
-                {data.nombreCompleto || '_____________________'}
+                {esMayorDeEdad ? (data.nombreCompleto || '') : ''}
               </Text>
               <Text style={styles.firmaSubLabel}>
                 <Text style={styles.firmaSubLabelBold}>DNI: </Text>
-                {data.numeroDocumento || '_____________________'}
+                {esMayorDeEdad ? (data.numeroDocumento || '') : ''}
               </Text>
             </View>
 
