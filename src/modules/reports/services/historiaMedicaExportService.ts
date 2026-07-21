@@ -149,7 +149,7 @@ export async function exportarHistoriaMedicaDOCX(
     // ============================================================
     // Helpers de estilo — mismo diseño que el template PDF (ANEXO 08)
     // ============================================================
-    const PRIMARY_HEX = '2E5A8B';
+    const PRIMARY_HEX = '4F81BD';
     const BORDER_HEX = '000000';
 
     const allBorders = () => ({
@@ -280,7 +280,10 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ text: '' }),
 
             // Contacto de Emergencia
-            seccionTitulo('EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:'),
+            new Paragraph({
+              children: [new TextRun({ text: 'EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:', bold: true, italics: true, color: '000000', size: 20 })],
+              spacing: { before: 240, after: 120 },
+            }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -297,7 +300,7 @@ export async function exportarHistoriaMedicaDOCX(
 
             // Historial de Salud
             seccionTitulo('HISTORIAL DE SALUD'),
-            new Paragraph({ children: [new TextRun({ text: '¿Actualmente recibe o ha recibido tratamiento para alguna de las siguientes condiciones?', size: 16, italics: true })], spacing: { after: 100 } }),
+            new Paragraph({ children: [new TextRun({ text: '¿Actualmente recibe o ha recibido tratamiento para alguna de las siguientes condiciones?', size: 16 })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -318,7 +321,7 @@ export async function exportarHistoriaMedicaDOCX(
 
             // Alergias
             seccionTitulo('ALERGIAS O REACCIONES ADVERSAS'),
-            new Paragraph({ children: [new TextRun({ text: '¿Tiene alergias, o presenta reaccion adversa a alguno de los siguientes?', size: 16, italics: true })], spacing: { after: 100 } }),
+            new Paragraph({ children: [new TextRun({ text: '¿Tiene alergias, o presenta reaccion adversa a alguno de los siguientes?', size: 16 })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -384,7 +387,7 @@ export async function exportarHistoriaMedicaDOCX(
 
             // Vacunas
             seccionTitulo('INMUNIZACIONES (VACUNAS)'),
-            new Paragraph({ children: [new TextRun({ text: '¿Ha recibido alguna de las siguientes vacunas?', size: 16, italics: true })], spacing: { after: 100 } }),
+            new Paragraph({ children: [new TextRun({ text: '¿Ha recibido alguna de las siguientes vacunas?', size: 16 })], spacing: { after: 100 } }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -436,7 +439,6 @@ export async function exportarHistoriaMedicaDOCX(
                       alignment: AlignmentType.CENTER,
                       children: [new TextRun({
                         text: 'La informacion contenida en esta ficha medica es estrictamente confidencial. Sera vista unicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el caracter reservado de la presente informacion.',
-                        italics: true,
                         color: PRIMARY_HEX,
                         size: 16,
                       })],
@@ -463,6 +465,7 @@ export async function exportarHistoriaMedicaDOCX(
                     new TableCell({
                       width: { size: 50, type: WidthType.PERCENTAGE },
                       borders: { top: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, bottom: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, left: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, right: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX } },
+                      margins: { right: 283 },
                       children: [
                         new Paragraph({ text: '' }),
                         new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER_HEX } }, children: [new TextRun({ text: ' ' })] }),
@@ -474,6 +477,7 @@ export async function exportarHistoriaMedicaDOCX(
                     new TableCell({
                       width: { size: 50, type: WidthType.PERCENTAGE },
                       borders: { top: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, bottom: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, left: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, right: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX } },
+                      margins: { left: 283 },
                       children: [
                         new Paragraph({ text: '' }),
                         new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER_HEX } }, children: [new TextRun({ text: ' ' })] }),

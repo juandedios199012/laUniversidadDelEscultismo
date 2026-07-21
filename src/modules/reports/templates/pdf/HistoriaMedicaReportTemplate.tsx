@@ -21,7 +21,7 @@ import { marcaAguaFichaMedicaBase64 } from '../../../../assets/images/marcaAguaF
 
 // Colores oficiales del documento
 const COLORS = {
-  primary: '#2E5A8B', // Azul principal headers
+  primary: '#4F81BD', // Azul principal headers
   secondary: '#4A90C2', // Azul secundario
   lightBlue: '#E8F4FC', // Fondo claro
   text: '#333333',
@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
   confidencialText: {
     color: COLORS.primary,
     fontSize: 8,
-    fontStyle: 'italic',
     textAlign: 'center',
   },
 
@@ -399,7 +398,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Contacto de Emergencia */}
         <View style={[styles.section, { marginTop: 15 }]}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'none', fontFamily: 'Helvetica-Bold' }]}>
+          <Text style={[styles.sectionTitle, { textDecoration: 'none', fontFamily: 'Helvetica-BoldOblique', color: '#000000' }]}>
             EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:
           </Text>
 
@@ -639,7 +638,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
             </View>
           )}
 
-          <Text style={{ fontSize: 7, marginBottom: 5, fontStyle: 'italic' }}>
+          <Text style={{ fontSize: 7, marginBottom: 5 }}>
             Si necesita espacio adicional, por favor indiquelo en una hoja aparte, firmela y anexela.
           </Text>
 
