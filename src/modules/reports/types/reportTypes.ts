@@ -409,10 +409,11 @@ export interface HistoriaMedicaReportData {
 }
 
 // ============= AUTORIZACIÓN DEL PADRE O APODERADO (ANEXO 4) =============
-// Fuente: api_obtener_scout (misma RPC que Historia Médica). Solo se
-// autocompletan los datos de identificación (scout + apoderado legal) y la
-// fecha del documento; la tabla de datos de la actividad queda en blanco
-// para llenarla a mano en cada actividad.
+// Fuente: api_obtener_scout (misma RPC que Historia Médica) para los datos
+// de identificación (scout + apoderado legal). La fecha del documento y los
+// datos de la actividad se escriben una sola vez en el filtro del reporte
+// y se aplican igual a todos los documentos generados (individual o
+// masivo por rama).
 
 export interface AutorizacionApoderadoReportData {
   scoutId: string;
@@ -431,6 +432,19 @@ export interface AutorizacionApoderadoReportData {
 
   // Fecha impresa en el documento (seleccionada al exportar, no viene de BD)
   fechaDocumento: string;
+
+  // Datos de la actividad (se escriben una vez en el filtro del reporte y
+  // se aplican a todos los documentos generados, individual o masivo)
+  actividad?: {
+    nombreActividad?: string;
+    lugar?: string;
+    fechaHora?: string;
+    cuota?: string;
+    director?: string;
+    dirigenteResponsable?: string;
+    acompanantes?: string;
+    colaborador?: string;
+  };
 }
 
 export interface EspecialidadesReportData {

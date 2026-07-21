@@ -135,6 +135,18 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Modo masivo: generar un archivo por cada scout de la rama elegida
   const [autorizacionApoderadoModo, setAutorizacionApoderadoModo] = useState<'PERSONA' | 'RAMA'>('PERSONA');
   const [autorizacionApoderadoRama, setAutorizacionApoderadoRama] = useState<string>('TODAS');
+  // Datos de la actividad: se llenan una sola vez y se aplican a todos los
+  // documentos generados (individual o masivo por rama)
+  const [autorizacionApoderadoActividad, setAutorizacionApoderadoActividad] = useState({
+    nombreActividad: '',
+    lugar: '',
+    fechaHora: '',
+    cuota: '',
+    director: '',
+    dirigenteResponsable: '',
+    acompanantes: '',
+    colaborador: '',
+  });
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -345,7 +357,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         {
           type: ReportType.AUTORIZACION_PADRE_APODERADO,
           title: 'Autorización del Padre o Apoderado',
-          description: 'ANEXO 4: identificación del scout y su apoderado legal, para completar los datos de la actividad a mano',
+          description: 'ANEXO 4: identificación del scout y su apoderado legal, con los datos de la actividad ya completados. Exportable por scout o de forma masiva por rama',
           icon: <FileSignature className="w-6 h-6" />,
           color: 'blue',
           badge: '¡Nuevo!'
@@ -1262,6 +1274,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   ): Promise<ReportGenerationResult> => {
     const options = {
       fechaDocumento: autorizacionApoderadoFecha || undefined,
+      actividad: autorizacionApoderadoActividad,
     };
 
     if (autorizacionApoderadoModo === 'RAMA') {
@@ -2421,8 +2434,38 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                   Fecha que aparecerá impresa junto a la firma (por defecto, hoy).
                 </p>
               </div>
+
+              <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Datos de la Actividad (se imprimen igual en todos los documentos generados)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { key: 'nombreActividad', label: 'Nombre de la Actividad', placeholder: 'Ej. X CALOPAS 2026: Guardianes de la Noche' },
+                    { key: 'lugar', label: 'Lugar de la Actividad', placeholder: 'Ej. Club Villa Marista - Lurigancho Chosica' },
+                    { key: 'fechaHora', label: 'Fecha(s) y hora de la Actividad', placeholder: 'Ej. Del 30 de julio al 02 de agosto de 2026' },
+                    { key: 'cuota', label: 'Cuota de participación', placeholder: 'Ej. S/ 140.00 (no incluye movilidad)' },
+                    { key: 'director', label: 'Director', placeholder: 'Nombre del director' },
+                    { key: 'dirigenteResponsable', label: 'Dirigente Responsable', placeholder: 'Nombre del dirigente responsable' },
+                    { key: 'acompanantes', label: 'Dirigente(s) Acompañante(s)', placeholder: 'Nombres separados por coma' },
+                    { key: 'colaborador', label: 'Colaborador', placeholder: 'Opcional' },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={(autorizacionApoderadoActividad as any)[key]}
+                        onChange={(e) => setAutorizacionApoderadoActividad(prev => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <p className="text-xs text-gray-500 md:col-span-2">
-                Genera el ANEXO 4 con la identificación del scout y de su Apoderado Legal ya completada (Yo/DNI, Padre/Madre/Apoderado, niño/niña, código de asociado y firma). La tabla de datos de la actividad queda en blanco para llenarla a mano.
+                Genera el ANEXO 4 con la identificación del scout y de su Apoderado Legal ya completada (Yo/DNI, Padre/Madre/Apoderado, niño/niña, código de asociado, firma) y los datos de la actividad de arriba, para no tener que editar cada documento a mano.
               </p>
             </div>
           )}

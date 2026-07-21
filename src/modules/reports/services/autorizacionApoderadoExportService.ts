@@ -1,14 +1,15 @@
 /**
  * Servicio para exportar "Autorización del Padre o Apoderado" (ANEXO 4)
- * a PDF y DOCX. Solo se autocompleta la identificación del Scout y de su
- * Apoderado Legal; la tabla de datos de la actividad queda en blanco para
- * llenarla a mano en cada actividad.
+ * a PDF y DOCX. Autocompleta la identificación del Scout y de su Apoderado
+ * Legal; los datos de la actividad (nombre, lugar, fecha, cuota, etc.) se
+ * reciben en `options.actividad` y se imprimen igual en todos los
+ * documentos generados en una misma exportación.
  */
 
 import React from 'react';
 import { generateAndDownloadPDF } from './pdfService';
 import { getAutorizacionApoderadoData } from './reportDataService';
-import { ReportGenerationResult, ReportStatus } from '../types/reportTypes';
+import { ReportGenerationResult, ReportStatus, AutorizacionApoderadoReportData } from '../types/reportTypes';
 import { AutorizacionApoderadoTemplate } from '../templates/pdf/AutorizacionApoderadoTemplate';
 import { marcaAguaFichaMedicaBase64 } from '../../../assets/images/marcaAguaFichaMedicaBase64';
 
@@ -50,16 +51,23 @@ const DECLARACIONES = [
   'Reconozco que la participación de mi menor hijo, en esta actividad, conlleva riesgos conocidos, anticipables y/o no anticipables que podrían resultar en lesiones de diversa índole, por lo que expresamente asumo todas las amenazas que se puedan generar por su participación; quedando exonerada, la Asociación de Scouts del Perú, de cualquier responsabilidad ante cualquier evento no deseado que pudiera surgir.',
 ];
 
-const ACTIVIDAD_FILAS = [
-  'Nombre de la Actividad:',
-  'Lugar de la Actividad:',
-  'Fecha(s) y hora de la Actividad:',
-  'Cuota de participación:',
-  'Director:',
-  'Dirigente Responsable:',
-  'Dirigente(s) Acompañante(s)',
-  'Colaborador:',
-];
+function actividadFilas(actividad?: AutorizacionApoderadoReportData['actividad']): [string, string][] {
+  return [
+    ['Nombre de la Actividad:', actividad?.nombreActividad || ''],
+    ['Lugar de la Actividad:', actividad?.lugar || ''],
+    ['Fecha(s) y hora de la Actividad:', actividad?.fechaHora || ''],
+    ['Cuota de participación:', actividad?.cuota || ''],
+    ['Director:', actividad?.director || ''],
+    ['Dirigente Responsable:', actividad?.dirigenteResponsable || ''],
+    ['Dirigente(s) Acompañante(s)', actividad?.acompanantes || ''],
+    ['Colaborador:', actividad?.colaborador || ''],
+  ];
+}
+
+type AutorizacionApoderadoExportOptions = {
+  fechaDocumento?: string;
+  actividad?: AutorizacionApoderadoReportData['actividad'];
+};
 
 /**
  * Genera y descarga el PDF de Autorización del Padre o Apoderado de un scout
@@ -67,7 +75,7 @@ const ACTIVIDAD_FILAS = [
 export async function exportarAutorizacionApoderadoPDF(
   scoutId: string,
   personaId: string,
-  options?: { fechaDocumento?: string }
+  options?: AutorizacionApoderadoExportOptions
 ): Promise<ReportGenerationResult> {
   try {
     const data = await getAutorizacionApoderadoData(scoutId, personaId);
@@ -82,6 +90,9 @@ export async function exportarAutorizacionApoderadoPDF(
 
     if (options?.fechaDocumento) {
       data.fechaDocumento = options.fechaDocumento;
+    }
+    if (options?.actividad) {
+      data.actividad = options.actividad;
     }
 
     const Component = React.createElement(AutorizacionApoderadoTemplate, { data });
@@ -105,7 +116,7 @@ export async function exportarAutorizacionApoderadoPDF(
 export async function exportarAutorizacionApoderadoDOCX(
   scoutId: string,
   personaId: string,
-  options?: { fechaDocumento?: string }
+  options?: AutorizacionApoderadoExportOptions
 ): Promise<ReportGenerationResult> {
   try {
     const {
@@ -127,6 +138,9 @@ export async function exportarAutorizacionApoderadoDOCX(
 
     if (options?.fechaDocumento) {
       data.fechaDocumento = options.fechaDocumento;
+    }
+    if (options?.actividad) {
+      data.actividad = options.actividad;
     }
 
     const PRIMARY_HEX = '4F81BD';
@@ -178,11 +192,11 @@ export async function exportarAutorizacionApoderadoDOCX(
       children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: 'FFFFFF', size: 16 })] })],
     });
 
-    const blankVal = () => new TableCell({
+    const val = (text: string) => new TableCell({
       width: { size: 65, type: WidthType.PERCENTAGE },
       borders: allBorders(),
       margins: { top: 40, bottom: 40, left: 60, right: 60 },
-      children: [new Paragraph({ children: [new TextRun({ text: '', size: 18 })] })],
+      children: [new Paragraph({ children: [new TextRun({ text, size: 18 })] })],
     });
 
     const doc = new Document({
@@ -235,7 +249,7 @@ export async function exportarAutorizacionApoderadoDOCX(
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
-              rows: ACTIVIDAD_FILAS.map((fila) => new TableRow({ children: [lbl(fila), blankVal()] })),
+              rows: actividadFilas(data.actividad).map(([label, valor]) => new TableRow({ children: [lbl(label), val(valor)] })),
             }),
             new Paragraph({ text: '' }),
 

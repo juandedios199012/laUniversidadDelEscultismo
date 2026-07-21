@@ -1,8 +1,8 @@
 /**
  * Plantilla PDF para "Autorización del Padre o Apoderado" (ANEXO 4)
- * Se autocompleta la identificación del Scout y de su Apoderado Legal;
- * la tabla de datos de la actividad queda en blanco para llenarla a mano
- * en cada actividad.
+ * Se autocompleta la identificación del Scout, la de su Apoderado Legal y
+ * los datos de la actividad (nombre, lugar, fecha, cuota, etc.) recibidos
+ * en `data.actividad`.
  *
  * @react-pdf/renderer - No soporta emojis, usar texto plano
  */
@@ -157,16 +157,18 @@ const DECLARACIONES = [
   'Reconozco que la participación de mi menor hijo, en esta actividad, conlleva riesgos conocidos, anticipables y/o no anticipables que podrían resultar en lesiones de diversa índole, por lo que expresamente asumo todas las amenazas que se puedan generar por su participación; quedando exonerada, la Asociación de Scouts del Perú, de cualquier responsabilidad ante cualquier evento no deseado que pudiera surgir.',
 ];
 
-const ACTIVIDAD_FILAS = [
-  'Nombre de la Actividad:',
-  'Lugar de la Actividad:',
-  'Fecha(s) y hora de la Actividad:',
-  'Cuota de participación:',
-  'Director:',
-  'Dirigente Responsable:',
-  'Dirigente(s) Acompañante(s)',
-  'Colaborador:',
-];
+function actividadFilas(actividad?: AutorizacionApoderadoReportData['actividad']): [string, string][] {
+  return [
+    ['Nombre de la Actividad:', actividad?.nombreActividad || ''],
+    ['Lugar de la Actividad:', actividad?.lugar || ''],
+    ['Fecha(s) y hora de la Actividad:', actividad?.fechaHora || ''],
+    ['Cuota de participación:', actividad?.cuota || ''],
+    ['Director:', actividad?.director || ''],
+    ['Dirigente Responsable:', actividad?.dirigenteResponsable || ''],
+    ['Dirigente(s) Acompañante(s)', actividad?.acompanantes || ''],
+    ['Colaborador:', actividad?.colaborador || ''],
+  ];
+}
 
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -230,13 +232,13 @@ export const AutorizacionApoderadoTemplate: React.FC<AutorizacionApoderadoTempla
         </Text>
 
         <View style={styles.table}>
-          {ACTIVIDAD_FILAS.map((fila, idx) => (
-            <View key={fila} style={idx === ACTIVIDAD_FILAS.length - 1 ? styles.tableRowLast : styles.tableRow}>
+          {actividadFilas(data.actividad).map(([label, valor], idx, arr) => (
+            <View key={label} style={idx === arr.length - 1 ? styles.tableRowLast : styles.tableRow}>
               <View style={styles.labelCell}>
-                <Text>{fila}</Text>
+                <Text>{label}</Text>
               </View>
               <View style={styles.valueCell}>
-                <Text></Text>
+                <Text>{valor}</Text>
               </View>
             </View>
           ))}
