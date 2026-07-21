@@ -240,6 +240,34 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
 }
 
 /**
+ * Obtiene solo el id y nombre de los scouts activos de una rama, para
+ * recorrerlos uno por uno al generar reportes individuales masivos
+ * (ej. Autorización del Padre o Apoderado por rama).
+ */
+export async function getScoutIdsByRama(ramaFilter?: string): Promise<{ id: string; nombreCompleto: string }[]> {
+  try {
+    const { data, error } = await supabase.rpc(
+      'api_listar_scouts_para_reportes',
+      {
+        p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
+        p_estado: 'ACTIVO',
+      }
+    );
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    return data.map((s: any) => ({
+      id: s.id,
+      nombreCompleto: `${s.persona?.nombres || ''} ${s.persona?.apellidos || ''}`.trim(),
+    }));
+  } catch (error) {
+    console.error('Error obteniendo scouts por rama:', error);
+    throw error;
+  }
+}
+
+/**
  * Genera metadata común para los reportes
  */
 export function generateMasiveReportMetadata(): { organizacion: string; fechaGeneracion: string } {

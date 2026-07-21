@@ -14,6 +14,7 @@ import {
   ExportFormat,
   ReportFilters,
   ReportGenerationResult,
+  ReportStatus,
 } from '../types/reportTypes';
 import { ReportExportButton } from './ReportExportButton';
 import { generateAndDownloadPDF, generatePDF, generateReportMetadata } from '../services/pdfService';
@@ -60,6 +61,7 @@ import {
   getScoutsWithApoderadoDni,
   generateMasiveReportMetadata,
   getAvailableRamas,
+  getScoutIdsByRama,
 } from '../services/masiveReportService';
 
 interface Scout {
@@ -130,6 +132,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [autorizacionApoderadoFecha, setAutorizacionApoderadoFecha] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
+  // Modo masivo: generar un archivo por cada scout de la rama elegida
+  const [autorizacionApoderadoModo, setAutorizacionApoderadoModo] = useState<'PERSONA' | 'RAMA'>('PERSONA');
+  const [autorizacionApoderadoRama, setAutorizacionApoderadoRama] = useState<string>('TODAS');
 
   // Cargar lista de scouts y ramas al montar el componente
   useEffect(() => {
@@ -1255,6 +1260,49 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const exportAutorizacionApoderadoReport = async (
     format: ExportFormat
   ): Promise<ReportGenerationResult> => {
+    const options = {
+      fechaDocumento: autorizacionApoderadoFecha || undefined,
+    };
+
+    if (autorizacionApoderadoModo === 'RAMA') {
+      try {
+        const scouts = await getScoutIdsByRama(autorizacionApoderadoRama);
+        if (scouts.length === 0) {
+          showError('No hay scouts activos para la rama seleccionada');
+          return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
+        }
+
+        info(`Se generarán ${scouts.length} archivo(s), uno por cada scout de la rama.`);
+
+        for (let i = 0; i < scouts.length; i++) {
+          const scout = scouts[i];
+          const result = format === ExportFormat.PDF
+            ? await exportarAutorizacionApoderadoPDF(scout.id, '', options)
+            : await exportarAutorizacionApoderadoDOCX(scout.id, '', options);
+
+          if (result.status === ReportStatus.ERROR) {
+            console.warn(`Autorización omitida para ${scout.nombreCompleto || scout.id}: ${result.error}`);
+          }
+
+          if (i < scouts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 450));
+          }
+        }
+
+        return {
+          status: 'success' as any,
+          fileName: `Autorizacion_Padre_Apoderado_${scouts.length}_archivos`,
+        };
+      } catch (error) {
+        console.error('Error exportando Autorización del Padre o Apoderado por rama:', error);
+        return {
+          status: 'error' as any,
+          fileName: 'error',
+          error: error instanceof Error ? error.message : 'Error desconocido',
+        };
+      }
+    }
+
     if (!autorizacionApoderadoPersona) {
       return { status: 'error' as any, fileName: 'error', error: 'Busca y selecciona una persona para generar su Autorización del Padre o Apoderado' };
     }
@@ -1267,10 +1315,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         error: 'La Autorización del Padre o Apoderado solo está disponible para personas registradas como Scout',
       };
     }
-
-    const options = {
-      fechaDocumento: autorizacionApoderadoFecha || undefined,
-    };
 
     if (format === ExportFormat.PDF) {
       return await exportarAutorizacionApoderadoPDF(scoutId, autorizacionApoderadoPersona.persona_id, options);
@@ -2300,23 +2344,69 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
           {selectedReportType === ReportType.AUTORIZACION_PADRE_APODERADO && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Persona
+                  Modo de generación
                 </label>
-                <PersonSearchCombobox
-                  placeholder="Buscar por nombre o N° documento..."
-                  onSelect={(persona) => setAutorizacionApoderadoPersona(persona)}
-                  personaVinculada={autorizacionApoderadoPersona}
-                  onDesvincular={() => setAutorizacionApoderadoPersona(null)}
-                  simplificarBadgeScout
-                />
-                {autorizacionApoderadoPersona && !autorizacionApoderadoPersona.es_scout && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Esta persona no está registrada como Scout. La Autorización del Padre o Apoderado solo está disponible para Scouts.
-                  </p>
-                )}
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      checked={autorizacionApoderadoModo === 'PERSONA'}
+                      onChange={() => setAutorizacionApoderadoModo('PERSONA')}
+                    />
+                    Un scout específico
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      checked={autorizacionApoderadoModo === 'RAMA'}
+                      onChange={() => setAutorizacionApoderadoModo('RAMA')}
+                    />
+                    Toda una rama (masivo, un archivo por scout)
+                  </label>
+                </div>
               </div>
+
+              {autorizacionApoderadoModo === 'PERSONA' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Persona
+                  </label>
+                  <PersonSearchCombobox
+                    placeholder="Buscar por nombre o N° documento..."
+                    onSelect={(persona) => setAutorizacionApoderadoPersona(persona)}
+                    personaVinculada={autorizacionApoderadoPersona}
+                    onDesvincular={() => setAutorizacionApoderadoPersona(null)}
+                    simplificarBadgeScout
+                  />
+                  {autorizacionApoderadoPersona && !autorizacionApoderadoPersona.es_scout && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Esta persona no está registrada como Scout. La Autorización del Padre o Apoderado solo está disponible para Scouts.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rama
+                  </label>
+                  <select
+                    value={autorizacionApoderadoRama}
+                    onChange={(e) => setAutorizacionApoderadoRama(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="TODAS">Todas las ramas</option>
+                    {availableRamas.map(rama => (
+                      <option key={rama} value={rama}>{rama}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se generará y descargará un documento por cada scout activo de la rama seleccionada.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fecha del Documento
