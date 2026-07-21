@@ -125,6 +125,9 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
               label="Grupo Sanguíneo"
               options={GRUPO_SANGUINEO_OPTIONS}
               placeholder="Seleccione"
+              onValueChange={(value) => {
+                if (value === "NONE") form.setValue("grupo_sanguineo", "", { shouldValidate: true, shouldDirty: true });
+              }}
             />
             <SelectField
               control={form.control}
@@ -132,6 +135,9 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
               label="Factor RH"
               options={FACTOR_SANGUINEO_OPTIONS}
               placeholder="Seleccione"
+              onValueChange={(value) => {
+                if (value === "NONE") form.setValue("factor_sanguineo", "", { shouldValidate: true, shouldDirty: true });
+              }}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -156,8 +162,11 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
               label="Tipo de Discapacidad"
               options={DISCAPACIDAD_OPTIONS}
               placeholder="Seleccione si aplica"
+              onValueChange={(value) => {
+                if (value === "NONE") form.setValue("tipo_discapacidad", "", { shouldValidate: true, shouldDirty: true });
+              }}
             />
-            {tipoDiscapacidad && tipoDiscapacidad !== "" && (
+            {tipoDiscapacidad && tipoDiscapacidad !== "" && tipoDiscapacidad !== "NONE" && (
               <TextField
                 control={form.control}
                 name="carnet_conadis"
@@ -166,7 +175,7 @@ export function DatosSalud({ form, isOpen, onToggle, errorCount = 0 }: DatosSalu
               />
             )}
           </div>
-          {tipoDiscapacidad && tipoDiscapacidad !== "" && (
+          {tipoDiscapacidad && tipoDiscapacidad !== "" && tipoDiscapacidad !== "NONE" && (
             <div className="mt-4">
               <TextareaField
                 control={form.control}

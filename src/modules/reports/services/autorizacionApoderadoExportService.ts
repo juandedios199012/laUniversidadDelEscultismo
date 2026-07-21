@@ -175,15 +175,6 @@ export async function exportarAutorizacionApoderadoDOCX(
       right: { style: BorderStyle.SINGLE, size: 4, color: BORDER_HEX },
     });
 
-    const checkboxLine = (opciones: { label: string; checked: boolean }[]) => new Paragraph({
-      children: opciones.flatMap((o, idx) => {
-        const runs = [new TextRun({ text: `${o.checked ? '☒' : '☐'} ${o.label}`, size: 18 })];
-        if (idx < opciones.length - 1) runs.push(new TextRun({ text: '    ', size: 18 }));
-        return runs;
-      }),
-      spacing: { after: 120 },
-    });
-
     const lbl = (text: string) => new TableCell({
       width: { size: 35, type: WidthType.PERCENTAGE },
       shading: { type: ShadingType.SOLID, fill: PRIMARY_HEX, color: PRIMARY_HEX },
@@ -215,14 +206,14 @@ export async function exportarAutorizacionApoderadoDOCX(
             }),
 
             new Paragraph({
-              children: [new TextRun({ text: `Yo: ${data.apoderado?.nombre || ''} identificado con DNI: ${data.apoderado?.numeroDocumento || ''}`, size: 18 })],
+              children: [
+                new TextRun({ text: `Yo: ${data.apoderado?.nombre || ''} identificado con DNI: ${data.apoderado?.numeroDocumento || ''}, `, size: 18 }),
+                new TextRun({ text: `${tipoApoderado === 'PADRE' ? '☒' : '☐'} Padre    `, size: 18 }),
+                new TextRun({ text: `${tipoApoderado === 'MADRE' ? '☒' : '☐'} Madre    `, size: 18 }),
+                new TextRun({ text: `${tipoApoderado === 'APODERADO' ? '☒' : '☐'} Apoderado`, size: 18 }),
+              ],
               spacing: { after: 80 },
             }),
-            checkboxLine([
-              { label: 'Padre', checked: tipoApoderado === 'PADRE' },
-              { label: 'Madre', checked: tipoApoderado === 'MADRE' },
-              { label: 'Apoderado', checked: tipoApoderado === 'APODERADO' },
-            ]),
             (() => {
               const sexoNorm = (data.sexo || '').toUpperCase();
               const esNina = sexoNorm === 'F' || sexoNorm === 'FEMENINO';
