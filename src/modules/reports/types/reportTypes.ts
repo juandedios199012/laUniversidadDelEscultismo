@@ -34,6 +34,8 @@ export enum ReportType {
   DNI_SCOUTS = 'dni_scouts',
   DNGI03_WORD_POR_SCOUT = 'dngi03_word_por_scout',
   DNI_SCOUT_APODERADO_POR_SCOUT = 'dni_scout_apoderado_por_scout',
+  // Autorización del Padre o Apoderado (ANEXO 4, identificación por Scout)
+  AUTORIZACION_PADRE_APODERADO = 'autorizacion_padre_apoderado',
 }
 
 // Formatos de exportación
@@ -404,6 +406,31 @@ export interface HistoriaMedicaReportData {
   alergias: AlergiaReportData[];
   medicamentos: MedicamentoReportData[];
   vacunas: VacunaReportData[];
+}
+
+// ============= AUTORIZACIÓN DEL PADRE O APODERADO (ANEXO 4) =============
+// Fuente: api_obtener_scout (misma RPC que Historia Médica). Solo se
+// autocompletan los datos de identificación (scout + apoderado legal) y la
+// fecha del documento; la tabla de datos de la actividad queda en blanco
+// para llenarla a mano en cada actividad.
+
+export interface AutorizacionApoderadoReportData {
+  scoutId: string;
+  codigoScout: string;
+  numeroDocumento?: string; // DNI del niño/a/joven
+  nombreCompleto: string;
+  sexo?: string;
+
+  // Familiar marcado como "Apoderado Legal" en el módulo Scout (o el
+  // primer familiar/contacto de emergencia si ninguno está marcado)
+  apoderado: {
+    nombre: string;
+    numeroDocumento?: string;
+    tipo: 'PADRE' | 'MADRE' | 'APODERADO';
+  } | null;
+
+  // Fecha impresa en el documento (seleccionada al exportar, no viene de BD)
+  fechaDocumento: string;
 }
 
 export interface EspecialidadesReportData {

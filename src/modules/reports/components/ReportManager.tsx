@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List, Info, Heart } from 'lucide-react';
+import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award, CreditCard, List, Info, Heart, FileSignature } from 'lucide-react';
 import { PersonSearchCombobox } from '@/components/shared/PersonSearch';
 import type { PersonaResult } from '@/services/personaService';
 import { useToast } from '@/hooks/useToast';
@@ -53,6 +53,7 @@ import EstadoCuentaPersonaTemplate from '../templates/pdf/EstadoCuentaPersonaTem
 import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
 import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
 import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX } from '../services/historiaMedicaExportService';
+import { exportarAutorizacionApoderadoPDF, exportarAutorizacionApoderadoDOCX } from '../services/autorizacionApoderadoExportService';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -121,6 +122,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Estado para el filtro de Persona (buscador) del reporte "Historia Médica"
   const [historiaMedicaPersona, setHistoriaMedicaPersona] = useState<PersonaResult | null>(null);
   const [historiaMedicaFechaLlenado, setHistoriaMedicaFechaLlenado] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+
+  // Estado para el filtro de Persona (buscador) del reporte "Autorización del Padre o Apoderado"
+  const [autorizacionApoderadoPersona, setAutorizacionApoderadoPersona] = useState<PersonaResult | null>(null);
+  const [autorizacionApoderadoFecha, setAutorizacionApoderadoFecha] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
 
@@ -330,6 +337,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           color: 'red',
           badge: '¡Nuevo!'
         },
+        {
+          type: ReportType.AUTORIZACION_PADRE_APODERADO,
+          title: 'Autorización del Padre o Apoderado',
+          description: 'ANEXO 4: identificación del scout y su apoderado legal, para completar los datos de la actividad a mano',
+          icon: <FileSignature className="w-6 h-6" />,
+          color: 'blue',
+          badge: '¡Nuevo!'
+        },
       ]
     },
     {
@@ -510,6 +525,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.HISTORIA_MEDICA:
           return await exportHistoriaMedicaReport(format);
+
+        case ReportType.AUTORIZACION_PADRE_APODERADO:
+          return await exportAutorizacionApoderadoReport(format);
 
         case ReportType.REPORTE_ACTIVIDADES:
           return await exportActividadesReport(format, metadata);
@@ -1232,6 +1250,33 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
 
     return await exportarHistoriaMedicaDOCX(scoutId, historiaMedicaPersona.persona_id, options);
+  };
+
+  const exportAutorizacionApoderadoReport = async (
+    format: ExportFormat
+  ): Promise<ReportGenerationResult> => {
+    if (!autorizacionApoderadoPersona) {
+      return { status: 'error' as any, fileName: 'error', error: 'Busca y selecciona una persona para generar su Autorización del Padre o Apoderado' };
+    }
+
+    const scoutId = autorizacionApoderadoPersona.es_scout?.scout_id;
+    if (!scoutId) {
+      return {
+        status: 'error' as any,
+        fileName: 'error',
+        error: 'La Autorización del Padre o Apoderado solo está disponible para personas registradas como Scout',
+      };
+    }
+
+    const options = {
+      fechaDocumento: autorizacionApoderadoFecha || undefined,
+    };
+
+    if (format === ExportFormat.PDF) {
+      return await exportarAutorizacionApoderadoPDF(scoutId, autorizacionApoderadoPersona.persona_id, options);
+    }
+
+    return await exportarAutorizacionApoderadoDOCX(scoutId, autorizacionApoderadoPersona.persona_id, options);
   };
 
   const exportActividadesReport = async (
@@ -2249,6 +2294,45 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </div>
               <p className="text-xs text-gray-500 md:col-span-2">
                 Genera la ficha médica completa del scout (ANEXO 10/11): datos personales, condiciones, alergias, medicamentos y vacunas.
+              </p>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.AUTORIZACION_PADRE_APODERADO && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Persona
+                </label>
+                <PersonSearchCombobox
+                  placeholder="Buscar por nombre o N° documento..."
+                  onSelect={(persona) => setAutorizacionApoderadoPersona(persona)}
+                  personaVinculada={autorizacionApoderadoPersona}
+                  onDesvincular={() => setAutorizacionApoderadoPersona(null)}
+                  simplificarBadgeScout
+                />
+                {autorizacionApoderadoPersona && !autorizacionApoderadoPersona.es_scout && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Esta persona no está registrada como Scout. La Autorización del Padre o Apoderado solo está disponible para Scouts.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha del Documento
+                </label>
+                <input
+                  type="date"
+                  value={autorizacionApoderadoFecha}
+                  onChange={(e) => setAutorizacionApoderadoFecha(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Fecha que aparecerá impresa junto a la firma (por defecto, hoy).
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 md:col-span-2">
+                Genera el ANEXO 4 con la identificación del scout y de su Apoderado Legal ya completada (Yo/DNI, Padre/Madre/Apoderado, niño/niña, código de asociado y firma). La tabla de datos de la actividad queda en blanco para llenarla a mano.
               </p>
             </div>
           )}

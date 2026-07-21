@@ -12,6 +12,7 @@ import {
   ReportFilters,
   HistoriaMedicaReportData,
   FamiliarReportData,
+  AutorizacionApoderadoReportData,
 } from '../types/reportTypes';
 import { scoutDocumentsService } from '../../../services/scoutDocumentsService';
 
@@ -557,6 +558,57 @@ export async function getHistoriaMedicaData(
   }
 }
 
+/**
+ * Obtiene los datos de identificación (Scout + Apoderado Legal) para el
+ * reporte "Autorización del Padre o Apoderado" (ANEXO 4).
+ * Reutiliza la misma RPC que Historia Médica.
+ */
+export async function getAutorizacionApoderadoData(
+  scoutId: string,
+  _personaId: string
+): Promise<AutorizacionApoderadoReportData | null> {
+  try {
+    const { data: scoutRpcData, error: scoutError } = await supabase
+      .rpc('api_obtener_scout', { p_scout_id: scoutId });
+
+    if (scoutError || !scoutRpcData?.success) {
+      console.error('Error obteniendo scout via RPC:', scoutError || scoutRpcData?.errors);
+      return null;
+    }
+
+    const scoutData = scoutRpcData.data;
+    const familiares = scoutData?.familiares || [];
+
+    // Familiar marcado como "Apoderado Legal"; si ninguno lo está, se usa
+    // el primero (contacto de emergencia) como respaldo.
+    const apoderadoFamiliar = familiares.find((f: any) => f.es_apoderado) || familiares[0];
+
+    let tipo: 'PADRE' | 'MADRE' | 'APODERADO' = 'APODERADO';
+    const parentesco = (apoderadoFamiliar?.parentesco || '').toUpperCase();
+    if (parentesco === 'PADRE') tipo = 'PADRE';
+    else if (parentesco === 'MADRE') tipo = 'MADRE';
+
+    return {
+      scoutId: scoutData.id || scoutId,
+      codigoScout: scoutData.codigo_asociado || '',
+      numeroDocumento: scoutData.numero_documento || '',
+      nombreCompleto: scoutData.nombre_completo || `${scoutData.nombres || ''} ${scoutData.apellidos || ''}`.trim(),
+      sexo: scoutData.sexo,
+      apoderado: apoderadoFamiliar ? {
+        nombre: apoderadoFamiliar.nombre_completo || `${apoderadoFamiliar.nombres || ''} ${apoderadoFamiliar.apellidos || ''}`.trim(),
+        numeroDocumento: apoderadoFamiliar.numero_documento || '',
+        tipo,
+      } : null,
+      // Fecha impresa en el documento; se sobreescribe siempre al exportar
+      // (ver options.fechaDocumento en autorizacionApoderadoExportService)
+      fechaDocumento: new Date().toISOString().split('T')[0],
+    };
+  } catch (error) {
+    console.error('Error obteniendo datos de autorización del padre o apoderado:', error);
+    throw error;
+  }
+}
+
 export default {
   getScoutData,
   getAttendanceData,
@@ -567,4 +619,5 @@ export default {
   // Nuevos servicios
   getRankingPatrullas,
   getHistoriaMedicaData,
+  getAutorizacionApoderadoData,
 };
