@@ -214,9 +214,10 @@ export async function exportarHistoriaMedicaDOCX(
     });
 
     // Títulos de cuadro: negrita, cursiva, negro (sin subrayado)
-    const seccionTitulo = (text: string) => new Paragraph({
+    const seccionTitulo = (text: string, pageBreakBefore = false) => new Paragraph({
       children: [new TextRun({ text, bold: true, italics: true, color: '000000', size: 20 })],
       spacing: { before: 240, after: 120 },
+      ...(pageBreakBefore ? { pageBreakBefore: true } : {}),
     });
 
     // Condiciones/alergias/vacunas fijas del formulario — mismas listas que el PDF
@@ -336,8 +337,21 @@ export async function exportarHistoriaMedicaDOCX(
             }),
             new Paragraph({ text: '' }),
 
-            // Medicamentos
-            seccionTitulo('MEDICAMENTOS ADMINISTRADOS ACTUALMENTE (INCLUYENDO SIN RECETA MEDICA)'),
+            // Medicamentos (en página propia para que la tabla no se corte)
+            seccionTitulo('REGISTRE LOS MEDICAMENTOS ADMINISTRADOS ACTUALMENTE, INCLUYENDO MEDICAMENTOS SIN RECETA MEDICA', true),
+            ...(data.medicamentos.filter(m => m.activo).length === 0
+              ? [new Paragraph({
+                  children: [
+                    new TextRun({ text: '☐ ', size: 18 }),
+                    new TextRun({ text: 'MARQUE AQUÍ SI NO SE TOMAN MEDICAMENTOS RUTINARIAMENTE', bold: true, size: 16 }),
+                  ],
+                  spacing: { after: 80 },
+                })]
+              : []),
+            new Paragraph({
+              children: [new TextRun({ text: 'Si necesita espacio adicional, por favor indíquelo en una hoja aparte, fírmela y anéxela.', italics: true, size: 14 })],
+              spacing: { after: 100 },
+            }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -352,12 +366,26 @@ export async function exportarHistoriaMedicaDOCX(
               ],
             }),
             new Paragraph({ text: '' }),
-            new Paragraph({
-              children: [new TextRun({
-                text: 'La administración de medicamentos indicados para el menor está aprobada por (colocar nombres, apellidos y documento de identidad): ______________________________________',
-                bold: true,
-                size: 18,
-              })],
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              layout: TableLayoutType.FIXED,
+              columnWidths: new Array(100).fill(50),
+              borders: allBorders(),
+              rows: [
+                new TableRow({
+                  children: [new TableCell({
+                    borders: allBorders(),
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 },
+                    children: [new Paragraph({
+                      children: [new TextRun({
+                        text: 'La administración de medicamentos indicados para el menor está aprobada por (colocar nombres, apellidos y documento de identidad): ______________________________________',
+                        bold: true,
+                        size: 18,
+                      })],
+                    })],
+                  })],
+                }),
+              ],
             }),
             new Paragraph({ text: '' }),
             new Table({
@@ -435,7 +463,7 @@ export async function exportarHistoriaMedicaDOCX(
                     borders: allBorders(),
                     margins: { top: 100, bottom: 100, left: 100, right: 100 },
                     children: [new Paragraph({
-                      alignment: AlignmentType.CENTER,
+                      alignment: AlignmentType.LEFT,
                       children: [new TextRun({
                         text: 'La información contenida en esta ficha médica es estrictamente confidencial. Será vista únicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el carácter reservado de la presente información.',
                         color: 'FFFFFF',

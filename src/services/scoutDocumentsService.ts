@@ -183,10 +183,17 @@ class ScoutDocumentsService {
         return { success: false, error: `Error al subir archivo: ${uploadError.message}` };
       }
 
-      // Guardar metadata en la base de datos
+      // Guardar metadata en la base de datos.
+      // NOTA: se usa insert (no upsert) porque deleteExistingDocument() ya
+      // eliminó cualquier fila previa de este mismo tipo/entidad arriba, y
+      // porque para document_type != 'documento_identidad' el único índice
+      // único existente (idx_scout_documents_other_types) es PARCIAL — un
+      // upsert con onConflict no puede usar un índice parcial como arbiter
+      // y Postgres responde 42P10 ("no unique or exclusion constraint
+      // matching the ON CONFLICT specification").
       const { error: metaError } = await supabase
         .from('scout_documents')
-        .upsert({
+        .insert({
           entity_type: entityType,
           entity_id: entityId,
           document_type: documentType,
@@ -195,8 +202,6 @@ class ScoutDocumentsService {
           file_size: fileToUpload.size,
           mime_type: fileToUpload.type,
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'entity_type,entity_id,document_type'
         });
 
       if (metaError) {
@@ -209,17 +214,17 @@ class ScoutDocumentsService {
       // Obtener URL firmada
       const url = await this.getSignedUrl(storagePath);
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         url,
-        storagePath 
+        storagePath
       };
 
     } catch (error) {
       console.error('Error en uploadDocument:', error);
-      return { 
-        success: false, 
-        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}` 
+      return {
+        success: false,
+        error: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}`
       };
     }
   }
