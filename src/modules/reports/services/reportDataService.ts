@@ -469,6 +469,11 @@ export async function getHistoriaMedicaData(
     const contactoEmergencia = familiares[0];
     const contactoAlternativo = familiares[1];
 
+    // Firma del contacto de emergencia, si la subió en su registro de familiar
+    const firmaContactoEmergencia = contactoEmergencia?.id
+      ? await scoutDocumentsService.getDocumentForPdf('familiar', contactoEmergencia.id, 'firma').catch(() => null)
+      : null;
+
     // Calcular edad
     const fechaNac = scoutData?.fecha_nacimiento ? new Date(scoutData.fecha_nacimiento) : null;
     const edad = fechaNac ? Math.floor((Date.now() - fechaNac.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
@@ -499,6 +504,7 @@ export async function getHistoriaMedicaData(
         telefono: contactoEmergencia.telefono,
         direccion: contactoEmergencia.direccion || '',
         numeroDocumento: contactoEmergencia.numero_documento || '',
+        firmaBase64: firmaContactoEmergencia || undefined,
       } : undefined,
 
       // Contacto alternativo (Familiar 2)
@@ -588,6 +594,11 @@ export async function getAutorizacionApoderadoData(
     if (parentesco === 'PADRE') tipo = 'PADRE';
     else if (parentesco === 'MADRE') tipo = 'MADRE';
 
+    // Firma del apoderado, si la subió en su registro de familiar
+    const firmaApoderado = apoderadoFamiliar?.id
+      ? await scoutDocumentsService.getDocumentForPdf('familiar', apoderadoFamiliar.id, 'firma').catch(() => null)
+      : null;
+
     return {
       scoutId: scoutData.id || scoutId,
       codigoScout: scoutData.codigo_asociado || '',
@@ -598,6 +609,7 @@ export async function getAutorizacionApoderadoData(
         nombre: apoderadoFamiliar.nombre_completo || `${apoderadoFamiliar.nombres || ''} ${apoderadoFamiliar.apellidos || ''}`.trim(),
         numeroDocumento: apoderadoFamiliar.numero_documento || '',
         tipo,
+        firmaBase64: firmaApoderado || undefined,
       } : null,
       // Fecha impresa en el documento; se sobreescribe siempre al exportar
       // (ver options.fechaDocumento en autorizacionApoderadoExportService)

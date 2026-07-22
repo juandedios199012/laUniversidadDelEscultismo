@@ -213,8 +213,9 @@ export async function exportarHistoriaMedicaDOCX(
       children: [new Paragraph({ children: [new TextRun({ text: text || '', size: 16 })] })],
     });
 
+    // Títulos de cuadro: negrita, cursiva, negro (sin subrayado)
     const seccionTitulo = (text: string) => new Paragraph({
-      children: [new TextRun({ text, bold: true, color: PRIMARY_HEX, size: 20, underline: {} })],
+      children: [new TextRun({ text, bold: true, italics: true, color: '000000', size: 20 })],
       spacing: { before: 240, after: 120 },
     });
 
@@ -254,7 +255,7 @@ export async function exportarHistoriaMedicaDOCX(
               children: [new TextRun({
                 text: 'ANEXO 08 - FICHA MEDICA: INFORMACION GENERAL / HISTORIAL DE SALUD',
                 bold: true,
-                color: PRIMARY_HEX,
+                color: '000000',
                 size: 22,
               })],
             }),
@@ -280,10 +281,7 @@ export async function exportarHistoriaMedicaDOCX(
             new Paragraph({ text: '' }),
 
             // Contacto de Emergencia
-            new Paragraph({
-              children: [new TextRun({ text: 'EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:', bold: true, italics: true, color: '000000', size: 20 })],
-              spacing: { before: 240, after: 120 },
-            }),
+            seccionTitulo('EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:'),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               layout: TableLayoutType.FIXED,
@@ -350,14 +348,15 @@ export async function exportarHistoriaMedicaDOCX(
                   ? data.medicamentos.filter(m => m.activo).map(m => new TableRow({
                       children: [plain(m.medicamento, 25), plain(m.dosis, 15), plain(m.frecuencia, 20), plain(m.fechaInicioDuracion, 40)],
                     }))
-                  : [new TableRow({ children: [plain('', 25), plain('', 15), plain('', 20), plain('', 40)] })]),
+                  : [1, 2, 3, 4, 5].map(() => new TableRow({ children: [plain('', 25), plain('', 15), plain('', 20), plain('', 40)] }))),
               ],
             }),
             new Paragraph({ text: '' }),
             new Paragraph({
               children: [new TextRun({
-                text: 'La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad): ______________________________________',
-                size: 16,
+                text: 'La administración de medicamentos indicados para el menor está aprobada por (colocar nombres, apellidos y documento de identidad): ______________________________________',
+                bold: true,
+                size: 18,
               })],
             }),
             new Paragraph({ text: '' }),
@@ -432,15 +431,18 @@ export async function exportarHistoriaMedicaDOCX(
               rows: [
                 new TableRow({
                   children: [new TableCell({
-                    shading: { type: ShadingType.SOLID, fill: 'E8F4FC', color: 'E8F4FC' },
+                    shading: { type: ShadingType.SOLID, fill: PRIMARY_HEX, color: PRIMARY_HEX },
                     borders: allBorders(),
                     margins: { top: 100, bottom: 100, left: 100, right: 100 },
                     children: [new Paragraph({
                       alignment: AlignmentType.CENTER,
                       children: [new TextRun({
-                        text: 'La informacion contenida en esta ficha medica es estrictamente confidencial. Sera vista unicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el caracter reservado de la presente informacion.',
-                        color: PRIMARY_HEX,
-                        size: 16,
+                        text: 'La información contenida en esta ficha médica es estrictamente confidencial. Será vista únicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el carácter reservado de la presente información.',
+                        color: 'FFFFFF',
+                        font: 'Calibri',
+                        bold: true,
+                        italics: true,
+                        size: 20,
                       })],
                     })],
                   })],
@@ -479,7 +481,16 @@ export async function exportarHistoriaMedicaDOCX(
                       borders: { top: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, bottom: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, left: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX }, right: { style: BorderStyle.NONE, size: 0, color: BORDER_HEX } },
                       margins: { left: 283 },
                       children: [
-                        new Paragraph({ text: '' }),
+                        ...(data.contactoEmergencia?.firmaBase64
+                          ? [new Paragraph({
+                              alignment: AlignmentType.CENTER,
+                              children: [new ImageRun({
+                                data: base64ToUint8Array(data.contactoEmergencia.firmaBase64),
+                                type: detectImageType(data.contactoEmergencia.firmaBase64),
+                                transformation: { width: 140, height: 50 },
+                              })],
+                            })]
+                          : [new Paragraph({ text: '' })]),
                         new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER_HEX } }, children: [new TextRun({ text: ' ' })] }),
                         new Paragraph({ children: [new TextRun({ text: 'Firma del padre o tutor del participante menor de edad', bold: true, size: 16 })], spacing: { before: 100 } }),
                         new Paragraph({ children: [new TextRun({ text: 'Nombres y Apellidos: ', bold: true, size: 14 }), new TextRun({ text: data.contactoEmergencia?.nombre || '', size: 14 })] }),

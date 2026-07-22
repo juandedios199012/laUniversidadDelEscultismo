@@ -375,6 +375,8 @@ export interface HistoriaMedicaReportData {
     telefono?: string;
     direccion?: string;
     numeroDocumento?: string;
+    /** Imagen de la firma del familiar (base64), si fue cargada en su registro */
+    firmaBase64?: string;
   };
   
   // Contacto alternativo (Familiar 2)
@@ -428,6 +430,8 @@ export interface AutorizacionApoderadoReportData {
     nombre: string;
     numeroDocumento?: string;
     tipo: 'PADRE' | 'MADRE' | 'APODERADO';
+    /** Imagen de la firma del familiar (base64), si fue cargada en su registro */
+    firmaBase64?: string;
   } | null;
 
   // Fecha impresa en el documento (seleccionada al exportar, no viene de BD)

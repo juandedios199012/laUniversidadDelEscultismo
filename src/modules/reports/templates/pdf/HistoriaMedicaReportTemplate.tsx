@@ -15,9 +15,22 @@ import {
   View,
   StyleSheet,
   Image,
+  Font,
 } from '@react-pdf/renderer';
 import { HistoriaMedicaReportData, ReportMetadata } from '../../types/reportTypes';
 import { marcaAguaFichaMedicaBase64 } from '../../../../assets/images/marcaAguaFichaMedicaBase64';
+
+// Carlito: fuente métricamente compatible con Calibri (Calibri no es
+// redistribuible y @react-pdf/renderer necesita el archivo de la fuente)
+Font.register({
+  family: 'Carlito',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/gh/googlefonts/carlito@main/fonts/ttf/Carlito-Regular.ttf', fontWeight: 'normal', fontStyle: 'normal' },
+    { src: 'https://cdn.jsdelivr.net/gh/googlefonts/carlito@main/fonts/ttf/Carlito-Bold.ttf', fontWeight: 'bold', fontStyle: 'normal' },
+    { src: 'https://cdn.jsdelivr.net/gh/googlefonts/carlito@main/fonts/ttf/Carlito-Italic.ttf', fontWeight: 'normal', fontStyle: 'italic' },
+    { src: 'https://cdn.jsdelivr.net/gh/googlefonts/carlito@main/fonts/ttf/Carlito-BoldItalic.ttf', fontWeight: 'bold', fontStyle: 'italic' },
+  ],
+});
 
 // Colores oficiales del documento
 const COLORS = {
@@ -55,7 +68,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.primary,
+    color: '#000000',
     textAlign: 'center',
   },
 
@@ -70,6 +83,14 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginBottom: 8,
     textDecoration: 'underline',
+  },
+
+  // Títulos de cuadro: negrita, cursiva, negro (sin subrayado)
+  sectionTitleBoldItalic: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-BoldOblique',
+    color: '#000000',
+    marginBottom: 8,
   },
 
   // TABLA ESTILO ANEXO 08
@@ -169,7 +190,7 @@ const styles = StyleSheet.create({
 
   // AVISO CONFIDENCIAL
   confidencialBox: {
-    backgroundColor: COLORS.lightBlue,
+    backgroundColor: COLORS.primary,
     borderWidth: 2,
     borderColor: COLORS.primary,
     padding: 10,
@@ -178,8 +199,11 @@ const styles = StyleSheet.create({
   },
 
   confidencialText: {
-    color: COLORS.primary,
-    fontSize: 8,
+    color: '#FFFFFF',
+    fontFamily: 'Carlito',
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+    fontSize: 10,
     textAlign: 'center',
   },
 
@@ -199,6 +223,12 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     marginBottom: 5,
     height: 40,
+  },
+
+  firmaImagen: {
+    height: 40,
+    marginBottom: 5,
+    objectFit: 'contain',
   },
 
   firmaLabel: {
@@ -398,7 +428,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Contacto de Emergencia */}
         <View style={[styles.section, { marginTop: 15 }]}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'none', fontFamily: 'Helvetica-BoldOblique', color: '#000000' }]}>
+          <Text style={styles.sectionTitleBoldItalic}>
             EN CASO DE EMERGENCIA NOTIFICAR A LA SIGUIENTE PERSONA:
           </Text>
 
@@ -470,7 +500,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Historial de Salud */}
         <View style={[styles.section, { marginTop: 15 }]}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'underline' }]}>
+          <Text style={styles.sectionTitleBoldItalic}>
             HISTORIAL DE SALUD
           </Text>
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
@@ -566,7 +596,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Alergias */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'underline' }]}>
+          <Text style={styles.sectionTitleBoldItalic}>
             ALERGIAS O REACCIONES ADVERSAS
           </Text>
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
@@ -625,7 +655,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Medicamentos */}
         <View style={[styles.section, { marginTop: 15 }]}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'underline' }]}>
+          <Text style={styles.sectionTitleBoldItalic}>
             REGISTRE LOS MEDICAMENTOS ADMINISTRADOS ACTUALMENTE, INCLUYENDO MEDICAMENTOS SIN RECETA MEDICA
           </Text>
 
@@ -677,8 +707,8 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
               ))
             ) : (
               // Filas vacías para llenar a mano
-              [1, 2, 3].map((_, idx) => (
-                <View key={idx} style={idx === 2 ? styles.tableRowLast : styles.tableRow}>
+              [1, 2, 3, 4, 5].map((_, idx) => (
+                <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
                   <View style={[styles.valueCell, { width: '25%', minHeight: 20 }]}><Text></Text></View>
                   <View style={[styles.valueCell, { width: '15%' }]}><Text></Text></View>
                   <View style={[styles.valueCell, { width: '20%' }]}><Text></Text></View>
@@ -691,8 +721,8 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Caja de autorización */}
         <View style={{ borderWidth: 1, borderColor: COLORS.border, padding: 8, marginTop: 15 }}>
-          <Text style={{ fontSize: 8 }}>
-            La administracion de medicamentos indicados para el menor esta aprobada por (colocar nombres, apellidos y documento de identidad):
+          <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold' }}>
+            La administración de medicamentos indicados para el menor está aprobada por (colocar nombres, apellidos y documento de identidad):
           </Text>
           <View style={{ height: 20 }} />
         </View>
@@ -716,7 +746,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
 
         {/* Vacunas */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { textDecoration: 'underline' }]}>
+          <Text style={styles.sectionTitleBoldItalic}>
             INMUNIZACIONES (VACUNAS)
           </Text>
           <Text style={{ fontSize: 8, marginBottom: 5 }}>
@@ -779,7 +809,7 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
         {/* Box Confidencial */}
         <View style={styles.confidencialBox}>
           <Text style={styles.confidencialText}>
-            La informacion contenida en esta ficha medica es estrictamente confidencial. Sera vista unicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el caracter reservado de la presente informacion.
+            La información contenida en esta ficha médica es estrictamente confidencial. Será vista únicamente por el Equipo de Adultos Voluntarios Responsables, el personal de salud y otros que comprendan el carácter reservado de la presente información.
           </Text>
         </View>
 
@@ -804,7 +834,11 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
             </View>
 
             <View style={styles.firmaBox}>
-              <View style={styles.firmaLinea} />
+              {data.contactoEmergencia?.firmaBase64 ? (
+                <Image src={data.contactoEmergencia.firmaBase64} style={styles.firmaImagen} />
+              ) : (
+                <View style={styles.firmaLinea} />
+              )}
               <Text style={styles.firmaLabel}>Firma del padre o tutor del participante menor de edad</Text>
               <Text style={styles.firmaSubLabel}>
                 <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos: </Text>

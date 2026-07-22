@@ -97,7 +97,7 @@ export async function exportarAutorizacionApoderadoPDF(
 
     const Component = React.createElement(AutorizacionApoderadoTemplate, { data });
 
-    const nombreArchivo = `autorizacion_padre_apoderado_${data.nombreCompleto.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+    const nombreArchivo = `ANEXO 4 - AUTORIZACION - ${data.nombreCompleto}`;
 
     return await generateAndDownloadPDF(Component, nombreArchivo);
   } catch (error) {
@@ -263,6 +263,16 @@ export async function exportarAutorizacionApoderadoDOCX(
               spacing: { before: 200, after: 400 },
             }),
 
+            ...(data.apoderado?.firmaBase64
+              ? [new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new ImageRun({
+                    data: base64ToUint8Array(data.apoderado.firmaBase64),
+                    type: detectImageType(data.apoderado.firmaBase64),
+                    transformation: { width: 140, height: 50 },
+                  })],
+                })]
+              : []),
             new Paragraph({
               alignment: AlignmentType.CENTER,
               indent: { left: 2500, right: 2500 },
@@ -289,7 +299,7 @@ export async function exportarAutorizacionApoderadoDOCX(
     });
 
     const blob = await Packer.toBlob(doc);
-    const nombreArchivo = `autorizacion_padre_apoderado_${data.nombreCompleto.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+    const nombreArchivo = `ANEXO 4 - AUTORIZACION - ${data.nombreCompleto}.docx`;
 
     saveAs(blob, nombreArchivo);
 

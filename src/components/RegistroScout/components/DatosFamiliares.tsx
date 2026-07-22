@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IdentityDocumentUpload } from "./IdentityDocumentUpload";
+import { DocumentUpload } from "./DocumentUpload";
 import { UbigeoSelector } from "./UbigeoSelector";
 import ScoutService from "@/services/scoutService";
 import { PersonSearchCombobox } from "@/components/shared/PersonSearch";
@@ -820,6 +821,15 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                         entityType="familiar"
                         entityId={familiarIds[index]}
                         label="Documento de Identidad del Familiar"
+                      />
+
+                      {/* Upload de Firma del Familiar */}
+                      <DocumentUpload
+                        entityType="familiar"
+                        entityId={familiarIds[index]}
+                        documentType="firma"
+                        label="Firma del Familiar"
+                        description="Sube una imagen de la firma del familiar (igual que en su documento de identidad)"
                       />
                     </div>
                   </>

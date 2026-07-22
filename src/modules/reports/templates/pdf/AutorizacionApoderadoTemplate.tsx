@@ -137,6 +137,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 4,
   },
+  firmaImagen: {
+    width: 200,
+    height: 40,
+    alignSelf: 'center',
+    marginBottom: 4,
+    objectFit: 'contain',
+  },
   firmaLabel: {
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
@@ -256,7 +263,11 @@ export const AutorizacionApoderadoTemplate: React.FC<AutorizacionApoderadoTempla
           Lima, {formatFechaLarga(data.fechaDocumento)}
         </Text>
 
-        <View style={styles.firmaLinea} />
+        {data.apoderado?.firmaBase64 ? (
+          <Image src={data.apoderado.firmaBase64} style={styles.firmaImagen} />
+        ) : (
+          <View style={styles.firmaLinea} />
+        )}
         <Text style={styles.firmaLabel}>Firma</Text>
         <Text style={styles.firmaDato}>Nombre y Apellidos: {data.apoderado?.nombre || ''}</Text>
         <Text style={styles.firmaDato}>DNI: {data.apoderado?.numeroDocumento || ''}</Text>
