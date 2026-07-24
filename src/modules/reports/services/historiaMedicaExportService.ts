@@ -5,8 +5,8 @@
 import React from 'react';
 import { generateAndDownloadPDF } from './pdfService';
 import { getHistoriaMedicaData } from './reportDataService';
-import { ReportMetadata, ReportGenerationResult, ReportStatus } from '../types/reportTypes';
-import { HistoriaMedicaReportTemplate } from '../templates/pdf/HistoriaMedicaReportTemplate';
+import { ReportMetadata, ReportGenerationResult, ReportStatus, HistoriaMedicaReportData } from '../types/reportTypes';
+import { HistoriaMedicaReportTemplate, HistoriaMedicaConsolidadoTemplate } from '../templates/pdf/HistoriaMedicaReportTemplate';
 import { marcaAguaFichaMedicaBase64 } from '../../../assets/images/marcaAguaFichaMedicaBase64';
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -85,46 +85,68 @@ export async function exportarHistoriaMedicaPDF(
 }
 
 /**
- * Genera y descarga el DOCX de Historia Médica de un scout
- * (Implementación básica - se puede expandir según necesidad)
+ * Genera y descarga un único PDF consolidado con la Historia Médica de
+ * varios scouts elegidos manualmente (3 páginas por scout).
  */
-export async function exportarHistoriaMedicaDOCX(
-  scoutId: string,
-  personaId: string,
+export async function exportarHistoriaMedicaConsolidadoPDF(
+  scoutIds: string[],
   options?: {
     organizacion?: string;
     fechaLlenado?: string;
   }
 ): Promise<ReportGenerationResult> {
   try {
-    // Importar módulo docx dinámicamente
-    const {
-      Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType,
-      Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom,
-      BorderStyle, ShadingType, TableLayoutType,
-    } = await import('docx');
-    const { saveAs } = await import('file-saver');
+    const resultados = await Promise.all(
+      scoutIds.map((scoutId) => getHistoriaMedicaData(scoutId, ''))
+    );
 
-    // 1. Obtener datos
-    const data = await getHistoriaMedicaData(scoutId, personaId);
+    const datas = resultados.filter((d): d is HistoriaMedicaReportData => d !== null);
 
-    if (!data) {
+    if (datas.length === 0) {
       return {
         status: ReportStatus.ERROR,
-        fileName: 'historia_medica.docx',
-        error: 'No se encontró información de historia médica para este scout',
+        fileName: 'historia_medica_consolidado.pdf',
+        error: 'No se encontró información para ninguno de los scouts seleccionados',
       };
     }
 
-    // 1b. Permitir sobreescribir la fecha de llenado (ej. imprimir con la fecha de hoy)
     if (options?.fechaLlenado) {
-      data.fechaLlenado = options.fechaLlenado;
+      datas.forEach((data) => { data.fechaLlenado = options.fechaLlenado!; });
     }
+
+    const Component = React.createElement(HistoriaMedicaConsolidadoTemplate, { datas });
+
+    const nombreArchivo = `HISTORIA MEDICA - CONSOLIDADO (${datas.length})`;
+
+    return await generateAndDownloadPDF(Component, nombreArchivo);
+  } catch (error) {
+    console.error('Error exportando Historia Médica consolidada a PDF:', error);
+    return {
+      status: ReportStatus.ERROR,
+      fileName: 'historia_medica_consolidado.pdf',
+      error: error instanceof Error ? error.message : 'Error desconocido al generar PDF',
+    };
+  }
+}
+
+/**
+ * Construye la sección (docx) con el contenido completo de la Historia
+ * Médica de una sola persona. Se reutiliza tanto para el DOCX individual
+ * como para el DOCX consolidado (una sección por persona, cada una en su
+ * propia página, dentro de un mismo `Document`).
+ */
+async function buildHistoriaMedicaSection(data: HistoriaMedicaReportData) {
+    // Importar módulo docx dinámicamente
+    const {
+      Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType,
+      Header, ImageRun, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom,
+      BorderStyle, ShadingType, TableLayoutType,
+    } = await import('docx');
 
     // Un menor de edad no debe firmar como "participante mayor de edad"
     const esMayorDeEdad = data.edad >= 18;
 
-    // 1c. Marca de agua (header flotante detrás del texto, se repite en cada página)
+    // Marca de agua (header flotante detrás del texto, se repite en cada página)
     const watermarkHeader = () => new Header({
       children: [
         new Paragraph({
@@ -245,12 +267,9 @@ export async function exportarHistoriaMedicaDOCX(
       { fila: 'Neumococo', nombres: ['neumococo', 'neumonia'] },
     ];
 
-    // 2. Crear documento Word
-    const doc = new Document({
-      sections: [
-        {
-          headers: { default: watermarkHeader() },
-          children: [
+    return {
+      headers: { default: watermarkHeader() },
+      children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
               children: [new TextRun({
@@ -530,12 +549,43 @@ export async function exportarHistoriaMedicaDOCX(
                 }),
               ],
             }),
-          ],
-        },
       ],
-    });
+    };
+}
 
-    // 3. Generar y descargar
+/**
+ * Genera y descarga el DOCX de Historia Médica de un scout
+ */
+export async function exportarHistoriaMedicaDOCX(
+  scoutId: string,
+  personaId: string,
+  options?: {
+    organizacion?: string;
+    fechaLlenado?: string;
+  }
+): Promise<ReportGenerationResult> {
+  try {
+    const { Document, Packer } = await import('docx');
+    const { saveAs } = await import('file-saver');
+
+    const data = await getHistoriaMedicaData(scoutId, personaId);
+
+    if (!data) {
+      return {
+        status: ReportStatus.ERROR,
+        fileName: 'historia_medica.docx',
+        error: 'No se encontró información de historia médica para este scout',
+      };
+    }
+
+    // Permitir sobreescribir la fecha de llenado (ej. imprimir con la fecha de hoy)
+    if (options?.fechaLlenado) {
+      data.fechaLlenado = options.fechaLlenado;
+    }
+
+    const section = await buildHistoriaMedicaSection(data);
+    const doc = new Document({ sections: [section] });
+
     const blob = await Packer.toBlob(doc);
     const nombreArchivo = `historia_medica_${data.nombreCompleto.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
 
@@ -551,6 +601,63 @@ export async function exportarHistoriaMedicaDOCX(
     return {
       status: ReportStatus.ERROR,
       fileName: 'historia_medica.docx',
+      error: error instanceof Error ? error.message : 'Error desconocido al generar DOCX',
+    };
+  }
+}
+
+/**
+ * Genera y descarga un único DOCX consolidado con la Historia Médica de
+ * varios scouts elegidos manualmente (una sección por scout, cada una en
+ * su propia página).
+ */
+export async function exportarHistoriaMedicaConsolidadoDOCX(
+  scoutIds: string[],
+  options?: {
+    organizacion?: string;
+    fechaLlenado?: string;
+  }
+): Promise<ReportGenerationResult> {
+  try {
+    const { Document, Packer } = await import('docx');
+    const { saveAs } = await import('file-saver');
+
+    const resultados = await Promise.all(
+      scoutIds.map((scoutId) => getHistoriaMedicaData(scoutId, ''))
+    );
+
+    const datas = resultados.filter((d): d is HistoriaMedicaReportData => d !== null);
+
+    if (datas.length === 0) {
+      return {
+        status: ReportStatus.ERROR,
+        fileName: 'historia_medica_consolidado.docx',
+        error: 'No se encontró información para ninguno de los scouts seleccionados',
+      };
+    }
+
+    if (options?.fechaLlenado) {
+      datas.forEach((data) => { data.fechaLlenado = options.fechaLlenado!; });
+    }
+
+    const sections = await Promise.all(datas.map((data) => buildHistoriaMedicaSection(data)));
+    const doc = new Document({ sections });
+
+    const blob = await Packer.toBlob(doc);
+    const nombreArchivo = `HISTORIA MEDICA - CONSOLIDADO (${datas.length}).docx`;
+
+    saveAs(blob, nombreArchivo);
+
+    return {
+      status: ReportStatus.SUCCESS,
+      blob,
+      fileName: nombreArchivo,
+    };
+  } catch (error) {
+    console.error('Error exportando Historia Médica consolidada a DOCX:', error);
+    return {
+      status: ReportStatus.ERROR,
+      fileName: 'historia_medica_consolidado.docx',
       error: error instanceof Error ? error.message : 'Error desconocido al generar DOCX',
     };
   }

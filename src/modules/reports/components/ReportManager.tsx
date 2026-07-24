@@ -53,7 +53,7 @@ import IngresosPorConceptoTemplate from '../templates/pdf/IngresosPorConceptoTem
 import EstadoCuentaPersonaTemplate from '../templates/pdf/EstadoCuentaPersonaTemplate';
 import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
 import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
-import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX } from '../services/historiaMedicaExportService';
+import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX, exportarHistoriaMedicaConsolidadoPDF, exportarHistoriaMedicaConsolidadoDOCX } from '../services/historiaMedicaExportService';
 import { exportarAutorizacionApoderadoPDF, exportarAutorizacionApoderadoDOCX, exportarAutorizacionApoderadoConsolidadoPDF } from '../services/autorizacionApoderadoExportService';
 import {
   getAllScoutsForMasiveDNGI03,
@@ -126,6 +126,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [historiaMedicaFechaLlenado, setHistoriaMedicaFechaLlenado] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
+  // Modo manual: elegir personas puntuales y generar UN solo documento consolidado (PDF o Word)
+  const [historiaMedicaModo, setHistoriaMedicaModo] = useState<'PERSONA' | 'MANUAL'>('PERSONA');
+  const [historiaMedicaManualSeleccionados, setHistoriaMedicaManualSeleccionados] = useState<PersonaResult[]>([]);
 
   // Estado para el filtro de Persona (buscador) del reporte "Autorización del Padre o Apoderado"
   const [autorizacionApoderadoPersona, setAutorizacionApoderadoPersona] = useState<PersonaResult | null>(null);
@@ -1246,6 +1249,41 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const exportHistoriaMedicaReport = async (
     format: ExportFormat
   ): Promise<ReportGenerationResult> => {
+    const options = {
+      organizacion: 'Grupo Scout Lima 12',
+      fechaLlenado: historiaMedicaFechaLlenado || undefined,
+    };
+
+    if (historiaMedicaModo === 'MANUAL') {
+      if (historiaMedicaManualSeleccionados.length === 0) {
+        return { status: 'error' as any, fileName: 'error', error: 'Selecciona al menos una persona para generar la historia médica consolidada' };
+      }
+
+      const scoutIds: string[] = [];
+      const omitidos: string[] = [];
+      for (const persona of historiaMedicaManualSeleccionados) {
+        const scoutId = persona.es_scout?.scout_id;
+        if (scoutId) {
+          scoutIds.push(scoutId);
+        } else {
+          omitidos.push(`${persona.nombres} ${persona.apellidos}`);
+        }
+      }
+
+      if (omitidos.length > 0) {
+        info(`Se omitieron ${omitidos.length} persona(s) sin registro de Scout: ${omitidos.join(', ')}`);
+      }
+
+      if (scoutIds.length === 0) {
+        return { status: 'error' as any, fileName: 'error', error: 'Ninguna de las personas seleccionadas está registrada como Scout' };
+      }
+
+      if (format === ExportFormat.PDF) {
+        return await exportarHistoriaMedicaConsolidadoPDF(scoutIds, options);
+      }
+      return await exportarHistoriaMedicaConsolidadoDOCX(scoutIds, options);
+    }
+
     if (!historiaMedicaPersona) {
       return { status: 'error' as any, fileName: 'error', error: 'Busca y selecciona una persona para generar su Historia Médica' };
     }
@@ -1258,11 +1296,6 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         error: 'La Historia Médica solo está disponible para personas registradas como Scout',
       };
     }
-
-    const options = {
-      organizacion: 'Grupo Scout Lima 12',
-      fechaLlenado: historiaMedicaFechaLlenado || undefined,
-    };
 
     if (format === ExportFormat.PDF) {
       return await exportarHistoriaMedicaPDF(scoutId, historiaMedicaPersona.persona_id, options);
@@ -2355,23 +2388,95 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
           {selectedReportType === ReportType.HISTORIA_MEDICA && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Persona
+                  Modo de generación
                 </label>
-                <PersonSearchCombobox
-                  placeholder="Buscar por nombre o N° documento..."
-                  onSelect={(persona) => setHistoriaMedicaPersona(persona)}
-                  personaVinculada={historiaMedicaPersona}
-                  onDesvincular={() => setHistoriaMedicaPersona(null)}
-                  simplificarBadgeScout
-                />
-                {historiaMedicaPersona && !historiaMedicaPersona.es_scout && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Esta persona no está registrada como Scout. La Historia Médica solo está disponible para Scouts.
-                  </p>
-                )}
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      checked={historiaMedicaModo === 'PERSONA'}
+                      onChange={() => setHistoriaMedicaModo('PERSONA')}
+                    />
+                    Un scout específico
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      checked={historiaMedicaModo === 'MANUAL'}
+                      onChange={() => setHistoriaMedicaModo('MANUAL')}
+                    />
+                    Varias personas elegidas (un solo documento consolidado)
+                  </label>
+                </div>
               </div>
+
+              {historiaMedicaModo === 'MANUAL' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Personas seleccionadas ({historiaMedicaManualSeleccionados.length})
+                  </label>
+                  <PersonSearchCombobox
+                    key={historiaMedicaManualSeleccionados.length}
+                    placeholder="Buscar por nombre o N° documento y agregar..."
+                    onSelect={(persona) => {
+                      setHistoriaMedicaManualSeleccionados(prev =>
+                        prev.some(p => p.persona_id === persona.persona_id) ? prev : [...prev, persona]
+                      );
+                    }}
+                    simplificarBadgeScout
+                  />
+                  {historiaMedicaManualSeleccionados.length > 0 && (
+                    <ul className="mt-3 divide-y divide-gray-100 border border-gray-200 rounded-lg max-h-56 overflow-y-auto">
+                      {historiaMedicaManualSeleccionados.map((persona) => (
+                        <li key={persona.persona_id} className="flex items-center justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {persona.nombres} {persona.apellidos}
+                            </p>
+                            {!persona.es_scout && (
+                              <p className="text-xs text-amber-600">No está registrada como Scout, se omitirá</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setHistoriaMedicaManualSeleccionados(prev =>
+                              prev.filter(p => p.persona_id !== persona.persona_id)
+                            )}
+                            className="shrink-0 text-xs text-red-500 hover:text-red-700"
+                          >
+                            Quitar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se generará un único documento (PDF o Word) con la ficha médica completa de cada persona seleccionada.
+                  </p>
+                </div>
+              )}
+
+              {historiaMedicaModo === 'PERSONA' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Persona
+                  </label>
+                  <PersonSearchCombobox
+                    placeholder="Buscar por nombre o N° documento..."
+                    onSelect={(persona) => setHistoriaMedicaPersona(persona)}
+                    personaVinculada={historiaMedicaPersona}
+                    onDesvincular={() => setHistoriaMedicaPersona(null)}
+                    simplificarBadgeScout
+                  />
+                  {historiaMedicaPersona && !historiaMedicaPersona.es_scout && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Esta persona no está registrada como Scout. La Historia Médica solo está disponible para Scouts.
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fecha de Llenado

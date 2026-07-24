@@ -289,13 +289,19 @@ interface HistoriaMedicaReportTemplateProps {
   metadata: ReportMetadata;
 }
 
-export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplateProps> = ({
+/**
+ * Las 3 páginas de la Ficha Médica de una sola persona. Sin envoltorio
+ * `<Document>` para poder reutilizarse tanto en el PDF individual como en el
+ * PDF consolidado (varias personas, 3 páginas cada una, en un mismo
+ * `<Document>`).
+ */
+export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> = ({
   data,
 }) => {
   const esMayorDeEdad = data.edad >= 18;
 
   return (
-    <Document>
+    <>
       {/* PÁGINA 1: Información General / Historial de Salud */}
       <Page size="A4" style={styles.page}>
         <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
@@ -861,8 +867,30 @@ export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplate
           <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
         </View>
       </Page>
-    </Document>
+    </>
   );
 };
+
+export const HistoriaMedicaReportTemplate: React.FC<HistoriaMedicaReportTemplateProps> = ({ data }) => (
+  <Document>
+    <HistoriaMedicaPages data={data} />
+  </Document>
+);
+
+interface HistoriaMedicaConsolidadoTemplateProps {
+  datas: HistoriaMedicaReportData[];
+}
+
+/**
+ * PDF consolidado: las 3 páginas de la Ficha Médica de cada persona
+ * seleccionada manualmente, dentro de un único documento descargable.
+ */
+export const HistoriaMedicaConsolidadoTemplate: React.FC<HistoriaMedicaConsolidadoTemplateProps> = ({ datas }) => (
+  <Document>
+    {datas.map((data, index) => (
+      <HistoriaMedicaPages data={data} key={data.scoutId || index} />
+    ))}
+  </Document>
+);
 
 export default HistoriaMedicaReportTemplate;
