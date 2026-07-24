@@ -10,7 +10,7 @@ import React from 'react';
 import { generateAndDownloadPDF } from './pdfService';
 import { getAutorizacionApoderadoData } from './reportDataService';
 import { ReportGenerationResult, ReportStatus, AutorizacionApoderadoReportData } from '../types/reportTypes';
-import { AutorizacionApoderadoTemplate } from '../templates/pdf/AutorizacionApoderadoTemplate';
+import { AutorizacionApoderadoTemplate, AutorizacionApoderadoConsolidadoTemplate } from '../templates/pdf/AutorizacionApoderadoTemplate';
 import { marcaAguaFichaMedicaBase64 } from '../../../assets/images/marcaAguaFichaMedicaBase64';
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -105,6 +105,49 @@ export async function exportarAutorizacionApoderadoPDF(
     return {
       status: ReportStatus.ERROR,
       fileName: 'autorizacion_padre_apoderado.pdf',
+      error: error instanceof Error ? error.message : 'Error desconocido al generar PDF',
+    };
+  }
+}
+
+/**
+ * Genera y descarga un único PDF consolidado con la Autorización del Padre o
+ * Apoderado de varios scouts elegidos manualmente (una página por scout).
+ */
+export async function exportarAutorizacionApoderadoConsolidadoPDF(
+  scoutIds: string[],
+  options?: AutorizacionApoderadoExportOptions
+): Promise<ReportGenerationResult> {
+  try {
+    const resultados = await Promise.all(
+      scoutIds.map((scoutId) => getAutorizacionApoderadoData(scoutId, ''))
+    );
+
+    const datas = resultados.filter((d): d is AutorizacionApoderadoReportData => d !== null);
+
+    if (datas.length === 0) {
+      return {
+        status: ReportStatus.ERROR,
+        fileName: 'autorizacion_padre_apoderado_consolidado.pdf',
+        error: 'No se encontró información para ninguno de los scouts seleccionados',
+      };
+    }
+
+    datas.forEach((data) => {
+      if (options?.fechaDocumento) data.fechaDocumento = options.fechaDocumento;
+      if (options?.actividad) data.actividad = options.actividad;
+    });
+
+    const Component = React.createElement(AutorizacionApoderadoConsolidadoTemplate, { datas });
+
+    const nombreArchivo = `ANEXO 4 - AUTORIZACION - CONSOLIDADO (${datas.length})`;
+
+    return await generateAndDownloadPDF(Component, nombreArchivo);
+  } catch (error) {
+    console.error('Error exportando Autorización del Padre o Apoderado consolidada a PDF:', error);
+    return {
+      status: ReportStatus.ERROR,
+      fileName: 'autorizacion_padre_apoderado_consolidado.pdf',
       error: error instanceof Error ? error.message : 'Error desconocido al generar PDF',
     };
   }

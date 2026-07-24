@@ -54,7 +54,7 @@ import EstadoCuentaPersonaTemplate from '../templates/pdf/EstadoCuentaPersonaTem
 import FinancieroRamaTemplate from '../templates/pdf/FinancieroRamaTemplate';
 import InventarioReportTemplate from '../templates/pdf/InventarioReportTemplate';
 import { exportarHistoriaMedicaPDF, exportarHistoriaMedicaDOCX } from '../services/historiaMedicaExportService';
-import { exportarAutorizacionApoderadoPDF, exportarAutorizacionApoderadoDOCX } from '../services/autorizacionApoderadoExportService';
+import { exportarAutorizacionApoderadoPDF, exportarAutorizacionApoderadoDOCX, exportarAutorizacionApoderadoConsolidadoPDF } from '../services/autorizacionApoderadoExportService';
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
@@ -133,8 +133,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     new Date().toISOString().split('T')[0]
   );
   // Modo masivo: generar un archivo por cada scout de la rama elegida
-  const [autorizacionApoderadoModo, setAutorizacionApoderadoModo] = useState<'PERSONA' | 'RAMA'>('PERSONA');
+  // Modo manual: elegir personas puntuales y generar UN solo PDF consolidado (una página por persona)
+  const [autorizacionApoderadoModo, setAutorizacionApoderadoModo] = useState<'PERSONA' | 'RAMA' | 'MANUAL'>('PERSONA');
   const [autorizacionApoderadoRama, setAutorizacionApoderadoRama] = useState<string>('TODAS');
+  const [autorizacionApoderadoManualSeleccionados, setAutorizacionApoderadoManualSeleccionados] = useState<PersonaResult[]>([]);
   // Datos de la actividad: se llenan una sola vez y se aplican a todos los
   // documentos generados (individual o masivo por rama)
   const [autorizacionApoderadoActividad, setAutorizacionApoderadoActividad] = useState({
@@ -1316,6 +1318,37 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       }
     }
 
+    if (autorizacionApoderadoModo === 'MANUAL') {
+      if (autorizacionApoderadoManualSeleccionados.length === 0) {
+        return { status: 'error' as any, fileName: 'error', error: 'Selecciona al menos una persona para generar la autorización consolidada' };
+      }
+
+      if (format !== ExportFormat.PDF) {
+        return { status: 'error' as any, fileName: 'error', error: 'La generación consolidada solo está disponible en PDF' };
+      }
+
+      const scoutIds: string[] = [];
+      const omitidos: string[] = [];
+      for (const persona of autorizacionApoderadoManualSeleccionados) {
+        const scoutId = persona.es_scout?.scout_id;
+        if (scoutId) {
+          scoutIds.push(scoutId);
+        } else {
+          omitidos.push(`${persona.nombres} ${persona.apellidos}`);
+        }
+      }
+
+      if (omitidos.length > 0) {
+        info(`Se omitieron ${omitidos.length} persona(s) sin registro de Scout: ${omitidos.join(', ')}`);
+      }
+
+      if (scoutIds.length === 0) {
+        return { status: 'error' as any, fileName: 'error', error: 'Ninguna de las personas seleccionadas está registrada como Scout' };
+      }
+
+      return await exportarAutorizacionApoderadoConsolidadoPDF(scoutIds, options);
+    }
+
     if (!autorizacionApoderadoPersona) {
       return { status: 'error' as any, fileName: 'error', error: 'Busca y selecciona una persona para generar su Autorización del Padre o Apoderado' };
     }
@@ -1804,6 +1837,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     }
 
     if (reportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) {
+      return [ExportFormat.PDF];
+    }
+
+    if (reportType === ReportType.AUTORIZACION_PADRE_APODERADO && autorizacionApoderadoModo === 'MANUAL') {
       return [ExportFormat.PDF];
     }
 
@@ -2378,10 +2415,64 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                     />
                     Toda una rama (masivo, un archivo por scout)
                   </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      checked={autorizacionApoderadoModo === 'MANUAL'}
+                      onChange={() => setAutorizacionApoderadoModo('MANUAL')}
+                    />
+                    Varias personas elegidas (un solo PDF consolidado)
+                  </label>
                 </div>
               </div>
 
-              {autorizacionApoderadoModo === 'PERSONA' ? (
+              {autorizacionApoderadoModo === 'MANUAL' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Personas seleccionadas ({autorizacionApoderadoManualSeleccionados.length})
+                  </label>
+                  <PersonSearchCombobox
+                    key={autorizacionApoderadoManualSeleccionados.length}
+                    placeholder="Buscar por nombre o N° documento y agregar..."
+                    onSelect={(persona) => {
+                      setAutorizacionApoderadoManualSeleccionados(prev =>
+                        prev.some(p => p.persona_id === persona.persona_id) ? prev : [...prev, persona]
+                      );
+                    }}
+                    simplificarBadgeScout
+                  />
+                  {autorizacionApoderadoManualSeleccionados.length > 0 && (
+                    <ul className="mt-3 divide-y divide-gray-100 border border-gray-200 rounded-lg max-h-56 overflow-y-auto">
+                      {autorizacionApoderadoManualSeleccionados.map((persona) => (
+                        <li key={persona.persona_id} className="flex items-center justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {persona.nombres} {persona.apellidos}
+                            </p>
+                            {!persona.es_scout && (
+                              <p className="text-xs text-amber-600">No está registrada como Scout, se omitirá</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAutorizacionApoderadoManualSeleccionados(prev =>
+                              prev.filter(p => p.persona_id !== persona.persona_id)
+                            )}
+                            className="shrink-0 text-xs text-red-500 hover:text-red-700"
+                          >
+                            Quitar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se generará un único PDF con una página de autorización por cada persona seleccionada.
+                  </p>
+                </div>
+              )}
+
+              {autorizacionApoderadoModo === 'PERSONA' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Persona
@@ -2399,7 +2490,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                     </p>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {autorizacionApoderadoModo === 'RAMA' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Rama

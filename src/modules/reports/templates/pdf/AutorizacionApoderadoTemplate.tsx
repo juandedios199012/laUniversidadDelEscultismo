@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontSize: 9,
     marginTop: 12,
-    marginBottom: 24,
+    marginBottom: 30,
   },
   firmaLinea: {
     borderBottomWidth: 1,
@@ -138,10 +138,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   firmaImagen: {
-    width: 200,
-    height: 40,
+    width: 180,
+    height: 45,
     alignSelf: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
     objectFit: 'contain',
   },
   firmaLabel: {
@@ -202,7 +202,12 @@ interface AutorizacionApoderadoTemplateProps {
   data: AutorizacionApoderadoReportData;
 }
 
-export const AutorizacionApoderadoTemplate: React.FC<AutorizacionApoderadoTemplateProps> = ({ data }) => {
+/**
+ * Página con el contenido del ANEXO 4 para una sola persona. Sin envoltorio
+ * `<Document>` para poder reutilizarse tanto en el PDF individual como en el
+ * PDF consolidado (varias páginas, una por persona, en un mismo `<Document>`).
+ */
+export const AutorizacionApoderadoPage: React.FC<AutorizacionApoderadoTemplateProps> = ({ data }) => {
   const sexoNorm = (data.sexo || '').toUpperCase();
   const esNina = sexoNorm === 'F' || sexoNorm === 'FEMENINO';
   const esNino = sexoNorm === 'M' || sexoNorm === 'MASCULINO';
@@ -210,70 +215,89 @@ export const AutorizacionApoderadoTemplate: React.FC<AutorizacionApoderadoTempla
   const tipoApoderado = data.apoderado?.tipo;
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
+    <Page size="A4" style={styles.page}>
+      <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
 
-        <Text style={styles.mainTitle}>ANEXO 4 - AUTORIZACIÓN DE PARTICIPACIÓN</Text>
-        <Text style={styles.subTitle}>Para Miembros Juveniles Menores de Edad</Text>
+      <Text style={styles.mainTitle}>ANEXO 4 - AUTORIZACIÓN DE PARTICIPACIÓN</Text>
+      <Text style={styles.subTitle}>Para Miembros Juveniles Menores de Edad</Text>
 
+      <View style={styles.checkboxRow}>
         <Text style={styles.paragraph}>
           Yo: {data.apoderado?.nombre || ''} identificado con DNI: {data.apoderado?.numeroDocumento || ''}
         </Text>
-        <View style={styles.checkboxRow}>
-          <Checkbox label="Padre" checked={tipoApoderado === 'PADRE'} />
-          <Checkbox label="Madre" checked={tipoApoderado === 'MADRE'} />
-          <Checkbox label="Apoderado" checked={tipoApoderado === 'APODERADO'} />
-        </View>
+        <Checkbox label="Padre" checked={tipoApoderado === 'PADRE'} />
+        <Checkbox label="Madre" checked={tipoApoderado === 'MADRE'} />
+        <Checkbox label="Apoderado" checked={tipoApoderado === 'APODERADO'} />
+      </View>
 
-        <View style={styles.checkboxRow}>
-          <Text>del</Text>
-          <Checkbox label="niño" checked={esNino} />
-          <Checkbox label="niña" checked={esNina} />
-          <Checkbox label="joven" checked={false} />
-          <Text>: {data.nombreCompleto || ''} identificado con DNI: {data.numeroDocumento || ''}</Text>
-        </View>
+      <View style={styles.checkboxRow}>
+        <Text>del</Text>
+        <Checkbox label="niño" checked={esNino} />
+        <Checkbox label="niña" checked={esNina} />
+        <Checkbox label="joven" checked={false} />
+        <Text>: {data.nombreCompleto || ''} identificado con DNI: {data.numeroDocumento || ''}</Text>
+      </View>
 
-        <Text style={styles.paragraph}>
-          y código de asociado N° {data.codigoScout || ''} por medio de la presente, autorizo la participación de mi menor hijo(a) en la Actividad organizada por el Grupo Scout Lima 12, que tiene las siguientes características:
-        </Text>
+      <Text style={styles.paragraph}>
+        y código de asociado N° {data.codigoScout || ''} por medio de la presente, autorizo la participación de mi menor hijo(a) en la Actividad organizada por el Grupo Scout Lima 12, que tiene las siguientes características:
+      </Text>
 
-        <View style={styles.table}>
-          {actividadFilas(data.actividad).map(([label, valor], idx, arr) => (
-            <View key={label} style={idx === arr.length - 1 ? styles.tableRowLast : styles.tableRow}>
-              <View style={styles.labelCell}>
-                <Text>{label}</Text>
-              </View>
-              <View style={styles.valueCell}>
-                <Text>{valor}</Text>
-              </View>
+      <View style={styles.table}>
+        {actividadFilas(data.actividad).map(([label, valor], idx, arr) => (
+          <View key={label} style={idx === arr.length - 1 ? styles.tableRowLast : styles.tableRow}>
+            <View style={styles.labelCell}>
+              <Text>{label}</Text>
             </View>
-          ))}
-        </View>
-
-        <Text style={[styles.paragraph, { fontFamily: 'Helvetica-Bold' }]}>Asimismo, declaro:</Text>
-        {DECLARACIONES.map((texto, idx) => (
-          <View style={styles.declaracionRow} key={idx}>
-            <Text style={styles.declaracionNum}>{idx + 1}.</Text>
-            <Text style={styles.declaracionText}>{texto}</Text>
+            <View style={styles.valueCell}>
+              <Text>{valor}</Text>
+            </View>
           </View>
         ))}
+      </View>
 
-        <Text style={styles.fechaDocumento}>
-          Lima, {formatFechaLarga(data.fechaDocumento)}
-        </Text>
+      <Text style={[styles.paragraph, { fontFamily: 'Helvetica-Bold' }]}>Asimismo, declaro:</Text>
+      {DECLARACIONES.map((texto, idx) => (
+        <View style={styles.declaracionRow} key={idx}>
+          <Text style={styles.declaracionNum}>{idx + 1}.</Text>
+          <Text style={styles.declaracionText}>{texto}</Text>
+        </View>
+      ))}
 
-        {data.apoderado?.firmaBase64 ? (
-          <Image src={data.apoderado.firmaBase64} style={styles.firmaImagen} />
-        ) : (
-          <View style={styles.firmaLinea} />
-        )}
-        <Text style={styles.firmaLabel}>Firma</Text>
-        <Text style={styles.firmaDato}>Nombre y Apellidos: {data.apoderado?.nombre || ''}</Text>
-        <Text style={styles.firmaDato}>DNI: {data.apoderado?.numeroDocumento || ''}</Text>
-      </Page>
-    </Document>
+      <Text style={styles.fechaDocumento}>
+        Lima, {formatFechaLarga(data.fechaDocumento)}
+      </Text>
+
+      {data.apoderado?.firmaBase64 && (
+        <Image src={data.apoderado.firmaBase64} style={styles.firmaImagen} />
+      )}
+      <View style={styles.firmaLinea} />
+      <Text style={styles.firmaLabel}>Firma</Text>
+      <Text style={styles.firmaDato}>Nombre y Apellidos: {data.apoderado?.nombre || ''}</Text>
+      <Text style={styles.firmaDato}>DNI: {data.apoderado?.numeroDocumento || ''}</Text>
+    </Page>
   );
 };
+
+export const AutorizacionApoderadoTemplate: React.FC<AutorizacionApoderadoTemplateProps> = ({ data }) => (
+  <Document>
+    <AutorizacionApoderadoPage data={data} />
+  </Document>
+);
+
+interface AutorizacionApoderadoConsolidadoTemplateProps {
+  datas: AutorizacionApoderadoReportData[];
+}
+
+/**
+ * PDF consolidado: una página del ANEXO 4 por cada persona seleccionada
+ * manualmente, dentro de un único documento descargable.
+ */
+export const AutorizacionApoderadoConsolidadoTemplate: React.FC<AutorizacionApoderadoConsolidadoTemplateProps> = ({ datas }) => (
+  <Document>
+    {datas.map((data, index) => (
+      <AutorizacionApoderadoPage key={data.scoutId || index} data={data} />
+    ))}
+  </Document>
+);
 
 export default AutorizacionApoderadoTemplate;

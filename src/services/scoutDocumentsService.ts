@@ -379,28 +379,31 @@ class ScoutDocumentsService {
     documentType: DocumentType
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Buscar metadata
+      // Buscar metadata (puede haber más de una fila residual, por lo que
+      // no se usa maybeSingle(): con 2+ filas coincidentes, maybeSingle()
+      // lanza un error y la eliminación fallaba silenciosamente en la UI).
       const { data, error } = await supabase
         .from('scout_documents')
         .select('storage_path')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
-        .eq('document_type', documentType)
-        .maybeSingle();
+        .eq('document_type', documentType);
 
       if (error) {
         console.warn('Error buscando documento a eliminar:', error);
         return { success: false, error: 'Error buscando documento' };
       }
-      
-      if (!data) {
-        return { success: false, error: 'Documento no encontrado' };
+
+      if (!data || data.length === 0) {
+        // Nada que eliminar: ya no existe, se considera éxito.
+        return { success: true };
       }
 
-      // Eliminar del storage
+      // Eliminar del storage (todas las rutas encontradas)
+      const storagePaths = data.map((d) => d.storage_path);
       const { error: storageError } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .remove([data.storage_path]);
+        .remove(storagePaths);
 
       if (storageError) {
         console.error('Error eliminando del storage:', storageError);
@@ -419,7 +422,7 @@ class ScoutDocumentsService {
       }
 
       // Limpiar caché
-      urlCache.delete(data.storage_path);
+      storagePaths.forEach((path) => urlCache.delete(path));
 
       return { success: true };
     } catch (error) {
