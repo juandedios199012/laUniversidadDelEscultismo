@@ -8,6 +8,7 @@ import { getHistoriaMedicaData } from './reportDataService';
 import { ReportMetadata, ReportGenerationResult, ReportStatus, HistoriaMedicaReportData } from '../types/reportTypes';
 import { HistoriaMedicaReportTemplate, HistoriaMedicaConsolidadoTemplate } from '../templates/pdf/HistoriaMedicaReportTemplate';
 import { marcaAguaFichaMedicaBase64 } from '../../../assets/images/marcaAguaFichaMedicaBase64';
+import { CONDICIONES_FIJAS, ALERGIAS_FIJAS, VACUNAS_FIJAS, coincideConAlguno } from '../utils/historiaMedicaCondiciones';
 
 function base64ToUint8Array(base64: string): Uint8Array {
   const b64 = base64.replace(/^data:image\/\w+;base64,/, '');
@@ -242,30 +243,9 @@ async function buildHistoriaMedicaSection(data: HistoriaMedicaReportData) {
       ...(pageBreakBefore ? { pageBreakBefore: true } : {}),
     });
 
-    // Condiciones/alergias/vacunas fijas del formulario — mismas listas que el PDF
-    const CONDICIONES_FIJAS = [
-      { fila: 'Diabetes Mellitus', nombres: ['diabetes'] },
-      { fila: 'Hipertension Arterial', nombres: ['hipertension', 'hipertensión'] },
-      { fila: 'Asma', nombres: ['asma'] },
-      { fila: 'Convulsiones', nombres: ['convulsion', 'epilepsia'] },
-      { fila: 'Lesion traumatica', nombres: ['lesion', 'lesión', 'traumatic', 'trauma'] },
-      { fila: 'Tratamiento psicologico o psiquiatrico', nombres: ['psicolog', 'psiquiat'] },
-      { fila: 'Cirugias y hospitalizaciones', nombres: ['cirug', 'hospital'] },
-    ];
-    const ALERGIAS_FIJAS = [
-      { fila: 'Medicamentos', nombres: ['medicamentos', 'medicamento', 'penicilina', 'aspirina', 'ibuprofeno', 'sulfas', 'anestésico', 'anestesico'] },
-      { fila: 'Alimentos', nombres: ['alimentos', 'alimento', 'maní', 'mani', 'mariscos', 'pescado', 'huevo', 'leche', 'lácteos', 'lacteos', 'gluten', 'trigo', 'soya', 'frutos secos'] },
-      { fila: 'Plantas', nombres: ['plantas', 'planta', 'polen', 'ácaros', 'acaros', 'moho', 'pelo de animales', 'ambiental'] },
-      { fila: 'Picaduras / mordeduras de insectos', nombres: ['picaduras', 'insectos', 'mordeduras', 'insecto', 'picadura'] },
-      { fila: 'Sustancias u otros', nombres: ['sustancias', 'otros', 'otra', 'látex', 'latex', 'níquel', 'niquel', 'cosméticos', 'cosmeticos', 'contacto'] },
-    ];
-    const VACUNAS_FIJAS = [
-      { fila: 'Antiamarilica (fiebre amarilla)', nombres: ['amaril', 'fiebre'] },
-      { fila: 'Hepatitis B', nombres: ['hepatitis'] },
-      { fila: 'Influenza', nombres: ['influenza', 'gripe'] },
-      { fila: 'COVID - 19', nombres: ['covid'] },
-      { fila: 'Neumococo', nombres: ['neumococo', 'neumonia'] },
-    ];
+    // Condiciones/alergias/vacunas fijas del formulario y su matcher — misma
+    // fuente única que usa el PDF (ver historiaMedicaCondiciones.ts), para
+    // que ambos formatos marquen siempre las mismas casillas.
 
     return {
       headers: { default: watermarkHeader() },
@@ -326,11 +306,11 @@ async function buildHistoriaMedicaSection(data: HistoriaMedicaReportData) {
               rows: [
                 new TableRow({ children: [head('SI', 6), head('NO', 6), head('CONDICION', 66), head('Fecha de Atencion', 22)] }),
                 ...CONDICIONES_FIJAS.map((item) => {
-                  const encontrada = data.condiciones.find(c => item.nombres.some(n => c.condicion?.toLowerCase().includes(n)));
+                  const encontrada = data.condiciones.find(c => coincideConAlguno(c.condicion, item.nombres));
                   return new TableRow({ children: [check(!!encontrada, 6), check(!encontrada, 6), plain(item.fila, 66), plain(encontrada?.fechaAtencion, 22)] });
                 }),
                 (() => {
-                  const otra = data.condiciones.find(c => c.condicion?.toLowerCase().includes('otra condici'));
+                  const otra = data.condiciones.find(c => coincideConAlguno(c.condicion, ['otra condici']));
                   return new TableRow({ children: [check(!!otra, 6), check(!otra, 6), plain('Otra condicion no mencionada en la presente lista:', 66), plain(otra?.fechaAtencion, 22)] });
                 })(),
               ],
@@ -347,7 +327,7 @@ async function buildHistoriaMedicaSection(data: HistoriaMedicaReportData) {
               rows: [
                 new TableRow({ children: [head('SI', 6), head('NO', 6), head('ALERGIAS O REACCIONES', 28), head('MENCIONAR', 60)] }),
                 ...ALERGIAS_FIJAS.map((item) => {
-                  const enFila = data.alergias.filter(a => item.nombres.some(n => a.alergia?.toLowerCase().includes(n)));
+                  const enFila = data.alergias.filter(a => coincideConAlguno(a.alergia, item.nombres));
                   const tieneSI = enFila.length > 0;
                   const mencionar = enFila.map(a => a.mencionar || '').filter(Boolean).join(', ');
                   return new TableRow({ children: [check(tieneSI, 6), check(!tieneSI, 6), plain(item.fila, 28), plain(mencionar, 60)] });
@@ -441,7 +421,7 @@ async function buildHistoriaMedicaSection(data: HistoriaMedicaReportData) {
               rows: [
                 new TableRow({ children: [head('SI', 6), head('NO', 6), head('VACUNA', 33), head('FECHA (ULTIMA DOSIS)', 55)] }),
                 ...VACUNAS_FIJAS.map((item) => {
-                  const encontrada = data.vacunas.find(v => item.nombres.some(n => v.vacuna?.toLowerCase().includes(n)));
+                  const encontrada = data.vacunas.find(v => coincideConAlguno(v.vacuna, item.nombres));
                   return new TableRow({ children: [check(!!encontrada, 6), check(!encontrada, 6), plain(item.fila, 33), plain(encontrada?.fechaUltimaDosis, 55)] });
                 }),
               ],

@@ -19,6 +19,7 @@ import {
 } from '@react-pdf/renderer';
 import { HistoriaMedicaReportData, ReportMetadata } from '../../types/reportTypes';
 import { marcaAguaFichaMedicaBase64 } from '../../../../assets/images/marcaAguaFichaMedicaBase64';
+import { CONDICIONES_FIJAS, ALERGIAS_FIJAS, VACUNAS_FIJAS, coincideConAlguno } from '../../utils/historiaMedicaCondiciones';
 
 // Carlito: fuente métricamente compatible con Calibri (Calibri no es
 // redistribuible y @react-pdf/renderer necesita el archivo de la fuente)
@@ -532,17 +533,9 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
             </View>
 
             {/* Mapear condiciones por nombre a las filas del cuadro */}
-            {[
-              { fila: 'Diabetes Mellitus', nombres: ['diabetes'] },
-              { fila: 'Hipertension Arterial', nombres: ['hipertension', 'hipertensión'] },
-              { fila: 'Asma', nombres: ['asma'] },
-              { fila: 'Convulsiones', nombres: ['convulsion', 'epilepsia'] },
-              { fila: 'Lesion traumatica', nombres: ['lesion', 'lesión', 'traumatic', 'trauma'] },
-              { fila: 'Tratamiento psicologico o psiquiatrico', nombres: ['psicolog', 'psiquiat'] },
-              { fila: 'Cirugias y hospitalizaciones', nombres: ['cirug', 'hospital'] },
-            ].map((item, idx) => {
+            {CONDICIONES_FIJAS.map((item, idx) => {
               const condicionEncontrada = data.condiciones.find(c =>
-                item.nombres.some(n => c.condicion?.toLowerCase().includes(n))
+                coincideConAlguno(c.condicion, item.nombres)
               );
               const tieneSI = !!condicionEncontrada;
 
@@ -567,7 +560,7 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
             {/* Otra condición no mencionada en la presente lista */}
             {(() => {
               const otraCondicion = data.condiciones.find(c =>
-                c.condicion?.toLowerCase().includes('otra condici')
+                coincideConAlguno(c.condicion, ['otra condici'])
               );
               const tieneOtra = !!otraCondicion;
 
@@ -629,15 +622,9 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
             </View>
 
             {/* Mapear alergias por nombre a las filas del cuadro */}
-            {[
-              { fila: 'Medicamentos', nombres: ['medicamentos', 'medicamento', 'penicilina', 'aspirina', 'ibuprofeno', 'sulfas', 'anestésico', 'anestesico', 'otros medicamentos'] },
-              { fila: 'Alimentos', nombres: ['alimentos', 'alimento', 'maní', 'mani', 'mariscos', 'pescado', 'huevo', 'leche', 'lácteos', 'lacteos', 'gluten', 'trigo', 'soya', 'frutos secos', 'otros alimentos'] },
-              { fila: 'Plantas', nombres: ['plantas', 'planta', 'polen', 'ácaros', 'acaros', 'moho', 'pelo de animales', 'ambiental'] },
-              { fila: 'Picaduras / mordeduras de insectos', nombres: ['picaduras', 'insectos', 'mordeduras', 'insecto', 'picadura'] },
-              { fila: 'Sustancias u otros', nombres: ['sustancias', 'otros', 'otra', 'látex', 'latex', 'níquel', 'niquel', 'cosméticos', 'cosmeticos', 'contacto'] },
-            ].map((item, idx) => {
+            {ALERGIAS_FIJAS.map((item, idx) => {
               const alergiasEnFila = data.alergias.filter(a =>
-                item.nombres.some(n => a.alergia?.toLowerCase().includes(n))
+                coincideConAlguno(a.alergia, item.nombres)
               );
               const tieneSI = alergiasEnFila.length > 0;
               const mencionar = alergiasEnFila.map(a => a.mencionar || '').filter(Boolean).join(', ');
@@ -780,28 +767,26 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
               </View>
             </View>
 
-            {[
-              { nombre: 'Antiamarilica (fiebre amarilla)', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('amaril') || v.vacuna.toLowerCase().includes('fiebre')) },
-              { nombre: 'Hepatitis B', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('hepatitis')) },
-              { nombre: 'Influenza', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('influenza') || v.vacuna.toLowerCase().includes('gripe')) },
-              { nombre: 'COVID - 19', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('covid')) },
-              { nombre: 'Neumococo', vacuna: data.vacunas.find(v => v.vacuna.toLowerCase().includes('neumococo') || v.vacuna.toLowerCase().includes('neumonia')) },
-            ].map((item, idx) => (
-              <View key={idx} style={idx === 4 ? styles.tableRowLast : styles.tableRow}>
-                <View style={styles.checkboxCell}>
-                  <Text>{item.vacuna ? 'X' : ''}</Text>
+            {VACUNAS_FIJAS.map((fija, idx) => {
+              const vacunaEncontrada = data.vacunas.find(v => coincideConAlguno(v.vacuna, fija.nombres));
+
+              return (
+                <View key={idx} style={idx === VACUNAS_FIJAS.length - 1 ? styles.tableRowLast : styles.tableRow}>
+                  <View style={styles.checkboxCell}>
+                    <Text>{vacunaEncontrada ? 'X' : ''}</Text>
+                  </View>
+                  <View style={styles.checkboxCell}>
+                    <Text>{!vacunaEncontrada ? 'X' : ''}</Text>
+                  </View>
+                  <View style={{ width: 180, padding: 5, fontSize: 8, borderRightWidth: 1, borderRightColor: COLORS.border }}>
+                    <Text>{fija.fila}</Text>
+                  </View>
+                  <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
+                    <Text>{vacunaEncontrada?.fechaUltimaDosis || ''}</Text>
+                  </View>
                 </View>
-                <View style={styles.checkboxCell}>
-                  <Text>{!item.vacuna ? 'X' : ''}</Text>
-                </View>
-                <View style={{ width: 180, padding: 5, fontSize: 8, borderRightWidth: 1, borderRightColor: COLORS.border }}>
-                  <Text>{item.nombre}</Text>
-                </View>
-                <View style={{ flex: 1, padding: 5, fontSize: 8 }}>
-                  <Text>{item.vacuna?.fechaUltimaDosis || ''}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
