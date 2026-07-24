@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   checkbox: {
-    width: 9,
-    height: 9,
+    width: 10,
+    height: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
     marginLeft: 4,
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxMark: {
-    fontSize: 8,
+    fontSize: 7,
     fontFamily: 'Helvetica-Bold',
   },
   table: {
