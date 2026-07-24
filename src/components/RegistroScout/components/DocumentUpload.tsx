@@ -102,7 +102,7 @@ function FilePreview({ url, fileName, mimeType, onDelete, disabled }: FilePrevie
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" variant="secondary">
+                <Button type="button" size="sm" variant="secondary">
                   <Eye className="w-4 h-4 mr-1" />
                   Ver
                 </Button>
@@ -121,8 +121,9 @@ function FilePreview({ url, fileName, mimeType, onDelete, disabled }: FilePrevie
               </DialogContent>
             </Dialog>
             {onDelete && !disabled && (
-              <Button 
-                size="sm" 
+              <Button
+                type="button"
+                size="sm"
                 variant="destructive"
                 onClick={onDelete}
               >
@@ -144,16 +145,18 @@ function FilePreview({ url, fileName, mimeType, onDelete, disabled }: FilePrevie
             <p className="text-xs text-gray-500">{mimeType}</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
+            <Button
+              type="button"
+              size="sm"
               variant="outline"
               onClick={() => window.open(url, '_blank')}
             >
               <Eye className="w-4 h-4" />
             </Button>
             {onDelete && !disabled && (
-              <Button 
-                size="sm" 
+              <Button
+                type="button"
+                size="sm"
                 variant="destructive"
                 onClick={onDelete}
               >

@@ -295,8 +295,9 @@ interface HistoriaMedicaReportTemplateProps {
  * PDF consolidado (varias personas, 3 páginas cada una, en un mismo
  * `<Document>`).
  */
-export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> = ({
+export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; showPageNumber?: boolean }> = ({
   data,
+  showPageNumber = true,
 }) => {
   const esMayorDeEdad = data.edad >= 18;
 
@@ -591,9 +592,11 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> =
         </View>
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-        </View>
+        {showPageNumber && (
+          <View style={styles.footer} fixed>
+            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
+          </View>
+        )}
       </Page>
 
       {/* PÁGINA 2: Alergias y Medicamentos */}
@@ -741,9 +744,11 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> =
         </View>
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-        </View>
+        {showPageNumber && (
+          <View style={styles.footer} fixed>
+            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
+          </View>
+        )}
       </Page>
 
       {/* PÁGINA 3: Vacunas y Firmas */}
@@ -840,11 +845,10 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> =
             </View>
 
             <View style={styles.firmaBox}>
-              {data.contactoEmergencia?.firmaBase64 ? (
+              {data.contactoEmergencia?.firmaBase64 && (
                 <Image src={data.contactoEmergencia.firmaBase64} style={styles.firmaImagen} />
-              ) : (
-                <View style={styles.firmaLinea} />
               )}
+              <View style={styles.firmaLinea} />
               <Text style={styles.firmaLabel}>Firma del padre o tutor del participante menor de edad</Text>
               <Text style={styles.firmaSubLabel}>
                 <Text style={styles.firmaSubLabelBold}>Nombres y Apellidos: </Text>
@@ -863,9 +867,11 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> =
         </View>
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-        </View>
+        {showPageNumber && (
+          <View style={styles.footer} fixed>
+            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
+          </View>
+        )}
       </Page>
     </>
   );
@@ -888,7 +894,7 @@ interface HistoriaMedicaConsolidadoTemplateProps {
 export const HistoriaMedicaConsolidadoTemplate: React.FC<HistoriaMedicaConsolidadoTemplateProps> = ({ datas }) => (
   <Document>
     {datas.map((data, index) => (
-      <HistoriaMedicaPages data={data} key={data.scoutId || index} />
+      <HistoriaMedicaPages data={data} showPageNumber={false} key={data.scoutId || index} />
     ))}
   </Document>
 );

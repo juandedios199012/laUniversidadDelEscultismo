@@ -465,9 +465,12 @@ export async function getHistoriaMedicaData(
     // Familiares del scout (ya vienen en la respuesta del RPC)
     const familiares = scoutData?.familiares || [];
 
-    // Tomar primer familiar como contacto emergencia, segundo como alternativo
-    const contactoEmergencia = familiares[0];
-    const contactoAlternativo = familiares[1];
+    // Familiar marcado como "Apoderado Legal" (mismo criterio que el reporte
+    // de Autorización del Padre o Apoderado); si ninguno lo está, se usa el
+    // primero como respaldo. Este es quien firma como "padre o tutor".
+    const apoderadoLegal = familiares.find((f: any) => f.es_apoderado);
+    const contactoEmergencia = apoderadoLegal || familiares[0];
+    const contactoAlternativo = familiares.find((f: any) => f !== contactoEmergencia) || familiares[1];
 
     // Firma del contacto de emergencia, si la subió en su registro de familiar
     const firmaContactoEmergencia = contactoEmergencia?.id
