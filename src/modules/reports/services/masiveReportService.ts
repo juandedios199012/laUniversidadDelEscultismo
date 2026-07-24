@@ -170,6 +170,50 @@ export async function getAllScoutsForMasiveDNGI03(ramaFilter?: string, scoutId?:
 }
 
 /**
+ * Convierte una fila de `api_listar_scouts_para_reportes` en el shape que
+ * consume `DniCollectionTemplate`, incluyendo la búsqueda de sus imágenes
+ * de DNI (anverso/reverso). Compartido entre la carga "por rama" y la
+ * carga "por selección manual de personas".
+ */
+async function mapScoutToDniPersonData(scout: any): Promise<DniPersonData> {
+  const personaData = scout.persona || {};
+
+  let dniAnversoUrl: string | undefined;
+  let dniReversoUrl: string | undefined;
+
+  try {
+    const dniUrls = await scoutDocumentsService.getIdentityDocumentsForPdf('scout', scout.id);
+    dniAnversoUrl = dniUrls.anverso;
+    dniReversoUrl = dniUrls.reverso;
+  } catch (err) {
+    console.warn(`Error obteniendo DNI para scout ${scout.id}:`, err);
+  }
+
+  return {
+    id: scout.id,
+    nombres: personaData.nombres || '',
+    apellidos: personaData.apellidos || '',
+    tipoDocumento: personaData.tipo_documento || '',
+    numeroDocumento: personaData.numero_documento || '',
+    rama: scout.rama_actual || '',
+    codigoScout: personaData.codigo_asociado || '',
+    dniAnversoUrl,
+    dniReversoUrl,
+  };
+}
+
+/** Alerta de tamaño estimado del PDF (las imágenes de DNI pueden ser grandes). */
+function buildDniSizeAlert(personas: DniPersonData[]): { showAlert: boolean; alertMessage: string } {
+  const personasConDni = personas.filter(p => p.dniAnversoUrl || p.dniReversoUrl);
+  const estimatedSize = personasConDni.length * 150 * 1024; // ~150KB por persona con 2 imágenes
+  const showAlert = estimatedSize > MAX_FILE_SIZE_BYTES;
+  const alertMessage = showAlert
+    ? `El archivo puede superar los ${MAX_FILE_SIZE_KB}KB (${personasConDni.length} personas con DNI cargado). Se generará de todas formas.`
+    : '';
+  return { showAlert, alertMessage };
+}
+
+/**
  * Obtiene todos los scouts con sus DNI para el reporte de DNI de scouts
  * @param ramaFilter - Filtro opcional por rama (ej: 'LOBATOS', 'SCOUTS', etc.)
  */
@@ -193,48 +237,56 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
       return { personas: [], showAlert: false, alertMessage: '' };
     }
 
-    // Obtener DNI de cada scout
-    const personas: DniPersonData[] = await Promise.all(
-      scoutsData.map(async (scout: any) => {
-        const personaData = scout.persona || {};
-        
-        // Obtener URLs de DNI
-        let dniAnversoUrl: string | undefined;
-        let dniReversoUrl: string | undefined;
-        
-        try {
-          const dniUrls = await scoutDocumentsService.getIdentityDocumentsForPdf('scout', scout.id);
-          dniAnversoUrl = dniUrls.anverso;
-          dniReversoUrl = dniUrls.reverso;
-        } catch (err) {
-          console.warn(`Error obteniendo DNI para scout ${scout.id}:`, err);
-        }
-
-        return {
-          id: scout.id,
-          nombres: personaData.nombres || '',
-          apellidos: personaData.apellidos || '',
-          tipoDocumento: personaData.tipo_documento || '',
-          numeroDocumento: personaData.numero_documento || '',
-          rama: scout.rama_actual || '',
-          codigoScout: personaData.codigo_asociado || '',
-          dniAnversoUrl,
-          dniReversoUrl,
-        };
-      })
-    );
-
-    // Calcular tamaño estimado (las imágenes pueden ser grandes)
-    const personasConDni = personas.filter(p => p.dniAnversoUrl || p.dniReversoUrl);
-    const estimatedSize = personasConDni.length * 150 * 1024; // ~150KB por persona con 2 imágenes
-    const showAlert = estimatedSize > MAX_FILE_SIZE_BYTES;
-    const alertMessage = showAlert 
-      ? `El archivo puede superar los ${MAX_FILE_SIZE_KB}KB (${personasConDni.length} personas con DNI cargado). Se generará de todas formas.`
-      : '';
+    const personas: DniPersonData[] = await Promise.all(scoutsData.map(mapScoutToDniPersonData));
+    const { showAlert, alertMessage } = buildDniSizeAlert(personas);
 
     return { personas, showAlert, alertMessage };
   } catch (error) {
     console.error('Error obteniendo scouts con DNI:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el DNI de un conjunto puntual de scouts elegidos manualmente
+ * (para consolidar varios en un solo PDF), en vez de toda una rama.
+ * @param scoutIds - IDs de scout (no de persona) a incluir
+ */
+export async function getScoutsWithDniByIds(scoutIds: string[]): Promise<{
+  personas: DniPersonData[];
+  showAlert: boolean;
+  alertMessage: string;
+}> {
+  try {
+    if (scoutIds.length === 0) {
+      return { personas: [], showAlert: false, alertMessage: '' };
+    }
+
+    const resultados = await Promise.all(
+      scoutIds.map(async (scoutId) => {
+        const { data, error } = await supabase.rpc(
+          'api_listar_scouts_para_reportes',
+          { p_rama: null, p_estado: 'ACTIVO', p_scout_id: scoutId }
+        );
+        if (error) {
+          console.warn(`Error obteniendo scout ${scoutId} para DNI:`, error);
+          return null;
+        }
+        return data?.[0] ?? null;
+      })
+    );
+
+    const scoutsData = resultados.filter((scout): scout is NonNullable<typeof scout> => scout !== null);
+    if (scoutsData.length === 0) {
+      return { personas: [], showAlert: false, alertMessage: '' };
+    }
+
+    const personas: DniPersonData[] = await Promise.all(scoutsData.map(mapScoutToDniPersonData));
+    const { showAlert, alertMessage } = buildDniSizeAlert(personas);
+
+    return { personas, showAlert, alertMessage };
+  } catch (error) {
+    console.error('Error obteniendo scouts con DNI por selección manual:', error);
     throw error;
   }
 }

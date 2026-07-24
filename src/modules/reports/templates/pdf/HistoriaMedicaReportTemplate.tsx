@@ -87,10 +87,13 @@ const styles = StyleSheet.create({
   },
 
   // Títulos de cuadro: negrita, cursiva, negro (sin subrayado)
+  // marginTop para que no queden pegados/encima de la franja roja de la
+  // marca de agua cuando el título es lo primero que aparece en la página.
   sectionTitleBoldItalic: {
     fontSize: 10,
     fontFamily: 'Helvetica-BoldOblique',
     color: '#000000',
+    marginTop: 15,
     marginBottom: 8,
   },
 
@@ -175,18 +178,6 @@ const styles = StyleSheet.create({
     width: 120,
     padding: 5,
     fontSize: 8,
-  },
-
-  // FOOTER (solo numero de pagina, sin texto de ANEXO)
-  footer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 30,
-    right: 30,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    fontSize: 8,
-    color: '#666',
   },
 
   // AVISO CONFIDENCIAL
@@ -296,9 +287,8 @@ interface HistoriaMedicaReportTemplateProps {
  * PDF consolidado (varias personas, 3 páginas cada una, en un mismo
  * `<Document>`).
  */
-export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; showPageNumber?: boolean }> = ({
+export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData }> = ({
   data,
-  showPageNumber = true,
 }) => {
   const esMayorDeEdad = data.edad >= 18;
 
@@ -584,12 +574,6 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
           </View>
         </View>
 
-        {/* Footer */}
-        {showPageNumber && (
-          <View style={styles.footer} fixed>
-            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-          </View>
-        )}
       </Page>
 
       {/* PÁGINA 2: Alergias y Medicamentos */}
@@ -730,12 +714,6 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
           </Text>
         </View>
 
-        {/* Footer */}
-        {showPageNumber && (
-          <View style={styles.footer} fixed>
-            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-          </View>
-        )}
       </Page>
 
       {/* PÁGINA 3: Vacunas y Firmas */}
@@ -851,12 +829,6 @@ export const HistoriaMedicaPages: React.FC<{ data: HistoriaMedicaReportData; sho
           </View>
         </View>
 
-        {/* Footer */}
-        {showPageNumber && (
-          <View style={styles.footer} fixed>
-            <Text render={({ pageNumber, totalPages }) => `Pagina ${pageNumber} de ${totalPages}`} />
-          </View>
-        )}
       </Page>
     </>
   );
@@ -879,7 +851,7 @@ interface HistoriaMedicaConsolidadoTemplateProps {
 export const HistoriaMedicaConsolidadoTemplate: React.FC<HistoriaMedicaConsolidadoTemplateProps> = ({ datas }) => (
   <Document>
     {datas.map((data, index) => (
-      <HistoriaMedicaPages data={data} showPageNumber={false} key={data.scoutId || index} />
+      <HistoriaMedicaPages data={data} key={data.scoutId || index} />
     ))}
   </Document>
 );

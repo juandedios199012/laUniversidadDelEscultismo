@@ -42,7 +42,7 @@ import {
   getRankingPatrullas,
 } from '../services/reportDataService';
 // Imports para reportes masivos
-import DniCollectionTemplate from '../templates/pdf/DniCollectionTemplate';
+import DniCollectionTemplate, { DniPersonData } from '../templates/pdf/DniCollectionTemplate';
 import DniScoutApoderadoTemplate from '../templates/pdf/DniScoutApoderadoTemplate';
 import { createDNGI03WordDocument } from '../templates/word/DNGI03WordTemplate';
 import AttendanceMatrixTemplate from '../templates/pdf/AttendanceMatrixTemplate';
@@ -58,6 +58,7 @@ import { exportarAutorizacionApoderadoPDF, exportarAutorizacionApoderadoDOCX, ex
 import {
   getAllScoutsForMasiveDNGI03,
   getAllScoutsWithDni,
+  getScoutsWithDniByIds,
   getScoutsWithApoderadoDni,
   generateMasiveReportMetadata,
   getAvailableRamas,
@@ -95,6 +96,11 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [ramaFilter, setRamaFilter] = useState<string>('TODAS');
   const [availableRamas, setAvailableRamas] = useState<string[]>([]);
   const [selectedMassiveScoutId, setSelectedMassiveScoutId] = useState<string>('');
+
+  // Modo manual del reporte "DNI de Scouts": elegir scouts puntuales y
+  // generar UN solo PDF consolidado, en vez de toda una rama
+  const [dniScoutsModo, setDniScoutsModo] = useState<'RAMA' | 'MANUAL'>('RAMA');
+  const [dniScoutsManualSeleccionados, setDniScoutsManualSeleccionados] = useState<PersonaResult[]>([]);
 
   // Estado para el filtro de Matriz de Asistencia
   const [matrixMode, setMatrixMode] = useState<'mes' | 'trimestre'>('mes');
@@ -1529,8 +1535,49 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
   const exportDniScouts = async (format: ExportFormat): Promise<ReportGenerationResult> => {
     try {
-      const { personas, showAlert, alertMessage } = await getAllScoutsWithDni(ramaFilter);
-      
+      let personas: DniPersonData[];
+      let showAlert: boolean;
+      let alertMessage: string;
+      let fileNameBase: string;
+
+      if (dniScoutsModo === 'MANUAL') {
+        if (dniScoutsManualSeleccionados.length === 0) {
+          return { status: 'error' as any, fileName: 'error', error: 'Selecciona al menos un scout para generar el PDF' };
+        }
+
+        const scoutIds: string[] = [];
+        const omitidos: string[] = [];
+        for (const persona of dniScoutsManualSeleccionados) {
+          const scoutId = persona.es_scout?.scout_id;
+          if (scoutId) {
+            scoutIds.push(scoutId);
+          } else {
+            omitidos.push(`${persona.nombres} ${persona.apellidos}`);
+          }
+        }
+
+        if (omitidos.length > 0) {
+          info(`Se omitieron ${omitidos.length} persona(s) sin registro de Scout: ${omitidos.join(', ')}`);
+        }
+
+        if (scoutIds.length === 0) {
+          return { status: 'error' as any, fileName: 'error', error: 'Ninguna de las personas seleccionadas está registrada como Scout' };
+        }
+
+        const result = await getScoutsWithDniByIds(scoutIds);
+        personas = result.personas;
+        showAlert = result.showAlert;
+        alertMessage = result.alertMessage;
+        fileNameBase = `DNI_Scouts_seleccion_${personas.length}`;
+      } else {
+        const result = await getAllScoutsWithDni(ramaFilter);
+        personas = result.personas;
+        showAlert = result.showAlert;
+        alertMessage = result.alertMessage;
+        const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
+        fileNameBase = `DNI_Scouts${ramaSuffix}`;
+      }
+
       if (personas.length === 0) {
         showError("No hay scouts con documentos de identidad cargados");
         return { status: 'error' as any, fileName: 'error', error: 'No hay datos' };
@@ -1541,8 +1588,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
         info(alertMessage || "El archivo supera el límite recomendado de 600KB. Se generará de todas formas.");
       }
 
-      const ramaSuffix = ramaFilter !== 'TODAS' ? `_${ramaFilter}` : '';
-      const fileName = `DNI_Scouts${ramaSuffix}_${new Date().toISOString().split('T')[0]}`;
+      const fileName = `${fileNameBase}_${new Date().toISOString().split('T')[0]}`;
       const metadata = generateMasiveReportMetadata();
       
       if (format === 'pdf') {
@@ -2035,6 +2081,79 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
             selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT ||
             selectedReportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) && (
             <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-4">
+              {/* Modo de generación (solo para DNI de Scouts) */}
+              {selectedReportType === ReportType.DNI_SCOUTS && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Modo de generación
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-sky-800">
+                      <input
+                        type="radio"
+                        checked={dniScoutsModo === 'RAMA'}
+                        onChange={() => setDniScoutsModo('RAMA')}
+                      />
+                      Por rama (todos los scouts de la rama)
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-sky-800">
+                      <input
+                        type="radio"
+                        checked={dniScoutsModo === 'MANUAL'}
+                        onChange={() => setDniScoutsModo('MANUAL')}
+                      />
+                      Varias personas elegidas (un solo PDF)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {selectedReportType === ReportType.DNI_SCOUTS && dniScoutsModo === 'MANUAL' && (
+                <div>
+                  <label className="block text-sm font-medium text-sky-800 mb-2">
+                    Scouts seleccionados ({dniScoutsManualSeleccionados.length})
+                  </label>
+                  <PersonSearchCombobox
+                    key={dniScoutsManualSeleccionados.length}
+                    placeholder="Buscar por nombre o N° documento y agregar..."
+                    onSelect={(persona) => {
+                      setDniScoutsManualSeleccionados(prev =>
+                        prev.some(p => p.persona_id === persona.persona_id) ? prev : [...prev, persona]
+                      );
+                    }}
+                    simplificarBadgeScout
+                  />
+                  {dniScoutsManualSeleccionados.length > 0 && (
+                    <ul className="mt-3 divide-y divide-sky-100 border border-sky-200 rounded-lg max-h-56 overflow-y-auto bg-white">
+                      {dniScoutsManualSeleccionados.map((persona) => (
+                        <li key={persona.persona_id} className="flex items-center justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {persona.nombres} {persona.apellidos}
+                            </p>
+                            {!persona.es_scout && (
+                              <p className="text-xs text-amber-600">No está registrada como Scout, se omitirá</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDniScoutsManualSeleccionados(prev =>
+                              prev.filter(p => p.persona_id !== persona.persona_id)
+                            )}
+                            className="shrink-0 text-xs text-red-500 hover:text-red-700"
+                          >
+                            Quitar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-sky-600 mt-2">
+                    Se generará un único PDF con los documentos de identidad de cada scout seleccionado.
+                  </p>
+                </div>
+              )}
+
               {/* Selector de tipo de persona (solo para la ficha "Persona") */}
               {selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && (
                 <div className="mb-4">
@@ -2057,8 +2176,9 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                 </div>
               )}
 
-              {/* Filtro por rama: oculto cuando es ficha Persona de dirigente/comité */}
-              {!(selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType !== 'SCOUT') && (
+              {/* Filtro por rama: oculto cuando es ficha Persona de dirigente/comité, o cuando DNI de Scouts está en modo manual */}
+              {!(selectedReportType === ReportType.DNGI03_WORD_POR_SCOUT && personaEntityType !== 'SCOUT') &&
+                !(selectedReportType === ReportType.DNI_SCOUTS && dniScoutsModo === 'MANUAL') && (
                 <>
                   <label className="block text-sm font-medium text-sky-800 mb-2">
                     Filtrar por Rama
