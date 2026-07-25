@@ -7,7 +7,8 @@ import { FileText, Users, TrendingUp, Calendar, Download, FileSpreadsheet, Award
 import { PersonSearchCombobox } from '@/components/shared/PersonSearch';
 import type { PersonaResult } from '@/services/personaService';
 import { useToast } from '@/hooks/useToast';
-import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, TableLayoutType, ImageRun } from 'docx';
+import { getTipoDocumentoLabel } from '../../../data/constants';
 import { saveAs } from 'file-saver';
 import {
   ReportType,
@@ -73,6 +74,111 @@ interface Scout {
     nombres: string;
     apellidos: string;
   };
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const b64 = base64.replace(/^data:image\/\w+;base64,/, '');
+  const binaryString = atob(b64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function detectImageType(base64: string): 'png' | 'jpg' | 'gif' | 'bmp' {
+  const normalized = (base64 || '').toLowerCase();
+  if (normalized.startsWith('data:image/jpeg') || normalized.startsWith('data:image/jpg')) return 'jpg';
+  if (normalized.startsWith('data:image/gif')) return 'gif';
+  if (normalized.startsWith('data:image/bmp')) return 'bmp';
+  return 'png';
+}
+
+const DNI_CARD_BORDER_HEX = '000000';
+const DNI_CARD_PRIMARY_HEX = '4F81BD';
+
+const dniCardBorders = () => ({
+  top: { style: BorderStyle.SINGLE, size: 4, color: DNI_CARD_BORDER_HEX },
+  bottom: { style: BorderStyle.SINGLE, size: 4, color: DNI_CARD_BORDER_HEX },
+  left: { style: BorderStyle.SINGLE, size: 4, color: DNI_CARD_BORDER_HEX },
+  right: { style: BorderStyle.SINGLE, size: 4, color: DNI_CARD_BORDER_HEX },
+});
+
+const dniCardNoBorders = () => ({
+  top: { style: BorderStyle.NONE, size: 0, color: DNI_CARD_BORDER_HEX },
+  bottom: { style: BorderStyle.NONE, size: 0, color: DNI_CARD_BORDER_HEX },
+  left: { style: BorderStyle.NONE, size: 0, color: DNI_CARD_BORDER_HEX },
+  right: { style: BorderStyle.NONE, size: 0, color: DNI_CARD_BORDER_HEX },
+});
+
+/**
+ * Tarjeta Word con los datos + anverso/reverso de una persona, con el
+ * mismo lenguaje visual (cabecera azul, imágenes lado a lado) que la
+ * tarjeta del PDF (`DniCollectionTemplate`).
+ */
+function buildDniPersonaCardDocx(persona: { nombres: string; apellidos: string; tipoDocumento?: string; numeroDocumento?: string; dniAnversoUrl?: string; dniReversoUrl?: string }): Table {
+  const imageCell = (label: string, dataUrl: string | undefined) => new TableCell({
+    width: { size: 50, type: WidthType.PERCENTAGE },
+    columnSpan: 50,
+    borders: dniCardNoBorders(),
+    margins: { top: 80, bottom: 80, left: 80, right: 80 },
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: label, bold: true, size: 14, color: '666666' })],
+        spacing: { after: 80 },
+      }),
+      dataUrl
+        ? new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new ImageRun({
+              data: base64ToUint8Array(dataUrl),
+              type: detectImageType(dataUrl),
+              transformation: { width: 250, height: 158 },
+            })],
+          })
+        : new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: 'Sin imagen', italics: true, color: '9CA3AF', size: 18 })],
+          }),
+    ],
+  });
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
+    columnWidths: new Array(100).fill(50),
+    borders: dniCardBorders(),
+    rows: [
+      new TableRow({
+        children: [new TableCell({
+          columnSpan: 100,
+          borders: dniCardNoBorders(),
+          shading: { type: ShadingType.SOLID, fill: DNI_CARD_PRIMARY_HEX, color: DNI_CARD_PRIMARY_HEX },
+          margins: { top: 100, bottom: 100, left: 120, right: 120 },
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: `${persona.nombres} ${persona.apellidos}`, bold: true, color: 'FFFFFF', size: 22 })],
+            }),
+            new Paragraph({
+              spacing: { before: 40 },
+              children: [new TextRun({
+                text: `${getTipoDocumentoLabel(persona.tipoDocumento) || 'DNI'}: ${persona.numeroDocumento || 'Sin documento'}`,
+                color: 'FFFFFF',
+                size: 16,
+              })],
+            }),
+          ],
+        })],
+      }),
+      new TableRow({
+        children: [
+          imageCell('ANVERSO (CARA FRONTAL)', persona.dniAnversoUrl),
+          imageCell('REVERSO (CARA POSTERIOR)', persona.dniReversoUrl),
+        ],
+      }),
+    ],
+  });
 }
 
 interface ReportManagerProps {
@@ -1590,36 +1696,47 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
       const fileName = `${fileNameBase}_${new Date().toISOString().split('T')[0]}`;
       const metadata = generateMasiveReportMetadata();
-      
+
+      // Re-codificar cada imagen vía <canvas> (igual que "DNI Scout + Apoderado
+      // por scout") antes de insertarla: el archivo crudo que viene del storage
+      // a veces no lo pueden leer react-pdf/Word (queda en blanco), pero al
+      // pasarlo por canvas.toDataURL se normaliza a un JPEG que sí renderiza bien.
+      const personasConImagenes = await Promise.all(
+        personas.map(async (persona) => ({
+          ...persona,
+          dniAnversoUrl: persona.dniAnversoUrl
+            ? await compressDataUrlImage(persona.dniAnversoUrl, 980, 0.72)
+            : persona.dniAnversoUrl,
+          dniReversoUrl: persona.dniReversoUrl
+            ? await compressDataUrlImage(persona.dniReversoUrl, 980, 0.72)
+            : persona.dniReversoUrl,
+        }))
+      );
+
       if (format === 'pdf') {
         const result = await generateAndDownloadPDF(
-          <DniCollectionTemplate personas={personas} tipo="scouts" metadata={metadata} />,
+          <DniCollectionTemplate personas={personasConImagenes} tipo="scouts" metadata={metadata} />,
           fileName
         );
         return { status: result.status, fileName: result.fileName };
       } else {
-        // Para Word, crear documento con información
+        // Word: misma tarjeta visual que el PDF (cabecera azul + anverso/reverso embebidos)
         const doc = new Document({
           sections: [{
             properties: {},
             children: [
               new Paragraph({
-                children: [new TextRun({ text: 'DNI de Scouts', bold: true, size: 32 })],
+                children: [new TextRun({ text: 'Documentos de Identidad - Scouts', bold: true, size: 32 })],
                 alignment: AlignmentType.CENTER,
               }),
-              new Paragraph({ children: [new TextRun({ text: `Generado: ${new Date().toLocaleDateString('es-PE')}`, size: 20 })] }),
-              new Paragraph({ children: [] }),
-              ...personas.flatMap(persona => [
-                new Paragraph({
-                  children: [new TextRun({ text: `${persona.nombres} ${persona.apellidos}`, bold: true, size: 24 })],
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `DNI Anverso: ${persona.dniAnversoUrl ? 'Cargado' : 'No disponible'}` })],
-                }),
-                new Paragraph({
-                  children: [new TextRun({ text: `DNI Reverso: ${persona.dniReversoUrl ? 'Cargado' : 'No disponible'}` })],
-                }),
-                new Paragraph({ children: [] }),
+              new Paragraph({
+                children: [new TextRun({ text: `${metadata.organizacion} • ${metadata.fechaGeneracion} • Total: ${personasConImagenes.length} scouts`, size: 18, color: '666666' })],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 },
+              }),
+              ...personasConImagenes.flatMap((persona) => [
+                buildDniPersonaCardDocx(persona),
+                new Paragraph({ text: '', spacing: { after: 200 } }),
               ]),
             ],
           }],
