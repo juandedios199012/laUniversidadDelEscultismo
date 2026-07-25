@@ -214,6 +214,24 @@ function buildDniSizeAlert(personas: DniPersonData[]): { showAlert: boolean; ale
 }
 
 /**
+ * Llama a `api_listar_scouts_para_reportes` sin acotar por `p_scout_id`
+ * (misma llamada que ya usa "DNI de Scouts > por rama", incluida la
+ * variante "Todas las ramas") y devuelve las filas crudas del RPC.
+ */
+async function fetchScoutRowsRaw(ramaFilter?: string): Promise<any[]> {
+  const { data, error } = await supabase.rpc(
+    'api_listar_scouts_para_reportes',
+    {
+      p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
+      p_estado: 'ACTIVO'
+    }
+  );
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
  * Obtiene todos los scouts con sus DNI para el reporte de DNI de scouts
  * @param ramaFilter - Filtro opcional por rama (ej: 'LOBATOS', 'SCOUTS', etc.)
  */
@@ -223,17 +241,8 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
   alertMessage: string;
 }> {
   try {
-    // Obtener scouts activos con datos de persona (vía RPC)
-    const { data: scoutsData, error } = await supabase.rpc(
-      'api_listar_scouts_para_reportes',
-      {
-        p_rama: (ramaFilter && ramaFilter !== 'TODAS') ? ramaFilter : null,
-        p_estado: 'ACTIVO'
-      }
-    );
-
-    if (error) throw error;
-    if (!scoutsData || scoutsData.length === 0) {
+    const scoutsData = await fetchScoutRowsRaw(ramaFilter);
+    if (scoutsData.length === 0) {
       return { personas: [], showAlert: false, alertMessage: '' };
     }
 
@@ -250,6 +259,11 @@ export async function getAllScoutsWithDni(ramaFilter?: string): Promise<{
 /**
  * Obtiene el DNI de un conjunto puntual de scouts elegidos manualmente
  * (para consolidar varios en un solo PDF), en vez de toda una rama.
+ *
+ * Reutiliza la MISMA llamada al RPC que "por rama" (sin `p_scout_id`, que
+ * no está probado con este flujo) y filtra el resultado en el cliente,
+ * para garantizar el mismo comportamiento que ya funciona correctamente.
+ *
  * @param scoutIds - IDs de scout (no de persona) a incluir
  */
 export async function getScoutsWithDniByIds(scoutIds: string[]): Promise<{
@@ -262,21 +276,10 @@ export async function getScoutsWithDniByIds(scoutIds: string[]): Promise<{
       return { personas: [], showAlert: false, alertMessage: '' };
     }
 
-    const resultados = await Promise.all(
-      scoutIds.map(async (scoutId) => {
-        const { data, error } = await supabase.rpc(
-          'api_listar_scouts_para_reportes',
-          { p_rama: null, p_estado: 'ACTIVO', p_scout_id: scoutId }
-        );
-        if (error) {
-          console.warn(`Error obteniendo scout ${scoutId} para DNI:`, error);
-          return null;
-        }
-        return data?.[0] ?? null;
-      })
-    );
+    const idSet = new Set(scoutIds);
+    const todosLosScouts = await fetchScoutRowsRaw();
+    const scoutsData = todosLosScouts.filter((s: any) => idSet.has(s.id));
 
-    const scoutsData = resultados.filter((scout): scout is NonNullable<typeof scout> => scout !== null);
     if (scoutsData.length === 0) {
       return { personas: [], showAlert: false, alertMessage: '' };
     }
