@@ -15,6 +15,7 @@ import {
   Clock
 } from 'lucide-react';
 import ScoutService, { ReporteCambiosRama, CambioRamaReciente } from '../../services/scoutService';
+import { calculateAge } from '../../lib/utils';
 
 // Interfaces para los datos de reportes
 interface EstadisticasGenerales {
@@ -704,7 +705,7 @@ export default function ReportsDashboard() {
                   {filteredScouts.map((scout) => {
                     const progreso = calculateProgression(scout);
                     const siguienteEtapa = getSiguienteEtapa(scout.rama, progreso);
-                    const edad = new Date().getFullYear() - new Date(scout.fecha_nacimiento).getFullYear();
+                    const edad = calculateAge(scout.fecha_nacimiento);
                     const campamentos = scout.logros_scout?.filter(l => l.logros_sistema.categoria === 'campamento').length || 0;
                     const servicios = scout.logros_scout?.filter(l => l.logros_sistema.categoria === 'servicio').length || 0;
                     
@@ -772,7 +773,7 @@ export default function ReportsDashboard() {
                         </div>
                         <div>
                           <h3 className="text-2xl font-bold text-white">{selectedScout.nombre} {selectedScout.apellido}</h3>
-                          <p className="text-white/60">{selectedScout.patrullas?.nombre} • {new Date().getFullYear() - new Date(selectedScout.fecha_nacimiento).getFullYear()} años</p>
+                          <p className="text-white/60">{selectedScout.patrullas?.nombre} • {calculateAge(selectedScout.fecha_nacimiento)} años</p>
                           <p className="text-[#4A90E2] text-sm">Ingreso: {new Date(selectedScout.fecha_ingreso).toLocaleDateString()}</p>
                         </div>
                       </div>

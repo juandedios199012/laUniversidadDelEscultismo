@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import AsistenciaService from '../../services/asistenciaService';
+import { parseLocalDate } from '../../lib/utils';
 
 interface ScoutAsistencia {
   id: string;
@@ -140,12 +141,12 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
   // Helper para determinar si scout es nuevo (menos de 30 días)
   const esScoutNuevo = (fechaIngreso: string | null) => {
     if (!fechaIngreso) return false;
-    const dias = Math.floor((new Date().getTime() - new Date(fechaIngreso).getTime()) / (1000 * 60 * 60 * 24));
+    const dias = Math.floor((new Date().getTime() - parseLocalDate(fechaIngreso).getTime()) / (1000 * 60 * 60 * 24));
     return dias <= 30;
   };
 
   const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+    return parseLocalDate(fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (

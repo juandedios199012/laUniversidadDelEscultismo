@@ -9,6 +9,7 @@ import { getScoutData } from '../../modules/reports/services/reportDataService';
 import { generateReportMetadata } from '../../modules/reports/services/pdfService';
 import DNGI03Template from '../../modules/reports/templates/pdf/DNGI03Template';
 import { downloadDNGI03Word } from '../../modules/reports/templates/word/DNGI03WordTemplate';
+import { calculateAge } from '../../lib/utils';
 
 interface ListaScoutsProps {
   onVerScout?: (scout: Scout) => void;
@@ -247,16 +248,7 @@ export const ListaScouts: React.FC<ListaScoutsProps> = ({
     onEditarScout?.(scout);
   };
 
-  const calcularEdad = (fechaNacimiento: string) => {
-    const hoy = new Date();
-    const fechaNac = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - fechaNac.getFullYear();
-    const mes = hoy.getMonth() - fechaNac.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
-      edad--;
-    }
-    return edad;
-  };
+  const calcularEdad = (fechaNacimiento: string) => calculateAge(fechaNacimiento);
 
   if (loading) {
     return (

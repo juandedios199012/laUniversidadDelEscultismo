@@ -3,6 +3,7 @@
 // ================================================================
 
 import { ScoutDocumentData, GroupDocumentData, ActivityDocumentData } from '../../domain/entities/DocumentData';
+import { parseLocalDate } from '../../lib/utils';
 
 export interface DocumentDataMapper {
   getScoutData(scoutId: string): Promise<ScoutDocumentData>;
@@ -167,7 +168,7 @@ export class DocumentDataMapperImpl implements DocumentDataMapper {
 
   private calculateAge(birthDate: string): number {
     const today = new Date();
-    const birth = new Date(birthDate);
+    const birth = parseLocalDate(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     

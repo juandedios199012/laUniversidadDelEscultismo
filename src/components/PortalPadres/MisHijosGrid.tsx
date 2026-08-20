@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
 import { User, Calendar, Hash, Shield, ChevronRight } from 'lucide-react';
+import { calculateAge } from '../../lib/utils';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -8,12 +9,7 @@ import { User, Calendar, Hash, Shield, ChevronRight } from 'lucide-react';
 
 function calcularEdad(fechaNacimiento: string | null): string {
   if (!fechaNacimiento) return '—';
-  const hoy = new Date();
-  const nac = new Date(fechaNacimiento);
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const m = hoy.getMonth() - nac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-  return `${edad} años`;
+  return `${calculateAge(fechaNacimiento)} años`;
 }
 
 const RAMA_COLORS: Record<string, string> = {

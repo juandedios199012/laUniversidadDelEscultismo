@@ -8,6 +8,7 @@ import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Dirigente, CARGOS_LABELS, TIPOS_MEMBRESIA_LABELS } from '../../types/dirigente';
 import DNGI02Template from '../../modules/reports/templates/pdf/DNGI02Template';
+import { parseLocalDate } from '../../lib/utils';
 
 // ============================================================================
 // FUNCIÓN PRINCIPAL - Genera PDF formato oficial DNGI-02
@@ -60,7 +61,7 @@ const LOGO_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAACACAYAA
 export async function generarWordDirigente(dirigente: Dirigente): Promise<Blob> {
   const fechaActual = new Date().toLocaleDateString('es-PE');
   const sexoTextoWord = dirigente.persona.sexo === 'M' ? 'M' : dirigente.persona.sexo === 'F' ? 'F' : '';
-  const fechaNacWord = dirigente.persona.fecha_nacimiento ? new Date(dirigente.persona.fecha_nacimiento).toLocaleDateString('es-PE') : '';
+  const fechaNacWord = dirigente.persona.fecha_nacimiento ? parseLocalDate(dirigente.persona.fecha_nacimiento).toLocaleDateString('es-PE') : '';
   const cargoLabel = CARGOS_LABELS[dirigente.cargo as keyof typeof CARGOS_LABELS] || dirigente.cargo || '';
   const membresiaLabel = TIPOS_MEMBRESIA_LABELS[dirigente.tipo_membresia as keyof typeof TIPOS_MEMBRESIA_LABELS] || 'Registro Anual Regular';
 

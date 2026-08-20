@@ -3,6 +3,7 @@ import { HijoInfo } from '../../services/portalPadresService';
 import { ArrowLeft, User, Calendar, Hash, Info, TrendingUp, Pencil } from 'lucide-react';
 import DetalleHijoProgresion from './DetalleHijoProgresion';
 import EditarPerfilHijoDialog from './EditarPerfilHijoDialog';
+import { calculateAge } from '../../lib/utils';
 
 type TabDetalle = 'basica' | 'progresion';
 
@@ -12,12 +13,7 @@ type TabDetalle = 'basica' | 'progresion';
 
 function calcularEdad(fechaNacimiento: string | null): string {
   if (!fechaNacimiento) return '—';
-  const hoy = new Date();
-  const nac = new Date(fechaNacimiento);
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const m = hoy.getMonth() - nac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-  return `${edad} años`;
+  return `${calculateAge(fechaNacimiento)} años`;
 }
 
 function formatFecha(fecha: string | null): string {

@@ -23,6 +23,7 @@
 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { parseLocalDate } from '../../../lib/utils';
 
 // ============================================
 // Types
@@ -218,7 +219,7 @@ function formatDate(dateStr: string | undefined): string {
 function calculateAge(birthDate: string | undefined): number {
   if (!birthDate) return 0;
   const today = new Date();
-  const birth = new Date(birthDate);
+  const birth = parseLocalDate(birthDate);
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {

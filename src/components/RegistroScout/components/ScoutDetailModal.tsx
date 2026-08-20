@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import ScoutService, { HistorialRamaItem } from '@/services/scoutService';
 import type { Scout, FamiliarScout } from '@/lib/supabase';
+import { calculateAge, formatDate } from '@/lib/utils';
 
 interface ScoutDetailModalProps {
   scout: Scout | null;
@@ -39,24 +40,11 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
   const [loading, setLoading] = useState(false);
   const [scoutCompleto, setScoutCompleto] = useState<Scout | null>(null);
 
-  const calcularEdad = (fechaNacimiento: string) => {
-    const hoy = new Date();
-    const fechaNac = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - fechaNac.getFullYear();
-    const mes = hoy.getMonth() - fechaNac.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
-      edad--;
-    }
-    return edad;
-  };
+  const calcularEdad = (fechaNacimiento: string) => calculateAge(fechaNacimiento);
 
   const formatearFecha = (fecha: string) => {
     if (!fecha) return 'No registrada';
-    return new Date(fecha).toLocaleDateString('es-PE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDate(fecha);
   };
 
   const getRamaBadgeColor = (rama: string) => {

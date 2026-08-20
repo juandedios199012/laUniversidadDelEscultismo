@@ -14,6 +14,7 @@ import {
 } from '@react-pdf/renderer';
 import { Dirigente, CARGOS_LABELS, TIPOS_MEMBRESIA_LABELS } from '../../../../types/dirigente';
 import { getTipoDocumentoLabel } from '../../../../data/constants';
+import { parseLocalDate } from '../../../../lib/utils';
 
 // Estilos del documento
 const styles = StyleSheet.create({
@@ -225,8 +226,8 @@ export const DNGI02Template: React.FC<DNGI02TemplateProps> = ({
 }) => {
   const fechaActual = metadata.fechaGeneracion || new Date().toLocaleDateString('es-PE');
   const sexoTexto = dirigente.persona.sexo === 'M' ? 'M' : dirigente.persona.sexo === 'F' ? 'F' : '';
-  const fechaNac = dirigente.persona.fecha_nacimiento 
-    ? new Date(dirigente.persona.fecha_nacimiento).toLocaleDateString('es-PE') 
+  const fechaNac = dirigente.persona.fecha_nacimiento
+    ? parseLocalDate(dirigente.persona.fecha_nacimiento).toLocaleDateString('es-PE')
     : '';
   const cargoLabel = CARGOS_LABELS[dirigente.cargo as keyof typeof CARGOS_LABELS] || dirigente.cargo || '';
   const membresiaLabel = TIPOS_MEMBRESIA_LABELS[dirigente.tipo_membresia as keyof typeof TIPOS_MEMBRESIA_LABELS] || 'Registro Anual Regular';

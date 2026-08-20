@@ -17,6 +17,7 @@ import {
 import ScoutService from '../../services/scoutService';
 import LocationPickerMobile from './LocationPickerMobile';
 import { supabase } from '../../lib/supabase';
+import { parseLocalDate } from '../../lib/utils';
 
 // ============================================================================
 // MINI MAP PREVIEW COMPONENT (Leaflet read-only)
@@ -1343,7 +1344,7 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
                   </p>
                   <div className="flex gap-4 text-sm text-gray-600 mt-1">
                     <span>{formData.sexo === 'MASCULINO' ? '👦' : '👧'} {formData.sexo}</span>
-                    <span>🎂 {formData.fecha_nacimiento ? new Date(formData.fecha_nacimiento).toLocaleDateString('es-PE') : '-'}</span>
+                    <span>🎂 {formData.fecha_nacimiento ? parseLocalDate(formData.fecha_nacimiento).toLocaleDateString('es-PE') : '-'}</span>
                   </div>
                   {formData.numero_documento && (
                     <p className="text-sm text-gray-600 mt-1">

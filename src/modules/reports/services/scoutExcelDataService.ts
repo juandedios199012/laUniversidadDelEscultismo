@@ -13,6 +13,7 @@
 
 import { supabase } from '../../../lib/supabase';
 import { ScoutExcelData, FamiliarExcelData } from './excelService';
+import { parseLocalDate } from '../../../lib/utils';
 
 /**
  * Obtiene todos los scouts con sus datos completos para Excel
@@ -223,7 +224,7 @@ function calculateAge(birthDate: string | undefined): number {
   if (!birthDate) return 0;
   try {
     const today = new Date();
-    const birth = new Date(birthDate);
+    const birth = parseLocalDate(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {

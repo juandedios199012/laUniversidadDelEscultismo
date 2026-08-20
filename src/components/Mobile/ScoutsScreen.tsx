@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Phone, MapPin, Award, UserPlus, Edit3 } from 'lucide-react';
+import { Users, Search, Phone, MapPin, Award, UserPlus, Edit3, Cake } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import RegistroScoutRapido from './RegistroScoutRapido';
 import EditarScoutMobile from './EditarScoutMobile';
+import { calculateAge, formatDateShort } from '@/lib/utils';
+import {
+  isBirthdayInCurrentWeek,
+  isBirthdayInCurrentMonth,
+  sortByUpcomingBirthday,
+  getDaysUntilNextBirthday,
+  formatDaysUntilBirthday,
+} from '@/lib/birthdayUtils';
+
+type VistaScouts = 'lista' | 'cumpleanos';
+type FiltroCumpleanos = 'semana' | 'mes' | 'todos';
 
 interface Scout {
   id: string;
@@ -23,6 +34,8 @@ export default function ScoutsScreen() {
   const [filtrados, setFiltrados] = useState<Scout[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [ramaFiltro, setRamaFiltro] = useState('');
+  const [vista, setVista] = useState<VistaScouts>('lista');
+  const [filtroCumpleanos, setFiltroCumpleanos] = useState<FiltroCumpleanos>('semana');
   const [loading, setLoading] = useState(false);
   const [scoutSeleccionado, setScoutSeleccionado] = useState<Scout | null>(null);
   const [mostrarRegistro, setMostrarRegistro] = useState(false);
@@ -36,7 +49,7 @@ export default function ScoutsScreen() {
 
   useEffect(() => {
     filtrarScouts();
-  }, [busqueda, ramaFiltro, scouts]);
+  }, [busqueda, ramaFiltro, scouts, vista, filtroCumpleanos]);
 
   const cargarScouts = async () => {
     setLoading(true);
@@ -63,11 +76,22 @@ export default function ScoutsScreen() {
     // Filtrar por búsqueda
     if (busqueda.trim()) {
       const termino = busqueda.toLowerCase();
-      resultado = resultado.filter(s => 
+      resultado = resultado.filter(s =>
         (s.nombres || '').toLowerCase().includes(termino) ||
         (s.apellidos || '').toLowerCase().includes(termino) ||
         (s.codigo_asociado || '').toLowerCase().includes(termino)
       );
+    }
+
+    // Vista de cumpleaños: filtrar por periodo y ordenar por proximidad
+    if (vista === 'cumpleanos') {
+      resultado = resultado.filter(s => {
+        if (!s.fecha_nacimiento) return false;
+        if (filtroCumpleanos === 'semana') return isBirthdayInCurrentWeek(s.fecha_nacimiento);
+        if (filtroCumpleanos === 'mes') return isBirthdayInCurrentMonth(s.fecha_nacimiento);
+        return true;
+      });
+      resultado = sortByUpcomingBirthday(resultado, s => s.fecha_nacimiento);
     }
 
     setFiltrados(resultado);
@@ -75,14 +99,7 @@ export default function ScoutsScreen() {
 
   const calcularEdad = (fechaNacimiento?: string) => {
     if (!fechaNacimiento) return null;
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return edad;
+    return calculateAge(fechaNacimiento);
   };
 
   const getRamaBadgeColor = (rama: string) => {
@@ -115,6 +132,51 @@ export default function ScoutsScreen() {
         <p className="text-blue-50">Lista de scouts activos</p>
       </div>
 
+      {/* Toggle Vista: Lista / Cumpleaños */}
+      <div className="bg-white rounded-xl p-1 shadow flex gap-1">
+        <button
+          onClick={() => setVista('lista')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+            vista === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-500'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Lista
+        </button>
+        <button
+          onClick={() => setVista('cumpleanos')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+            vista === 'cumpleanos' ? 'bg-blue-600 text-white' : 'text-gray-500'
+          }`}
+        >
+          <Cake className="w-4 h-4" />
+          Cumpleaños
+        </button>
+      </div>
+
+      {/* Chips de periodo (solo en vista Cumpleaños) */}
+      {vista === 'cumpleanos' && (
+        <div className="flex gap-2">
+          {([
+            { id: 'semana' as const, label: 'Esta semana' },
+            { id: 'mes' as const, label: 'Este mes' },
+            { id: 'todos' as const, label: 'Todos' },
+          ]).map(chip => (
+            <button
+              key={chip.id}
+              onClick={() => setFiltroCumpleanos(chip.id)}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                filtroCumpleanos === chip.id
+                  ? 'bg-pink-100 text-pink-700 border-pink-300'
+                  : 'bg-white text-gray-500 border-gray-200'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Búsqueda */}
       <div className="bg-white rounded-xl p-4 shadow">
         <div className="relative mb-3">
@@ -142,7 +204,9 @@ export default function ScoutsScreen() {
       {/* Contador */}
       <div className="bg-white rounded-xl p-4 shadow">
         <div className="flex items-center justify-between">
-          <span className="text-gray-600">Scouts encontrados:</span>
+          <span className="text-gray-600">
+            {vista === 'cumpleanos' ? 'Cumpleaños encontrados:' : 'Scouts encontrados:'}
+          </span>
           <span className="text-2xl font-bold text-blue-600">{filtrados.length}</span>
         </div>
       </div>
@@ -151,17 +215,25 @@ export default function ScoutsScreen() {
       {filtrados.length === 0 && !loading && (
         <div className="bg-white rounded-xl p-8 shadow text-center">
           <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-12 h-12 text-blue-400" />
+            {vista === 'cumpleanos' ? (
+              <Cake className="w-12 h-12 text-pink-400" />
+            ) : (
+              <Users className="w-12 h-12 text-blue-400" />
+            )}
           </div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">
-            {busqueda || ramaFiltro ? 'No se encontraron scouts' : 'No hay scouts registrados'}
+            {vista === 'cumpleanos'
+              ? 'No hay cumpleaños en este periodo'
+              : busqueda || ramaFiltro ? 'No se encontraron scouts' : 'No hay scouts registrados'}
           </h3>
           <p className="text-gray-500 mb-4 text-sm">
-            {busqueda || ramaFiltro 
-              ? 'Intenta cambiar los filtros de búsqueda' 
-              : 'Comienza registrando el primer scout del grupo'}
+            {vista === 'cumpleanos'
+              ? 'Prueba con otro filtro de fecha'
+              : busqueda || ramaFiltro
+                ? 'Intenta cambiar los filtros de búsqueda'
+                : 'Comienza registrando el primer scout del grupo'}
           </p>
-          {!busqueda && !ramaFiltro && (
+          {vista === 'lista' && !busqueda && !ramaFiltro && (
             <button
               onClick={() => setMostrarRegistro(true)}
               className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold mx-auto active:scale-95 transition-transform shadow-lg"
@@ -202,8 +274,15 @@ export default function ScoutsScreen() {
             )}
 
             {scout.fecha_nacimiento && (
-              <div className="text-sm text-gray-500">
-                {calcularEdad(scout.fecha_nacimiento)} años
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{calcularEdad(scout.fecha_nacimiento)} años</span>
+                <span className="text-gray-300">•</span>
+                <span>{formatDateShort(scout.fecha_nacimiento)}</span>
+                {vista === 'cumpleanos' && (
+                  <span className="ml-auto px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 text-xs font-semibold whitespace-nowrap">
+                    {formatDaysUntilBirthday(getDaysUntilNextBirthday(scout.fecha_nacimiento))}
+                  </span>
+                )}
               </div>
             )}
           </button>

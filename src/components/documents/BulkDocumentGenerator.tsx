@@ -10,6 +10,7 @@ import BulkDocumentUtils from '../../utils/BulkDocumentUtils';
 import FileDownloadUtils, { DownloadableDocument } from '../../utils/FileDownloadUtils';
 import { BulkDynamicDocumentGenerator } from '../../utils/DynamicDocumentAdapter';
 import { DocumentFormat } from '../../utils/DocumentGenerationStrategy';
+import { calculateAge } from '../../lib/utils';
 import { TableDesign } from './TableDesigner';
 import { tableDesignService, TableDesign as DBTableDesign } from '../../services/tableDesignService';
 
@@ -475,8 +476,8 @@ export const BulkDocumentGenerator: React.FC<BulkDocumentGeneratorProps> = () =>
                 
                 <div className="text-right">
                   <div className="text-sm text-gray-500">
-                    {scout.fecha_nacimiento ? 
-                      new Date().getFullYear() - new Date(scout.fecha_nacimiento).getFullYear() 
+                    {scout.fecha_nacimiento ?
+                      calculateAge(scout.fecha_nacimiento)
                       : '?'} años
                   </div>
                 </div>

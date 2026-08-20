@@ -9,6 +9,7 @@ import { supabase } from '../../../lib/supabase';
 import { ScoutReportData, FamiliarReportData } from '../types/reportTypes';
 import scoutDocumentsService from '../../../services/scoutDocumentsService';
 import { DniPersonData } from '../templates/pdf/DniCollectionTemplate';
+import { parseLocalDate } from '../../../lib/utils';
 
 // Constantes
 const MAX_FILE_SIZE_KB = 600;
@@ -25,7 +26,7 @@ export interface DniScoutApoderadoPair {
  */
 const calculateAge = (birthDate: string | null | undefined): number => {
   if (!birthDate) return 0;
-  const birth = new Date(birthDate);
+  const birth = parseLocalDate(birthDate);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();

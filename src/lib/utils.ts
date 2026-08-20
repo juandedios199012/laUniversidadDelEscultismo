@@ -10,15 +10,43 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Parse a date, treating a plain "YYYY-MM-DD" string as a local calendar date
+ * rather than UTC midnight. `new Date("YYYY-MM-DD")` parses as UTC, which in
+ * timezones behind UTC (e.g. Peru, UTC-5) rolls the local calendar date back
+ * by one day once read back with local getters or toLocaleDateString.
+ */
+export function parseLocalDate(date: Date | string): Date {
+  if (date instanceof Date) return date;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (match) {
+    const [, year, month, day] = match;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+  return new Date(date);
+}
+
+/**
  * Format date to locale string
  */
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = parseLocalDate(date);
   return d.toLocaleDateString("es-PE", {
     year: "numeric",
     month: "long",
     day: "numeric",
+  });
+}
+
+/**
+ * Format date to short locale string without year (e.g. "20 ago")
+ */
+export function formatDateShort(date: Date | string | null | undefined): string {
+  if (!date) return "";
+  const d = parseLocalDate(date);
+  return d.toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "short",
   });
 }
 
@@ -36,7 +64,7 @@ export function formatDateISO(date: Date | string | null | undefined): string {
  */
 export function calculateAge(birthDate: Date | string | null | undefined): number {
   if (!birthDate) return 0;
-  const birth = typeof birthDate === "string" ? new Date(birthDate) : birthDate;
+  const birth = parseLocalDate(birthDate);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
