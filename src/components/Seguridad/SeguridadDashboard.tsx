@@ -4,7 +4,7 @@ import {
   Edit, ChevronDown, ChevronUp, Search,
   Download, Filter, RefreshCw, Clock, AlertTriangle,
   ToggleLeft, ToggleRight, CheckCircle, XCircle, Save,
-  Grid3x3, ClipboardList
+  Grid3x3, ClipboardList, Heart
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
@@ -23,6 +23,7 @@ import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../service
 import { SeguridadService, UsuarioSistema } from '../../services/seguridadService';
 import AsignarRolDialog from './dialogs/AsignarRolDialog';
 import InvitarUsuarioDialog from './dialogs/InvitarUsuarioDialog';
+import CrearAccesoPadreDialog from './dialogs/CrearAccesoPadreDialog';
 import PermissionMatrix from './tabs/PermissionMatrix';
 import FeatureRegistration from './tabs/FeatureRegistration';
 
@@ -487,6 +488,7 @@ function TabUsuarios() {
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [showInvitar, setShowInvitar] = useState(false);
+  const [showCrearPadre, setShowCrearPadre] = useState(false);
   const [usuarioGestionandoRoles, setUsuarioGestionandoRoles] = useState<UsuarioSistema | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
@@ -570,6 +572,15 @@ function TabUsuarios() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          {(puedeCrear('seguridad') || esAdmin) && (
+            <button
+              onClick={() => setShowCrearPadre(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Heart className="w-4 h-4" />
+              Crear Acceso Padre
+            </button>
+          )}
           {(puedeCrear('seguridad') || esAdmin) && (
             <button
               onClick={() => setShowInvitar(true)}
@@ -719,6 +730,13 @@ function TabUsuarios() {
       <InvitarUsuarioDialog
         isOpen={showInvitar}
         onClose={() => setShowInvitar(false)}
+        onUsuarioCreado={cargarDatos}
+      />
+
+      {/* Dialog para crear el acceso de un Padre/Tutor por DNI */}
+      <CrearAccesoPadreDialog
+        isOpen={showCrearPadre}
+        onClose={() => setShowCrearPadre(false)}
         onUsuarioCreado={cargarDatos}
       />
 

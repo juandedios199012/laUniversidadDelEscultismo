@@ -141,6 +141,31 @@ export class SeguridadService {
     return { success: true, userId: data.user_id };
   }
 
+  /**
+   * Crea el acceso al Portal de Padres para un Padre/Tutor a partir de su
+   * DNI: genera un correo sintético internamente (el padre nunca lo ve, solo
+   * usa su DNI + contraseña para entrar) y le asigna el rol padre_familia.
+   * Ver ver_hijos_login_solo_dni_padre.md.
+   */
+  static async crearAccesoPadre(
+    dni: string,
+    fullName: string,
+    password: string,
+  ): Promise<{ success: boolean; userId?: string; error?: string }> {
+    if (shouldSkipAuth()) {
+      console.log('🔓 DEV: crearAccesoPadre simulado (localhost)');
+      return { success: true, userId: crypto.randomUUID() };
+    }
+
+    const { data, error } = await supabase.functions.invoke('create-parent-user', {
+      body: { dni: dni.trim(), full_name: fullName.trim(), password },
+    });
+
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'Error al crear el acceso del padre' };
+    return { success: true, userId: data.user_id };
+  }
+
   // -------------------------------------------------------------------
   // Lectura — diccionario de módulos/permisos (grano fino)
   // -------------------------------------------------------------------

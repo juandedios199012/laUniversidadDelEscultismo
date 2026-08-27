@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { resolveLoginEmail } from '../../lib/syntheticEmail';
 
 type LoginMethod = 'password' | 'otp';
 
 export default function LoginScreen() {
   const [method, setMethod] = useState<LoginMethod>('password');
   const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -15,14 +17,16 @@ export default function LoginScreen() {
 
   const { signInWithPassword, signInWithGoogle, sendOtpCode, verifyOtpCode } = useAuth();
 
-  // Login con contraseña
+  // Login con contraseña. Padres ingresan su DNI, dirigentes su correo: el
+  // DNI se transforma al correo sintético internamente antes de autenticar
+  // (ver ver_hijos_login_solo_dni_padre.md / src/lib/syntheticEmail.ts).
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const result = await signInWithPassword(email, password);
-    
+    const result = await signInWithPassword(resolveLoginEmail(loginId), password);
+
     if (!result.success) {
       setError(result.error || 'Error al iniciar sesión');
     }
@@ -135,14 +139,14 @@ export default function LoginScreen() {
             <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Correo electrónico
+                  Correo o DNI
                 </label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="tu@email.com"
+                  placeholder="tu@email.com o tu DNI"
                   required
                   disabled={loading}
                 />
@@ -279,7 +283,7 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Solo dirigentes autorizados pueden acceder
+          Acceso para dirigentes (correo) y padres de familia (DNI)
         </p>
       </div>
     </div>
