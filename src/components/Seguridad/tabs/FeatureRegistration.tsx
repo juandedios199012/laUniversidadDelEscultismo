@@ -13,10 +13,9 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermissions } from '../../../contexts/PermissionsContext';
 import {
-  SeguridadV2Service,
+  SeguridadService,
   AppModule,
-  AppPermission,
-} from '../../../services/seguridadV2Service';
+} from '../../../services/seguridadService';
 import { toast } from 'sonner';
 
 // ================================================================
@@ -59,7 +58,7 @@ function FormNuevoModulo({
     if (!user?.id || !form.label.trim()) return;
     setSaving(true);
 
-    const result = await SeguridadV2Service.registrarModulo(user.id, {
+    const result = await SeguridadService.registrarModulo(user.id, {
       name:  form.name.trim(),
       label: form.label.trim(),
       icon:  form.icon.trim() || null,
@@ -213,7 +212,7 @@ function FormNuevoPermiso({
     if (!user?.id || !form.module_id || !form.name.trim()) return;
     setSaving(true);
 
-    const result = await SeguridadV2Service.registrarPermiso(user.id, {
+    const result = await SeguridadService.registrarPermiso(user.id, {
       module_id:      form.module_id,
       name:           form.name.trim(),
       permission_key: form.permission_key.trim(),
@@ -450,7 +449,7 @@ export default function FeatureRegistration() {
 
   const cargar = useCallback(async () => {
     setLoading(true);
-    const data = await SeguridadV2Service.obtenerModulos();
+    const data = await SeguridadService.obtenerModulos();
     setModulos(data);
     setLoading(false);
   }, []);
@@ -468,9 +467,9 @@ export default function FeatureRegistration() {
 
     let result: { success: boolean; error?: string };
     if (type === 'modulo') {
-      result = await SeguridadV2Service.eliminarModulo(user.id, id);
+      result = await SeguridadService.eliminarModulo(user.id, id);
     } else {
-      result = await SeguridadV2Service.eliminarPermiso(user.id, id);
+      result = await SeguridadService.eliminarPermiso(user.id, id);
     }
 
     if (result.success) {
@@ -499,7 +498,7 @@ export default function FeatureRegistration() {
         <div>
           <strong>Flujo de trabajo:</strong>
           <ol className="mt-1 list-decimal list-inside space-y-0.5">
-            <li>Desarrollas la función en React y la proteges con <code className="font-mono text-xs bg-blue-100 px-1 rounded">{'<Guard permission="modulo:accion" />'}</code></li>
+            <li>Desarrollas la función en React y la proteges con <code className="font-mono text-xs bg-blue-100 px-1 rounded">{'can("modulo:accion")'}</code></li>
             <li>Registras el <strong>módulo</strong> y el <strong>permiso</strong> en este formulario.</li>
             <li>El super_admin activa el switch en la <strong>Matriz de Permisos</strong> para el rol deseado.</li>
           </ol>

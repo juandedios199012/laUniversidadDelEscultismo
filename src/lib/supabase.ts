@@ -395,23 +395,6 @@ export interface ProgramaSemanal {
   updated_at: string;
 }
 
-export interface InscripcionAnual {
-  id: string;
-  scout_id: string;
-  codigo_asociado: string;
-  ano: number;
-  rama: string;
-  fecha_inscripcion: string;
-  monto_inscripcion: number;
-  fecha_pago?: string;
-  estado_pago: 'pendiente' | 'pagado' | 'parcial' | 'exonerado';
-  documentos_completos: boolean;
-  certificado_medico: boolean;
-  autorizacion_padres: boolean;
-  activo: boolean;
-  created_at: string;
-}
-
 export interface PerfilCompleto {
   scout: Scout;
   familiares: FamiliarScout[];

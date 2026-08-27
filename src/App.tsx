@@ -3,9 +3,7 @@ import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
 import { RegistroScoutPage as ScoutsPage } from './components/RegistroScout/v2';
-import InscripcionAnual from './components/Inscripcion/InscripcionAnual';
 import ConfiguracionDocumentosInscripcion from './components/Configuracion/ConfiguracionDocumentosInscripcion';
-import ConfiguracionTarifasInscripcion from './components/Configuracion/ConfiguracionTarifasInscripcion';
 import TiposActividadAireLibre from './components/Configuracion/TiposActividadAireLibre';
 import PuntosEncuentroAireLibre from './components/Configuracion/PuntosEncuentroAireLibre';
 import TiposCostoAireLibre from './components/Configuracion/TiposCostoAireLibre';
@@ -26,7 +24,6 @@ import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
-import { SeguridadV2Dashboard } from './components/SeguridadV2';
 import AdminObjetivosPage from './components/AdminObjetivos/AdminObjetivosPage';
 import AdminEtapasPage from './components/AdminObjetivos/AdminEtapasPage';
 // Módulo de Especialidades Scout
@@ -92,12 +89,8 @@ function AppContent() {
       case 'registro-scout':
       case 'registro-scout-v2':
         return <ScoutsPage />;
-      case 'inscripcion-anual':
-        return <InscripcionAnual />;
       case 'config-documentos-inscripcion':
         return <ConfiguracionDocumentosInscripcion />;
-      case 'config-tarifas-inscripcion':
-        return <ConfiguracionTarifasInscripcion />;
       case 'admin-objetivos':
         return <AdminObjetivosPage />;
       case 'admin-etapas':
@@ -140,8 +133,6 @@ function AppContent() {
         return <Reports />;
       case 'seguridad':
         return <SeguridadDashboard />;
-      case 'seguridad-v2':
-        return <SeguridadV2Dashboard />;
       case 'especialidades':
         return <EspecialidadesModule onNavigateGlobal={setActiveModule} />;
       case 'progresion-v4':

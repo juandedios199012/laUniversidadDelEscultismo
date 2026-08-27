@@ -3,7 +3,7 @@ import {
   Users, Shield, Calendar, ClipboardCheck, Book, Package,
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
-  ChevronDown, ChevronRight, Rocket, ShieldCheck, Heart, Target,
+  ChevronDown, ChevronRight, Rocket, Heart, Target,
   MapPin, User
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
@@ -35,20 +35,10 @@ const standaloneItems: MenuItem[] = [
   { id: 'dashboard',    label: 'Dashboard',       icon: Home,  gradient: 'from-blue-500 to-cyan-500',     modulo: 'dashboard'    },
   { id: 'scouts',       label: 'Scouts',          icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts'       },
   { id: 'portal-padres', label: 'Portal de Padres', icon: Heart, gradient: 'from-pink-500 to-rose-500',   modulo: 'portal_padres' },
+  { id: 'config-documentos-inscripcion', label: 'Tipos de Documento', icon: FileText, gradient: 'from-teal-400 to-cyan-400', modulo: 'inscripciones' },
 ];
 
 const menuGroups: MenuGroup[] = [
-  {
-    id: 'inscripcion',
-    label: 'Inscripción',
-    icon: Star,
-    gradient: 'from-teal-500 to-cyan-500',
-    items: [
-      { id: 'inscripcion-anual',             label: 'Inscripción Anual',   icon: Star,     gradient: 'from-teal-500 to-cyan-500',  modulo: 'inscripciones' },
-      { id: 'config-documentos-inscripcion', label: 'Tipos de Documento',  icon: FileText, gradient: 'from-teal-400 to-cyan-400',  modulo: 'inscripciones' },
-      { id: 'config-tarifas-inscripcion',    label: 'Tarifas',             icon: Settings, gradient: 'from-teal-600 to-cyan-600',  modulo: 'inscripciones' },
-    ],
-  },
   {
     id: 'progresion',
     label: 'Progresión',
@@ -109,8 +99,7 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-blue-600 to-indigo-600',
     items: [
       { id: 'reportes',  label: 'Reportes',  icon: BarChart, gradient: 'from-blue-600 to-indigo-600', modulo: 'reportes'  },
-      { id: 'seguridad',    label: 'Seguridad',    icon: Lock,         gradient: 'from-red-600 to-rose-600',       modulo: 'seguridad' },
-      { id: 'seguridad-v2', label: 'Seguridad V2', icon: ShieldCheck,  gradient: 'from-violet-600 to-purple-600',  modulo: 'seguridad' },
+      { id: 'seguridad', label: 'Seguridad', icon: Lock,     gradient: 'from-red-600 to-rose-600',    modulo: 'seguridad' },
     ],
   },
 ];

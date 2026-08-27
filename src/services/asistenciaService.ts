@@ -279,7 +279,7 @@ export class AsistenciaService {
   static async getReunionById(id: string): Promise<any | null> {
     try {
       const { data, error } = await supabase
-        .from('inscripciones')
+        .from('programa_semanal')
         .select('*')
         .eq('id', id)
         .single();
@@ -304,7 +304,7 @@ export class AsistenciaService {
       };
 
       const { error } = await supabase
-        .from('inscripciones')
+        .from('programa_semanal')
         .update(updateData)
         .eq('id', id);
 
@@ -323,7 +323,7 @@ export class AsistenciaService {
   static async deleteReunion(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase
-        .from('inscripciones')
+        .from('programa_semanal')
         .delete()
         .eq('id', id);
 

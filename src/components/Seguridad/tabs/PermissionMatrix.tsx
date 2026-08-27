@@ -11,12 +11,11 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermissions } from '../../../contexts/PermissionsContext';
 import {
-  SeguridadV2Service,
+  SeguridadService,
   AppModule,
-  AppPermission,
   RolBasico,
   MatrizCompleta,
-} from '../../../services/seguridadV2Service';
+} from '../../../services/seguridadService';
 import { toast } from 'sonner';
 
 // ================================================================
@@ -199,7 +198,7 @@ export default function PermissionMatrix() {
     setLoading(true);
     setError(null);
     try {
-      const data = await SeguridadV2Service.obtenerMatrizCompleta();
+      const data = await SeguridadService.obtenerMatrizCompleta();
       if (!data) {
         setError('No se pudieron cargar los datos de la matriz.');
         return;
@@ -232,7 +231,7 @@ export default function PermissionMatrix() {
   const handleToggle = useCallback(
     async (permisoId: string, rolId: string, currentVal: boolean) => {
       if (!user?.id || !esSuperAdmin) {
-        toast.error('Solo super_admin puede modificar permisos v2');
+        toast.error('Solo super_admin puede modificar esta matriz');
         return;
       }
 
@@ -245,7 +244,7 @@ export default function PermissionMatrix() {
         [permisoId]: { ...(prev[permisoId] ?? {}), [rolId]: !currentVal },
       }));
 
-      const result = await SeguridadV2Service.togglePermiso(
+      const result = await SeguridadService.togglePermiso(
         user.id,
         rolId,
         permisoId,
@@ -303,7 +302,7 @@ export default function PermissionMatrix() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-gray-900">Matriz de Permisos</h3>
+          <h3 className="text-base font-semibold text-gray-900">Matriz de Permisos (grano fino)</h3>
           <p className="text-sm text-gray-500">
             Activa o desactiva permisos por rol. Los cambios se aplican de inmediato.
           </p>

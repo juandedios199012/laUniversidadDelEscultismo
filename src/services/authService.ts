@@ -19,8 +19,6 @@ export interface AuthUser {
   email: string;
   name?: string;
   avatar_url?: string;
-  grupo_scout_id?: string;
-  role?: 'dirigente' | 'grupo_admin' | 'super_admin';
 }
 
 export interface AuthResponse {
@@ -87,27 +85,10 @@ export class AuthService {
         return { success: false, error: 'Email no válido' };
       }
 
-      // Verificar si es dirigente autorizado
-      const isAuthorized = await this.checkAuthorizedDirector(email);
-      if (!isAuthorized.authorized) {
-        if (isAuthorized.requiresApproval) {
-          await this.requestAccess(email);
-          return { 
-            success: false, 
-            error: 'Tu email no está autorizado. Se ha enviado una solicitud de acceso.',
-            requiresApproval: true 
-          };
-        }
-        return { success: false, error: 'Email no autorizado para acceder al sistema' };
-      }
-
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: getRedirectUrl(),
-          data: {
-            grupo_scout_id: isAuthorized.grupo_scout_id
-          }
+          emailRedirectTo: getRedirectUrl()
         }
       });
 
@@ -137,20 +118,6 @@ export class AuthService {
 
       if (!this.isValidEmail(email)) {
         return { success: false, error: 'Email no válido' };
-      }
-
-      // Verificar si es dirigente autorizado
-      const isAuthorized = await this.checkAuthorizedDirector(email);
-      if (!isAuthorized.authorized) {
-        if (isAuthorized.requiresApproval) {
-          await this.requestAccess(email);
-          return { 
-            success: false, 
-            error: 'Tu email no está autorizado. Se ha enviado una solicitud de acceso.',
-            requiresApproval: true 
-          };
-        }
-        return { success: false, error: 'Email no autorizado para acceder al sistema' };
       }
 
       const { error } = await supabase.auth.signInWithOtp({
@@ -221,12 +188,6 @@ export class AuthService {
     try {
       console.log('🔑 Login con email/password:', email);
 
-      // Validar dirigente autorizado
-      const isAuthorized = await this.checkAuthorizedDirector(email);
-      if (!isAuthorized.authorized) {
-        return { success: false, error: 'Email no autorizado para acceder al sistema' };
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -262,20 +223,13 @@ export class AuthService {
     try {
       console.log('📝 Registro de nuevo dirigente:', email);
 
-      // Validar dirigente autorizado
-      const isAuthorized = await this.checkAuthorizedDirector(email);
-      if (!isAuthorized.authorized) {
-        return { success: false, error: 'Solo dirigentes autorizados pueden registrarse' };
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: getRedirectUrl(),
           data: {
-            full_name: fullName,
-            grupo_scout_id: isAuthorized.grupo_scout_id
+            full_name: fullName
           }
         }
       });
@@ -341,108 +295,19 @@ export class AuthService {
   }
 
   /**
-   * 🔍 Verificar si es dirigente autorizado
-   */
-  private static async checkAuthorizedDirector(email: string): Promise<{
-    authorized: boolean;
-    grupo_scout_id?: string;
-    role?: string;
-    requiresApproval?: boolean;
-  }> {
-    try {
-      // TODO: Esta query necesita la tabla dirigentes_autorizados que crearemos
-      const { data, error } = await supabase
-        .from('dirigentes_autorizados')
-        .select('grupo_scout_id, role, activo')
-        .eq('email', email.toLowerCase())
-        .eq('activo', true)
-        .single();
-
-      if (error || !data) {
-        console.log('📋 Email no está en lista de dirigentes autorizados:', email);
-        return { authorized: false, requiresApproval: true };
-      }
-
-      return {
-        authorized: true,
-        grupo_scout_id: data.grupo_scout_id,
-        role: data.role
-      };
-
-    } catch (error) {
-      console.error('❌ Error verificando dirigente autorizado:', error);
-      return { authorized: false };
-    }
-  }
-
-  /**
-   * 📨 Solicitar acceso para email no autorizado
-   */
-  private static async requestAccess(email: string): Promise<void> {
-    try {
-      // TODO: Crear tabla solicitudes_acceso
-      await supabase
-        .from('solicitudes_acceso')
-        .insert([{
-          email: email.toLowerCase(),
-          estado: 'pendiente',
-          fecha_solicitud: new Date().toISOString()
-        }]);
-
-      console.log('✅ Solicitud de acceso creada para:', email);
-
-    } catch (error) {
-      console.error('❌ Error creando solicitud de acceso:', error);
-    }
-  }
-
-  /**
    * 👤 Construir objeto AuthUser desde usuario de Supabase
+   *
+   * La identidad de negocio (nombre, roles) vive en profiles/user_roles,
+   * gestionada por PermissionsContext — este método solo mapea los datos
+   * ya presentes en la sesión de Supabase Auth, sin roundtrips extra.
    */
   private static async buildAuthUser(user: any): Promise<AuthUser> {
-    // Obtener datos adicionales del dirigente
-    const dirigenteData = await this.getDirigenteData(user.email);
-
     return {
       id: user.id,
       email: user.email,
-      name: user.user_metadata?.full_name || dirigenteData?.nombre_completo,
-      avatar_url: user.user_metadata?.avatar_url,
-      grupo_scout_id: dirigenteData?.grupo_scout_id,
-      role: dirigenteData?.role || 'dirigente'
+      name: user.user_metadata?.full_name,
+      avatar_url: user.user_metadata?.avatar_url
     };
-  }
-
-  /**
-   * 📊 Obtener datos adicionales del dirigente
-   */
-  private static async getDirigenteData(email: string): Promise<any | null> {
-    try {
-      const { data, error } = await supabase
-        .from('dirigentes_autorizados')
-        .select(`
-          grupo_scout_id,
-          role,
-          nombre_completo,
-          grupos_scout (
-            id,
-            nombre,
-            numeral,
-            localidad
-          )
-        `)
-        .eq('email', email.toLowerCase())
-        .eq('activo', true)
-        .single();
-
-      if (error || !data) return null;
-
-      return data;
-
-    } catch (error) {
-      console.error('❌ Error obteniendo datos del dirigente:', error);
-      return null;
-    }
   }
 
   /**

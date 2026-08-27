@@ -94,7 +94,7 @@ export default function AsignarRolDialog({
         await AuditService.registrar(user.id, {
           modulo: 'seguridad',
           accion: 'crear',
-          tabla: 'usuario_roles',
+          tabla: 'user_roles',
           registroId: usuario.id,
           descripcion: `Rol "${rol?.nombre}" asignado a ${usuario.nombre}`,
           datosNuevos: { rol_id: rolId, usuario_id: usuario.id }
@@ -108,7 +108,7 @@ export default function AsignarRolDialog({
         await AuditService.registrar(user.id, {
           modulo: 'seguridad',
           accion: 'eliminar',
-          tabla: 'usuario_roles',
+          tabla: 'user_roles',
           registroId: usuario.id,
           descripcion: `Rol "${rol?.nombre}" revocado de ${usuario.nombre}`,
           datosAnteriores: { rol_id: rolId, usuario_id: usuario.id }

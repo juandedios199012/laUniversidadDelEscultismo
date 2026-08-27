@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, Edit2, FileText, Plus, Trash2, X } from 'lucide-react';
-import InscripcionService, {
+import DocumentosInscripcionService, {
   AplicabilidadCriterio,
   AplicabilidadOperador,
   DocumentoReglaGrupo,
   TipoDocumentoInscripcion,
-} from '../../services/inscripcionService';
+} from '../../services/documentosInscripcionService';
 
 interface ModalTipoDocumentoProps {
   tipoEditar: TipoDocumentoInscripcion | null;
@@ -33,7 +33,7 @@ const ModalTipoDocumento: React.FC<ModalTipoDocumentoProps> = ({ tipoEditar, onC
     setGuardando(true);
     setError(null);
     try {
-      const resultado = await InscripcionService.upsertTipoDocumentoInscripcion({
+      const resultado = await DocumentosInscripcionService.upsertTipoDocumentoInscripcion({
         id: tipoEditar?.id ?? null,
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
@@ -190,7 +190,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
     setLoading(true);
     setError(null);
     try {
-      const resultado = await InscripcionService.listarTiposDocumentoInscripcion(false);
+      const resultado = await DocumentosInscripcionService.listarTiposDocumentoInscripcion(false);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo listar tipos');
       setTipos(resultado.tipos || []);
     } catch (err: any) {
@@ -206,7 +206,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
 
   const cargarCatalogoAplicabilidad = useCallback(async () => {
     try {
-      const resultado = await InscripcionService.listarCatalogoAplicabilidad();
+      const resultado = await DocumentosInscripcionService.listarCatalogoAplicabilidad();
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo cargar catálogo');
       setCriterios(resultado.criterios || []);
       setOperadores(resultado.operadores || []);
@@ -223,7 +223,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
 
     setLoadingReglas(true);
     try {
-      const resultado = await InscripcionService.listarReglasDocumentoInscripcion(tipoDocumentoId);
+      const resultado = await DocumentosInscripcionService.listarReglasDocumentoInscripcion(tipoDocumentoId);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudieron cargar reglas');
       setReglas(resultado.reglas || []);
     } catch (err: any) {
@@ -296,7 +296,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
     if (nombre === null) return;
 
     try {
-      const resultado = await InscripcionService.crearGrupoReglaDocumentoInscripcion({
+      const resultado = await DocumentosInscripcionService.crearGrupoReglaDocumentoInscripcion({
         tipo_documento_id: tipoSeleccionadoId,
         nombre: nombre.trim() || null,
         prioridad: reglas.length,
@@ -314,7 +314,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
   const eliminarGrupo = async (grupoId: string) => {
     if (!window.confirm('¿Eliminar este grupo de regla y todas sus condiciones?')) return;
     try {
-      const resultado = await InscripcionService.eliminarGrupoReglaDocumentoInscripcion(grupoId);
+      const resultado = await DocumentosInscripcionService.eliminarGrupoReglaDocumentoInscripcion(grupoId);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo eliminar grupo');
       setSuccess('Grupo eliminado');
       setTimeout(() => setSuccess(null), 3000);
@@ -327,7 +327,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
   const eliminarCondicion = async (condicionId: string) => {
     if (!window.confirm('¿Eliminar esta condición?')) return;
     try {
-      const resultado = await InscripcionService.eliminarCondicionReglaDocumentoInscripcion(condicionId);
+      const resultado = await DocumentosInscripcionService.eliminarCondicionReglaDocumentoInscripcion(condicionId);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo eliminar condición');
       setSuccess('Condición eliminada');
       setTimeout(() => setSuccess(null), 3000);
@@ -372,7 +372,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
         payload.valor_texto = valorTexto.trim() || null;
       }
 
-      const resultado = await InscripcionService.upsertCondicionReglaDocumentoInscripcion(payload);
+      const resultado = await DocumentosInscripcionService.upsertCondicionReglaDocumentoInscripcion(payload);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo guardar condición');
 
       setSuccess('Condición guardada');
@@ -412,7 +412,7 @@ const ConfiguracionDocumentosInscripcion: React.FC<ConfiguracionDocumentosInscri
     setError(null);
     setSuccess(null);
     try {
-      const resultado = await InscripcionService.eliminarTipoDocumentoInscripcion(tipo.id);
+      const resultado = await DocumentosInscripcionService.eliminarTipoDocumentoInscripcion(tipo.id);
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo eliminar/desactivar');
       setSuccess(resultado.message || 'Operación realizada');
       setTimeout(() => setSuccess(null), 4000);

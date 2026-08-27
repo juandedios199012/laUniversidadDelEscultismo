@@ -15,6 +15,8 @@ interface PermissionsContextType {
   
   // Verificaciones rápidas
   tienePermiso: (modulo: Modulo, accion: Accion) => boolean;
+  /** Verificación de grano fino por permission_key (ej. "scouts:exportar:pdf") */
+  can: (permissionKey: string) => boolean;
   puedeAcceder: (modulo: Modulo) => boolean;
   puedeVerDetalle: (modulo: Modulo) => boolean;
   puedeCrear: (modulo: Modulo) => boolean;
@@ -102,25 +104,12 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       try {
         setLoading(true);
         setError(null);
-        
-        // Obtener datos de seguridad
-        let datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
-        
-        // Si no tiene roles asignados, intentar sincronizar desde dirigentes_autorizados
-        if (!datos || !datos.roles || datos.roles.length === 0) {
-          console.log('🔄 Usuario sin roles, intentando sincronizar...');
-          const resultado = await PermissionsService.sincronizarRolDesdeAutorizado(user.id, user.email);
-          
-          if (resultado.success) {
-            console.log('✅ Rol sincronizado:', resultado.rolAsignado);
-            // Limpiar cache y recargar
-            PermissionsService.limpiarCache(user.id);
-            datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
-          } else {
-            console.warn('⚠️ No se pudo sincronizar rol:', resultado.error);
-          }
-        }
-        
+
+        // Un usuario recién creado ya tiene fila en profiles (trigger handle_new_user)
+        // pero puede no tener roles asignados aún — en ese caso simplemente no ve
+        // ningún módulo hasta que un admin le asigne rol(es) desde Seguridad > Usuarios.
+        const datos = await PermissionsService.obtenerSeguridadUsuario(user.id);
+
         setSeguridad(datos);
       } catch (err) {
         console.error('Error cargando permisos:', err);
@@ -170,10 +159,16 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     return seguridad.permisos.some(p => p.modulo === modulo && p.accion === accion);
   }, [seguridad?.permisos, esSuperAdmin, esAdmin]);
 
+  // Verificación de grano fino (modulo:accion[:objeto]) respaldada por permission_keys
+  const can = useCallback((permissionKey: string): boolean => {
+    if (esSuperAdmin || esAdmin) return true;
+    return (seguridad?.permission_keys ?? []).includes(permissionKey);
+  }, [seguridad?.permission_keys, esSuperAdmin, esAdmin]);
+
   // Helpers para acciones comunes
   // puedeAcceder considera AMBAS configuraciones:
   //   1. Rol con nivel >= 70 (asignado vía pestaña Usuarios/Configuración) → esAdmin bypass
-  //   2. Permiso explícito 'leer' en rol_permisos (configurado en Roles y Permisos)
+  //   2. Permiso explícito 'leer' en role_permissions (configurado en Roles y Permisos)
   const puedeAcceder = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'leer'), [tienePermiso, esSuperAdmin, esAdmin]);
   const puedeVerDetalle = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'ver_detalle'), [tienePermiso, esSuperAdmin, esAdmin]);
   const puedeCrear = useCallback((modulo: Modulo) => esSuperAdmin || esAdmin || tienePermiso(modulo, 'crear'), [tienePermiso, esSuperAdmin, esAdmin]);
@@ -246,6 +241,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     loading,
     error,
     tienePermiso,
+    can,
     puedeAcceder,
     puedeVerDetalle,
     puedeCrear,

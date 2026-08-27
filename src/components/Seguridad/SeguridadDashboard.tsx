@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Shield, Users, Activity, Settings, UserPlus, 
-  Trash2, Edit, ChevronDown, ChevronUp, Search,
+import {
+  Shield, Users, Activity, Settings, UserPlus,
+  Edit, ChevronDown, ChevronUp, Search,
   Download, Filter, RefreshCw, Clock, AlertTriangle,
-  ToggleLeft, ToggleRight, CheckCircle, XCircle, Save
+  ToggleLeft, ToggleRight, CheckCircle, XCircle, Save,
+  Grid3x3, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
 import { shouldSkipAuth } from '../../config/dev';
-import { supabase } from '../../lib/supabase';
-import { 
-  PermissionsService, 
-  Rol, 
-  Modulo, 
+import {
+  PermissionsService,
+  Rol,
+  Modulo,
   Accion,
   MatrizPermisoRol,
   SubAccionAireLibre,
@@ -20,23 +20,17 @@ import {
   AIRE_LIBRE_ACCIONES_CONFIG
 } from '../../services/permissionsService';
 import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../services/auditService';
-import { UsuariosAutorizadosService, UsuarioAutorizado, SolicitudAcceso } from '../../services/usuariosAutorizadosService';
+import { SeguridadService, UsuarioSistema } from '../../services/seguridadService';
 import AsignarRolDialog from './dialogs/AsignarRolDialog';
 import InvitarUsuarioDialog from './dialogs/InvitarUsuarioDialog';
+import PermissionMatrix from './tabs/PermissionMatrix';
+import FeatureRegistration from './tabs/FeatureRegistration';
 
 // ================================================================
 // TIPOS LOCALES
 // ================================================================
 
-type TabId = 'roles' | 'usuarios' | 'auditoria' | 'configuracion';
-
-interface Usuario {
-  id: string;
-  email: string;
-  nombre: string;
-  roles: Rol[];
-  ultimo_acceso?: string;
-}
+type TabId = 'roles' | 'usuarios' | 'matriz' | 'registro' | 'auditoria' | 'configuracion';
 
 // ================================================================
 // COMPONENTE PRINCIPAL
@@ -44,7 +38,7 @@ interface Usuario {
 
 export default function SeguridadDashboard() {
   const { puedeAcceder, esSuperAdmin, esAdmin } = usePermissions();
-  const [activeTab, setActiveTab] = useState<TabId>('roles');
+  const [activeTab, setActiveTab] = useState<TabId>('usuarios');
 
   // Verificar permisos
   if (!puedeAcceder('seguridad') && !esAdmin) {
@@ -52,8 +46,10 @@ export default function SeguridadDashboard() {
   }
 
   const tabs = [
-    { id: 'roles' as TabId, label: 'Roles y Permisos', icon: Shield },
     { id: 'usuarios' as TabId, label: 'Usuarios', icon: Users },
+    { id: 'roles' as TabId, label: 'Roles y Permisos', icon: Shield },
+    { id: 'matriz' as TabId, label: 'Permisos Avanzados', icon: Grid3x3 },
+    { id: 'registro' as TabId, label: 'Registro de Funcionalidades', icon: ClipboardList },
     { id: 'auditoria' as TabId, label: 'Auditoría', icon: Activity },
     ...(esSuperAdmin ? [{ id: 'configuracion' as TabId, label: 'Configuración', icon: Settings }] : [])
   ];
@@ -95,8 +91,10 @@ export default function SeguridadDashboard() {
 
       {/* Contenido */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        {activeTab === 'roles' && <TabRoles />}
         {activeTab === 'usuarios' && <TabUsuarios />}
+        {activeTab === 'roles' && <TabRoles />}
+        {activeTab === 'matriz' && <div className="p-6"><PermissionMatrix /></div>}
+        {activeTab === 'registro' && <div className="p-6"><FeatureRegistration /></div>}
         {activeTab === 'auditoria' && <TabAuditoria />}
         {activeTab === 'configuracion' && <TabConfiguracion />}
       </div>
@@ -184,39 +182,12 @@ function TabRoles() {
     setGuardando(true);
     const permisos = Array.from(cambiosPendientes.values());
 
-    // En modo dev no hay un UUID real de usuario — manipular rol_permisos directamente
+    // En modo dev (VITE_DEV_SKIP_AUTH=true) no hay sesión real de Supabase, así
+    // que RLS rechazaría cualquier escritura directa — simular éxito, igual que
+    // el resto de mutaciones de SeguridadService en este modo.
     if (shouldSkipAuth() || !user?.id) {
-      try {
-        let agregados = 0;
-        let eliminados = 0;
-        for (const permiso of permisos) {
-          const { data: permisoRow } = await supabase
-            .from('permisos')
-            .select('id')
-            .eq('modulo', permiso.modulo)
-            .eq('accion', permiso.accion)
-            .single();
-
-          if (!permisoRow) continue;
-
-          if (permiso.tiene) {
-            await supabase.from('rol_permisos')
-              .upsert({ rol_id: expandedRole, permiso_id: permisoRow.id }, { onConflict: 'rol_id,permiso_id' });
-            agregados++;
-          } else {
-            await supabase.from('rol_permisos')
-              .delete()
-              .eq('rol_id', expandedRole)
-              .eq('permiso_id', permisoRow.id);
-            eliminados++;
-          }
-        }
-        setMensaje({ tipo: 'exito', texto: `Permisos actualizados: ${agregados} agregados, ${eliminados} eliminados` });
-        setCambiosPendientes(new Map());
-        await cargarPermisosRol(expandedRole);
-      } catch {
-        setMensaje({ tipo: 'error', texto: 'Error al guardar permisos en modo dev' });
-      }
+      setMensaje({ tipo: 'exito', texto: `Permisos actualizados (simulado): ${permisos.length} cambios` });
+      setCambiosPendientes(new Map());
       setGuardando(false);
       setTimeout(() => setMensaje(null), 4000);
       return;
@@ -249,12 +220,15 @@ function TabRoles() {
     { modulo: 'dirigentes', label: 'Dirigentes', icon: '👥' },
     { modulo: 'patrullas', label: 'Patrullas', icon: '🏕️' },
     { modulo: 'asistencia', label: 'Asistencia', icon: '✅' },
-    { modulo: 'actividades', label: 'Actividades', icon: '🎯' },
     { modulo: 'progresion', label: 'Progresión', icon: '📈' },
+    { modulo: 'programa_semanal', label: 'Programa Semanal', icon: '📅' },
     { modulo: 'inscripciones', label: 'Inscripciones', icon: '📝' },
     { modulo: 'finanzas', label: 'Finanzas', icon: '💰' },
     { modulo: 'inventario', label: 'Inventario', icon: '📦' },
     { modulo: 'actividades_exterior', label: 'Actividades Exterior', icon: '🏔️' },
+    { modulo: 'libro_oro', label: 'Libro de Oro', icon: '📖' },
+    { modulo: 'comite_padres', label: 'Comité de Padres', icon: '🤝' },
+    { modulo: 'mapas', label: 'Mapas', icon: '🗺️' },
     { modulo: 'reportes', label: 'Reportes', icon: '📋' },
     { modulo: 'portal_padres', label: 'Portal Padres', icon: '👪' },
     { modulo: 'seguridad', label: 'Seguridad', icon: '🔐' },
@@ -508,13 +482,12 @@ function TabRoles() {
 // ================================================================
 
 function TabUsuarios() {
-  const { user } = useAuth();
-  const { puedeCrear, puedeEliminar, esAdmin } = usePermissions();
-  const [usuarios, setUsuarios] = useState<UsuarioAutorizado[]>([]);
-  const [solicitudes, setSolicitudes] = useState<SolicitudAcceso[]>([]);
+  const { puedeCrear, esAdmin } = usePermissions();
+  const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [showInvitar, setShowInvitar] = useState(false);
+  const [usuarioGestionandoRoles, setUsuarioGestionandoRoles] = useState<UsuarioSistema | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
   useEffect(() => {
@@ -524,82 +497,33 @@ function TabUsuarios() {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [usuariosData, solicitudesData] = await Promise.all([
-        UsuariosAutorizadosService.listarUsuarios(),
-        UsuariosAutorizadosService.listarSolicitudesPendientes()
-      ]);
+      const usuariosData = await SeguridadService.listarUsuarios();
       setUsuarios(usuariosData);
-      setSolicitudes(solicitudesData);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleActivo = async (usuario: UsuarioAutorizado) => {
+  const handleToggleActivo = async (usuario: UsuarioSistema) => {
     const nuevoEstado = !usuario.activo;
-    const resultado = await UsuariosAutorizadosService.toggleActivo(usuario.id, nuevoEstado);
-    
+    const resultado = await SeguridadService.toggleActivoUsuario(usuario.id, nuevoEstado);
+
     if (resultado.success) {
-      setMensaje({ 
-        tipo: 'exito', 
-        texto: `Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente` 
+      setMensaje({
+        tipo: 'exito',
+        texto: `Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`
       });
       cargarDatos();
     } else {
       setMensaje({ tipo: 'error', texto: resultado.error || 'Error al actualizar' });
     }
-    
+
     setTimeout(() => setMensaje(null), 3000);
   };
 
-  const handleEliminar = async (usuario: UsuarioAutorizado) => {
-    if (!confirm(`¿Eliminar a ${usuario.nombre_completo} de los usuarios autorizados?\n\nEsta persona ya no podrá acceder al sistema.`)) {
-      return;
-    }
-
-    const resultado = await UsuariosAutorizadosService.eliminarUsuario(usuario.id);
-    
-    if (resultado.success) {
-      setMensaje({ tipo: 'exito', texto: 'Usuario eliminado correctamente' });
-      cargarDatos();
-    } else {
-      setMensaje({ tipo: 'error', texto: resultado.error || 'Error al eliminar' });
-    }
-    
-    setTimeout(() => setMensaje(null), 3000);
-  };
-
-  const getRolBadge = (role: string) => {
-    switch (role) {
-      case 'super_admin':    return 'bg-red-100 text-red-700';
-      case 'jefe_grupo':     return 'bg-purple-100 text-purple-700';
-      case 'grupo_admin':    return 'bg-purple-100 text-purple-700';
-      case 'coordinador':    return 'bg-indigo-100 text-indigo-700';
-      case 'dirigente':      return 'bg-blue-100 text-blue-700';
-      case 'asistente':      return 'bg-cyan-100 text-cyan-700';
-      case 'padre_familia':  return 'bg-pink-100 text-pink-700';
-      case 'scout':          return 'bg-green-100 text-green-700';
-      default:               return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const getRolLabel = (role: string) => {
-    switch (role) {
-      case 'super_admin':    return 'Super Admin';
-      case 'jefe_grupo':     return 'Jefe de Grupo';
-      case 'grupo_admin':    return 'Admin Grupo';
-      case 'coordinador':    return 'Coordinador';
-      case 'dirigente':      return 'Dirigente';
-      case 'asistente':      return 'Asistente';
-      case 'padre_familia':  return 'Padre/Familia';
-      case 'scout':          return 'Scout';
-      default:               return role;
-    }
-  };
-
-  const usuariosFiltrados = usuarios.filter(u => 
+  const usuariosFiltrados = usuarios.filter(u =>
     u.email.toLowerCase().includes(busqueda.toLowerCase()) ||
-    u.nombre_completo.toLowerCase().includes(busqueda.toLowerCase())
+    (u.full_name ?? '').toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -607,8 +531,8 @@ function TabUsuarios() {
       {/* Mensaje de feedback */}
       {mensaje && (
         <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-          mensaje.tipo === 'exito' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
+          mensaje.tipo === 'exito'
+            ? 'bg-green-50 border border-green-200 text-green-700'
             : 'bg-red-50 border border-red-200 text-red-700'
         }`}>
           {mensaje.tipo === 'exito' ? (
@@ -620,64 +544,12 @@ function TabUsuarios() {
         </div>
       )}
 
-      {/* Solicitudes pendientes */}
-      {solicitudes.length > 0 && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <span className="font-medium text-amber-800">
-              {solicitudes.length} solicitud(es) de acceso pendiente(s)
-            </span>
-          </div>
-          <div className="space-y-2">
-            {solicitudes.map(sol => (
-              <div key={sol.id} className="flex items-center justify-between bg-white p-2 rounded border border-amber-100">
-                <span className="text-sm text-gray-700">{sol.email}</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      const resultado = await UsuariosAutorizadosService.aprobarSolicitud(
-                        sol.id, 
-                        'dirigente', 
-                        user?.id || ''
-                      );
-                      if (resultado.success) {
-                        setMensaje({ tipo: 'exito', texto: 'Solicitud aprobada' });
-                        cargarDatos();
-                      }
-                    }}
-                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Aprobar
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const resultado = await UsuariosAutorizadosService.rechazarSolicitud(
-                        sol.id,
-                        user?.id || ''
-                      );
-                      if (resultado.success) {
-                        setMensaje({ tipo: 'exito', texto: 'Solicitud rechazada' });
-                        cargarDatos();
-                      }
-                    }}
-                    className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-                  >
-                    Rechazar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Usuarios Autorizados</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Usuarios del Sistema</h2>
           <p className="text-sm text-gray-500">
-            {usuarios.length} usuario(s) pueden acceder al sistema
+            {usuarios.length} usuario(s) registrados — un usuario puede tener varios roles a la vez
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -691,7 +563,7 @@ function TabUsuarios() {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <button 
+          <button
             onClick={cargarDatos}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             title="Actualizar"
@@ -699,7 +571,7 @@ function TabUsuarios() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           {(puedeCrear('seguridad') || esAdmin) && (
-            <button 
+            <button
               onClick={() => setShowInvitar(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -716,9 +588,9 @@ function TabUsuarios() {
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Usuario</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rol</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Roles</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Estado</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Autorizado</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Registrado</th>
               <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Acciones</th>
             </tr>
           </thead>
@@ -734,7 +606,7 @@ function TabUsuarios() {
               <tr>
                 <td colSpan={5} className="py-12 text-center">
                   <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-1">No hay usuarios autorizados</p>
+                  <p className="text-gray-500 mb-1">No hay usuarios registrados</p>
                   <p className="text-sm text-gray-400 mb-4">
                     Invita dirigentes para que puedan acceder al sistema
                   </p>
@@ -760,24 +632,38 @@ function TabUsuarios() {
                         <span className={`font-medium ${
                           usuario.activo ? 'text-blue-600' : 'text-gray-400'
                         }`}>
-                          {usuario.nombre_completo.charAt(0).toUpperCase()}
+                          {(usuario.full_name ?? usuario.email).charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{usuario.nombre_completo}</p>
+                        <p className="font-medium text-gray-900">{usuario.full_name ?? usuario.email}</p>
                         <p className="text-sm text-gray-500">{usuario.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRolBadge(usuario.role)}`}>
-                      {getRolLabel(usuario.role)}
-                    </span>
+                    {usuario.roles.length === 0 ? (
+                      <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                        Sin rol asignado
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {usuario.roles.map(rol => (
+                          <span
+                            key={rol.id}
+                            className="px-2.5 py-1 text-xs font-medium rounded-full text-white"
+                            style={{ backgroundColor: rol.color }}
+                          >
+                            {rol.nombre.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full ${
-                      usuario.activo 
-                        ? 'bg-green-100 text-green-700' 
+                      usuario.activo
+                        ? 'bg-green-100 text-green-700'
                         : 'bg-gray-100 text-gray-600'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
@@ -787,19 +673,29 @@ function TabUsuarios() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-500">
-                    {usuario.fecha_autorizacion 
-                      ? new Date(usuario.fecha_autorizacion).toLocaleDateString('es-PE')
+                    {usuario.created_at
+                      ? new Date(usuario.created_at).toLocaleDateString('es-PE')
                       : '-'
                     }
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* Gestionar roles */}
+                      {(puedeCrear('seguridad') || esAdmin) && (
+                        <button
+                          onClick={() => setUsuarioGestionandoRoles(usuario)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Gestionar roles"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
                       {/* Toggle Activo */}
-                      <button 
+                      <button
                         onClick={() => handleToggleActivo(usuario)}
                         className={`p-2 rounded-lg transition-colors ${
-                          usuario.activo 
-                            ? 'text-green-600 hover:bg-green-50' 
+                          usuario.activo
+                            ? 'text-green-600 hover:bg-green-50'
                             : 'text-gray-400 hover:bg-gray-100'
                         }`}
                         title={usuario.activo ? 'Desactivar' : 'Activar'}
@@ -810,16 +706,6 @@ function TabUsuarios() {
                           <ToggleLeft className="w-5 h-5" />
                         )}
                       </button>
-                      {/* Eliminar */}
-                      {(puedeEliminar('seguridad') || esAdmin) && usuario.email !== user?.email && (
-                        <button 
-                          onClick={() => handleEliminar(usuario)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar usuario"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -834,8 +720,25 @@ function TabUsuarios() {
         isOpen={showInvitar}
         onClose={() => setShowInvitar(false)}
         onUsuarioCreado={cargarDatos}
-        autorizadoPor={user?.id || ''}
       />
+
+      {/* Dialog para gestionar roles de un usuario existente */}
+      {usuarioGestionandoRoles && (
+        <AsignarRolDialog
+          isOpen={!!usuarioGestionandoRoles}
+          onClose={() => setUsuarioGestionandoRoles(null)}
+          usuario={{
+            id: usuarioGestionandoRoles.id,
+            email: usuarioGestionandoRoles.email,
+            nombre: usuarioGestionandoRoles.full_name ?? usuarioGestionandoRoles.email,
+            roles: usuarioGestionandoRoles.roles,
+          }}
+          onRolesActualizados={() => {
+            setUsuarioGestionandoRoles(null);
+            cargarDatos();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -93,6 +93,10 @@ export interface UsuarioSeguridad {
   rol_principal: Rol | null;
   permisos: Permiso[];
   modulos_accesibles: Modulo[];
+  /** Claves de grano fino (modulo:accion[:objeto]) efectivas del usuario — union de todos sus roles */
+  permission_keys?: string[];
+  es_admin?: boolean;
+  es_super_admin?: boolean;
   permisos_aire_libre?: SubAccionAireLibre[]; // Permisos granulares de Aire Libre
 }
 
@@ -436,114 +440,6 @@ export class PermissionsService {
       };
     } catch (error) {
       return { success: false, error: 'Error al actualizar permisos' };
-    }
-  }
-
-  /**
-   * Sincronizar rol desde dirigentes_autorizados a usuario_roles
-   * Se usa cuando un usuario inicia sesión por primera vez y no tiene roles asignados
-   */
-  static async sincronizarRolDesdeAutorizado(userId: string, email: string): Promise<{ 
-    success: boolean; 
-    rolAsignado?: string; 
-    error?: string 
-  }> {
-    try {
-      console.log('🔄 Sincronizando rol para usuario:', email);
-      
-      // 1. Buscar el usuario en dirigentes_autorizados
-      const { data: autorizado, error: errorBuscar } = await supabase
-        .from('dirigentes_autorizados')
-        .select('role, nombre_completo')
-        .eq('email', email.toLowerCase())
-        .eq('activo', true)
-        .single();
-
-      if (errorBuscar || !autorizado) {
-        console.log('⚠️ Usuario no encontrado en dirigentes_autorizados');
-        return { success: false, error: 'Usuario no autorizado' };
-      }
-
-      const rolNombre = autorizado.role;
-      console.log('📋 Rol encontrado en dirigentes_autorizados:', rolNombre);
-
-      // 2. Buscar el rol en la tabla roles
-      const { data: rol, error: errorRol } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('nombre', rolNombre)
-        .single();
-
-      if (errorRol || !rol) {
-        // Intentar mapear roles legacy
-        const rolMapping: Record<string, string> = {
-          'grupo_admin': 'jefe_grupo',
-          'admin': 'jefe_grupo'
-        };
-        const rolMapeado = rolMapping[rolNombre] || 'dirigente';
-        
-        const { data: rolAlt, error: errorRolAlt } = await supabase
-          .from('roles')
-          .select('id')
-          .eq('nombre', rolMapeado)
-          .single();
-          
-        if (errorRolAlt || !rolAlt) {
-          console.error('❌ Rol no encontrado:', rolNombre, 'ni alternativo:', rolMapeado);
-          return { success: false, error: 'Rol no encontrado en el sistema' };
-        }
-        
-        // Usar rol alternativo
-        const { error: errorInsert } = await supabase
-          .from('usuario_roles')
-          .insert({
-            user_id: userId,
-            rol_id: rolAlt.id,
-            activo: true,
-            notas: `Rol sincronizado automáticamente desde dirigentes_autorizados (${rolNombre} → ${rolMapeado})`
-          });
-
-        if (errorInsert) {
-          // Puede que ya exista
-          if (errorInsert.code !== '23505') {
-            console.error('❌ Error insertando rol:', errorInsert);
-            return { success: false, error: errorInsert.message };
-          }
-        }
-
-        console.log('✅ Rol alternativo asignado:', rolMapeado);
-        return { success: true, rolAsignado: rolMapeado };
-      }
-
-      // 3. Insertar en usuario_roles
-      const { error: errorInsert } = await supabase
-        .from('usuario_roles')
-        .insert({
-          user_id: userId,
-          rol_id: rol.id,
-          activo: true,
-          notas: 'Rol sincronizado automáticamente desde dirigentes_autorizados'
-        });
-
-      if (errorInsert) {
-        // Código 23505 = duplicate key (ya existe)
-        if (errorInsert.code === '23505') {
-          console.log('ℹ️ El rol ya estaba asignado');
-          return { success: true, rolAsignado: rolNombre };
-        }
-        console.error('❌ Error insertando rol:', errorInsert);
-        return { success: false, error: errorInsert.message };
-      }
-
-      // 4. Invalidar cache
-      this.permisosCache.delete(userId);
-      this.lastCacheTime.delete(userId);
-
-      console.log('✅ Rol sincronizado correctamente:', rolNombre);
-      return { success: true, rolAsignado: rolNombre };
-    } catch (error: any) {
-      console.error('❌ Error en sincronizarRolDesdeAutorizado:', error);
-      return { success: false, error: error.message || 'Error desconocido' };
     }
   }
 
