@@ -119,6 +119,26 @@ export class SeguridadService {
   }
 
   /**
+   * Elimina definitivamente la cuenta (auth.users + profiles + user_roles
+   * por cascada). Irreversible — a diferencia de toggleActivoUsuario, que
+   * solo desactiva sin perder el rastro.
+   */
+  static async eliminarUsuario(userId: string): Promise<{ success: boolean; error?: string }> {
+    if (shouldSkipAuth()) {
+      console.log('🔓 DEV: eliminarUsuario simulado (localhost)');
+      return { success: true };
+    }
+
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { user_id: userId },
+    });
+
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error ?? 'Error al eliminar el usuario' };
+    return { success: true };
+  }
+
+  /**
    * Invita a un usuario nuevo: crea su cuenta real en Supabase Auth (vía Edge
    * Function con service_role) y le asigna el/los rol(es) elegidos.
    */

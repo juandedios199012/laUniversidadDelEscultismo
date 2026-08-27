@@ -4,7 +4,7 @@ import {
   Edit, ChevronDown, ChevronUp, Search,
   Download, Filter, RefreshCw, Clock, AlertTriangle,
   ToggleLeft, ToggleRight, CheckCircle, XCircle, Save,
-  Grid3x3, ClipboardList, Heart
+  Grid3x3, ClipboardList, Heart, Trash2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
@@ -523,6 +523,24 @@ function TabUsuarios() {
     setTimeout(() => setMensaje(null), 3000);
   };
 
+  const handleEliminarUsuario = async (usuario: UsuarioSistema) => {
+    const nombre = usuario.full_name ?? usuario.email;
+    if (!window.confirm(`¿Eliminar definitivamente a "${nombre}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    const resultado = await SeguridadService.eliminarUsuario(usuario.id);
+
+    if (resultado.success) {
+      setMensaje({ tipo: 'exito', texto: 'Usuario eliminado correctamente' });
+      cargarDatos();
+    } else {
+      setMensaje({ tipo: 'error', texto: resultado.error || 'Error al eliminar' });
+    }
+
+    setTimeout(() => setMensaje(null), 4000);
+  };
+
   const usuariosFiltrados = usuarios.filter(u =>
     u.email.toLowerCase().includes(busqueda.toLowerCase()) ||
     (u.full_name ?? '').toLowerCase().includes(busqueda.toLowerCase())
@@ -717,6 +735,16 @@ function TabUsuarios() {
                           <ToggleLeft className="w-5 h-5" />
                         )}
                       </button>
+                      {/* Eliminar (irreversible) */}
+                      {(puedeCrear('seguridad') || esAdmin) && (
+                        <button
+                          onClick={() => handleEliminarUsuario(usuario)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Eliminar usuario"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
