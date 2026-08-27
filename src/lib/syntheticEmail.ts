@@ -17,7 +17,7 @@ export function sanitizeDni(dni: string): string {
 }
 
 export function dniToSyntheticEmail(dni: string): string {
-  return `dni_${sanitizeDni(dni)}@${SYNTHETIC_EMAIL_DOMAIN}`;
+  return `${sanitizeDni(dni)}@${SYNTHETIC_EMAIL_DOMAIN}`;
 }
 
 /** Un valor de login "parece DNI" si no tiene forma de correo electrónico. */

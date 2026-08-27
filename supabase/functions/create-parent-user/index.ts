@@ -2,7 +2,7 @@
 //
 // Crea una cuenta real en Supabase Auth para un Padre/Tutor a partir de su
 // DNI (no de un correo real): construye un correo sintético
-// dni_<dni>@padres.interno, crea el usuario ya confirmado (sin enviar
+// <dni>@padres.interno, crea el usuario ya confirmado (sin enviar
 // correo, porque esa dirección no existe) y le asigna el rol padre_familia.
 //
 // Ver ver_hijos_login_solo_dni_padre.md para el diseño completo.
@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ success: false, error: `No se encontró el rol ${PADRE_ROLE_NAME}` }, 500);
   }
 
-  const syntheticEmail = `dni_${dni}@${SYNTHETIC_EMAIL_DOMAIN}`;
+  const syntheticEmail = `${dni}@${SYNTHETIC_EMAIL_DOMAIN}`;
 
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
     email: syntheticEmail,
