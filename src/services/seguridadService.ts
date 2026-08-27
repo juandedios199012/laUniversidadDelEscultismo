@@ -85,9 +85,12 @@ export class SeguridadService {
 
   /** Lista todos los usuarios del sistema con sus roles asignados */
   static async listarUsuarios(): Promise<UsuarioSistema[]> {
+    // user_roles tiene dos FKs hacia profiles (user_id y asignado_por), así que
+    // hay que indicarle a PostgREST cuál usar para el embed (si no, PGRST201:
+    // "more than one relationship was found").
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, activo, created_at, user_roles(role:roles(*))')
+      .select('id, email, full_name, activo, created_at, user_roles!user_roles_user_id_fkey(role:roles(*))')
       .order('full_name', { ascending: true });
 
     if (error) {
