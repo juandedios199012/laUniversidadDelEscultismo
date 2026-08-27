@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, UserPlus, IdCard, Lock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { X, UserPlus, CreditCard, Lock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { SeguridadService } from '../../../services/seguridadService';
 import ScoutService from '../../../services/scoutService';
 
@@ -140,7 +140,7 @@ export default function CrearAccesoPadreDialog({ isOpen, onClose, onUsuarioCread
               DNI del Padre/Tutor <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <IdCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <CreditCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={dni}

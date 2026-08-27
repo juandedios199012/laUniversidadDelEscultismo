@@ -2,7 +2,7 @@
 //
 // Crea una cuenta real en Supabase Auth para un Padre/Tutor a partir de su
 // DNI (no de un correo real): construye un correo sintético
-// dni_<dni>@padres.gsl12.interno, crea el usuario ya confirmado (sin enviar
+// dni_<dni>@padres.interno, crea el usuario ya confirmado (sin enviar
 // correo, porque esa dirección no existe) y le asigna el rol padre_familia.
 //
 // Ver ver_hijos_login_solo_dni_padre.md para el diseño completo.
