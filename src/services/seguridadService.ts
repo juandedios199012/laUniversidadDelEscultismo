@@ -142,27 +142,37 @@ export class SeguridadService {
   }
 
   /**
-   * Crea el acceso al Portal de Padres para un Padre/Tutor a partir de su
-   * DNI: genera un correo sintético internamente (el padre nunca lo ve, solo
-   * usa su DNI + contraseña para entrar) y le asigna el rol padre_familia.
+   * Crea un usuario con la clave puesta por el admin (sin invitación por
+   * correo): pensado para usuarios no técnicos que no revisan su correo.
+   * El admin define la clave y se la entrega por otro medio (WhatsApp, en
+   * persona). Acepta DNI (arma un correo sintético internamente — el usuario
+   * nunca lo ve, solo usa su DNI + clave para entrar) o un correo real.
    * Ver ver_hijos_login_solo_dni_padre.md.
    */
-  static async crearAccesoPadre(
-    dni: string,
+  static async crearUsuarioConClave(
+    identifierType: 'dni' | 'email',
+    identifier: string,
     fullName: string,
     password: string,
+    roleIds: string[],
   ): Promise<{ success: boolean; userId?: string; error?: string }> {
     if (shouldSkipAuth()) {
-      console.log('🔓 DEV: crearAccesoPadre simulado (localhost)');
+      console.log('🔓 DEV: crearUsuarioConClave simulado (localhost)');
       return { success: true, userId: crypto.randomUUID() };
     }
 
-    const { data, error } = await supabase.functions.invoke('create-parent-user', {
-      body: { dni: dni.trim(), full_name: fullName.trim(), password },
+    const { data, error } = await supabase.functions.invoke('admin-create-user', {
+      body: {
+        identifier_type: identifierType,
+        identifier: identifier.trim(),
+        full_name: fullName.trim(),
+        password,
+        role_ids: roleIds,
+      },
     });
 
     if (error) return { success: false, error: error.message };
-    if (!data?.success) return { success: false, error: data?.error ?? 'Error al crear el acceso del padre' };
+    if (!data?.success) return { success: false, error: data?.error ?? 'Error al crear el usuario' };
     return { success: true, userId: data.user_id };
   }
 

@@ -23,7 +23,7 @@ import { AuditService, RegistroAuditoria, FiltrosAuditoria } from '../../service
 import { SeguridadService, UsuarioSistema } from '../../services/seguridadService';
 import AsignarRolDialog from './dialogs/AsignarRolDialog';
 import InvitarUsuarioDialog from './dialogs/InvitarUsuarioDialog';
-import CrearAccesoPadreDialog from './dialogs/CrearAccesoPadreDialog';
+import CrearUsuarioClaveDialog from './dialogs/CrearUsuarioClaveDialog';
 import PermissionMatrix from './tabs/PermissionMatrix';
 import FeatureRegistration from './tabs/FeatureRegistration';
 
@@ -488,7 +488,7 @@ function TabUsuarios() {
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [showInvitar, setShowInvitar] = useState(false);
-  const [showCrearPadre, setShowCrearPadre] = useState(false);
+  const [showCrearConClave, setShowCrearConClave] = useState(false);
   const [usuarioGestionandoRoles, setUsuarioGestionandoRoles] = useState<UsuarioSistema | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
@@ -574,11 +574,11 @@ function TabUsuarios() {
           </button>
           {(puedeCrear('seguridad') || esAdmin) && (
             <button
-              onClick={() => setShowCrearPadre(true)}
+              onClick={() => setShowCrearConClave(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Heart className="w-4 h-4" />
-              Crear Acceso Padre
+              Crear
             </button>
           )}
           {(puedeCrear('seguridad') || esAdmin) && (
@@ -587,7 +587,7 @@ function TabUsuarios() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <UserPlus className="w-4 h-4" />
-              Invitar Usuario
+              Invitar
             </button>
           )}
         </div>
@@ -733,10 +733,10 @@ function TabUsuarios() {
         onUsuarioCreado={cargarDatos}
       />
 
-      {/* Dialog para crear el acceso de un Padre/Tutor por DNI */}
-      <CrearAccesoPadreDialog
-        isOpen={showCrearPadre}
-        onClose={() => setShowCrearPadre(false)}
+      {/* Dialog para crear un usuario con clave puesta por el admin (DNI o correo) */}
+      <CrearUsuarioClaveDialog
+        isOpen={showCrearConClave}
+        onClose={() => setShowCrearConClave(false)}
         onUsuarioCreado={cargarDatos}
       />
 
