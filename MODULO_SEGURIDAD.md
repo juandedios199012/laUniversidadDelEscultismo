@@ -2,16 +2,18 @@
 
 Este documento describe el comportamiento del sistema **después** de ejecutar la limpieza final (`database/124_limpieza_seguridad_legacy.sql`). Reemplaza a los documentos anteriores (`IMPLEMENTACION_SEGURIDAD.md`, `SECURITY_ARCHITECTURE_PROPOSAL.md`, `SECURITY_CHANGES_SUMMARY.md`) como referencia vigente — esos quedan como historial de cómo se llegó hasta acá.
 
-## 1. Qué cambia para quien usa la web: nada
+## 1. Qué cambia para quien usa la web
 
-La limpieza es puramente interna (borra tablas y funciones de SQL que ya no usa nadie). Ningún flujo visible cambia:
+La limpieza de tablas/funciones legado es puramente interna. Pero **sí hubo un cambio visible a propósito**: el módulo tenía dos pestañas mostrando la misma matriz rol × permiso ("Roles y Permisos" y "Permisos Avanzados" — la segunda era un superconjunto exacto de la primera, mismos datos). Se dejó una sola pestaña, llamada **"Roles y Permisos"**, que es la que antes era "Permisos Avanzados" (muestra todos los permisos de cada módulo, no solo los 6 básicos) — con guardado instantáneo por switch, sin botón "Guardar cambios" aparte.
+
+El resto no cambia:
 
 - El login sigue igual (correo/clave, Google, código, o DNI para padres).
 - El sidebar sigue mostrando los mismos módulos, con las mismas reglas de acceso.
-- Seguridad → Usuarios / Roles y Permisos / Permisos Avanzados / Registro de Funcionalidades / Auditoría siguen funcionando exactamente igual.
+- Seguridad → Usuarios / Registro de Funcionalidades / Auditoría siguen funcionando exactamente igual.
 - Un usuario puede seguir teniendo varios roles a la vez (ej. dirigente + padre_familia).
 
-Lo único que cambia es que, de ahora en más, **hay una sola fuente de verdad** para permisos — antes había 3 sistemas coexistiendo (una versión vieja en español, una versión de permisos finos, y una whitelist aparte) y el código tenía que "saber" cuál de las tres consultar según el caso. Ahora solo hay una.
+Además, de ahora en más **hay una sola fuente de verdad** para permisos — antes había 3 sistemas coexistiendo (una versión vieja en español, una versión de permisos finos, y una whitelist aparte) y el código tenía que "saber" cuál de las tres consultar según el caso. Ahora solo hay una.
 
 ## 2. Inventario final — esto es "el" Módulo de Seguridad
 
@@ -25,8 +27,8 @@ Lo único que cambia es que, de ahora en más, **hay una sola fuente de verdad**
 | `role_permissions` | Qué permiso tiene otorgado cada rol. |
 | `audit_log` | Historial de cambios de seguridad. |
 | `check_user_permission(text)` | Función central que usan las políticas RLS y las Edge Functions para verificar un permiso. |
-| `api_obtener_seguridad_usuario`, `api_listar_roles`, `api_asignar_rol`, `api_revocar_rol`, `api_obtener_matriz_permisos_rol` | RPCs que usa el frontend para roles y la matriz rápida CRUD. |
-| `api_obtener_diccionario_modulos`, `api_obtener_matriz_avanzada`, `api_obtener_matriz_avanzada_rol`, `api_toggle_permiso_avanzado`, `api_registrar_modulo`, `api_registrar_permiso`, `api_eliminar_modulo`, `api_eliminar_permiso`, `api_obtener_permission_keys_usuario` | RPCs de la Matriz de Permisos Avanzados y Registro de Funcionalidades (grano fino, `permission_key`). Renombradas en `database/125_renombrar_sin_versiones.sql` — antes tenían el prefijo `api_v2_*`. |
+| `api_obtener_seguridad_usuario`, `api_listar_roles`, `api_asignar_rol`, `api_revocar_rol` | RPCs que usa el frontend para gestionar roles de usuarios. |
+| `api_obtener_diccionario_modulos`, `api_obtener_matriz_avanzada`, `api_obtener_matriz_avanzada_rol`, `api_toggle_permiso_avanzado`, `api_registrar_modulo`, `api_registrar_permiso`, `api_eliminar_modulo`, `api_eliminar_permiso`, `api_obtener_permission_keys_usuario` | RPCs de la pestaña "Roles y Permisos" (matriz rol × permiso) y "Registro de Funcionalidades". Renombradas en `database/125_renombrar_sin_versiones.sql` — antes tenían el prefijo `api_v2_*`. |
 
 Ninguna tabla ni función activa tiene ya "v1", "v2" ni "v3" en su nombre. Tampoco el permission_key que las protege: `seguridad:gestionar:permiso_v2` pasó a llamarse `seguridad:gestionar:funcionalidad` (mismo `id`, mismos roles que ya lo tenían otorgado — el `UPDATE` fue in-place). Ese es el estado final que pediste: **un solo módulo, sin versiones, en ningún lado**.
 
@@ -45,12 +47,20 @@ Verifiqué **cada** objeto de la lista de eliminación contra el código fuente 
 
 ⚠️ **Encontré un bug en el intento anterior de este script** (la "Parte B" comentada en `94b_migrar_datos_seguridad_v3.sql`): intentaba borrar `api_asignar_rol`, pero esa función fue **redefinida** para apuntar a las tablas nuevas y es la que usa hoy el diálogo "Asignar Roles" — borrarla habría roto la asignación de roles a usuarios. El script corregido (`database/124_limpieza_seguridad_legacy.sql`) ya no la toca.
 
-`api_agregar_permiso_rol` / `api_quitar_permiso_rol` sí se eliminan — tienen métodos "wrapper" en `permissionsService.ts` (`agregarPermisoRol`/`quitarPermisoRol`) pero ningún componente los llama (la Matriz de Permisos usa `api_toggle_permiso_avanzado` en su lugar). Quedan como código muerto en el frontend después de la limpieza; se pueden borrar también si quieres, es opcional.
+`api_agregar_permiso_rol` / `api_quitar_permiso_rol` también se eliminan en la limpieza — ya no tienen ni wrapper en `permissionsService.ts` (se quitó junto con la pestaña vieja, ver punto 4 más abajo), y nada los llamaba desde antes.
 
-## 4. Cómo ejecutar la limpieza
+`api_obtener_matriz_permisos_rol` / `api_actualizar_permisos_rol` (las que usaba la pestaña "Roles y Permisos" vieja, la que se sacó) también quedan huérfanas y se eliminan — ver punto 4.
+
+## 4. Se unificaron las pestañas "Roles y Permisos" + "Permisos Avanzados"
+
+Mostraban la misma matriz rol × permiso (`role_permissions` × `app_permissions`) — "Permisos Avanzados" era un superconjunto exacto de la otra. Se dejó una sola pestaña, la que era "Permisos Avanzados" (componente `PermissionMatrix.tsx`), renombrada a **"Roles y Permisos"**, con guardado instantáneo por switch (así ya funcionaba esa pantalla, no fue necesario cambiar el comportamiento de guardado). Se borró el componente `TabRoles` y los métodos/RPCs que solo usaba él.
+
+## 5. Cómo ejecutar la limpieza
 
 1. Si no lo hiciste antes: correr la **Parte A** de `database/94b_migrar_datos_seguridad_v3.sql` (migra datos de las tablas viejas a las nuevas) y revisar el `SELECT` de verificación que trae al final — los conteos deben tener sentido (ver comentarios en ese mismo archivo).
-2. Iniciar sesión como super_admin y confirmar que el sidebar, "Asignar Roles" y la Matriz de Permisos funcionan igual que siempre.
+2. Iniciar sesión como super_admin y confirmar que el sidebar, "Asignar Roles" y la matriz de permisos funcionan igual que siempre.
 3. Sacar un backup/snapshot de la base de datos (Supabase Dashboard → Database → Backups).
 4. Correr `database/124_limpieza_seguridad_legacy.sql` (tablas/funciones v1 huérfanas). Irreversible.
-5. Correr `database/125_renombrar_sin_versiones.sql` (renombra las 9 funciones `api_v2_*` y el permission_key `..._v2`). Hacerlo junto con el despliegue del frontend actualizado (`src/services/seguridadService.ts` ya llama a los nombres nuevos) para no dejar una ventana donde el frontend viejo llame a nombres que ya no existen.
+5. Correr `database/125_renombrar_sin_versiones.sql` (renombra las 9 funciones `api_v2_*` y el permission_key `..._v2`).
+6. Correr `database/126_unificar_pestanas_roles_permisos.sql` (borra las 2 funciones que solo usaba la pestaña "Roles y Permisos" vieja).
+7. Desplegar el frontend actualizado junto con los pasos 5 y 6 (ya no llama a los nombres viejos ni a la pestaña vieja) para no dejar una ventana donde el frontend viejo llame a algo que ya no existe.
