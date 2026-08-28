@@ -5,12 +5,12 @@ import { supabase } from '../lib/supabase';
 // ================================================================
 
 export type Modulo =
-  | 'dashboard' | 'scouts' | 'dirigentes' | 'patrullas'
+  | 'dashboard' | 'scouts' | 'dirigentes' | 'colaboradores' | 'patrullas'
   | 'asistencia' | 'actividades' | 'progresion' | 'inscripciones'
   | 'finanzas' | 'inventario' | 'presupuestos' | 'reportes'
   | 'mapas' | 'libro_oro' | 'programa_semanal' | 'comite_padres'
   | 'actividades_exterior' | 'seguridad' | 'configuracion' | 'portal_padres'
-  | 'documentos';
+  | 'documentos' | 'juvenil';
 
 // Acciones básicas (CRUD + extras)
 export type Accion = 'crear' | 'leer' | 'ver_detalle' | 'editar' | 'eliminar' | 'exportar' | 'aprobar';

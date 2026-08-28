@@ -14,6 +14,8 @@ import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
 import Reports from './components/Reports/Reports';
 import ComitePadres from './components/ComitePadres/ComitePadres';
 import GestionDocumentos from './components/GestionDocumentos/GestionDocumentos';
+import JuvenilPage from './components/Juvenil/JuvenilPage';
+import Colaboradores from './components/Colaboradores';
 // Módulo de Dirigentes con nuevo diseño Glassmorphism (DNGI-02)
 import Dirigentes from './components/Dirigentes';
 import Patrullas from './components/Patrullas/Patrullas';
@@ -89,6 +91,8 @@ function AppContent() {
       case 'registro-scout':
       case 'registro-scout-v2':
         return <ScoutsPage />;
+      case 'juvenil':
+        return <JuvenilPage />;
       case 'config-documentos-inscripcion':
         return <ConfiguracionDocumentosInscripcion />;
       case 'admin-objetivos':
@@ -103,6 +107,8 @@ function AppContent() {
         return <Maps />;
       case 'dirigentes':
         return <Dirigentes />;
+      case 'colaboradores':
+        return <Colaboradores />;
       case 'comite-padres':
         return <ComitePadres />;
       case 'documentos':

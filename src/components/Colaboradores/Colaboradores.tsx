@@ -1,6 +1,10 @@
 /**
- * Vista principal de Dirigentes con diseño Glassmorphism
+ * Vista principal de Colaboradores con diseño Glassmorphism
  * Incluye lista, filtros, búsqueda y acciones rápidas
+ *
+ * Clon independiente del módulo de Dirigentes: mismos datos/UI, pero
+ * tabla y RPCs 100% separadas (personas distintas, sin relación con los
+ * registros de la tabla `dirigentes`).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -18,20 +22,20 @@ import {
   ProgressRing,
 } from '../ui/GlassUI';
 import {
-  Dirigente,
-  EstadisticasDirigentes,
+  Colaborador,
+  EstadisticasColaboradores,
   CARGOS_LABELS,
   NIVELES_FORMACION_LABELS,
   RAMAS_LABELS,
-  CargoDirigente,
+  CargoColaborador,
   NivelFormacion,
-} from '../../types/dirigente';
-import DirigenteService from '../../services/dirigenteService';
+} from '../../types/colaborador';
+import ColaboradorService from '../../services/colaboradorService';
 import MembresiaService, { MapaMembresias } from '../../services/membresiaService';
 import MembresiaBadge from '../shared/MembresiaBadge';
-import FormularioDirigenteComponent from './FormularioDirigente';
+import FormularioColaboradorComponent from './FormularioColaborador';
 import GestionDocumentos from './GestionDocumentos';
-import { descargarPDFDirigente, descargarWordDirigente } from './generarPDFDirigente';
+import { descargarPDFColaborador, descargarWordColaborador } from './generarPDFColaborador';
 
 // ============================================================================
 // ICONOS SVG
@@ -150,16 +154,16 @@ interface FiltrosState {
 // COMPONENTE PRINCIPAL
 // ============================================================================
 
-export const Dirigentes: React.FC = () => {
+export const Colaboradores: React.FC = () => {
   // Permisos
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
-  
+
   // Estados
   const [vista, setVista] = useState<Vista>('lista');
-  const [dirigentes, setDirigentes] = useState<Dirigente[]>([]);
-  const [estadisticas, setEstadisticas] = useState<EstadisticasDirigentes | null>(null);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [estadisticas, setEstadisticas] = useState<EstadisticasColaboradores | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dirigenteSeleccionado, setDirigenteSeleccionado] = useState<Dirigente | null>(null);
+  const [colaboradorSeleccionado, setColaboradorSeleccionado] = useState<Colaborador | null>(null);
   const [membresias, setMembresias] = useState<MapaMembresias>({});
   const [filtros, setFiltros] = useState<FiltrosState>({
     busqueda: '',
@@ -188,12 +192,12 @@ export const Dirigentes: React.FC = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [dirigentesData, statsData, membresiasData] = await Promise.all([
-        DirigenteService.obtenerDirigentes({ estado: 'ACTIVO' }),
-        DirigenteService.obtenerEstadisticas(),
-        MembresiaService.listarEstadoDirigentes(),
+      const [colaboradoresData, statsData, membresiasData] = await Promise.all([
+        ColaboradorService.obtenerColaboradores({ estado: 'ACTIVO' }),
+        ColaboradorService.obtenerEstadisticas(),
+        MembresiaService.listarEstadoColaboradores(),
       ]);
-      setDirigentes(dirigentesData);
+      setColaboradores(colaboradoresData);
       setEstadisticas(statsData);
       setMembresias(membresiasData);
     } catch (error) {
@@ -203,26 +207,26 @@ export const Dirigentes: React.FC = () => {
     }
   };
 
-  const handleNuevoDirigente = () => {
-    if (!puedeCrear('dirigentes')) {
-      alert('No tienes permiso para crear dirigentes');
+  const handleNuevoColaborador = () => {
+    if (!puedeCrear('colaboradores')) {
+      alert('No tienes permiso para crear colaboradores');
       return;
     }
-    setDirigenteSeleccionado(null);
+    setColaboradorSeleccionado(null);
     setVista('formulario');
   };
 
-  const handleEditarDirigente = (dirigente: Dirigente) => {
-    if (!puedeEditar('dirigentes')) {
-      alert('No tienes permiso para editar dirigentes');
+  const handleEditarColaborador = (colaborador: Colaborador) => {
+    if (!puedeEditar('colaboradores')) {
+      alert('No tienes permiso para editar colaboradores');
       return;
     }
-    setDirigenteSeleccionado(dirigente);
+    setColaboradorSeleccionado(colaborador);
     setVista('formulario');
   };
 
-  const handleVerDocumentos = (dirigente: Dirigente) => {
-    setDirigenteSeleccionado(dirigente);
+  const handleVerDocumentos = (colaborador: Colaborador) => {
+    setColaboradorSeleccionado(colaborador);
     setVista('documentos');
   };
 
@@ -233,7 +237,7 @@ export const Dirigentes: React.FC = () => {
 
   const handleCancelarFormulario = () => {
     setVista('lista');
-    setDirigenteSeleccionado(null);
+    setColaboradorSeleccionado(null);
   };
 
   // ==========================================================================
@@ -259,14 +263,14 @@ export const Dirigentes: React.FC = () => {
       ];
 
       // Crear filas de datos
-      const rows = dirigentesFiltrados.map((d) => [
+      const rows = colaboradoresFiltrados.map((d) => [
         d.codigo_credencial || '',
         d.persona.apellidos || '',
         d.persona.nombres || '',
         `${d.persona.tipo_documento || 'DNI'} ${d.persona.numero_documento || ''}`,
         d.persona.correo || '',
         d.persona.celular || '',
-        CARGOS_LABELS[d.cargo as CargoDirigente] || d.cargo,
+        CARGOS_LABELS[d.cargo as CargoColaborador] || d.cargo,
         d.unidad || '',
         NIVELES_FORMACION_LABELS[d.nivel_formacion as NivelFormacion] || '',
         d.aprobo_sfh1 ? 'Sí' : 'No',
@@ -280,11 +284,11 @@ export const Dirigentes: React.FC = () => {
       ].join('\n');
 
       // Descargar
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Dirigentes_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `Colaboradores_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -297,19 +301,19 @@ export const Dirigentes: React.FC = () => {
   };
 
   const handleExportarTodosPDF = async () => {
-    if (dirigentesFiltrados.length === 0) {
-      alert('No hay dirigentes para exportar');
+    if (colaboradoresFiltrados.length === 0) {
+      alert('No hay colaboradores para exportar');
       return;
     }
 
     setExportando(true);
     try {
-      for (const dirigente of dirigentesFiltrados) {
-        await descargarPDFDirigente(dirigente);
+      for (const colaborador of colaboradoresFiltrados) {
+        await descargarPDFColaborador(colaborador);
         // Pequeña pausa para no saturar el navegador
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      alert(`Se descargaron ${dirigentesFiltrados.length} PDF(s) exitosamente`);
+      alert(`Se descargaron ${colaboradoresFiltrados.length} PDF(s) exitosamente`);
     } catch (error) {
       console.error('Error al exportar PDFs:', error);
       alert('Error al exportar algunos PDFs');
@@ -319,10 +323,10 @@ export const Dirigentes: React.FC = () => {
     }
   };
 
-  const handleExportarPDFIndividual = async (dirigente: Dirigente) => {
+  const handleExportarPDFIndividual = async (colaborador: Colaborador) => {
     setExportando(true);
     try {
-      await descargarPDFDirigente(dirigente);
+      await descargarPDFColaborador(colaborador);
     } catch (error) {
       console.error('Error al generar PDF:', error);
       alert('Error al generar PDF');
@@ -331,10 +335,10 @@ export const Dirigentes: React.FC = () => {
     }
   };
 
-  const handleExportarWordIndividual = async (dirigente: Dirigente) => {
+  const handleExportarWordIndividual = async (colaborador: Colaborador) => {
     setExportando(true);
     try {
-      await descargarWordDirigente(dirigente);
+      await descargarWordColaborador(colaborador);
     } catch (error) {
       console.error('Error al generar Word:', error);
       alert('Error al generar Word');
@@ -343,9 +347,9 @@ export const Dirigentes: React.FC = () => {
     }
   };
 
-  // Filtrar dirigentes
-  const dirigentesFiltrados = useMemo(() => {
-    return dirigentes.filter((d) => {
+  // Filtrar colaboradores
+  const colaboradoresFiltrados = useMemo(() => {
+    return colaboradores.filter((d) => {
       // Búsqueda por texto
       if (filtros.busqueda) {
         const termino = filtros.busqueda.toLowerCase();
@@ -364,10 +368,10 @@ export const Dirigentes: React.FC = () => {
       if (filtros.rama && d.unidad !== filtros.rama) return false;
       // Filtro por estado
       if (filtros.estado && d.estado !== filtros.estado) return false;
-      
+
       return true;
     });
-  }, [dirigentes, filtros]);
+  }, [colaboradores, filtros]);
 
   // ==========================================================================
   // RENDER HELPERS
@@ -405,18 +409,18 @@ export const Dirigentes: React.FC = () => {
 
   if (vista === 'formulario') {
     return (
-      <FormularioDirigenteComponent
-        dirigenteId={dirigenteSeleccionado?.id}
+      <FormularioColaboradorComponent
+        colaboradorId={colaboradorSeleccionado?.id}
         onSuccess={handleFormularioSuccess}
         onCancel={handleCancelarFormulario}
       />
     );
   }
 
-  if (vista === 'documentos' && dirigenteSeleccionado) {
+  if (vista === 'documentos' && colaboradorSeleccionado) {
     return (
       <GestionDocumentos
-        dirigente={dirigenteSeleccionado}
+        colaborador={colaboradorSeleccionado}
         onBack={() => setVista('lista')}
       />
     );
@@ -438,13 +442,13 @@ export const Dirigentes: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-                Gestión de Dirigentes
+                Gestión de Colaboradores
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1">
-                Adultos Voluntarios - Formato DNGI-02
+                Adultos Voluntarios - Registro de Colaboradores
               </p>
             </div>
-            
+
             <div className="flex gap-3">
               {/* Menú de Exportación */}
               <div className="relative">
@@ -456,7 +460,7 @@ export const Dirigentes: React.FC = () => {
                 >
                   {exportando ? 'Exportando...' : 'Exportar'}
                 </Button>
-                
+
                 <AnimatePresence>
                   {mostrarMenuExportar && (
                     <motion.div
@@ -485,7 +489,7 @@ export const Dirigentes: React.FC = () => {
                             <span className="text-xs text-slate-500">Excel compatible</span>
                           </div>
                         </button>
-                        
+
                         <button
                           onClick={handleExportarTodosPDF}
                           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -497,11 +501,11 @@ export const Dirigentes: React.FC = () => {
                           </svg>
                           <div className="text-left">
                             <span className="block font-medium">Descargar todos en PDF</span>
-                            <span className="text-xs text-slate-500">{dirigentesFiltrados.length} formularios DNGI-02</span>
+                            <span className="text-xs text-slate-500">{colaboradoresFiltrados.length} fichas de colaborador</span>
                           </div>
                         </button>
                       </div>
-                      
+
                       <div className="border-t border-slate-200 dark:border-slate-700 p-2">
                         <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           Individual (seleccionar en lista)
@@ -514,22 +518,22 @@ export const Dirigentes: React.FC = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-                
+
                 {/* Overlay para cerrar el menú */}
                 {mostrarMenuExportar && (
-                  <div 
-                    className="fixed inset-0 z-40" 
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setMostrarMenuExportar(false)}
                   />
                 )}
               </div>
-              
+
               <Button
                 variant="primary"
                 icon={Icons.UserPlus}
-                onClick={handleNuevoDirigente}
+                onClick={handleNuevoColaborador}
               >
-                Nuevo Dirigente
+                Nuevo Colaborador
               </Button>
             </div>
           </div>
@@ -551,10 +555,10 @@ export const Dirigentes: React.FC = () => {
           >
             <MetricCard
               title="Total Activos"
-              value={estadisticas?.total_dirigentes || 0}
+              value={estadisticas?.total_colaboradores || 0}
               icon={Icons.Users}
               color="blue"
-              subtitle="Dirigentes registrados"
+              subtitle="Colaboradores registrados"
             />
             <MetricCard
               title="Con SFH1 Aprobado"
@@ -670,7 +674,7 @@ export const Dirigentes: React.FC = () => {
                       ]}
                     />
                   </div>
-                  
+
                   <div className="flex justify-end mt-4">
                     <Button
                       variant="ghost"
@@ -695,30 +699,30 @@ export const Dirigentes: React.FC = () => {
         {/* Resultados y contador */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Mostrando <span className="font-semibold text-slate-700 dark:text-slate-200">{dirigentesFiltrados.length}</span> de{' '}
-            <span className="font-semibold">{dirigentes.length}</span> dirigentes
+            Mostrando <span className="font-semibold text-slate-700 dark:text-slate-200">{colaboradoresFiltrados.length}</span> de{' '}
+            <span className="font-semibold">{colaboradores.length}</span> colaboradores
           </p>
         </div>
 
-        {/* Lista de dirigentes */}
+        {/* Lista de colaboradores */}
         {loading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
-        ) : dirigentesFiltrados.length === 0 ? (
+        ) : colaboradoresFiltrados.length === 0 ? (
           <EmptyState
             icon={Icons.Users}
-            title="No hay dirigentes que mostrar"
+            title="No hay colaboradores que mostrar"
             description={
               filtros.busqueda || filtros.cargo || filtros.nivel_formacion || filtros.rama
                 ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Comienza registrando un nuevo dirigente'
+                : 'Comienza registrando un nuevo colaborador'
             }
             action={
               !filtros.busqueda && !filtros.cargo
-                ? { label: 'Registrar Dirigente', onClick: handleNuevoDirigente }
+                ? { label: 'Registrar Colaborador', onClick: handleNuevoColaborador }
                 : undefined
             }
           />
@@ -729,9 +733,9 @@ export const Dirigentes: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="space-y-3"
           >
-            {dirigentesFiltrados.map((dirigente, index) => (
+            {colaboradoresFiltrados.map((colaborador, index) => (
               <motion.div
-                key={dirigente.id}
+                key={colaborador.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -741,7 +745,7 @@ export const Dirigentes: React.FC = () => {
                     {/* Avatar */}
                     <div className="flex-shrink-0 mr-4">
                       <Avatar
-                        name={`${dirigente.persona.nombres} ${dirigente.persona.apellidos}`}
+                        name={`${colaborador.persona.nombres} ${colaborador.persona.apellidos}`}
                         size="lg"
                       />
                     </div>
@@ -750,24 +754,24 @@ export const Dirigentes: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          {dirigente.persona.apellidos}, {dirigente.persona.nombres}
+                          {colaborador.persona.apellidos}, {colaborador.persona.nombres}
                         </h3>
-                        {renderEstadoBadge(dirigente.estado)}
-                        <MembresiaBadge estado={membresias[dirigente.id]?.estado} />
+                        {renderEstadoBadge(colaborador.estado)}
+                        <MembresiaBadge estado={membresias[colaborador.id]?.estado} />
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                           <span className="w-4 h-4">{Icons.Award}</span>
-                          {CARGOS_LABELS[dirigente.cargo as CargoDirigente]}
+                          {CARGOS_LABELS[colaborador.cargo as CargoColaborador]}
                         </span>
-                        {dirigente.unidad && (
+                        {colaborador.unidad && (
                           <span>
-                            {RAMAS_LABELS[dirigente.unidad as keyof typeof RAMAS_LABELS] || dirigente.unidad}
+                            {RAMAS_LABELS[colaborador.unidad as keyof typeof RAMAS_LABELS] || colaborador.unidad}
                           </span>
                         )}
-                        {dirigente.persona.correo && (
-                          <span className="truncate">{dirigente.persona.correo}</span>
+                        {colaborador.persona.correo && (
+                          <span className="truncate">{colaborador.persona.correo}</span>
                         )}
                       </div>
                     </div>
@@ -776,12 +780,12 @@ export const Dirigentes: React.FC = () => {
                     <div className="hidden lg:flex items-center gap-4 mx-4">
                       {/* Formación */}
                       <div className="text-center">
-                        {renderFormacionBadge(dirigente.nivel_formacion)}
+                        {renderFormacionBadge(colaborador.nivel_formacion)}
                       </div>
 
                       {/* SFH1 */}
-                      <div className="flex items-center gap-1" title={dirigente.aprobo_sfh1 ? 'SFH1 Aprobado' : 'Pendiente SFH1'}>
-                        {dirigente.aprobo_sfh1 ? (
+                      <div className="flex items-center gap-1" title={colaborador.aprobo_sfh1 ? 'SFH1 Aprobado' : 'Pendiente SFH1'}>
+                        {colaborador.aprobo_sfh1 ? (
                           <span className="text-emerald-500">{Icons.CheckCircle}</span>
                         ) : (
                           <span className="text-amber-500">{Icons.XCircle}</span>
@@ -793,8 +797,8 @@ export const Dirigentes: React.FC = () => {
                       <div className="text-center" title="Documentos">
                         <ProgressRing
                           progress={
-                            dirigente.total_documentos
-                              ? ((dirigente.documentos_verificados || 0) / dirigente.total_documentos) * 100
+                            colaborador.total_documentos
+                              ? ((colaborador.documentos_verificados || 0) / colaborador.total_documentos) * 100
                               : 0
                           }
                           size={40}
@@ -802,7 +806,7 @@ export const Dirigentes: React.FC = () => {
                           color="#06b6d4"
                         >
                           <span className="text-xs font-medium">
-                            {dirigente.documentos_verificados || 0}/{dirigente.total_documentos || 0}
+                            {colaborador.documentos_verificados || 0}/{colaborador.total_documentos || 0}
                           </span>
                         </ProgressRing>
                       </div>
@@ -812,9 +816,9 @@ export const Dirigentes: React.FC = () => {
                     <div className="flex items-center gap-1">
                       {/* Botones de exportación directos - Sin menú dropdown */}
                       <button
-                        onClick={() => handleExportarPDFIndividual(dirigente)}
+                        onClick={() => handleExportarPDFIndividual(colaborador)}
                         className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-600 transition-colors"
-                        title="Descargar PDF DNGI-02"
+                        title="Descargar PDF"
                       >
                         <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -823,7 +827,7 @@ export const Dirigentes: React.FC = () => {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleExportarWordIndividual(dirigente)}
+                        onClick={() => handleExportarWordIndividual(colaborador)}
                         className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-500 hover:text-blue-600 transition-colors"
                         title="Descargar Word editable"
                       >
@@ -834,14 +838,14 @@ export const Dirigentes: React.FC = () => {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleVerDocumentos(dirigente)}
+                        onClick={() => handleVerDocumentos(colaborador)}
                         className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-cyan-500 transition-colors"
                         title="Ver documentos"
                       >
                         {Icons.FileText}
                       </button>
                       <button
-                        onClick={() => handleEditarDirigente(dirigente)}
+                        onClick={() => handleEditarColaborador(colaborador)}
                         className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-cyan-500 transition-colors"
                         title="Editar"
                       >
@@ -853,9 +857,9 @@ export const Dirigentes: React.FC = () => {
                   {/* Barra móvil con indicadores */}
                   <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
-                      {renderFormacionBadge(dirigente.nivel_formacion)}
+                      {renderFormacionBadge(colaborador.nivel_formacion)}
                       <div className="flex items-center gap-1">
-                        {dirigente.aprobo_sfh1 ? (
+                        {colaborador.aprobo_sfh1 ? (
                           <span className="text-emerald-500">{Icons.CheckCircle}</span>
                         ) : (
                           <span className="text-amber-500">{Icons.XCircle}</span>
@@ -864,7 +868,7 @@ export const Dirigentes: React.FC = () => {
                       </div>
                     </div>
                     <span className="text-xs text-slate-400">
-                      {dirigente.documentos_verificados || 0}/{dirigente.total_documentos || 0} docs
+                      {colaborador.documentos_verificados || 0}/{colaborador.total_documentos || 0} docs
                     </span>
                   </div>
                 </GlassCard>
@@ -877,4 +881,4 @@ export const Dirigentes: React.FC = () => {
   );
 };
 
-export default Dirigentes;
+export default Colaboradores;

@@ -15,6 +15,7 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
   const [gananciaUnitaria, setGananciaUnitaria] = useState(conceptoEditar?.ganancia_unitaria?.toString() ?? '');
   const [fecha, setFecha] = useState(conceptoEditar?.fecha ?? new Date().toISOString().split('T')[0]);
   const [activo, setActivo] = useState(conceptoEditar?.activo ?? true);
+  const [esMembresiaAnual, setEsMembresiaAnual] = useState(conceptoEditar?.es_membresia_anual ?? false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
         requiere_cantidad: requiereCantidad,
         precio_unitario: requiereCantidad && precioUnitario.trim() ? parseFloat(precioUnitario) : undefined,
         ganancia_unitaria: requiereCantidad && gananciaUnitaria.trim() ? parseFloat(gananciaUnitaria) : undefined,
+        es_membresia_anual: esMembresiaAnual,
         fecha,
         activo,
       });
@@ -143,6 +145,18 @@ const ModalConcepto: React.FC<ModalConceptoProps> = ({ conceptoEditar, onCerrar,
               className="h-4 w-4"
             />
             <span className="text-sm text-gray-700">Activo (visible como sugerencia al registrar movimientos)</span>
+          </label>
+
+          <label className="flex items-center gap-2 p-3 border rounded-lg border-amber-200 bg-amber-50">
+            <input
+              type="checkbox"
+              checked={esMembresiaAnual}
+              onChange={(e) => setEsMembresiaAnual(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="text-sm text-gray-700">
+              Es la Inscripción/Membresía anual — al registrar un ingreso con este concepto se activa automáticamente la membresía (31 marzo - 31 marzo) de quien pagó, en el módulo Juvenil.
+            </span>
           </label>
 
           {error && (
@@ -287,7 +301,14 @@ const ConceptosFinanzas: React.FC = () => {
             <tbody>
               {conceptos.map((concepto) => (
                 <tr key={concepto.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-3 px-4 font-medium text-gray-900">{concepto.descripcion}</td>
+                  <td className="py-3 px-4 font-medium text-gray-900">
+                    {concepto.descripcion}
+                    {concepto.es_membresia_anual && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 align-middle">
+                        MEMBRESÍA ANUAL
+                      </span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 text-center">
                     {concepto.requiere_cantidad ? (
                       <Check className="h-4 w-4 text-green-600 inline" />

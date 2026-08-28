@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User
+  MapPin, User, Sparkles, Handshake
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -33,12 +33,32 @@ interface MenuGroup {
 // Ítems independientes (sin grupo)
 const standaloneItems: MenuItem[] = [
   { id: 'dashboard',    label: 'Dashboard',       icon: Home,  gradient: 'from-blue-500 to-cyan-500',     modulo: 'dashboard'    },
-  { id: 'scouts',       label: 'Scouts',          icon: Users, gradient: 'from-green-500 to-emerald-500', modulo: 'scouts'       },
   { id: 'portal-padres', label: 'Portal de Padres', icon: Heart, gradient: 'from-pink-500 to-rose-500',   modulo: 'portal_padres' },
   { id: 'config-documentos-inscripcion', label: 'Tipos de Documento', icon: FileText, gradient: 'from-teal-400 to-cyan-400', modulo: 'inscripciones' },
 ];
 
 const menuGroups: MenuGroup[] = [
+  {
+    id: 'juventud',
+    label: 'Juventud',
+    icon: Users,
+    gradient: 'from-green-500 to-emerald-500',
+    items: [
+      { id: 'juvenil', label: 'Juvenil',      icon: Sparkles, gradient: 'from-emerald-500 to-teal-500',   modulo: 'juvenil' },
+      { id: 'scouts',  label: 'Participantes', icon: Users,   gradient: 'from-green-500 to-emerald-500', modulo: 'scouts'  },
+    ],
+  },
+  {
+    id: 'adultos',
+    label: 'Adultos',
+    icon: User,
+    gradient: 'from-orange-500 to-red-500',
+    items: [
+      { id: 'dirigentes',    label: 'Dirigentes',    icon: Shield,     gradient: 'from-orange-500 to-red-500',    modulo: 'dirigentes'    },
+      { id: 'colaboradores', label: 'Colaboradores', icon: Handshake,  gradient: 'from-amber-500 to-orange-500',  modulo: 'colaboradores' },
+      { id: 'comite-padres', label: 'Comité Padres', icon: Users,      gradient: 'from-purple-400 to-violet-400', modulo: 'comite_padres' },
+    ],
+  },
   {
     id: 'progresion',
     label: 'Progresión',
@@ -58,8 +78,6 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-purple-500 to-violet-500',
     items: [
       { id: 'grupo-scout',   label: 'Grupo Scout',   icon: Flag,   gradient: 'from-purple-500 to-violet-500', modulo: 'configuracion' },
-      { id: 'dirigentes',    label: 'Dirigentes',    icon: Shield, gradient: 'from-orange-500 to-red-500',    modulo: 'dirigentes'    },
-      { id: 'comite-padres', label: 'Comité Padres', icon: Users,  gradient: 'from-purple-400 to-violet-400', modulo: 'comite_padres' },
       { id: 'patrullas',     label: 'Patrullas',     icon: Award,  gradient: 'from-red-500 to-pink-500',      modulo: 'patrullas'     },
     ],
   },

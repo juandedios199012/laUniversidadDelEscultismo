@@ -1,12 +1,31 @@
 import { Bell, Search, User, Award, Users, Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function Header() {
   const { user, signOut } = useAuth();
   const { rolPrincipal } = usePermissions();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [scoutsActivos, setScoutsActivos] = useState<number | null>(null);
+
+  useEffect(() => {
+    let activo = true;
+    supabase
+      .from('scouts')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'ACTIVO')
+      .then(({ count, error }) => {
+        if (!activo) return;
+        if (error) {
+          console.error('❌ Error obteniendo scouts activos:', error);
+          return;
+        }
+        setScoutsActivos(count ?? 0);
+      });
+    return () => { activo = false; };
+  }, []);
 
   // Obtener nombre del usuario
   const nombreUsuario = user?.name || 
@@ -49,7 +68,9 @@ export default function Header() {
         <div className="hidden lg:flex items-center space-x-6 text-white/90">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5" />
-            <span className="text-sm font-medium">156 Scouts Activos</span>
+            <span className="text-sm font-medium">
+              {scoutsActivos === null ? '…' : scoutsActivos} Scouts Activos
+            </span>
           </div>
           <div className="w-px h-6 bg-white/20"></div>
           <div className="text-sm">

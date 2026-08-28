@@ -227,6 +227,8 @@ export interface ConceptoFinanzas {
   ganancia_unitaria?: number;
   fecha: string;
   activo: boolean;
+  /** Si está marcado, un INGRESO con este concepto activa/renueva la membresía anual (31 marzo - 31 marzo) de quien pagó. */
+  es_membresia_anual: boolean;
 }
 
 // ============= SERVICE CLASS =============
@@ -254,6 +256,7 @@ export class FinanzasService {
     ganancia_unitaria?: number;
     fecha: string;
     activo: boolean;
+    es_membresia_anual?: boolean;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     const { data, error } = await supabase.rpc('api_upsert_concepto_finanzas', {
       p_id: concepto.id || null,
@@ -263,6 +266,7 @@ export class FinanzasService {
       p_fecha: concepto.fecha,
       p_activo: concepto.activo,
       p_ganancia_unitaria: concepto.ganancia_unitaria ?? null,
+      p_es_membresia_anual: concepto.es_membresia_anual ?? false,
     });
 
     if (error) throw error;

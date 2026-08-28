@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { ComitePadresEntry } from '../../lib/supabase';
 import ComitePadresService, { type CargoComite } from '../../services/comitePadresService';
+import MembresiaService, { MapaMembresias, EstadoMembresia } from '../../services/membresiaService';
+import MembresiaBadge from '../shared/MembresiaBadge';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
 import type { PersonaResult } from '../../services/personaService';
 import { UbigeoService, type Departamento, type Provincia, type Distrito } from '../../services/ubigeoService';
@@ -170,6 +172,7 @@ const labelBase = 'block text-sm font-medium text-slate-600 mb-1.5';
 export default function ComitePadres() {
   // ============= ESTADO PRINCIPAL =============
   const [miembros, setMiembros] = useState<ComitePadresEntry[]>([]);
+  const [membresias, setMembresias] = useState<MapaMembresias>({});
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCargo, setFilterCargo] = useState('');
@@ -202,8 +205,12 @@ export default function ComitePadres() {
   const loadMiembros = async () => {
     setLoading(true);
     try {
-      const data = await ComitePadresService.getMiembrosComite({ activos_solo: false });
+      const [data, membresiasData] = await Promise.all([
+        ComitePadresService.getMiembrosComite({ activos_solo: false }),
+        MembresiaService.listarEstadoComitePadres(),
+      ]);
       setMiembros(data);
+      setMembresias(membresiasData);
     } catch (error) {
       console.error('❌ Error cargando comité de padres:', error);
       setMiembros([]);
@@ -555,6 +562,7 @@ export default function ComitePadres() {
               <MiembroCard
                 key={m.id}
                 m={m}
+                membresiaEstado={membresias[m.id]?.estado}
                 onView={() => setViewMiembro(m)}
                 onEdit={() => abrirEditar(m)}
                 onRetirar={() => retirar(m)}
@@ -1752,9 +1760,10 @@ function GestionarCargos({
 }
 
 function MiembroCard({
-  m, onView, onEdit, onRetirar, onEliminar,
+  m, membresiaEstado, onView, onEdit, onRetirar, onEliminar,
 }: {
   m: ComitePadresEntry;
+  membresiaEstado?: EstadoMembresia;
   onView: () => void;
   onEdit: () => void;
   onRetirar: () => void;
@@ -1780,6 +1789,7 @@ function MiembroCard({
                 <span className={`h-1.5 w-1.5 rounded-full ${estado.dot}`} />
                 {estado.label}
               </span>
+              <MembresiaBadge estado={membresiaEstado} />
             </div>
           </div>
         </div>
