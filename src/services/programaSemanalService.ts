@@ -539,6 +539,22 @@ export class ProgramaSemanalService {
     }
   }
 
+  /**
+   * Rama del dirigente actualmente logueado (por su correo), o null si
+   * no es dirigente / no tiene una única rama asignada. Se usa para
+   * restringir la lista de Programa Semanal a solo su rama.
+   */
+  static async obtenerMiRamaDirigente(): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.rpc('api_mi_rama_dirigente');
+      if (error) throw error;
+      return data ?? null;
+    } catch (error) {
+      console.error('Error al obtener mi rama de dirigente:', error);
+      return null;
+    }
+  }
+
   // ============= 🏕️ ACTIVIDADES AUTOMÁTICAS I.B.O =============
 
   /**

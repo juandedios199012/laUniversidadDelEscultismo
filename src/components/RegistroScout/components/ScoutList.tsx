@@ -35,6 +35,8 @@ interface ScoutListProps {
   onRefresh?: () => void;
   selectedId?: string;
   showTitle?: boolean;
+  /** Solo consulta: oculta Registrar/Editar/Historia Médica/Desactivar/Activar/Eliminar, deja solo "Ver detalles". */
+  soloLectura?: boolean;
 }
 
 const ramaBadgeVariant: Record<string, "manada" | "tropa" | "comunidad" | "clan" | "default"> = {
@@ -62,6 +64,7 @@ export function ScoutList({
   onRefresh,
   selectedId,
   showTitle = true,
+  soloLectura = false,
 }: ScoutListProps) {
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
@@ -211,7 +214,7 @@ export function ScoutList({
                 : "Comienza registrando al primer scout del grupo"
             }
             action={
-              !searchTerm && !ramaFiltro && puedeCrear('scouts')
+              !searchTerm && !ramaFiltro && !soloLectura && puedeCrear('scouts')
                 ? { label: "Registrar Scout", onClick: onNewScout }
                 : undefined
             }
@@ -270,7 +273,7 @@ export function ScoutList({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {puedeEditar('scouts') && (
+                    {!soloLectura && puedeEditar('scouts') && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -283,7 +286,7 @@ export function ScoutList({
                         <Edit className="h-4 w-4" />
                       </Button>
                     )}
-                    {onMedicalHistory && puedeEditar('scouts') && (
+                    {!soloLectura && onMedicalHistory && puedeEditar('scouts') && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -321,7 +324,7 @@ export function ScoutList({
                         </Button>
                       </>
                     )}
-                    {onDeactivate && puedeEditar('scouts') && scout.estado === "ACTIVO" && (
+                    {!soloLectura && onDeactivate && puedeEditar('scouts') && scout.estado === "ACTIVO" && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -335,7 +338,7 @@ export function ScoutList({
                         <UserMinus className="h-4 w-4" />
                       </Button>
                     )}
-                    {onActivate && puedeEditar('scouts') && scout.estado !== "ACTIVO" && (
+                    {!soloLectura && onActivate && puedeEditar('scouts') && scout.estado !== "ACTIVO" && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -349,7 +352,7 @@ export function ScoutList({
                         <UserCheck className="h-4 w-4" />
                       </Button>
                     )}
-                    {onDelete && puedeEliminar('scouts') && (
+                    {!soloLectura && onDelete && puedeEliminar('scouts') && (
                       <Button
                         variant="ghost"
                         size="icon"

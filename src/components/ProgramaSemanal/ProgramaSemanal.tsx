@@ -12,6 +12,7 @@ import { timeToMinutes, minutesToTime, recalcularHorarioSecuencial } from '../..
 import SelectorObjetivosEducativos from '../shared/SelectorObjetivosEducativos';
 import ProgresionService from '../../services/progresionService';
 import { resolverMultiplesContraCatalogo } from '../../utils/matchTextoCatalogo';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 // Tipo para dirigentes activos
 interface DirigenteActivo {
@@ -24,6 +25,8 @@ interface DirigenteActivo {
 interface ProgramaSemanalProps {}
 
 export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
+  const { esAdmin } = usePermissions();
+
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,6 +34,11 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRama, setFilterRama] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
+
+  // Rama del dirigente logueado (si aplica) — cuando está definida, la
+  // lista de programas queda fija a esa rama y no se muestra el filtro
+  // manual de Rama (los admins/coordinadores, con bypass, ven todo).
+  const [miRama, setMiRama] = useState<string | null>(null);
 
   // Estados para dirigentes activos
   const [dirigentesActivos, setDirigentesActivos] = useState<DirigenteActivo[]>([]);
@@ -79,9 +87,27 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
   // ============= EFECTOS =============
   useEffect(() => {
-    loadProgramas();
+    (async () => {
+      let ramaFija: string | null = null;
+      if (!esAdmin) {
+        const ramaDirigente = await ProgramaSemanalService.obtenerMiRamaDirigente();
+        // Normalizar contra el catálogo de la UI (dirigentes.unidad es texto
+        // libre, puede no coincidir en mayúsculas/minúsculas exactas).
+        const match = ramaDirigente
+          ? ramas.find(r => r.value.toLowerCase() === ramaDirigente.trim().toLowerCase())
+          : null;
+        ramaFija = match?.value ?? null;
+        setMiRama(ramaFija);
+      }
+      loadProgramas(ramaFija);
+    })();
     loadDirigentesActivos();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esAdmin]);
+
+  /** Dirigentes activos cuya `unidad` coincide con la rama dada (comparación insensible a mayúsculas/espacios, ya que dirigentes.unidad es texto libre). */
+  const dirigentesPorRama = (rama: string) =>
+    dirigentesActivos.filter(d => (d.rama || '').trim().toLowerCase() === rama.trim().toLowerCase());
 
   // ============= FUNCIONES DE CARGA =============
   const loadDirigentesActivos = async () => {
@@ -94,11 +120,13 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     }
   };
 
-  const loadProgramas = async () => {
+  const loadProgramas = async (ramaFija?: string | null) => {
     setLoading(true);
     try {
       console.log('📅 Cargando programas semanales desde Supabase...');
-      const programasData = await ProgramaSemanalService.getProgramas();
+      const programasData = await ProgramaSemanalService.getProgramas(
+        ramaFija ? { rama: ramaFija } : undefined
+      );
       // Normalizar actividades: siempre array
       const programasNormalizados = (programasData || []).map(p => ({
         ...p,
@@ -140,7 +168,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       hora_inicio_programa: '',
       hora_fin_programa: '',
       tema_central: '',
-      rama: 'Tropa',
+      rama: (miRama as 'Manada' | 'Tropa' | 'Comunidad' | 'Clan') || 'Tropa',
       objetivos: [''],
       actividades: [{ nombre: '', desarrollo: '', hora_inicio: '09:00', duracion_minutos: 60, responsable: '', materiales: [''], observaciones: '' }],
       responsable_programa: '',
@@ -224,7 +252,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         observaciones_generales: createForm.observaciones_generales,
         actividades: actividadesNormalizadas
       });
-      await loadProgramas();
+      await loadProgramas(miRama);
       setIsCreateModalOpen(false);
       alert('Programa semanal creado exitosamente');
     } catch (err) {
@@ -272,7 +300,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         observaciones_generales: editForm.observaciones_generales,
         actividades: actividadesNormalizadas
       });
-      await loadProgramas();
+      await loadProgramas(miRama);
       setIsEditModalOpen(false);
       alert('Programa semanal actualizado exitosamente');
     } catch (err) {
@@ -670,16 +698,22 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
               />
             </div>
-            <select
-              value={filterRama}
-              onChange={(e) => setFilterRama(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
-            >
-              <option value="">Todas las ramas</option>
-              {ramas.map(rama => (
-                <option key={rama.value} value={rama.value}>{rama.label}</option>
-              ))}
-            </select>
+            {miRama ? (
+              <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-500">
+                Rama: <span className="font-medium text-gray-700">{ramas.find(r => r.value === miRama)?.label ?? miRama}</span>
+              </div>
+            ) : (
+              <select
+                value={filterRama}
+                onChange={(e) => setFilterRama(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+              >
+                <option value="">Todas las ramas</option>
+                {ramas.map(rama => (
+                  <option key={rama.value} value={rama.value}>{rama.label}</option>
+                ))}
+              </select>
+            )}
             <select
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
@@ -915,7 +949,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   </label>
                   <select
                     value={createForm.rama}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, rama: e.target.value as any }))}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, rama: e.target.value as any, responsable_programa: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
                   >
@@ -936,7 +970,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     required
                   >
                     <option value="">Seleccionar dirigente responsable</option>
-                    {dirigentesActivos.map(dirigente => (
+                    {dirigentesPorRama(createForm.rama).map(dirigente => (
                       <option key={dirigente.id} value={dirigente.nombre_completo}>
                         {dirigente.nombre_completo} - {dirigente.cargo}
                       </option>
@@ -1100,7 +1134,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
                             <option value="">Seleccionar responsable</option>
-                            {dirigentesActivos.map(dirigente => (
+                            {dirigentesPorRama(createForm.rama).map(dirigente => (
                               <option key={dirigente.id} value={dirigente.nombre_completo}>
                                 {dirigente.nombre_completo}
                               </option>
@@ -1277,7 +1311,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                   </label>
                   <select
                     value={editForm.rama}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, rama: e.target.value as any }))}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, rama: e.target.value as any, responsable_programa: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
                   >
@@ -1302,7 +1336,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                     {editForm.responsable_programa && !dirigentesActivos.find(d => d.nombre_completo === editForm.responsable_programa) && (
                       <option value={editForm.responsable_programa}>{editForm.responsable_programa} (valor actual)</option>
                     )}
-                    {dirigentesActivos.map(dirigente => (
+                    {dirigentesPorRama(editForm.rama).map(dirigente => (
                       <option key={dirigente.id} value={dirigente.nombre_completo}>
                         {dirigente.nombre_completo} - {dirigente.cargo}
                       </option>
@@ -1472,7 +1506,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                               {actividad.responsable && !dirigentesActivos.find(d => d.nombre_completo === actividad.responsable) && (
                                 <option value={actividad.responsable}>{actividad.responsable} (valor actual)</option>
                               )}
-                              {dirigentesActivos.map(dirigente => (
+                              {dirigentesPorRama(editForm.rama).map(dirigente => (
                                 <option key={dirigente.id} value={dirigente.nombre_completo}>
                                   {dirigente.nombre_completo}
                                 </option>
@@ -1734,7 +1768,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
           }}
           onSave={() => {
             // Recargar datos si es necesario
-            loadProgramas();
+            loadProgramas(miRama);
           }}
         />
       )}
