@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User, Sparkles, Handshake
+  MapPin, User, Sparkles, Handshake, Gamepad2
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -35,6 +35,7 @@ const standaloneItems: MenuItem[] = [
   { id: 'dashboard',    label: 'Dashboard',       icon: Home,  gradient: 'from-blue-500 to-cyan-500',     modulo: 'dashboard'    },
   { id: 'portal-padres', label: 'Portal de Padres', icon: Heart, gradient: 'from-pink-500 to-rose-500',   modulo: 'portal_padres' },
   { id: 'config-documentos-inscripcion', label: 'Tipos de Documento', icon: FileText, gradient: 'from-teal-400 to-cyan-400', modulo: 'inscripciones' },
+  { id: 'aprender-haciendo', label: 'Aprender Haciendo', icon: Gamepad2, gradient: 'from-fuchsia-500 to-purple-600', modulo: 'aprender_haciendo' },
 ];
 
 const menuGroups: MenuGroup[] = [
