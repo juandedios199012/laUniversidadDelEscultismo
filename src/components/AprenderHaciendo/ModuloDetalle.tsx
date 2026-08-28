@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, ArrowRight, Gamepad2, Loader2, ShieldAlert, Star, Users,
+  ArrowLeft, ArrowRight, Gamepad2, ListChecks, Loader2, Pencil, Plus, ShieldAlert, Star, Users,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,9 +29,11 @@ import { usePermissions } from '@/contexts/PermissionsContext';
 import AprenderHacienoService from '@/services/aprenderHacienoService';
 import ScoutService from '@/services/scoutService';
 import type { Scout } from '@/lib/supabase';
-import type { AhModuloDetalle, AhReto } from '@/types/aprenderHaciendo';
+import type { AhModuloDetalle, AhPaso, AhReto } from '@/types/aprenderHaciendo';
 import PictogramCard, { resolverIcono } from './PictogramCard';
 import RetoRunner from './RetoRunner';
+import PasoFormDialog from './PasoFormDialog';
+import RetoFormDialog from './RetoFormDialog';
 
 type Vista = 'pasos' | 'retos' | 'jugando';
 
@@ -41,7 +43,7 @@ interface ModuloDetalleProps {
 }
 
 export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) {
-  const { puedeVerDetalle, puedeCrear } = usePermissions();
+  const { puedeVerDetalle, puedeCrear, puedeEditar } = usePermissions();
 
   const [detalle, setDetalle] = useState<AhModuloDetalle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,11 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
 
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [scoutId, setScoutId] = useState<string>('');
+
+  // Diálogos de autoría de contenido (Fase 2) — se montan sólo mientras
+  // están abiertos para arrancar siempre con estado limpio.
+  const [dialogoPaso, setDialogoPaso] = useState<'nuevo' | AhPaso | null>(null);
+  const [dialogoReto, setDialogoReto] = useState<'nuevo' | AhReto | null>(null);
 
   const cargarDetalle = useCallback(async () => {
     setLoading(true);
@@ -70,6 +77,20 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
   useEffect(() => {
     cargarDetalle();
   }, [cargarDetalle]);
+
+  // Recarga liviana usada tras guardar un paso/reto desde los diálogos de
+  // autoría — a diferencia de `cargarDetalle`, no resetea la vista actual
+  // ni el índice de paso (el dirigente se queda donde estaba trabajando).
+  const refrescarDetalle = useCallback(async () => {
+    try {
+      const data = await AprenderHacienoService.obtenerModuloDetalle(moduloId);
+      setDetalle(data);
+      setPasoIndex(i => Math.min(i, Math.max(0, data.pasos.length - 1)));
+    } catch (err) {
+      console.error('Error al recargar el módulo:', err);
+      toast.error('No se pudo actualizar la información del módulo');
+    }
+  }, [moduloId]);
 
   useEffect(() => {
     ScoutService.getAllScouts()
@@ -142,6 +163,16 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
     setVista('jugando');
   };
 
+  const handleGuardadoPaso = () => {
+    setDialogoPaso(null);
+    refrescarDetalle();
+  };
+
+  const handleGuardadoReto = () => {
+    setDialogoReto(null);
+    refrescarDetalle();
+  };
+
   return (
     <div className="container mx-auto p-4 pt-2 max-w-3xl">
       {/* Cabecera — "Volver" siempre arriba a la izquierda */}
@@ -196,6 +227,18 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
 
           <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-white to-fuchsia-50/40">
             <CardContent className="p-6 sm:p-10 flex flex-col items-center gap-5">
+              {puedeEditar('aprender_haciendo') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDialogoPaso(pasoActual)}
+                  className="self-end min-h-[40px] -mb-2"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar paso
+                </Button>
+              )}
+
               <PictogramCard
                 label={pasoActual.titulo}
                 textoVoz={pasoActual.instruccion_texto}
@@ -237,6 +280,38 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
+
+          {puedeCrear('aprender_haciendo') && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setDialogoPaso('nuevo')}
+                className="min-h-[44px]"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar paso
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {vista === 'pasos' && !pasoActual && (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center text-muted-foreground border rounded-2xl border-dashed">
+          <ListChecks className="h-10 w-10 text-gray-300" />
+          <p className="font-medium">Este módulo todavía no tiene pasos configurados</p>
+          {puedeCrear('aprender_haciendo') && (
+            <Button
+              onClick={() => setDialogoPaso('nuevo')}
+              className="min-h-[44px] mt-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar paso
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setVista('retos')} className="min-h-[44px] mt-2">
+            Ver retos
+          </Button>
         </div>
       )}
 
@@ -247,12 +322,24 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
               <Gamepad2 className="h-5 w-5 text-fuchsia-600" />
               Retos de este módulo
             </h2>
-            {pasos.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleAnterior} className="min-h-[44px]">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Repasar pasos
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {(pasos.length > 0 || puedeCrear('aprender_haciendo')) && (
+                <Button variant="outline" size="sm" onClick={handleAnterior} className="min-h-[44px]">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Repasar pasos
+                </Button>
+              )}
+              {puedeCrear('aprender_haciendo') && (
+                <Button
+                  size="sm"
+                  onClick={() => setDialogoReto('nuevo')}
+                  className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar reto
+                </Button>
+              )}
+            </div>
           </div>
 
           {retos.length === 0 ? (
@@ -273,15 +360,28 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
                       </span>
                     </div>
                     <h3 className="font-bold text-gray-800">{reto.titulo}</h3>
-                    {puedeCrear('aprender_haciendo') ? (
-                      <Button
-                        onClick={() => handleJugar(reto)}
-                        className="min-h-[44px] mt-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
-                      >
-                        <Gamepad2 className="h-4 w-4 mr-2" />
-                        Jugar
-                      </Button>
-                    ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      {puedeCrear('aprender_haciendo') && (
+                        <Button
+                          onClick={() => handleJugar(reto)}
+                          className="min-h-[44px] flex-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                        >
+                          <Gamepad2 className="h-4 w-4 mr-2" />
+                          Jugar
+                        </Button>
+                      )}
+                      {puedeEditar('aprender_haciendo') && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setDialogoReto(reto)}
+                          className="min-h-[44px] shrink-0"
+                          aria-label={`Editar reto ${reto.titulo}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {!puedeCrear('aprender_haciendo') && !puedeEditar('aprender_haciendo') && (
                       <p className="text-xs text-gray-400">No tienes permiso para jugar este reto.</p>
                     )}
                   </CardContent>
@@ -290,6 +390,25 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
             </div>
           )}
         </div>
+      )}
+
+      {dialogoPaso && (
+        <PasoFormDialog
+          moduloId={moduloId}
+          pasoEditar={dialogoPaso === 'nuevo' ? null : dialogoPaso}
+          numeroPasoNuevo={pasos.length + 1}
+          onClose={() => setDialogoPaso(null)}
+          onGuardado={handleGuardadoPaso}
+        />
+      )}
+
+      {dialogoReto && (
+        <RetoFormDialog
+          moduloId={moduloId}
+          retoEditar={dialogoReto === 'nuevo' ? null : dialogoReto}
+          onClose={() => setDialogoReto(null)}
+          onGuardado={handleGuardadoReto}
+        />
       )}
     </div>
   );

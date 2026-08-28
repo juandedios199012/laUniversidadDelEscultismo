@@ -127,15 +127,58 @@ export interface AhRankingPatrulla {
 // CONFIGURACIÓN DE JUEGOS
 // ============================================================================
 
-export interface TriviaPregunta {
+// SeleccionableConfiguracion — juegos de "elegir 1 de hasta 3 opciones":
+// absorbe la antigua TriviaConfiguracion (modoVisual 'lista') y la antigua
+// JengaConfiguracion (modoVisual 'torre'). Ver TriviaStrategy.tsx.
+export interface SeleccionablePregunta {
+  id?: string; // sólo relevante en modoVisual 'torre' (Jenga), para identificar cada bloque removible
   texto: string;
   opciones: string[]; // máximo 3
   respuestaCorrecta: number; // índice en `opciones`
   pictograma?: string;
+  color?: string; // clase de gradiente Tailwind, sólo se usa en modoVisual 'torre'
 }
 
-export interface TriviaConfiguracion {
-  preguntas: TriviaPregunta[];
+export interface SeleccionableConfiguracion {
+  preguntas: SeleccionablePregunta[];
+  modoVisual?: 'lista' | 'torre'; // default: 'lista' para TRIVIA, 'torre' para JENGA_EQUIPO cuando se omite
+}
+
+// DragAndDropConfiguracion — juegos de arrastrar con @dnd-kit: absorbe la
+// antigua ArrastrarSoltarConfiguracion (modo 'emparejar') y la antigua
+// SecuenciaConfiguracion (modo 'ordenar'). Ver DragAndDropStrategy.tsx.
+export interface DragAndDropConfiguracion {
+  modo: 'emparejar' | 'ordenar';
+  instruccion: string;
+  pares?: { id: string; pictograma: string; etiqueta: string }[]; // se usa cuando modo === 'emparejar'
+  pasos?: { id: string; texto: string; pictograma?: string }[]; // se usa cuando modo === 'ordenar' (el orden correcto = orden del array)
+}
+
+// ParserConfiguracion — decodificar un código a su significado: hoy sólo
+// Morse; la unión de `codificacion` queda abierta para un futuro
+// 'semaforo' | 'pistas' sin agregar un componente Strategy nuevo. Ver
+// ParserStrategy.tsx.
+export interface ParserReto {
+  id: string;
+  codigo: string; // para 'morse': string de '.'/'-' separados por espacios
+  respuestaCorrecta: string;
+  opciones: string[]; // exactamente 3, incluye la respuesta correcta
+  pista?: string;
+}
+
+export interface ParserConfiguracion {
+  codificacion: 'morse'; // unión abierta a futuro 'semaforo' | 'pistas' — no implementados todavía
+  retos: ParserReto[];
+}
+
+export interface MemoriaPar {
+  id: string;
+  pictograma: string;
+  etiqueta?: string;
+}
+
+export interface MemoriaConfiguracion {
+  pares: MemoriaPar[];
 }
 
 // ============================================================================
@@ -148,6 +191,12 @@ export interface GameProps {
   configuracion: any;
   puntosBase: number;
   onComplete: (puntaje: number, tiempoSegundos: number) => void;
+  /** Tipo de juego (`ah_reto.tipo_juego`) que este componente está actualmente
+   * renderizando — necesario porque una Strategy puede implementar más de un
+   * valor del enum (ej. TriviaStrategy cubre TRIVIA y JENGA_EQUIPO) y necesita
+   * saber cuál para elegir un `modoVisual`/`modo` por defecto sensato cuando
+   * el JSON de configuración no lo especifica explícitamente. */
+  tipoJuego: AhTipoJuego;
 }
 
 // ============================================================================

@@ -16,39 +16,31 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
-import { ArrowLeft, PartyPopper, Puzzle, Star } from 'lucide-react';
+import { ArrowLeft, PartyPopper, Star } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 import AprenderHacienoService from '@/services/aprenderHacienoService';
 import type { AhReto, AhTipoJuego, GameProps } from '@/types/aprenderHaciendo';
-import TriviaGame from './games/TriviaGame';
+import TriviaStrategy from './games/TriviaStrategy';
+import DragAndDropStrategy from './games/DragAndDropStrategy';
+import ParserStrategy from './games/ParserStrategy';
+import MemoriaGame from './games/MemoriaGame';
 
-// ----------------------------------------------------------------
-// Juego placeholder — usado por los tipos de juego que todavía no
-// tienen implementación de jugabilidad (llegan en una fase futura).
-// ----------------------------------------------------------------
-function JuegoProximamente(_props: GameProps) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <Puzzle className="w-16 h-16 text-purple-300" />
-      <p className="text-lg font-bold text-gray-600">¡Este juego llega pronto! 🚧</p>
-      <p className="text-sm text-gray-400 max-w-sm">
-        Estamos preparando esta actividad para una próxima actualización.
-      </p>
-    </div>
-  );
-}
-
-// Registro Strategy: tipo de juego -> componente que lo implementa
+// Registro Strategy: tipo de juego -> componente que lo implementa.
+// Varios tipos de AhTipoJuego comparten componente (ej. TRIVIA y
+// JENGA_EQUIPO ambos usan TriviaStrategy, que internamente elige el modo
+// visual correcto vía el prop `tipoJuego`) — agregar un tipo nuevo en el
+// futuro es agregar una entrada nueva acá, apuntando a una Strategy
+// existente o a un componente nuevo.
 const GAME_COMPONENTS: Record<AhTipoJuego, React.ComponentType<GameProps>> = {
-  TRIVIA: TriviaGame,
-  ARRASTRAR_SOLTAR: JuegoProximamente,
-  SECUENCIA: JuegoProximamente,
-  MORSE: JuegoProximamente,
-  MEMORIA: JuegoProximamente,
-  JENGA_EQUIPO: JuegoProximamente,
+  TRIVIA: TriviaStrategy,
+  JENGA_EQUIPO: TriviaStrategy,
+  ARRASTRAR_SOLTAR: DragAndDropStrategy,
+  SECUENCIA: DragAndDropStrategy,
+  MORSE: ParserStrategy,
+  MEMORIA: MemoriaGame,
 };
 
 interface RetoRunnerProps {
@@ -63,7 +55,7 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack }: RetoRu
   const [completado, setCompletado] = useState<{ puntaje: number; tiempoSegundos: number } | null>(null);
   const [registrando, setRegistrando] = useState(false);
 
-  const GameComponent = GAME_COMPONENTS[reto.tipo_juego] || JuegoProximamente;
+  const GameComponent = GAME_COMPONENTS[reto.tipo_juego] || TriviaStrategy;
 
   const handleComplete = async (puntaje: number, tiempoSegundos: number) => {
     setCompletado({ puntaje, tiempoSegundos });
@@ -154,6 +146,7 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack }: RetoRu
               configuracion={reto.configuracion}
               puntosBase={reto.puntos_base}
               onComplete={handleComplete}
+              tipoJuego={reto.tipo_juego}
             />
           )}
         </CardContent>
