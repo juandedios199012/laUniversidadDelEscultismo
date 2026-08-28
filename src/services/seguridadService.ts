@@ -202,9 +202,9 @@ export class SeguridadService {
 
   /** Obtiene todos los módulos con sus permisos */
   static async obtenerModulos(): Promise<AppModule[]> {
-    const { data, error } = await supabase.rpc('api_v2_obtener_modulos');
+    const { data, error } = await supabase.rpc('api_obtener_diccionario_modulos');
     if (error) {
-      console.error('❌ api_v2_obtener_modulos:', error);
+      console.error('❌ api_obtener_diccionario_modulos:', error);
       return [];
     }
     return (data?.data as AppModule[]) ?? [];
@@ -214,11 +214,11 @@ export class SeguridadService {
    * Devuelve la lista de permission_keys del usuario.
    */
   static async obtenerPermisosUsuario(userId: string): Promise<string[]> {
-    const { data, error } = await supabase.rpc('api_v2_obtener_permisos_usuario', {
+    const { data, error } = await supabase.rpc('api_obtener_permission_keys_usuario', {
       p_user_id: userId,
     });
     if (error) {
-      console.error('❌ api_v2_obtener_permisos_usuario:', error);
+      console.error('❌ api_obtener_permission_keys_usuario:', error);
       return [];
     }
     return (data?.data as string[]) ?? [];
@@ -226,9 +226,9 @@ export class SeguridadService {
 
   /** Matriz completa: todos los roles × todos los permisos */
   static async obtenerMatrizCompleta(): Promise<MatrizCompleta | null> {
-    const { data, error } = await supabase.rpc('api_v2_obtener_matriz_completa');
+    const { data, error } = await supabase.rpc('api_obtener_matriz_avanzada');
     if (error) {
-      console.error('❌ api_v2_obtener_matriz_completa:', error);
+      console.error('❌ api_obtener_matriz_avanzada:', error);
       return null;
     }
     return (data?.data as MatrizCompleta) ?? null;
@@ -236,11 +236,11 @@ export class SeguridadService {
 
   /** Matriz de un rol específico (con flag tiene por permiso) */
   static async obtenerMatrizRol(rolId: string): Promise<MatrizRol | null> {
-    const { data, error } = await supabase.rpc('api_v2_obtener_matriz_rol', {
+    const { data, error } = await supabase.rpc('api_obtener_matriz_avanzada_rol', {
       p_rol_id: rolId,
     });
     if (error) {
-      console.error('❌ api_v2_obtener_matriz_rol:', error);
+      console.error('❌ api_obtener_matriz_avanzada_rol:', error);
       return null;
     }
     return data?.success ? (data.data as MatrizRol) : null;
@@ -263,7 +263,7 @@ export class SeguridadService {
       console.log('🔓 DEV: togglePermiso simulado (localhost)');
       return { success: true };
     }
-    const { data, error } = await supabase.rpc('api_v2_toggle_permiso', {
+    const { data, error } = await supabase.rpc('api_toggle_permiso_avanzado', {
       p_admin_id:   adminId,
       p_rol_id:     rolId,
       p_permiso_id: permisoId,
@@ -285,7 +285,7 @@ export class SeguridadService {
       console.log('🔓 DEV: registrarModulo simulado (localhost)');
       return { success: true, id: crypto.randomUUID() };
     }
-    const { data, error } = await supabase.rpc('api_v2_registrar_modulo', {
+    const { data, error } = await supabase.rpc('api_registrar_modulo', {
       p_admin_id:  adminId,
       p_name:      modulo.name,
       p_label:     modulo.label,
@@ -309,7 +309,7 @@ export class SeguridadService {
       console.log('🔓 DEV: registrarPermiso simulado (localhost)');
       return { success: true, id: crypto.randomUUID() };
     }
-    const { data, error } = await supabase.rpc('api_v2_registrar_permiso', {
+    const { data, error } = await supabase.rpc('api_registrar_permiso', {
       p_admin_id:       adminId,
       p_module_id:      permiso.module_id,
       p_name:           permiso.name,
@@ -332,7 +332,7 @@ export class SeguridadService {
       console.log('🔓 DEV: eliminarModulo simulado (localhost)');
       return { success: true };
     }
-    const { data, error } = await supabase.rpc('api_v2_eliminar_modulo', {
+    const { data, error } = await supabase.rpc('api_eliminar_modulo', {
       p_admin_id:  adminId,
       p_module_id: moduleId,
     });
@@ -348,7 +348,7 @@ export class SeguridadService {
       console.log('🔓 DEV: eliminarPermiso simulado (localhost)');
       return { success: true };
     }
-    const { data, error } = await supabase.rpc('api_v2_eliminar_permiso', {
+    const { data, error } = await supabase.rpc('api_eliminar_permiso', {
       p_admin_id:   adminId,
       p_permiso_id: permisoId,
     });

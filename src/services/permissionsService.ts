@@ -4,12 +4,13 @@ import { supabase } from '../lib/supabase';
 // TIPOS
 // ================================================================
 
-export type Modulo = 
-  | 'dashboard' | 'scouts' | 'dirigentes' | 'patrullas' 
+export type Modulo =
+  | 'dashboard' | 'scouts' | 'dirigentes' | 'patrullas'
   | 'asistencia' | 'actividades' | 'progresion' | 'inscripciones'
   | 'finanzas' | 'inventario' | 'presupuestos' | 'reportes'
   | 'mapas' | 'libro_oro' | 'programa_semanal' | 'comite_padres'
-  | 'actividades_exterior' | 'seguridad' | 'configuracion' | 'portal_padres';
+  | 'actividades_exterior' | 'seguridad' | 'configuracion' | 'portal_padres'
+  | 'documentos';
 
 // Acciones básicas (CRUD + extras)
 export type Accion = 'crear' | 'leer' | 'ver_detalle' | 'editar' | 'eliminar' | 'exportar' | 'aprobar';

@@ -734,9 +734,9 @@ export class FinanzasService {
    * concepto, para el reporte "Ingresos por Concepto": detalle
    * ordenado por concepto + subtotales (cantidad, ingreso bruto,
    * ganancia neta, inversión y deuda) por concepto. Se puede acotar a
-   * un concepto específico con el parámetro `concepto`.
+   * uno o más conceptos con el parámetro `conceptos`.
    */
-  static async listarIngresosPorConcepto(concepto?: string): Promise<{
+  static async listarIngresosPorConcepto(conceptos?: string[]): Promise<{
     detalle: IngresoPorConceptoDetalle[];
     resumen: IngresoPorConceptoResumen[];
     totalIngresos: number;
@@ -745,7 +745,7 @@ export class FinanzasService {
     totalDeuda: number;
   }> {
     const { data, error } = await supabase.rpc('api_listar_ingresos_por_concepto', {
-      p_concepto: concepto || null,
+      p_conceptos: conceptos?.length ? conceptos : null,
     });
 
     if (error) throw error;

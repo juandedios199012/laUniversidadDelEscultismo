@@ -727,7 +727,7 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
 // Helper Functions
 // ============================================
 
-function mapScoutToFormData(scout: Scout): ScoutFormData {
+export function mapScoutToFormData(scout: Scout): ScoutFormData {
   // Mapear familiares si existen en el objeto scout
   const scoutAny = scout as any;
   const familiaresFromScout = scoutAny.familiares?.map((f: any) => {

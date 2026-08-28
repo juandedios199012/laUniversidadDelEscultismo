@@ -9,7 +9,6 @@ import {
   Download,
   ExternalLink,
   FileText,
-  Pencil,
   Search,
   Star,
   Trophy,
@@ -28,7 +27,6 @@ import { supabase } from '../../../lib/supabase';
 import { ProgressRing } from '../../shared/ui/ProgressRing';
 import { CardSkeleton } from '../ProgresionComponents';
 import { STAGE_COLORS, AREA_COLORS, AREA_ICONS, type V4Scout } from '../useProgresionData';
-import EditarPerfilHijoDialog from '../../PortalPadres/EditarPerfilHijoDialog';
 import type { EspecialidadesScoutResponse, ProgresoEspecialidad } from '../../../types/especialidades';
 
 type SubTab = 'resumen' | 'logros' | 'eventos';
@@ -60,14 +58,11 @@ function hexToRgb(hex: string): [number, number, number] {
 interface PortalPadresTabProps {
   loading: boolean;
   scouts: V4Scout[];
-  /** Callback opcional para recargar datos del hijo después de editar */
-  onActualizado?: () => void;
 }
 
-const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts, onActualizado }) => {
+const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) => {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedScoutId, setSelectedScoutId] = useState<string>('');
   const [subTab, setSubTab] = useState<SubTab>('resumen');
   const [detalle, setDetalle] = useState<ProgresoCompletoScout | null>(null);
@@ -649,20 +644,6 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts, onAc
                   </div>
                 ))}
               </div>
-
-              {/* Botón editar — visible en modo portal de padres (scout único) */}
-              {scouts.length === 1 && (
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setEditDialogOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-blue-200 text-blue-600 text-sm font-medium hover:bg-blue-50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Editar datos de contacto
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1329,17 +1310,6 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts, onAc
         );
       })()}
     </div>
-
-    {/* Diálogo de edición de datos de contacto del hijo */}
-    {scout && (
-      <EditarPerfilHijoDialog
-        scoutId={scout.id}
-        scoutNombre={scout.nombre}
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        onGuardado={onActualizado}
-      />
-    )}
     </>
   );
 };

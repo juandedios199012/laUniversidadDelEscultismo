@@ -89,7 +89,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'inventario', label: 'Inventario',   icon: Package, gradient: 'from-gray-500 to-slate-500',    modulo: 'inventario' },
       { id: 'finanzas',   label: 'Finanzas',     icon: Wallet,  gradient: 'from-emerald-500 to-green-600', modulo: 'finanzas'   },
       { id: 'config-conceptos-finanzas', label: 'Conceptos', icon: Settings, gradient: 'from-emerald-500 to-green-600', modulo: 'finanzas' },
-      { id: 'documentos', label: 'Documentos',   icon: FileText, gradient: 'from-blue-500 to-indigo-500' },
+      { id: 'documentos', label: 'Documentos',   icon: FileText, gradient: 'from-blue-500 to-indigo-500', modulo: 'documentos' },
     ],
   },
   {

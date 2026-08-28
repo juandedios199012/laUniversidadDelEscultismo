@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
 import { ArrowLeft, User, Calendar, Hash, Info, TrendingUp, Pencil } from 'lucide-react';
 import DetalleHijoProgresion from './DetalleHijoProgresion';
-import EditarPerfilHijoDialog from './EditarPerfilHijoDialog';
+import EditarHijoWizardDialog from './EditarHijoWizardDialog';
 import { calculateAge } from '../../lib/utils';
 
 type TabDetalle = 'basica' | 'progresion';
@@ -160,7 +160,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
         {/* Botón editar datos de contacto */}
         <div className="mx-8 mb-6 flex items-center justify-between gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
           <p className="text-xs text-blue-700 flex-1">
-            Puedes actualizar los datos de contacto y estudios de tu scout.
+            Puedes actualizar los datos personales, de contacto, familiares (con documento y firma), educación, religión y salud de tu scout.
           </p>
           <button
             type="button"
@@ -168,17 +168,18 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shrink-0"
           >
             <Pencil className="w-4 h-4" />
-            Editar contacto
+            Editar información
           </button>
         </div>
       </div>}
 
-      {/* Diálogo de edición de datos de contacto */}
-      <EditarPerfilHijoDialog
+      {/* Diálogo de edición completa (mismos pasos que usa el dirigente) */}
+      <EditarHijoWizardDialog
         scoutId={hijo.scout_id}
         scoutNombre={hijo.nombre_completo}
         open={editOpen}
         onClose={() => setEditOpen(false)}
+        onGuardado={() => setEditOpen(false)}
       />
     </div>
   );

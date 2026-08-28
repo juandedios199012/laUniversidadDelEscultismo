@@ -225,8 +225,8 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   // Estado para el filtro del reporte "Movimientos por Tipo"
   const [movimientoTipoFilter, setMovimientoTipoFilter] = useState<'TODOS' | 'INGRESO' | 'EGRESO'>('TODOS');
 
-  // Estado para el filtro de Concepto del reporte "Ingresos por Concepto"
-  const [ingresosConceptoFilter, setIngresosConceptoFilter] = useState<string>('');
+  // Estado para el filtro de Concepto(s) del reporte "Ingresos por Concepto"
+  const [ingresosConceptoFilter, setIngresosConceptoFilter] = useState<string[]>([]);
   const [conceptosFinanzasList, setConceptosFinanzasList] = useState<ConceptoFinanzas[]>([]);
 
   // Estado para el filtro de Persona del reporte "Estado de Cuenta por Persona"
@@ -1264,18 +1264,19 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
-    const { detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda } = await FinanzasService.listarIngresosPorConcepto(ingresosConceptoFilter || undefined);
+    const { detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda } = await FinanzasService.listarIngresosPorConcepto(ingresosConceptoFilter);
 
     if (detalle.length === 0) {
       return { status: 'error' as any, fileName: 'error', error: 'No se encontraron ingresos registrados' };
     }
 
+    const conceptoFiltroTexto = ingresosConceptoFilter.length > 0 ? ingresosConceptoFilter.join(', ') : 'Todos';
     const fileName = 'ingresos_por_concepto';
 
     if (format === ExportFormat.PDF) {
       return await generateAndDownloadPDF(
         <IngresosPorConceptoTemplate
-          data={{ detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda, conceptoFiltro: ingresosConceptoFilter || 'Todos' }}
+          data={{ detalle, resumen, totalIngresos, totalGananciaNeta, totalInversion, totalDeuda, conceptoFiltro: conceptoFiltroTexto }}
           metadata={metadata}
         />,
         fileName
@@ -1286,7 +1287,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       sections: [{
         children: [
           new Paragraph({ children: [new TextRun({ text: 'Ingresos por Concepto', bold: true, size: 32 })], alignment: AlignmentType.CENTER }),
-          new Paragraph({ children: [new TextRun({ text: `Filtro: ${ingresosConceptoFilter || 'Todos'} | Conceptos: ${resumen.length} | Movimientos: ${detalle.length} | Ingresos Brutos: S/ ${totalIngresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)} | Inversión: S/ ${totalInversion.toFixed(2)} | Deuda por cobrar: S/ ${totalDeuda.toFixed(2)}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Filtro: ${conceptoFiltroTexto} | Conceptos: ${resumen.length} | Movimientos: ${detalle.length} | Ingresos Brutos: S/ ${totalIngresos.toFixed(2)} | Ganancia Neta: S/ ${totalGananciaNeta.toFixed(2)} | Inversión: S/ ${totalInversion.toFixed(2)} | Deuda por cobrar: S/ ${totalDeuda.toFixed(2)}` })] }),
           new Paragraph({ children: [] }),
           new Paragraph({ children: [new TextRun({ text: 'Resumen por Concepto', bold: true, size: 26 })] }),
           ...resumen.map(r => new Paragraph({
@@ -2582,20 +2583,47 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           {selectedReportType === ReportType.INGRESOS_POR_CONCEPTO && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Concepto
+                Concepto {ingresosConceptoFilter.length > 0 && (
+                  <span className="text-blue-600 font-normal">({ingresosConceptoFilter.length} seleccionado{ingresosConceptoFilter.length === 1 ? '' : 's'})</span>
+                )}
               </label>
-              <select
-                value={ingresosConceptoFilter}
-                onChange={(e) => setIngresosConceptoFilter(e.target.value)}
-                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Todos</option>
-                {conceptosFinanzasList.map((c) => (
-                  <option key={c.id} value={c.descripcion}>{c.descripcion}</option>
-                ))}
-              </select>
+              <div className="w-full md:w-80 border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIngresosConceptoFilter([])}
+                  disabled={ingresosConceptoFilter.length === 0}
+                  className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed border-b border-gray-200"
+                >
+                  Limpiar selección (ver Todos)
+                </button>
+                <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
+                  {conceptosFinanzasList.map((c) => {
+                    const checked = ingresosConceptoFilter.includes(c.descripcion);
+                    return (
+                      <label
+                        key={c.id}
+                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setIngresosConceptoFilter((prev) =>
+                              e.target.checked
+                                ? [...prev, c.descripcion]
+                                : prev.filter((d) => d !== c.descripcion)
+                            )
+                          }
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {c.descripcion}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <p className="text-xs text-gray-500 mt-2">
-                Agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado), neto (ya descontada la inversión) y deuda por cobrar de cada uno. Filtra por un concepto específico o deja "Todos" para verlos todos.
+                Agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado), neto (ya descontada la inversión) y deuda por cobrar de cada uno. Marca uno o más conceptos, o deja todo sin marcar para verlos todos.
               </p>
             </div>
           )}
