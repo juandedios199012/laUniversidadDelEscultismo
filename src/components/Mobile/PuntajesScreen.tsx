@@ -8,6 +8,10 @@ import { ActividadesExteriorService } from '../../services/actividadesExteriorSe
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { usePermissions } from '../../contexts/PermissionsContext';
 
+// Mismo catálogo que usa Programa Semanal (web) — dirigentes.unidad es
+// texto libre, se normaliza contra esto antes de filtrar.
+const RAMAS_VALIDAS = ['Manada', 'Tropa', 'Comunidad', 'Clan'];
+
 // ===== TIPOS =====
 
 type ContextoType = 'SEMANAL' | 'AIRE_LIBRE';
@@ -81,7 +85,7 @@ interface PatrullaActividad {
 
 export default function PuntajesScreen() {
   // Permisos
-  const { puedeEditar, puedeCrear } = usePermissions();
+  const { puedeEditar, puedeCrear, esAdmin, miRama } = usePermissions();
   const puedeRegistrarPuntajes = puedeEditar('programa_semanal') || puedeCrear('programa_semanal');
   const puedeRegistrarAireLibre = puedeEditar('actividades_exterior') || puedeCrear('actividades_exterior');
 
@@ -112,13 +116,20 @@ export default function PuntajesScreen() {
   const [rankingALExpandido, setRankingALExpandido] = useState(false);
   const [pasoAL, setPasoAL] = useState<1 | 2 | 3 | 4>(1);
 
+  // Rama del dirigente logueado (PermissionsContext) — null para
+  // admins/coordinadores, que ven todos los programas igual que hoy.
+  const miRamaFija = !esAdmin && miRama
+    ? RAMAS_VALIDAS.find(r => r.toLowerCase() === miRama.trim().toLowerCase()) ?? null
+    : null;
+
   useEffect(() => {
     if (contexto === 'SEMANAL') {
       cargarProgramasSemanales();
     } else {
       cargarActividadesAireLibre();
     }
-  }, [contexto]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contexto, miRamaFija]);
 
   // ===== PROGRAMA SEMANAL =====
 
@@ -126,7 +137,9 @@ export default function PuntajesScreen() {
     console.log('📱 Cargando programas semanales...');
     setLoading(true);
     try {
-      const programasData = await ProgramaSemanalService.getProgramas({});
+      const programasData = await ProgramaSemanalService.getProgramas(
+        miRamaFija ? { rama: miRamaFija } : {}
+      );
       
       const programasFormateados: Programa[] = (programasData || []).map((p: any) => ({
         id: p.id,

@@ -35,6 +35,7 @@ import {
   MovimientoPersona,
 } from '@/services/finanzasService';
 import MovimientoPersonaDialog from '../dialogs/MovimientoPersonaDialog';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 const formatMonto = (monto: number): string =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(monto);
@@ -45,6 +46,7 @@ interface CuentasPersonasTabProps {
 }
 
 const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, puedeEliminar }) => {
+  const { esAdmin, miRama } = usePermissions();
   const [saldos, setSaldos] = useState<SaldoPersona[]>([]);
   const [saldoGlobal, setSaldoGlobal] = useState(0);
   const [gananciaNetaGlobal, setGananciaNetaGlobal] = useState(0);
@@ -60,10 +62,14 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [movimientoAEditar, setMovimientoAEditar] = useState<MovimientoPersona | null>(null);
 
+  // Rama del dirigente logueado (PermissionsContext, compartida con
+  // Programa Semanal/Asistencia) — admins/coordinadores ven todo.
+  const miRamaFija = !esAdmin ? miRama : null;
+
   const cargar = useCallback(async (texto?: string) => {
     try {
       setLoading(true);
-      const { saldos: data, saldoGlobal: total, gananciaNetaGlobal: gananciaNeta, inversionGlobal: inversion, deudaGlobal: deuda } = await FinanzasService.listarSaldosPersonas(texto);
+      const { saldos: data, saldoGlobal: total, gananciaNetaGlobal: gananciaNeta, inversionGlobal: inversion, deudaGlobal: deuda } = await FinanzasService.listarSaldosPersonas(texto, miRamaFija);
       setSaldos(data);
       setSaldoGlobal(total);
       setGananciaNetaGlobal(gananciaNeta);
@@ -74,7 +80,7 @@ const CuentasPersonasTab: React.FC<CuentasPersonasTabProps> = ({ puedeCrear, pue
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [miRamaFija]);
 
   useEffect(() => {
     cargar();

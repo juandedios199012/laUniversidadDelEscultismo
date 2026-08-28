@@ -57,7 +57,7 @@ interface AsistenciaFormData {
 // ==================== COMPONENT ====================
 export default function Asistencia() {
 	// ============= PERMISOS =============
-	const { puedeCrear, puedeEliminar } = usePermissions();
+	const { puedeCrear, puedeEliminar, esAdmin, miRama } = usePermissions();
 	
 	// ============= ESTADOS =============
 	const [scouts, setScouts] = useState<Scout[]>([]);
@@ -246,6 +246,21 @@ export default function Asistencia() {
 	useEffect(() => {
 		loadInitialData();
 	}, []);
+
+	// Restringir la vista a la rama del dirigente logueado (si aplica —
+	// admins/coordinadores ven todo). `miRama` viene de PermissionsContext,
+	// compartido con Programa Semanal; acá se normaliza contra el catálogo
+	// en MAYÚSCULAS que usa esta pantalla (dirigentes.unidad es texto libre).
+	useEffect(() => {
+		if (esAdmin || !miRama) return;
+		const match = ramas.find(r => r.value.toLowerCase() === miRama.trim().toLowerCase());
+		if (match) setSelectedRama(match.value);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [esAdmin, miRama]);
+
+	const miRamaFija = !esAdmin && miRama
+		? ramas.find(r => r.value.toLowerCase() === miRama.trim().toLowerCase())?.value ?? null
+		: null;
 
 	useEffect(() => {
 		calculateStatistics();
@@ -892,12 +907,18 @@ export default function Asistencia() {
 
 				{/* Filtros y búsqueda */}
 				<div className="bg-white rounded-lg shadow mb-6 p-4 flex gap-4 items-center flex-wrap">
+					{miRamaFija ? (
+						<div className="px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-500 w-40">
+							Rama: <span className="font-medium text-gray-700">{ramas.find(r => r.value === miRamaFija)?.label ?? miRamaFija}</span>
+						</div>
+					) : (
 					<select className="w-32" value={selectedRama} onChange={e => setSelectedRama(e.target.value)}>
 						<option value="">Todas las ramas</option>
 						{ramas.map(rama => (
 							<option key={rama.value} value={rama.value}>{rama.label}</option>
 						))}
 					</select>
+					)}
 					<input
 						type="search"
 						placeholder="Buscar por título..."

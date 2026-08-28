@@ -33,6 +33,8 @@ interface PermissionsContextType {
   modulosAccesibles: Modulo[];
   esAdmin: boolean;
   esSuperAdmin: boolean;
+  /** Rama del dirigente logueado si tiene exactamente una asignada (null para admins/coordinadores o si no aplica) — usar para restringir Programa Semanal, Asistencia y Cuenta por Persona a su rama. */
+  miRama: string | null;
   
   // Acciones
   recargarPermisos: () => Promise<void>;
@@ -183,6 +185,25 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   const [permisosAireLibre, setPermisosAireLibre] = React.useState<SubAccionAireLibre[]>([]);
   const [loadingPermisosAL, setLoadingPermisosAL] = React.useState(false);
 
+  // ================================================================
+  // RAMA DEL DIRIGENTE LOGUEADO (para Programa Semanal / Asistencia /
+  // Cuenta por Persona, web y mobile — un solo fetch acá, no uno por
+  // pantalla)
+  // ================================================================
+  const [miRama, setMiRama] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || loading) {
+      return;
+    }
+    // Admins/coordinadores (nivel_jerarquia >= 70) nunca se restringen por rama.
+    if (esAdmin) {
+      setMiRama(null);
+      return;
+    }
+    PermissionsService.obtenerMiRamaDirigente().then(setMiRama);
+  }, [user?.id, loading, esAdmin]);
+
   // Cargar permisos de Aire Libre desde la BD cuando el usuario cambia
   React.useEffect(() => {
     const cargarPermisosAireLibre = async () => {
@@ -254,6 +275,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     modulosAccesibles,
     esAdmin,
     esSuperAdmin,
+    miRama,
     recargarPermisos,
   };
 

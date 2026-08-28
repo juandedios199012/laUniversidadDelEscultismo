@@ -283,6 +283,25 @@ export class PermissionsService {
   }
 
   /**
+   * Rama (unidad) del dirigente actualmente logueado, si tiene
+   * exactamente una asignada — o null si no aplica (no es dirigente,
+   * no tiene unidad, o hay ambigüedad). Se usa para restringir vistas
+   * de Programa Semanal, Asistencia y Cuenta por Persona a la rama del
+   * dirigente, tanto en web como en mobile (ambos leen esto desde
+   * PermissionsContext, no cada pantalla por separado).
+   */
+  static async obtenerMiRamaDirigente(): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.rpc('api_mi_rama_dirigente');
+      if (error) throw error;
+      return data ?? null;
+    } catch (error) {
+      console.error('❌ Error obteniendo mi rama de dirigente:', error);
+      return null;
+    }
+  }
+
+  /**
    * Limpiar cache de permisos
    */
   static limpiarCache(userId?: string): void {

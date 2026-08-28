@@ -25,7 +25,7 @@ interface DirigenteActivo {
 interface ProgramaSemanalProps {}
 
 export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
-  const { esAdmin } = usePermissions();
+  const { esAdmin, miRama: miRamaSinNormalizar } = usePermissions();
 
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
@@ -86,24 +86,24 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   ];
 
   // ============= EFECTOS =============
+  // La rama del dirigente logueado se resuelve una sola vez en
+  // PermissionsContext (compartida con Asistencia, Cuenta por Persona y
+  // mobile) — acá solo se normaliza contra el catálogo de esta pantalla
+  // (dirigentes.unidad es texto libre, puede no coincidir en
+  // mayúsculas/minúsculas exactas con 'Manada'/'Tropa'/'Comunidad'/'Clan').
   useEffect(() => {
-    (async () => {
-      let ramaFija: string | null = null;
-      if (!esAdmin) {
-        const ramaDirigente = await ProgramaSemanalService.obtenerMiRamaDirigente();
-        // Normalizar contra el catálogo de la UI (dirigentes.unidad es texto
-        // libre, puede no coincidir en mayúsculas/minúsculas exactas).
-        const match = ramaDirigente
-          ? ramas.find(r => r.value.toLowerCase() === ramaDirigente.trim().toLowerCase())
-          : null;
-        ramaFija = match?.value ?? null;
-        setMiRama(ramaFija);
-      }
-      loadProgramas(ramaFija);
-    })();
-    loadDirigentesActivos();
+    const match = miRamaSinNormalizar
+      ? ramas.find(r => r.value.toLowerCase() === miRamaSinNormalizar.trim().toLowerCase())
+      : null;
+    const ramaFija = match?.value ?? null;
+    setMiRama(ramaFija);
+    loadProgramas(ramaFija);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [esAdmin]);
+  }, [miRamaSinNormalizar]);
+
+  useEffect(() => {
+    loadDirigentesActivos();
+  }, []);
 
   /** Dirigentes activos cuya `unidad` coincide con la rama dada (comparación insensible a mayúsculas/espacios, ya que dirigentes.unidad es texto libre). */
   const dirigentesPorRama = (rama: string) =>

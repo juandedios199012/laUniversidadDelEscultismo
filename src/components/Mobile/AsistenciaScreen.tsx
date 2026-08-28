@@ -3,6 +3,11 @@ import { ClipboardCheck, Users, CheckCircle, XCircle, Clock, Calendar, ChevronRi
 import { AsistenciaService } from '../../services/asistenciaService';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
 import { formatFechaLocal } from '../../utils/dateUtils';
+import { usePermissions } from '../../contexts/PermissionsContext';
+
+// Mismo catálogo que usa Programa Semanal (web) — dirigentes.unidad es
+// texto libre, se normaliza contra esto antes de filtrar.
+const RAMAS_VALIDAS = ['Manada', 'Tropa', 'Comunidad', 'Clan'];
 
 interface Programa {
   id: string;
@@ -22,6 +27,7 @@ interface Scout {
 type EstadoAsistencia = 'presente' | 'ausente' | 'tardanza' | 'justificado';
 
 export default function AsistenciaScreen() {
+  const { esAdmin, miRama } = usePermissions();
   const [programas, setProgramas] = useState<Programa[]>([]);
   const [programaSeleccionado, setProgramaSeleccionado] = useState<string>('');
   const [scouts, setScouts] = useState<Scout[]>([]);
@@ -30,16 +36,24 @@ export default function AsistenciaScreen() {
   const [mensaje, setMensaje] = useState('');
   const [paso, setPaso] = useState<1 | 2>(1); // Flujo de 2 pasos
 
+  // Rama del dirigente logueado (PermissionsContext) — null para
+  // admins/coordinadores, que ven todos los programas igual que hoy.
+  const miRamaFija = !esAdmin && miRama
+    ? RAMAS_VALIDAS.find(r => r.toLowerCase() === miRama.trim().toLowerCase()) ?? null
+    : null;
+
   useEffect(() => {
     cargarProgramas();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [miRamaFija]);
 
   const cargarProgramas = async () => {
     console.log('📱 Cargando programas para asistencia...');
     setLoading(true);
     try {
-      // Cargar todos los programas semanales
-      const programasData = await ProgramaSemanalService.getProgramas({});
+      const programasData = await ProgramaSemanalService.getProgramas(
+        miRamaFija ? { rama: miRamaFija } : {}
+      );
       
       console.log('📦 Programas recibidos:', programasData?.length || 0);
       

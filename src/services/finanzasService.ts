@@ -652,7 +652,8 @@ export class FinanzasService {
    * Lista los saldos virtuales por persona (sólo personas con movimientos).
    */
   static async listarSaldosPersonas(
-    busqueda?: string
+    busqueda?: string,
+    rama?: string | null
   ): Promise<{
     saldos: SaldoPersona[];
     saldoGlobal: number;
@@ -662,6 +663,7 @@ export class FinanzasService {
   }> {
     const { data, error } = await supabase.rpc('api_listar_saldos_personas', {
       p_busqueda: busqueda || null,
+      p_rama: rama || null,
     });
 
     if (error) throw error;
