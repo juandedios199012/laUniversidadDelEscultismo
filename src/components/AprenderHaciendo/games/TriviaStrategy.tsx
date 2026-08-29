@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, PartyPopper, Volume2, VolumeX } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import PictogramaValor from '@/components/AprenderHaciendo/PictogramaValor';
 import type { GameProps, SeleccionableConfiguracion, SeleccionablePregunta } from '@/types/aprenderHaciendo';
 
 const OPCION_COLORS = [
@@ -58,9 +59,8 @@ function PreguntaSeleccionable({ pregunta, estado, onResponder }: PreguntaSelecc
 
   return (
     <>
-      {pregunta.pictograma && (
-        <div className="text-6xl mb-1" aria-hidden="true">{pregunta.pictograma}</div>
-      )}
+      <PictogramaValor valor={pregunta.pictograma} tamano="xl" />
+
 
       <h3 className="text-xl sm:text-2xl font-bold text-gray-800 max-w-xl">
         {pregunta.texto}

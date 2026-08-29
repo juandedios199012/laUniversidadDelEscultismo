@@ -33,7 +33,8 @@ export type AhTipoJuego =
   | 'SECUENCIA'
   | 'MORSE'
   | 'MEMORIA'
-  | 'JENGA_EQUIPO';
+  | 'JENGA_EQUIPO'
+  | 'ROMPECABEZAS';
 
 export type AhTipoMedia = 'NINGUNO' | 'IMAGEN' | 'VIDEO';
 
@@ -72,6 +73,9 @@ export interface AhPaso {
   tipo_media: AhTipoMedia;
   media_url?: string | null;
   materiales_requeridos: string[];
+  /** Efecto de sonido real opcional (relincho, cañón, morse, etc.), se
+   * reproduce al mostrarse el paso — complementa la lectura por voz. */
+  efecto_sonido_url?: string | null;
   created_at: string;
 }
 
@@ -157,11 +161,20 @@ export interface SeleccionableConfiguracion {
 // DragAndDropConfiguracion — juegos de arrastrar con @dnd-kit: absorbe la
 // antigua ArrastrarSoltarConfiguracion (modo 'emparejar') y la antigua
 // SecuenciaConfiguracion (modo 'ordenar'). Ver DragAndDropStrategy.tsx.
+//
+// ROMPECABEZAS ("rompecabezas de partes con significado") reutiliza el
+// mismo modo 'emparejar' — no es un modo nuevo — sólo agrega
+// `imagenBaseUrl` + un `posicion` por par: cuando ambos están presentes,
+// DragAndDropStrategy.tsx renderiza las zonas de destino ubicadas
+// espacialmente sobre la imagen base en vez de en la lista genérica. Si
+// están ausentes (todo reto ARRASTRAR_SOLTAR ya existente), el render no
+// cambia — 100% retrocompatible.
 export interface DragAndDropConfiguracion {
   modo: 'emparejar' | 'ordenar';
   instruccion: string;
-  pares?: { id: string; pictograma: string; etiqueta: string }[]; // se usa cuando modo === 'emparejar'
+  pares?: { id: string; pictograma: string; etiqueta: string; posicion?: { x: number; y: number } }[]; // se usa cuando modo === 'emparejar'
   pasos?: { id: string; texto: string; pictograma?: string }[]; // se usa cuando modo === 'ordenar' (el orden correcto = orden del array)
+  imagenBaseUrl?: string; // sólo relevante cuando modo === 'emparejar' y cada par tiene `posicion`; activa el layout espacial de rompecabezas en vez de la lista genérica
 }
 
 // ParserConfiguracion — decodificar un código a su significado: hoy sólo
@@ -238,6 +251,7 @@ export interface FormularioPaso {
   tipo_media?: AhTipoMedia;
   media_url?: string;
   materiales_requeridos?: string[];
+  efecto_sonido_url?: string;
 }
 
 export interface FormularioReto {

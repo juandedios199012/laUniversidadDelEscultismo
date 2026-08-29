@@ -6,9 +6,9 @@
  * abierto (ver `ModuloDetalle.tsx`), así el estado arranca limpio
  * cada vez que se abre para crear o editar un paso distinto.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Music, Plus, X } from 'lucide-react';
 
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
 import AprenderHacienoService from '@/services/aprenderHacienoService';
+import PictogramaInput from './PictogramaInput';
 import type { AhPaso } from '@/types/aprenderHaciendo';
 
 interface PasoFormDialogProps {
@@ -42,7 +43,28 @@ export default function PasoFormDialog({
   const [pictograma, setPictograma] = useState(pasoEditar?.pictograma_url ?? '');
   const [materiales, setMateriales] = useState<string[]>(pasoEditar?.materiales_requeridos ?? []);
   const [nuevoMaterial, setNuevoMaterial] = useState('');
+  const [efectoSonido, setEfectoSonido] = useState(pasoEditar?.efecto_sonido_url ?? '');
+  const [subiendoSonido, setSubiendoSonido] = useState(false);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const [guardando, setGuardando] = useState(false);
+
+  const handleArchivoSonido = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setSubiendoSonido(true);
+    try {
+      const resultado = await AprenderHacienoService.subirEfectoSonido(file);
+      if (!resultado.success || !resultado.url) {
+        toast.error(resultado.error || 'No se pudo subir el sonido');
+        return;
+      }
+      setEfectoSonido(resultado.url);
+    } finally {
+      setSubiendoSonido(false);
+    }
+  };
 
   const agregarMaterial = () => {
     const valor = nuevoMaterial.trim();
@@ -79,6 +101,7 @@ export default function PasoFormDialog({
         instruccion_texto: instruccionTexto.trim(),
         pictograma_url: pictograma.trim() || undefined,
         materiales_requeridos: materiales,
+        efecto_sonido_url: efectoSonido.trim() || undefined,
       });
 
       if (!resultado.success) {
@@ -125,15 +148,45 @@ export default function PasoFormDialog({
             />
           </div>
 
+          <PictogramaInput value={pictograma} onChange={setPictograma} label="Pictograma" />
+
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paso-pictograma">Pictograma (emoji, opcional)</Label>
-            <Input
-              id="paso-pictograma"
-              value={pictograma}
-              onChange={e => setPictograma(e.target.value)}
-              placeholder="Ej: ⛺"
-              maxLength={8}
-            />
+            <Label>Efecto de sonido (opcional)</Label>
+            <p className="text-xs text-gray-500">
+              Se reproduce al mostrarse este paso — ej. relincho de caballo, cañón, campana.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              {efectoSonido && (
+                <audio controls src={efectoSonido} className="h-9 max-w-[220px]" />
+              )}
+              <button
+                type="button"
+                onClick={() => audioInputRef.current?.click()}
+                disabled={subiendoSonido}
+                className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 rounded-lg font-semibold text-sm shrink-0
+                  bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all disabled:opacity-60
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+              >
+                {subiendoSonido ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
+                {subiendoSonido ? 'Subiendo...' : efectoSonido ? 'Cambiar sonido' : 'Subir sonido'}
+              </button>
+              {efectoSonido && (
+                <button
+                  type="button"
+                  onClick={() => setEfectoSonido('')}
+                  className="min-h-[44px] px-2 text-sm text-gray-500 hover:text-red-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 rounded"
+                >
+                  ✕ Quitar
+                </button>
+              )}
+              <input
+                ref={audioInputRef}
+                type="file"
+                accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm"
+                onChange={handleArchivoSonido}
+                className="hidden"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

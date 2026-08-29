@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import imageCompression from 'browser-image-compression';
 import {
   AhModulo,
   AhModuloDetalle,
@@ -20,6 +21,30 @@ interface RpcResult<T> {
   data?: T;
   error?: string;
 }
+
+// ==========================================================================
+// PICTOGRAMAS (Storage)
+// ==========================================================================
+
+// Reutiliza el bucket compartido 'finanzas' (ya usado por evidencias
+// financieras, documentos de identidad y documentos de scouts en todo
+// el proyecto) en vez de crear un bucket nuevo — evita un paso manual
+// en el Dashboard de Supabase. Carpeta propia y sin colisión con las
+// ya existentes (documentos-scouts/, evidencias/, documentos-identidad/).
+// El bucket ya es público (getPublicUrl funciona hoy para 'evidencias/'
+// en finanzasService.ts) y no necesita una política RLS de storage.objects
+// nueva — solo la carpeta 'documentos-scouts/' tiene una política propia
+// por ser datos de menores accesibles desde el Portal de Padres; el resto
+// de carpetas (incluida esta) no la necesita.
+const PICTOGRAMA_BUCKET = 'finanzas';
+const PICTOGRAMA_MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB (antes de comprimir)
+const PICTOGRAMA_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+// Efectos de sonido de un paso ("Cuentos Sensoriales" VAK) — mismo bucket
+// compartido, carpeta propia. Sin compresión (browser-image-compression
+// es solo para imágenes) — son clips cortos, tope de tamaño más chico.
+const EFECTO_SONIDO_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const EFECTO_SONIDO_MIME_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm'];
 
 export class AprenderHacienoService {
   // ==========================================================================
@@ -132,6 +157,7 @@ export class AprenderHacienoService {
         p_tipo_media: datos.tipo_media || 'NINGUNO',
         p_media_url: datos.media_url || null,
         p_materiales_requeridos: datos.materiales_requeridos || [],
+        p_efecto_sonido_url: datos.efecto_sonido_url || null,
       });
 
       if (error) throw error;
@@ -272,6 +298,111 @@ export class AprenderHacienoService {
     } catch (error) {
       console.error('Error al obtener ranking de scouts:', error);
       throw error;
+    }
+  }
+
+  // ==========================================================================
+  // PICTOGRAMAS (Storage)
+  // ==========================================================================
+
+  /**
+   * Sube una imagen para usar como pictograma (juegos y pasos del módulo).
+   * Comprime la imagen del lado del cliente antes de subirla (los
+   * pictogramas son pequeños, tipo ícono) y sube al bucket público
+   * `aprender-haciendo`, siguiendo el mismo patrón que
+   * `colaboradorService.subirDocumento` (URL pública, sin firmas).
+   */
+  static async subirPictograma(archivo: File): Promise<{ success: boolean; url?: string; error?: string }> {
+    if (!PICTOGRAMA_IMAGE_MIME_TYPES.includes(archivo.type)) {
+      return {
+        success: false,
+        error: 'Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, GIF, WebP)',
+      };
+    }
+    if (archivo.size > PICTOGRAMA_MAX_FILE_SIZE) {
+      return {
+        success: false,
+        error: `La imagen es muy grande. Tamaño máximo: ${PICTOGRAMA_MAX_FILE_SIZE / 1024 / 1024}MB`,
+      };
+    }
+
+    let archivoASubir: File = archivo;
+    try {
+      archivoASubir = await imageCompression(archivo, {
+        maxSizeMB: 0.4,
+        maxWidthOrHeight: 512,
+        useWebWorker: true,
+      });
+    } catch (error) {
+      console.warn('⚠️ Error al comprimir el pictograma, se usará la imagen original:', error);
+    }
+
+    try {
+      const nombreSanitizado = archivo.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const ruta = `pictogramas-aprender-haciendo/${Date.now()}_${nombreSanitizado}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(PICTOGRAMA_BUCKET)
+        .upload(ruta, archivoASubir, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from(PICTOGRAMA_BUCKET).getPublicUrl(ruta);
+
+      return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+      console.error('Error al subir pictograma:', error);
+      return {
+        success: false,
+        error: `Error al subir la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      };
+    }
+  }
+
+  /**
+   * Sube un efecto de sonido para un paso (relincho, cañón, morse, etc.).
+   * Mismo bucket/patrón que `subirPictograma`, sin compresión (es audio,
+   * no imagen) y con su propio tope de tamaño y tipos MIME permitidos.
+   */
+  static async subirEfectoSonido(archivo: File): Promise<{ success: boolean; url?: string; error?: string }> {
+    if (!EFECTO_SONIDO_MIME_TYPES.includes(archivo.type)) {
+      return {
+        success: false,
+        error: 'Tipo de archivo no permitido. Solo se aceptan audios (MP3, WAV, OGG, WebM)',
+      };
+    }
+    if (archivo.size > EFECTO_SONIDO_MAX_FILE_SIZE) {
+      return {
+        success: false,
+        error: `El audio es muy grande. Tamaño máximo: ${EFECTO_SONIDO_MAX_FILE_SIZE / 1024 / 1024}MB`,
+      };
+    }
+
+    try {
+      const nombreSanitizado = archivo.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const ruta = `efectos-sonido-aprender-haciendo/${Date.now()}_${nombreSanitizado}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(PICTOGRAMA_BUCKET)
+        .upload(ruta, archivo, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from(PICTOGRAMA_BUCKET).getPublicUrl(ruta);
+
+      return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+      console.error('Error al subir efecto de sonido:', error);
+      return {
+        success: false,
+        error: `Error al subir el audio: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      };
     }
   }
 }

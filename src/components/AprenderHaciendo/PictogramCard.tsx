@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { esImagenPictograma } from './PictogramaValor';
 
 // Mapa de nombres de ícono (guardados como TEXT en `ah_modulos.icono`,
 // ej. "Sparkles") a su componente lucide-react. No existe un ícono de
@@ -44,10 +45,10 @@ interface PictogramCardProps {
   children?: React.ReactNode;
 }
 
-const SIZE_CLASSES: Record<NonNullable<PictogramCardProps['size']>, { box: string; icon: string; text: string }> = {
-  sm: { box: 'w-16 h-16', icon: 'w-8 h-8', text: 'text-sm' },
-  md: { box: 'w-24 h-24', icon: 'w-12 h-12', text: 'text-lg' },
-  lg: { box: 'w-40 h-40', icon: 'w-20 h-20', text: 'text-2xl' },
+const SIZE_CLASSES: Record<NonNullable<PictogramCardProps['size']>, { box: string; icon: string; text: string; emoji: string }> = {
+  sm: { box: 'w-16 h-16', icon: 'w-8 h-8', text: 'text-sm', emoji: 'text-3xl' },
+  md: { box: 'w-24 h-24', icon: 'w-12 h-12', text: 'text-lg', emoji: 'text-5xl' },
+  lg: { box: 'w-40 h-40', icon: 'w-20 h-20', text: 'text-2xl', emoji: 'text-7xl' },
 };
 
 export default function PictogramCard({
@@ -64,7 +65,12 @@ export default function PictogramCard({
   const Icono = resolverIcono(iconoNombre);
   const sizes = SIZE_CLASSES[size];
 
-  const handleSpeak = () => {
+  const handleSpeak = (e: React.MouseEvent) => {
+    // Este componente a veces queda anidado dentro de un contenedor que
+    // también responde a click (ej. la tarjeta de paso en ModuloDetalle,
+    // que avanza al tocarla en cualquier parte) — el botón de audio nunca
+    // debe disparar esa acción externa.
+    e.stopPropagation();
     if (isSpeaking) {
       stop();
     } else {
@@ -81,8 +87,10 @@ export default function PictogramCard({
           gradiente
         )}
       >
-        {imagenUrl ? (
-          <img src={imagenUrl} alt={label} className="w-full h-full object-cover" />
+        {esImagenPictograma(imagenUrl) ? (
+          <img src={imagenUrl as string} alt={label} className="w-full h-full object-cover" />
+        ) : imagenUrl ? (
+          <span className={cn(sizes.emoji, 'leading-none')} aria-hidden="true">{imagenUrl}</span>
         ) : (
           <Icono className={cn(sizes.icon, 'text-white')} />
         )}

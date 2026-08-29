@@ -11,10 +11,11 @@
  * incluye un selector de scout mínimo (Fase 1) para poder asociar el
  * progreso y los intentos de juego a un scout concreto.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 import {
-  ArrowLeft, ArrowRight, Gamepad2, ListChecks, Loader2, Pencil, Plus, ShieldAlert, Star, Users,
+  ArrowLeft, ArrowRight, Gamepad2, ListChecks, Loader2, Pencil, Plus, Repeat, ShieldAlert, Star, Users,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,6 +101,30 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
       .catch(err => console.error('Error al cargar scouts:', err));
   }, []);
 
+  // Efecto de sonido del paso actual ("Cuentos Sensoriales" VAK) — se
+  // reproduce automáticamente al mostrarse el paso, complementando la
+  // lectura por voz. Guardado en un ref para poder repetirlo con el
+  // botón "🔁 Repetir sonido" sin volver a disparar el autoplay.
+  const audioEfectoRef = useRef<HTMLAudioElement | null>(null);
+  const efectoSonidoActual = vista === 'pasos' ? detalle?.pasos[pasoIndex]?.efecto_sonido_url : null;
+
+  useEffect(() => {
+    if (!efectoSonidoActual) return;
+    const audio = new Audio(efectoSonidoActual);
+    audioEfectoRef.current = audio;
+    // Reproducción automática puede quedar bloqueada por el navegador si
+    // ocurre fuera de un gesto del usuario — no es un error real, el
+    // botón "Repetir sonido" sigue disponible para reproducirlo a mano.
+    audio.play().catch(() => {});
+    return () => {
+      audio.pause();
+    };
+  }, [efectoSonidoActual]);
+
+  const repetirSonido = () => {
+    audioEfectoRef.current?.play().catch(() => {});
+  };
+
   if (!puedeVerDetalle('aprender_haciendo')) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24 text-center text-gray-500">
@@ -144,6 +169,16 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
     const esUltimo = pasoIndex >= pasos.length - 1;
     if (esUltimo) {
       guardarProgreso(pasos.length, true);
+      // Refuerzo positivo al terminar de leer/escuchar todos los pasos —
+      // antes solo los retos (juegos) tenían festejo; terminar el
+      // contenido paso a paso también merece celebrarse, para cualquier
+      // scout, no solo quien usa apoyos visuales/auditivos.
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#a855f7', '#ec4899', '#f59e0b', '#10b981'],
+      });
       setVista('retos');
     } else {
       const siguiente = pasoIndex + 1;
@@ -228,13 +263,25 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
             </span>
           </div>
 
-          <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-white to-fuchsia-50/40">
+          <Card
+            className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-white to-fuchsia-50/40 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
+            onClick={handleSiguiente}
+            role="button"
+            tabIndex={0}
+            aria-label="Toca en cualquier parte para continuar al siguiente paso"
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSiguiente();
+              }
+            }}
+          >
             <CardContent className="p-6 sm:p-10 flex flex-col items-center gap-5">
               {puedeEditar('aprender_haciendo') && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setDialogoPaso(pasoActual)}
+                  onClick={e => { e.stopPropagation(); setDialogoPaso(pasoActual); }}
                   className="self-end min-h-[40px] -mb-2"
                 >
                   <Pencil className="h-4 w-4 mr-2" />
@@ -250,17 +297,32 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                 size="lg"
               />
 
+              {pasoActual.efecto_sonido_url && (
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); repetirSonido(); }}
+                  className="min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 -mt-2"
+                >
+                  <Repeat className="w-4 h-4" />
+                  Repetir sonido
+                </button>
+              )}
+
               <p className="text-base sm:text-lg text-gray-700 text-center max-w-xl leading-relaxed">
                 {pasoActual.instruccion_texto}
               </p>
 
               {pasoActual.materiales_requeridos?.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2 mt-1">
+                <div className="flex flex-wrap justify-center gap-2 mt-1" onClick={e => e.stopPropagation()}>
                   {pasoActual.materiales_requeridos.map((material, i) => (
                     <Badge key={i} variant="outline">{material}</Badge>
                   ))}
                 </div>
               )}
+
+              <p className="text-xs text-gray-400 text-center -mt-2">
+                Toca en cualquier parte de la tarjeta para continuar
+              </p>
             </CardContent>
           </Card>
 

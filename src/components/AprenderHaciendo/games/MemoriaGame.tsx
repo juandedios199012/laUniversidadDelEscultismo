@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, PartyPopper } from 'lucide-react';
+import PictogramaValor from '@/components/AprenderHaciendo/PictogramaValor';
 import type { GameProps, MemoriaConfiguracion } from '@/types/aprenderHaciendo';
 
 // Si la configuración trae menos de 4 pares se usan tal cual (nada que
@@ -149,11 +150,11 @@ export default function MemoriaGame({ configuracion, puntosBase, onComplete }: G
                 </div>
                 {/* Frente (boca arriba) */}
                 <div
-                  className={`absolute inset-0 rounded-2xl shadow-md flex items-center justify-center text-4xl
+                  className={`absolute inset-0 rounded-2xl shadow-md flex items-center justify-center overflow-hidden text-4xl
                     ${encontrada ? 'bg-emerald-100 ring-4 ring-emerald-400' : 'bg-white border-2 border-fuchsia-200'}`}
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
-                  <span aria-hidden="true">{carta.pictograma}</span>
+                  <PictogramaValor valor={carta.pictograma} tamano="md" />
                   {encontrada && (
                     <CheckCircle2 className="absolute top-1 right-1 w-5 h-5 text-emerald-600" />
                   )}

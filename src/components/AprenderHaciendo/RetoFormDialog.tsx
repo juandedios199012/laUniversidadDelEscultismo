@@ -32,6 +32,8 @@ import {
 } from '@/components/ui/select';
 
 import AprenderHacienoService from '@/services/aprenderHacienoService';
+import PictogramaInput from './PictogramaInput';
+import UbicadorPosicion from './UbicadorPosicion';
 import type {
   AhReto, AhTipoJuego,
   DragAndDropConfiguracion, MemoriaConfiguracion,
@@ -54,6 +56,7 @@ const TIPOS_JUEGO: { value: AhTipoJuego; label: string }[] = [
   { value: 'MORSE', label: 'Morse' },
   { value: 'MEMORIA', label: 'Memoria' },
   { value: 'JENGA_EQUIPO', label: 'Jenga de equipo' },
+  { value: 'ROMPECABEZAS', label: 'Rompecabezas' },
 ];
 
 const PRESETS_COLOR_JENGA = [
@@ -138,7 +141,10 @@ function filasSeleccionableDesdeConfig(config: unknown): SeleccionableFila[] {
 
 // DragAndDrop — ARRASTRAR_SOLTAR ('emparejar') y SECUENCIA ('ordenar')
 // comparten la instrucción pero tienen filas de forma distinta.
-interface EmparejarFila { rowId: string; pictograma: string; etiqueta: string }
+// ROMPECABEZAS reutiliza la MISMA fila que ARRASTRAR_SOLTAR (misma
+// mecánica de "emparejar" por debajo) — sólo agrega `posicion`, que
+// ARRASTRAR_SOLTAR simplemente nunca completa.
+interface EmparejarFila { rowId: string; pictograma: string; etiqueta: string; posicion?: { x: number; y: number } }
 interface OrdenarFila { rowId: string; texto: string; pictograma: string }
 
 const filaVaciaEmparejar = (): EmparejarFila => ({ rowId: genId(), pictograma: '', etiqueta: '' });
@@ -150,9 +156,73 @@ function filasEmparejarDesdeConfig(config: unknown): { instruccion: string; fila
   return {
     instruccion: c?.instruccion || '',
     filas: pares?.length
-      ? pares.map(p => ({ rowId: genId(), pictograma: p.pictograma || '', etiqueta: p.etiqueta || '' }))
+      ? pares.map(p => ({ rowId: genId(), pictograma: p.pictograma || '', etiqueta: p.etiqueta || '', posicion: p.posicion }))
       : [filaVaciaEmparejar()],
   };
+}
+
+// ----------------------------------------------------------------
+// FilaUbicacion — botón "📍 Ubicar en la imagen" que cada fila de
+// ROMPECABEZAS agrega sobre la fila Emparejar compartida, para fijar
+// `posicion` abriendo `UbicadorPosicion` sobre la imagen base.
+// ----------------------------------------------------------------
+function FilaUbicacion({ fila, actualizar, imagenBase, otras }: {
+  fila: EmparejarFila;
+  actualizar: (patch: Partial<EmparejarFila>) => void;
+  imagenBase: string;
+  otras: EmparejarFila[];
+}) {
+  const [abierto, setAbierto] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          className="min-h-[44px] px-3 inline-flex items-center gap-2 rounded-lg border-2 border-fuchsia-200 text-fuchsia-700 text-sm font-semibold hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+        >
+          📍 Ubicar en la imagen
+        </button>
+        {fila.posicion ? (
+          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1">
+            ✅ Ubicado
+          </span>
+        ) : (
+          <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-1">
+            ⚠ Falta ubicar
+          </span>
+        )}
+      </div>
+
+      {abierto && (
+        <Dialog open onOpenChange={(o) => { if (!o) setAbierto(false); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ubicar pieza</DialogTitle>
+            </DialogHeader>
+            {imagenBase ? (
+              <UbicadorPosicion
+                imagenUrl={imagenBase}
+                posicion={fila.posicion}
+                marcadoresExistentes={otras.filter(o => o.posicion).map(o => ({ ...o.posicion!, etiqueta: o.etiqueta }))}
+                onChange={p => actualizar({ posicion: p })}
+              />
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-6">
+                Primero subí la imagen base del rompecabezas.
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="button" onClick={() => setAbierto(false)} className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
+                Listo
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
 }
 
 function filasOrdenarDesdeConfig(config: unknown): { instruccion: string; filas: OrdenarFila[] } {
@@ -224,15 +294,25 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
       : [filaVaciaSeleccionable()]
   );
 
-  // DragAndDrop (ARRASTRAR_SOLTAR / SECUENCIA) — instrucción compartida,
-  // filas separadas porque su forma es genuinamente distinta.
-  const emparejarInicial = tipoInicial === 'ARRASTRAR_SOLTAR' ? filasEmparejarDesdeConfig(configInicial) : null;
+  // DragAndDrop (ARRASTRAR_SOLTAR / SECUENCIA / ROMPECABEZAS) —
+  // instrucción compartida, filas separadas porque su forma es
+  // genuinamente distinta entre 'emparejar' y 'ordenar'. ROMPECABEZAS
+  // reutiliza exactamente la misma fila/estado que ARRASTRAR_SOLTAR
+  // (mismo modo 'emparejar' por debajo) más `imagenBase`.
+  const emparejarInicial = (tipoInicial === 'ARRASTRAR_SOLTAR' || tipoInicial === 'ROMPECABEZAS')
+    ? filasEmparejarDesdeConfig(configInicial)
+    : null;
   const ordenarInicial = tipoInicial === 'SECUENCIA' ? filasOrdenarDesdeConfig(configInicial) : null;
   const [instruccionDragAndDrop, setInstruccionDragAndDrop] = useState(
     emparejarInicial?.instruccion ?? ordenarInicial?.instruccion ?? ''
   );
   const [filasEmparejar, setFilasEmparejar] = useState<EmparejarFila[]>(emparejarInicial?.filas ?? [filaVaciaEmparejar()]);
   const [filasOrdenar, setFilasOrdenar] = useState<OrdenarFila[]>(ordenarInicial?.filas ?? [filaVaciaOrdenar()]);
+
+  // Imagen base del rompecabezas (sólo relevante para ROMPECABEZAS)
+  const [imagenBase, setImagenBase] = useState<string>(
+    () => (tipoInicial === 'ROMPECABEZAS' ? ((configInicial as DragAndDropConfiguracion)?.imagenBaseUrl || '') : '')
+  );
 
   // Parser (MORSE)
   const [filasParser, setFilasParser] = useState<ParserFila[]>(
@@ -294,6 +374,31 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
           modo: 'emparejar',
           instruccion: instruccionDragAndDrop.trim(),
           pares: filasEmparejar.map(f => ({ id: f.rowId, pictograma: f.pictograma.trim(), etiqueta: f.etiqueta.trim() })),
+        };
+        return config as unknown as Record<string, unknown>;
+      }
+      case 'ROMPECABEZAS': {
+        if (!imagenBase.trim()) {
+          toast.error('El rompecabezas necesita una imagen base');
+          return null;
+        }
+        if (!instruccionDragAndDrop.trim()) {
+          toast.error('La instrucción es obligatoria');
+          return null;
+        }
+        if (filasEmparejar.some(f => !f.pictograma.trim() || !f.etiqueta.trim())) {
+          toast.error('Cada pieza necesita un pictograma y una etiqueta');
+          return null;
+        }
+        if (filasEmparejar.some(f => !f.posicion)) {
+          toast.error("Cada pieza necesita estar ubicada en la imagen (botón 'Ubicar')");
+          return null;
+        }
+        const config: DragAndDropConfiguracion = {
+          modo: 'emparejar',
+          instruccion: instruccionDragAndDrop.trim(),
+          imagenBaseUrl: imagenBase.trim(),
+          pares: filasEmparejar.map(f => ({ id: f.rowId, pictograma: f.pictograma.trim(), etiqueta: f.etiqueta.trim(), posicion: f.posicion })),
         };
         return config as unknown as Record<string, unknown>;
       }
@@ -443,7 +548,7 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
                   <>
                     <Label>{tipoJuego === 'JENGA_EQUIPO' ? `Bloque ${i + 1}` : `Pregunta ${i + 1}`}</Label>
                     <Input value={fila.texto} onChange={e => actualizar({ texto: e.target.value })} placeholder="Texto de la pregunta" />
-                    <Input value={fila.pictograma} onChange={e => actualizar({ pictograma: e.target.value })} placeholder="Pictograma (emoji, opcional)" maxLength={8} />
+                    <PictogramaInput value={fila.pictograma} onChange={v => actualizar({ pictograma: v })} />
                     {tipoJuego === 'JENGA_EQUIPO' && (
                       <div className="flex flex-col gap-1.5">
                         <Label>Color del bloque</Label>
@@ -487,28 +592,48 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
               />
             )}
 
-            {(tipoJuego === 'ARRASTRAR_SOLTAR' || tipoJuego === 'SECUENCIA') && (
+            {(tipoJuego === 'ARRASTRAR_SOLTAR' || tipoJuego === 'SECUENCIA' || tipoJuego === 'ROMPECABEZAS') && (
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label required>Instrucción</Label>
                   <Input
                     value={instruccionDragAndDrop}
                     onChange={e => setInstruccionDragAndDrop(e.target.value)}
-                    placeholder={tipoJuego === 'ARRASTRAR_SOLTAR' ? 'Ej: Empareja cada nudo con su nombre' : 'Ej: Ordena los pasos para armar la carpa'}
+                    placeholder={
+                      tipoJuego === 'ARRASTRAR_SOLTAR' ? 'Ej: Empareja cada nudo con su nombre'
+                        : tipoJuego === 'ROMPECABEZAS' ? 'Ej: Arma la Flor de Lis ubicando cada parte en su lugar'
+                          : 'Ej: Ordena los pasos para armar la carpa'
+                    }
                   />
                 </div>
 
-                {tipoJuego === 'ARRASTRAR_SOLTAR' ? (
+                {tipoJuego === 'ROMPECABEZAS' && (
+                  <PictogramaInput
+                    value={imagenBase}
+                    onChange={setImagenBase}
+                    label="Imagen base del rompecabezas (obligatoria) — usá el botón 'Subir imagen', no un emoji"
+                  />
+                )}
+
+                {(tipoJuego === 'ARRASTRAR_SOLTAR' || tipoJuego === 'ROMPECABEZAS') ? (
                   <ListaRepetible
                     filas={filasEmparejar}
                     onChange={setFilasEmparejar}
                     nuevaFila={filaVaciaEmparejar}
-                    etiquetaAgregar="Agregar par"
+                    etiquetaAgregar={tipoJuego === 'ROMPECABEZAS' ? 'Agregar pieza' : 'Agregar par'}
                     renderFila={(fila, i, actualizar) => (
                       <>
-                        <Label>Par {i + 1}</Label>
-                        <Input value={fila.pictograma} onChange={e => actualizar({ pictograma: e.target.value })} placeholder="Pictograma (emoji)" maxLength={8} />
+                        <Label>{tipoJuego === 'ROMPECABEZAS' ? `Pieza ${i + 1}` : `Par ${i + 1}`}</Label>
+                        <PictogramaInput value={fila.pictograma} onChange={v => actualizar({ pictograma: v })} />
                         <Input value={fila.etiqueta} onChange={e => actualizar({ etiqueta: e.target.value })} placeholder="Etiqueta (nombre correcto)" />
+                        {tipoJuego === 'ROMPECABEZAS' && (
+                          <FilaUbicacion
+                            fila={fila}
+                            actualizar={actualizar}
+                            imagenBase={imagenBase}
+                            otras={filasEmparejar.filter(f => f.rowId !== fila.rowId)}
+                          />
+                        )}
                       </>
                     )}
                   />
@@ -526,15 +651,13 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
                           }}
                           placeholder="Texto del paso"
                         />
-                        <Input
+                        <PictogramaInput
                           value={fila.pictograma}
-                          onChange={e => {
+                          onChange={v => {
                             const nuevas = [...filasOrdenar];
-                            nuevas[i] = { ...nuevas[i], pictograma: e.target.value };
+                            nuevas[i] = { ...nuevas[i], pictograma: v };
                             setFilasOrdenar(nuevas);
                           }}
-                          placeholder="Pictograma (emoji, opcional)"
-                          maxLength={8}
                         />
                         <div className="flex gap-2 mt-1">
                           <button
@@ -621,7 +744,7 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
                 renderFila={(fila, i, actualizar) => (
                   <>
                     <Label>Par {i + 1}</Label>
-                    <Input value={fila.pictograma} onChange={e => actualizar({ pictograma: e.target.value })} placeholder="Pictograma (emoji)" maxLength={8} />
+                    <PictogramaInput value={fila.pictograma} onChange={v => actualizar({ pictograma: v })} />
                     <Input value={fila.etiqueta} onChange={e => actualizar({ etiqueta: e.target.value })} placeholder="Etiqueta (opcional)" />
                   </>
                 )}

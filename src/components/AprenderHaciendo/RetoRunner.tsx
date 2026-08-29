@@ -39,6 +39,7 @@ const GAME_COMPONENTS: Record<AhTipoJuego, React.ComponentType<GameProps>> = {
   JENGA_EQUIPO: TriviaStrategy,
   ARRASTRAR_SOLTAR: DragAndDropStrategy,
   SECUENCIA: DragAndDropStrategy,
+  ROMPECABEZAS: DragAndDropStrategy,
   MORSE: ParserStrategy,
   MEMORIA: MemoriaGame,
 };
