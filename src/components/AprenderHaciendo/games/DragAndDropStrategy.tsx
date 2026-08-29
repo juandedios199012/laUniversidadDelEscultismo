@@ -71,11 +71,15 @@ function DraggableChip({ id, pictograma, deshabilitado }: { id: string; pictogra
 
 function DropZone({ id, etiqueta, resuelto }: { id: string; etiqueta: string; resuelto: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled: resuelto });
+  // Botón de audio propio de la zona: sin esto, un scout que no lee no
+  // tiene forma de saber a qué zona corresponde arrastrar cada ficha —
+  // solo podía escuchar la instrucción general, no las etiquetas.
+  const { speak, stop, isSpeaking, isSupported } = useTextToSpeech();
 
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[64px] w-full rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 px-3 py-2 font-bold text-center transition-colors
+      className={`min-h-[64px] w-full rounded-2xl border-2 border-dashed flex items-center justify-between gap-2 px-3 py-2 font-bold text-center transition-colors
         ${resuelto
           ? 'bg-emerald-100 border-emerald-400 text-emerald-700'
           : isOver
@@ -83,8 +87,21 @@ function DropZone({ id, etiqueta, resuelto }: { id: string; etiqueta: string; re
             : 'bg-white border-gray-300 text-gray-600'}
       `}
     >
-      {resuelto && <CheckCircle2 className="w-5 h-5 shrink-0" />}
-      {etiqueta}
+      <span className="flex-1 flex items-center justify-center gap-2">
+        {resuelto && <CheckCircle2 className="w-5 h-5 shrink-0" />}
+        {etiqueta}
+      </span>
+
+      {!resuelto && isSupported && (
+        <button
+          type="button"
+          onClick={() => (isSpeaking ? stop() : speak(etiqueta))}
+          aria-label={isSpeaking ? 'Detener lectura' : `Escuchar: ${etiqueta}`}
+          className="min-h-[44px] min-w-[44px] shrink-0 rounded-full flex items-center justify-center text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+        >
+          {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
+      )}
     </div>
   );
 }
