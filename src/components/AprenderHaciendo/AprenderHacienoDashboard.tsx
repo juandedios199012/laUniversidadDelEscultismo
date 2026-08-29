@@ -160,6 +160,7 @@ export default function AprenderHacienoDashboard() {
           setVista('grid');
           setModuloSeleccionadoId(null);
         }}
+        onVerRanking={() => setVista('ranking')}
       />
     );
   }

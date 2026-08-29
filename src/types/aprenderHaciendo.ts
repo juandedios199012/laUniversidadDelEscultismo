@@ -123,6 +123,16 @@ export interface AhRankingPatrulla {
   total_puntos: number;
 }
 
+export interface AhRankingScout {
+  scout_id: string;
+  nombres: string;
+  apellidos: string;
+  rama: string;
+  patrulla_nombre?: string | null;
+  total_puntos: number;
+  retos_completados: number;
+}
+
 // ============================================================================
 // CONFIGURACIÓN DE JUEGOS
 // ============================================================================

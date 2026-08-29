@@ -951,7 +951,49 @@ class ScoutService {
       return { existe: false, mensaje: error.message };
     }
   }
-  
+
+  /**
+   * Busca una persona solo por número de documento, sin exigir el tipo
+   * exacto (prueba DNI, Carnet de Extranjería y Pasaporte). Usado donde
+   * el usuario solo conoce el número, no el tipo de documento con el
+   * que la persona quedó registrada (ej. CrearUsuarioClaveDialog).
+   */
+  static async buscarPersonaPorNumeroDocumento(numeroDocumento: string): Promise<{
+    existe: boolean;
+    persona_id?: string;
+    nombres?: string;
+    apellidos?: string;
+    celular?: string;
+    correo?: string;
+    sexo?: string;
+    es_familiar_de?: Array<{
+      scout_id: string;
+      scout_nombre: string;
+      parentesco: string;
+    }>;
+    mensaje?: string;
+  }> {
+    try {
+      if (!numeroDocumento?.trim()) {
+        return { existe: false, mensaje: 'Número de documento vacío' };
+      }
+
+      const { data, error } = await supabase.rpc('api_buscar_persona_por_numero_documento', {
+        p_numero_documento: numeroDocumento.trim(),
+      });
+
+      if (error) {
+        console.error('❌ Error buscando persona por número de documento:', error);
+        return { existe: false, mensaje: error.message };
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error('❌ Error buscando persona por número de documento:', error);
+      return { existe: false, mensaje: error.message };
+    }
+  }
+
   /**
    * Crear un familiar para un scout
    */

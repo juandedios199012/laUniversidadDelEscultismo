@@ -9,6 +9,7 @@ import {
   AhModulo,
   AhModuloDetalle,
   AhRankingPatrulla,
+  AhRankingScout,
   FormularioModulo,
   FormularioPaso,
   FormularioReto,
@@ -254,6 +255,22 @@ export class AprenderHacienoService {
       return result.data || [];
     } catch (error) {
       console.error('Error al obtener ranking de patrullas:', error);
+      throw error;
+    }
+  }
+
+  static async obtenerRankingScouts(rama?: string): Promise<AhRankingScout[]> {
+    try {
+      const { data, error } = await supabase.rpc('api_ah_ranking_scouts', {
+        p_rama: rama || null,
+      });
+
+      if (error) throw error;
+      const result = data as RpcResult<AhRankingScout[]>;
+      if (!result.success) throw new Error(result.error || 'Error al obtener el ranking');
+      return result.data || [];
+    } catch (error) {
+      console.error('Error al obtener ranking de scouts:', error);
       throw error;
     }
   }

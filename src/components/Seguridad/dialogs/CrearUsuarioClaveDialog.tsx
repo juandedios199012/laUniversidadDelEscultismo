@@ -68,7 +68,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
 
   const buscarPorDni = async () => {
     const value = identificador.trim();
-    if (tipo !== 'dni' || value.length < 8) {
+    if (tipo !== 'dni' || value.length < 6) {
       setPersonaEncontrada(null);
       setDniVerificado(null);
       return;
@@ -76,7 +76,9 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
     setBuscando(true);
     setError(null);
     try {
-      const resultado = await ScoutService.buscarPersonaPorDocumento('DNI', value);
+      // Busca por número solo, sin asumir DNI — la persona puede estar
+      // registrada con Carnet de Extranjería o Pasaporte.
+      const resultado = await ScoutService.buscarPersonaPorNumeroDocumento(value);
       if (resultado.existe) {
         setPersonaEncontrada({
           nombres: resultado.nombres || '',
@@ -109,8 +111,8 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
     setExito(false);
 
     const value = identificador.trim();
-    if (tipo === 'dni' && value.length < 8) {
-      setError('Ingresa un DNI válido');
+    if (tipo === 'dni' && value.length < 6) {
+      setError('Ingresa un número de documento válido');
       return;
     }
     if (tipo === 'email' && !value.includes('@')) {
@@ -160,7 +162,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
 
   if (!isOpen) return null;
 
-  const dniNoEncontrado = tipo === 'dni' && dniVerificado === identificador.trim() && !personaEncontrada && identificador.trim().length >= 8;
+  const dniNoEncontrado = tipo === 'dni' && dniVerificado === identificador.trim() && !personaEncontrada && identificador.trim().length >= 6;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -202,7 +204,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
-                Su DNI
+                Su documento
               </button>
               <button
                 type="button"
@@ -221,7 +223,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
           {/* Identificador (DNI o correo) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              {tipo === 'dni' ? 'DNI' : 'Correo electrónico'} <span className="text-red-500">*</span>
+              {tipo === 'dni' ? 'N° de Documento (DNI, Carnet de Extranjería o Pasaporte)' : 'Correo electrónico'} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               {tipo === 'dni' ? (
@@ -230,10 +232,12 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
                 <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               )}
               <input
-                type={tipo === 'email' ? 'email' : 'text'}
+                type="text"
                 value={identificador}
                 onChange={(e) => {
-                  const value = tipo === 'dni' ? e.target.value.replace(/\D/g, '').slice(0, 20) : e.target.value;
+                  // Sin restringir a solo dígitos: un Pasaporte puede
+                  // incluir letras (ej. "AB1234567").
+                  const value = tipo === 'dni' ? e.target.value.slice(0, 20) : e.target.value;
                   setIdentificador(value);
                   setPersonaEncontrada(null);
                   setDniVerificado(null);
@@ -249,7 +253,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
             </div>
             {tipo === 'dni' && (
               <p className="mt-1 text-xs text-gray-500">
-                Si va a ser Padre/Tutor, debe ser el mismo DNI registrado en la ficha del hijo (paso "Familiares")
+                Si va a ser Padre/Tutor, debe ser el mismo documento registrado en la ficha del hijo (paso "Familiares")
               </p>
             )}
             {personaEncontrada && (
@@ -265,7 +269,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
             {dniNoEncontrado && (
               <div className="mt-2 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>No se encontró a nadie con este DNI en el sistema. Si es un familiar, regístralo primero en la ficha del scout.</span>
+                <span>No se encontró a nadie con este documento en el sistema. Si es un familiar, regístralo primero en la ficha del scout.</span>
               </div>
             )}
           </div>
@@ -389,7 +393,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
           {exito && (
             <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
               <CheckCircle className="w-5 h-5 shrink-0" />
-              <span className="text-sm">¡Usuario creado! Ya puede entrar con {tipo === 'dni' ? 'su DNI' : 'su correo'} y esta contraseña.</span>
+              <span className="text-sm">¡Usuario creado! Ya puede entrar con {tipo === 'dni' ? 'su documento' : 'su correo'} y esta contraseña.</span>
             </div>
           )}
 

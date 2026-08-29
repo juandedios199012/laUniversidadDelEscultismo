@@ -163,11 +163,17 @@ Deno.serve(async (req: Request) => {
       // Solo tiene sentido validar contra familiares_scout cuando uno de los
       // roles elegidos es padre_familia (login como padre, ve el Portal de
       // Padres, que matchea por DNI contra familiares_scout).
+      // No se filtra por tipo_documento = 'DNI': un padre/tutor puede
+      // estar registrado con Carnet de Extranjería o Pasaporte y este
+      // identificador (el "DNI" de login) es en realidad cualquier
+      // número de documento — filtrar solo por DNI bloqueaba la
+      // creación de cuenta para esos casos aunque el familiar sí
+      // existiera en el sistema.
       const { data: familiarExistente, error: familiarError } = await adminClient
         .from('familiares_scout')
         .select('id, personas!inner(numero_documento, tipo_documento)')
         .eq('personas.numero_documento', identifierRaw)
-        .eq('personas.tipo_documento', 'DNI')
+        .in('personas.tipo_documento', ['DNI', 'CARNET_EXTRANJERIA', 'PASAPORTE'])
         .limit(1)
         .maybeSingle();
 
@@ -177,7 +183,7 @@ Deno.serve(async (req: Request) => {
       if (!familiarExistente) {
         return jsonResponse({
           success: false,
-          error: 'No existe ningún familiar registrado con ese número de documento. Registra primero al hijo con este DNI en el paso "Familiares".',
+          error: 'No existe ningún familiar registrado con ese número de documento. Registra primero al hijo con este documento en el paso "Familiares".',
         }, 400);
       }
     }

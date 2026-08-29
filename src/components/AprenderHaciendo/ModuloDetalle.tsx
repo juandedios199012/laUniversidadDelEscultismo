@@ -40,9 +40,11 @@ type Vista = 'pasos' | 'retos' | 'jugando';
 interface ModuloDetalleProps {
   moduloId: string;
   onBack: () => void;
+  /** Si se pasa, RetoRunner muestra un botón "Ver tabla completa" al terminar un reto */
+  onVerRanking?: () => void;
 }
 
-export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) {
+export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: ModuloDetalleProps) {
   const { puedeVerDetalle, puedeCrear, puedeEditar } = usePermissions();
 
   const [detalle, setDetalle] = useState<AhModuloDetalle | null>(null);
@@ -213,6 +215,7 @@ export default function ModuloDetalle({ moduloId, onBack }: ModuloDetalleProps) 
             setRetoActivo(null);
             setVista('retos');
           }}
+          onVerRanking={onVerRanking}
         />
       )}
 

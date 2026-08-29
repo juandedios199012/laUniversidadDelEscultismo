@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
-import { ArrowLeft, PartyPopper, Star } from 'lucide-react';
+import { ArrowLeft, PartyPopper, Star, Trophy, Users } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,19 +43,66 @@ const GAME_COMPONENTS: Record<AhTipoJuego, React.ComponentType<GameProps>> = {
   MEMORIA: MemoriaGame,
 };
 
+interface Posicion {
+  puesto: number;
+  total: number;
+  nombre: string;
+  puntosTotales: number;
+}
+
 interface RetoRunnerProps {
   reto: AhReto;
   scoutId?: string | null;
   patrullaId?: string | null;
   /** Siempre visible arriba a la izquierda — vuelve a la lista de retos */
   onBack: () => void;
+  /** Si se pasa, muestra un botón "Ver tabla completa" tras completar el reto */
+  onVerRanking?: () => void;
 }
 
-export default function RetoRunner({ reto, scoutId, patrullaId, onBack }: RetoRunnerProps) {
+export default function RetoRunner({ reto, scoutId, patrullaId, onBack, onVerRanking }: RetoRunnerProps) {
   const [completado, setCompletado] = useState<{ puntaje: number; tiempoSegundos: number } | null>(null);
   const [registrando, setRegistrando] = useState(false);
+  const [posicionPatrulla, setPosicionPatrulla] = useState<Posicion | null>(null);
+  const [posicionScout, setPosicionScout] = useState<Posicion | null>(null);
 
   const GameComponent = GAME_COMPONENTS[reto.tipo_juego] || TriviaStrategy;
+
+  // Tras registrar el intento, busca en qué puesto quedó la patrulla y/o
+  // el scout — responde directamente "¿dónde veo los puntos logrados?"
+  // sin que el dirigente tenga que navegar a otra pantalla.
+  const cargarPosicion = async () => {
+    try {
+      if (patrullaId) {
+        const ranking = await AprenderHacienoService.obtenerRankingPatrullas();
+        const indice = ranking.findIndex(r => r.patrulla_id === patrullaId);
+        if (indice >= 0) {
+          setPosicionPatrulla({
+            puesto: indice + 1,
+            total: ranking.length,
+            nombre: ranking[indice].nombre,
+            puntosTotales: ranking[indice].total_puntos,
+          });
+        }
+      }
+      if (scoutId) {
+        const ranking = await AprenderHacienoService.obtenerRankingScouts();
+        const indice = ranking.findIndex(r => r.scout_id === scoutId);
+        if (indice >= 0) {
+          setPosicionScout({
+            puesto: indice + 1,
+            total: ranking.length,
+            nombre: `${ranking[indice].nombres} ${ranking[indice].apellidos}`,
+            puntosTotales: ranking[indice].total_puntos,
+          });
+        }
+      }
+    } catch (err) {
+      // No bloquea la celebración si el ranking falla al cargar — el
+      // puntaje ya quedó registrado, esto es solo contexto adicional.
+      console.error('Error al cargar la posición en el ranking:', err);
+    }
+  };
 
   const handleComplete = async (puntaje: number, tiempoSegundos: number) => {
     setCompletado({ puntaje, tiempoSegundos });
@@ -81,6 +128,8 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack }: RetoRu
       });
       if (!resultado.success) {
         toast.error(resultado.message);
+      } else {
+        await cargarPosicion();
       }
     } catch (err) {
       console.error('Error al registrar el intento:', err);
@@ -133,13 +182,45 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack }: RetoRu
                 Obtuviste <span className="font-bold text-fuchsia-600">{completado.puntaje}</span> puntos
                 {completado.tiempoSegundos ? ` en ${completado.tiempoSegundos} segundos` : ''}.
               </p>
-              <Button
-                onClick={onBack}
-                disabled={registrando}
-                className="min-h-[44px] mt-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
-              >
-                Volver a los retos
-              </Button>
+
+              {/* Contexto inmediato: dónde quedó parado tras este reto,
+                  sin tener que navegar a otra pantalla para averiguarlo. */}
+              {(posicionPatrulla || posicionScout) && (
+                <div className="w-full max-w-sm flex flex-col gap-2 bg-fuchsia-50/70 border border-fuchsia-100 rounded-2xl px-4 py-3">
+                  {posicionScout && (
+                    <p className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
+                      <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+                      {posicionScout.nombre}: puesto <span className="text-fuchsia-600">#{posicionScout.puesto}</span> de {posicionScout.total} · {posicionScout.puntosTotales} pts en total
+                    </p>
+                  )}
+                  {posicionPatrulla && (
+                    <p className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
+                      <Users className="h-4 w-4 text-fuchsia-500 shrink-0" />
+                      Patrulla {posicionPatrulla.nombre}: puesto <span className="text-fuchsia-600">#{posicionPatrulla.puesto}</span> de {posicionPatrulla.total} · {posicionPatrulla.puntosTotales} pts en total
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                {onVerRanking && (
+                  <Button
+                    variant="outline"
+                    onClick={onVerRanking}
+                    className="min-h-[44px] border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-50"
+                  >
+                    <Trophy className="h-4 w-4 mr-2" />
+                    Ver tabla completa
+                  </Button>
+                )}
+                <Button
+                  onClick={onBack}
+                  disabled={registrando}
+                  className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                >
+                  Volver a los retos
+                </Button>
+              </div>
             </motion.div>
           ) : (
             <GameComponent
