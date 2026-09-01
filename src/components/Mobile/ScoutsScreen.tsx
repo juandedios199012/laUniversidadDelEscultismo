@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Phone, MapPin, Award, UserPlus, Edit3, Cake } from 'lucide-react';
+import { Users, Search, Phone, MapPin, Award, UserPlus, Edit3, Cake, Lock } from 'lucide-react';
 import ScoutService from '../../services/scoutService';
 import RegistroScoutRapido from './RegistroScoutRapido';
 import EditarScoutMobile from './EditarScoutMobile';
@@ -11,12 +11,15 @@ import {
   getDaysUntilNextBirthday,
   formatDaysUntilBirthday,
 } from '@/lib/birthdayUtils';
+import { usePermissions } from '../../contexts/PermissionsContext';
+import { useMiIdentidadScout } from '../../hooks/useMiIdentidadScout';
 
 type VistaScouts = 'lista' | 'cumpleanos';
 type FiltroCumpleanos = 'semana' | 'mes' | 'todos';
 
 interface Scout {
   id: string;
+  persona_id?: string;
   codigo_asociado: string;
   nombres: string;
   apellidos: string;
@@ -30,6 +33,13 @@ interface Scout {
 }
 
 export default function ScoutsScreen() {
+  const { puedeEditar, puedeCrear } = usePermissions();
+  const { esScout, personaId: miPersonaId } = useMiIdentidadScout();
+  // Un scout logueado sin permisos de edición/creación entra como
+  // Participante: puede ver la lista completa (nombres, nada sensible),
+  // pero solo puede abrir el detalle de su propio registro.
+  const esSoloParticipante = esScout && !puedeEditar('scouts') && !puedeCrear('scouts');
+
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [filtrados, setFiltrados] = useState<Scout[]>([]);
   const [busqueda, setBusqueda] = useState('');
@@ -245,19 +255,37 @@ export default function ScoutsScreen() {
         </div>
       )}
 
+      {/* Aviso para el Participante: solo puede abrir su propio detalle */}
+      {esSoloParticipante && (
+        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-700">
+          <Lock className="w-4 h-4 shrink-0" />
+          Solo puedes ver el detalle de tu propio perfil.
+        </div>
+      )}
+
       {/* Lista de Scouts */}
       {filtrados.length > 0 && (
       <div className="space-y-3">
-        {filtrados.map(scout => (
+        {filtrados.map(scout => {
+          const esMiPropioPerfil = scout.persona_id === miPersonaId;
+          const bloqueado = esSoloParticipante && !esMiPropioPerfil;
+
+          return (
           <button
             key={scout.id}
-            onClick={() => setScoutSeleccionado(scout)}
-            className="w-full bg-white rounded-xl p-4 shadow active:scale-95 transition-transform text-left"
+            onClick={() => { if (!bloqueado) setScoutSeleccionado(scout); }}
+            aria-disabled={bloqueado}
+            className={`w-full rounded-xl p-4 shadow text-left transition-transform ${
+              bloqueado
+                ? 'bg-gray-100 opacity-60 cursor-not-allowed'
+                : 'bg-white active:scale-95'
+            }`}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-800 text-lg">
+                <h3 className="font-semibold text-gray-800 text-lg flex items-center gap-1.5">
                   {scout.nombres} {scout.apellidos}
+                  {bloqueado && <Lock className="w-3.5 h-3.5 text-gray-400" />}
                 </h3>
                 <p className="text-sm text-gray-500">{scout.codigo_asociado}</p>
               </div>
@@ -286,7 +314,8 @@ export default function ScoutsScreen() {
               </div>
             )}
           </button>
-        ))}
+          );
+        })}
       </div>
       )}
 
@@ -363,15 +392,17 @@ export default function ScoutsScreen() {
             </div>
 
             <div className="flex space-x-2 mt-6">
-              <button
-                onClick={() => {
-                  setMostrarEditar(true);
-                }}
-                className="flex-1 flex items-center justify-center space-x-2 bg-amber-500 text-white py-3 rounded-xl font-semibold active:scale-95 transition-transform"
-              >
-                <Edit3 className="w-5 h-5" />
-                <span>Editar</span>
-              </button>
+              {puedeEditar('scouts') && (
+                <button
+                  onClick={() => {
+                    setMostrarEditar(true);
+                  }}
+                  className="flex-1 flex items-center justify-center space-x-2 bg-amber-500 text-white py-3 rounded-xl font-semibold active:scale-95 transition-transform"
+                >
+                  <Edit3 className="w-5 h-5" />
+                  <span>Editar</span>
+                </button>
+              )}
               <button
                 onClick={() => setScoutSeleccionado(null)}
                 className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold"

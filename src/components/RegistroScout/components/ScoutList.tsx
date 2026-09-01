@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Search, Edit, Eye, Users, Heart, FileText, FileType2, UserMinus, UserCheck, Trash2 } from "lucide-react";
+import { Search, Edit, Eye, Users, Heart, FileText, FileType2, UserMinus, UserCheck, Trash2, Lock } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "./EmptyState";
 import { usePermissions } from "@/contexts/PermissionsContext";
+import { useMiIdentidadScout } from "@/hooks/useMiIdentidadScout";
 import { getScoutData } from "@/modules/reports/services/reportDataService";
 import { generateReportMetadata } from "@/modules/reports/services/pdfService";
 import { scoutDocumentsService } from "@/services/scoutDocumentsService";
@@ -67,6 +68,11 @@ export function ScoutList({
   soloLectura = false,
 }: ScoutListProps) {
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+  const { esScout, codigoAsociado: miCodigoAsociado } = useMiIdentidadScout();
+  // Un scout logueado sin permisos de edición/creación entra como
+  // Participante: ve la lista completa (nombres, nada sensible), pero
+  // solo puede abrir el detalle de su propio registro.
+  const esSoloParticipante = esScout && !puedeEditar('scouts') && !puedeCrear('scouts');
   const [searchTerm, setSearchTerm] = useState("");
   const [ramaFiltro, setRamaFiltro] = useState("");
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
@@ -202,7 +208,14 @@ export function ScoutList({
           </select>
         </div>
       </CardHeader>
-      
+
+      {esSoloParticipante && (
+        <div className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+          <Lock className="h-4 w-4 shrink-0" />
+          Solo puedes ver el detalle de tu propio perfil.
+        </div>
+      )}
+
       <CardContent className="flex-1 p-0">
         {filteredScouts.length === 0 ? (
           <EmptyState
@@ -222,21 +235,28 @@ export function ScoutList({
         ) : (
           <ScrollArea className="h-[400px] px-4">
             <div className="space-y-2 pb-4">
-              {filteredScouts.map((scout) => (
+              {filteredScouts.map((scout) => {
+                const esMiPropioPerfil = scout.codigo_asociado === miCodigoAsociado;
+                const bloqueado = esSoloParticipante && !esMiPropioPerfil;
+
+                return (
                 <div
                   key={scout.id}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all",
-                    "hover:bg-accent hover:border-primary/20",
+                    "flex items-center justify-between p-3 rounded-lg border transition-all",
+                    bloqueado
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-accent hover:border-primary/20",
                     selectedId === scout.id && "bg-accent border-primary"
                   )}
-                  onClick={() => onSelect(scout)}
+                  onClick={() => { if (!bloqueado) onSelect(scout); }}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium truncate">
                         {scout.apellidos}, {scout.nombres}
                       </p>
+                      {bloqueado && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
                       {scout.estado === "ACTIVO" ? (
                         <Badge variant="activo" className="text-xs">
                           Activo
@@ -265,15 +285,16 @@ export function ScoutList({
                     <Button
                       variant="ghost"
                       size="icon"
+                      disabled={bloqueado}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelect(scout);
+                        if (!bloqueado) onSelect(scout);
                       }}
-                      title="Ver detalles"
+                      title={bloqueado ? "Solo puedes ver tu propio perfil" : "Ver detalles"}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {!soloLectura && puedeEditar('scouts') && (
+                    {!soloLectura && !bloqueado && puedeEditar('scouts') && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -368,7 +389,8 @@ export function ScoutList({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}

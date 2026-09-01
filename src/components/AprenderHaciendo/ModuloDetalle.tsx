@@ -6,10 +6,12 @@
  * terminar los pasos, muestra los retos asociados para jugarlos vía
  * `RetoRunner`.
  *
- * Como los scouts en este sistema generalmente no tienen cuenta
- * propia, esta pantalla la opera el dirigente que facilita la sesión;
- * incluye un selector de scout mínimo (Fase 1) para poder asociar el
- * progreso y los intentos de juego a un scout concreto.
+ * Fase 2: si el usuario logueado resuelve a un scout propio (ver
+ * useMiIdentidadScout, basado en el login por DNI), el progreso se
+ * asocia automáticamente a él — sin selector, no puede jugar en
+ * nombre de otro. El selector de scout (Fase 1) queda visible solo
+ * para roles con permiso crear/editar sobre este módulo, para que un
+ * dirigente pueda facilitar una sesión grupal o probar el juego.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -26,6 +28,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { usePermissions } from '@/contexts/PermissionsContext';
+import { useMiIdentidadScout } from '@/hooks/useMiIdentidadScout';
 
 import AprenderHacienoService from '@/services/aprenderHacienoService';
 import ScoutService from '@/services/scoutService';
@@ -47,6 +50,13 @@ interface ModuloDetalleProps {
 
 export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: ModuloDetalleProps) {
   const { puedeVerDetalle, puedeCrear, puedeEditar } = usePermissions();
+  const { esScout, scoutId: miScoutId, nombres: misNombres, apellidos: misApellidos } = useMiIdentidadScout();
+
+  // Mismo par de permisos que ya gatea crear/editar contenido: quien
+  // puede autorear el módulo también puede elegir con quién probarlo
+  // o facilitar una sesión grupal.
+  const puedeElegirCualquiera = puedeCrear('aprender_haciendo') || puedeEditar('aprender_haciendo');
+  const puedeJugar = esScout || puedeElegirCualquiera;
 
   const [detalle, setDetalle] = useState<AhModuloDetalle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,10 +106,22 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
   }, [moduloId]);
 
   useEffect(() => {
+    // El buscador de scouts es solo para quien puede elegir con quién
+    // jugar (staff con permiso crear/editar) — un scout jugando como
+    // sí mismo no necesita, ni debe, ver el listado completo.
+    if (!puedeElegirCualquiera) return;
     ScoutService.getAllScouts()
       .then(data => setScouts(data.filter(s => s.estado === 'ACTIVO')))
       .catch(err => console.error('Error al cargar scouts:', err));
-  }, []);
+  }, [puedeElegirCualquiera]);
+
+  // Un scout jugando como sí mismo queda fijado automáticamente,
+  // sin selector ni posibilidad de jugar en nombre de otro.
+  useEffect(() => {
+    if (esScout && miScoutId && !puedeElegirCualquiera) {
+      setScoutId(miScoutId);
+    }
+  }, [esScout, miScoutId, puedeElegirCualquiera]);
 
   // Efecto de sonido del paso actual ("Cuentos Sensoriales" VAK) — se
   // reproduce automáticamente al mostrarse el paso, complementando la
@@ -225,21 +247,34 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
         <div className="w-[92px]" aria-hidden="true" />
       </div>
 
-      {/* Selector de scout — mínimo para Fase 1, opcional */}
-      <div className="flex items-center gap-2 mb-6 bg-white/70 border border-gray-100 rounded-xl px-3 py-2">
-        <Users className="h-4 w-4 text-gray-400 shrink-0" />
-        <span className="text-sm text-gray-500 shrink-0">¿Quién está jugando?</span>
-        <Select value={scoutId} onValueChange={setScoutId}>
-          <SelectTrigger className="min-h-[44px] flex-1">
-            <SelectValue placeholder="Seleccionar scout (opcional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {scouts.map(s => (
-              <SelectItem key={s.id} value={s.id}>{s.nombres} {s.apellidos}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Selector de scout — solo para quien puede elegir con quién jugar
+          (staff con permiso crear/editar sobre este módulo) */}
+      {puedeElegirCualquiera && (
+        <div className="flex items-center gap-2 mb-6 bg-white/70 border border-gray-100 rounded-xl px-3 py-2">
+          <Users className="h-4 w-4 text-gray-400 shrink-0" />
+          <span className="text-sm text-gray-500 shrink-0">¿Quién está jugando?</span>
+          <Select value={scoutId} onValueChange={setScoutId}>
+            <SelectTrigger className="min-h-[44px] flex-1">
+              <SelectValue placeholder="Seleccionar scout (opcional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {scouts.map(s => (
+                <SelectItem key={s.id} value={s.id}>{s.nombres} {s.apellidos}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Un scout jugando como sí mismo: solo confirma quién es, sin selector */}
+      {!puedeElegirCualquiera && esScout && (
+        <div className="flex items-center gap-2 mb-6 bg-white/70 border border-gray-100 rounded-xl px-3 py-2">
+          <Users className="h-4 w-4 text-gray-400 shrink-0" />
+          <span className="text-sm text-gray-600">
+            Jugando como <strong>{misNombres} {misApellidos}</strong>
+          </span>
+        </div>
+      )}
 
       {vista === 'jugando' && retoActivo && (
         <RetoRunner
@@ -426,7 +461,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                     </div>
                     <h3 className="font-bold text-gray-800">{reto.titulo}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      {puedeCrear('aprender_haciendo') && (
+                      {puedeJugar && (
                         <Button
                           onClick={() => handleJugar(reto)}
                           className="min-h-[44px] flex-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
@@ -446,7 +481,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                         </Button>
                       )}
                     </div>
-                    {!puedeCrear('aprender_haciendo') && !puedeEditar('aprender_haciendo') && (
+                    {!puedeJugar && (
                       <p className="text-xs text-gray-400">No tienes permiso para jugar este reto.</p>
                     )}
                   </CardContent>
