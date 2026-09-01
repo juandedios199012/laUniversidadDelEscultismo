@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Package, AlertTriangle, Warehouse, Edit2 } from 'lucide-react';
+import { X, Package, AlertTriangle, Warehouse, Edit2, Smartphone } from 'lucide-react';
 import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';
 import { InventarioService } from '../../../services/inventarioService';
@@ -18,6 +18,7 @@ interface FormData {
   cantidadInicial: number;
   fechaIngreso: string;
   valorUnitario: number;
+  visibleMobile: boolean;
 }
 
 interface PopUpRegistroProps {
@@ -63,6 +64,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
     cantidadInicial:         itemToEdit?.cantidad_disponible ?? 1,
     fechaIngreso:            new Date().toISOString().split('T')[0],
     valorUnitario:           itemToEdit?.valor_unitario ?? 0,
+    visibleMobile:           itemToEdit?.visible_mobile ?? false,
   });
 
   const [saving, setSaving] = useState(false);
@@ -75,6 +77,10 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' || name === 'estadoConservacion' || name === 'cantidadInicial' || name === 'valorUnitario'
@@ -115,6 +121,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
           observaciones:
             formData.situacionObservaciones.trim() ||
             `Estado de conservación: ${formData.estadoConservacion}/10`,
+          visible_mobile:      formData.visibleMobile,
         });
         if (!result.success) throw new Error(result.error || 'Error al actualizar');
       } else {
@@ -130,6 +137,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
             formData.situacionObservaciones.trim() ||
             `Estado de conservación: ${formData.estadoConservacion}/10`,
           fecha_ingreso: formData.fechaIngreso,
+          visible_mobile: formData.visibleMobile,
         });
         if (!result.success) throw new Error(result.error || 'Error al registrar el material');
       }
@@ -243,6 +251,26 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                 placeholder="Marca, color, características especiales..."
               />
             </div>
+
+            <label className="mt-3 flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="visibleMobile"
+                checked={formData.visibleMobile}
+                onChange={handleChange}
+                className="mt-0.5 w-4 h-4 accent-blue-600"
+              />
+              <span className="text-sm text-gray-700">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <Smartphone className="w-3.5 h-3.5 text-gray-400" /> Mostrar en mobile
+                </span>
+                <br />
+                <span className="text-xs text-gray-400">
+                  Aparecerá en el selector de salida rápida del app. Actívalo solo para lo que
+                  se entrega seguido (insignias, parches, obsequios), no para material general.
+                </span>
+              </span>
+            </label>
           </fieldset>
 
           {/* ESTADO DE CONSERVACIÓN */}

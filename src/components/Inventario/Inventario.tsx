@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Package, Plus, Search, Edit2, Trash2, Eye, 
-  AlertTriangle, CheckCircle, Clock, Package2, BarChart, ArrowRightLeft
+import {
+  Package, Plus, Search, Edit2, Trash2, Eye,
+  AlertTriangle, CheckCircle, Clock, Package2, BarChart, ArrowRightLeft,
+  PackageMinus, Users
 } from 'lucide-react';
 import { InventarioService } from '../../services/inventarioService';
 import { usePermissions } from '../../contexts/PermissionsContext';
@@ -9,6 +10,8 @@ import type { InventarioItem } from '../../lib/supabase';
 import { PopUpRegistro } from '../../modules/inventario/components/PopUpRegistro';
 import { DetalleMaterial } from '../../modules/inventario/components/DetalleMaterial';
 import { PopUpTransferencia } from '../../modules/inventario/components/PopUpTransferencia';
+import { PopUpSalida } from '../../modules/inventario/components/PopUpSalida';
+import { PopUpSalidaMasiva } from '../../modules/inventario/components/PopUpSalidaMasiva';
 
 const Inventario: React.FC = () => {
   console.log('🏗️ Inventario component loading...');
@@ -29,6 +32,8 @@ const Inventario: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showSalidaModal, setShowSalidaModal] = useState(false);
+  const [showSalidaMasivaModal, setShowSalidaMasivaModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventarioItem | null>(null);
   const [itemBorrowers, setItemBorrowers] = useState<Record<string, string>>({});
   const [itemHistory, setItemHistory] = useState<any[]>([]);
@@ -476,6 +481,22 @@ const Inventario: React.FC = () => {
                           <ArrowRightLeft className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => { setSelectedItem(item); setShowSalidaModal(true); }}
+                          disabled={(item.cantidad_disponible ?? 0) < 1}
+                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Registrar salida"
+                        >
+                          <PackageMinus className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { setSelectedItem(item); setShowSalidaMasivaModal(true); }}
+                          disabled={(item.cantidad_disponible ?? 0) < 1}
+                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Salida masiva a varios participantes"
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteItem(item)}
                           disabled={saving}
                           className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -542,6 +563,24 @@ const Inventario: React.FC = () => {
             item={selectedItem}
             onClose={() => { setShowTransferModal(false); setSelectedItem(null); }}
             onSuccess={() => { loadData(); setShowTransferModal(false); setSelectedItem(null); }}
+          />
+        )}
+
+        {/* Modal de salida individual */}
+        {showSalidaModal && selectedItem && (
+          <PopUpSalida
+            item={selectedItem}
+            onClose={() => { setShowSalidaModal(false); setSelectedItem(null); }}
+            onSuccess={() => { loadData(); setShowSalidaModal(false); setSelectedItem(null); }}
+          />
+        )}
+
+        {/* Modal de salida masiva a varios participantes */}
+        {showSalidaMasivaModal && selectedItem && (
+          <PopUpSalidaMasiva
+            item={selectedItem}
+            onClose={() => { setShowSalidaMasivaModal(false); setSelectedItem(null); }}
+            onSuccess={() => { loadData(); }}
           />
         )}
 

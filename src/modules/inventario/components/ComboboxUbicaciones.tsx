@@ -8,6 +8,7 @@ interface ComboboxUbicacionesProps {
   value: string;
   onChange: (nombre: string) => void;
   onAgregarNueva?: (nombre: string) => Promise<Ubicacion | null>; // opcional
+  onSelectItem?: (item: Ubicacion) => void; // opcional: expone el id de la opción elegida
   required?: boolean;
   placeholder?: string;
 }
@@ -18,6 +19,7 @@ export function ComboboxUbicaciones({
   value,
   onChange,
   onAgregarNueva,
+  onSelectItem,
   required = false,
   placeholder,
 }: ComboboxUbicacionesProps) {
@@ -63,9 +65,10 @@ export function ComboboxUbicaciones({
   // Muestra la opción "Añadir X" solo si hay handler y el texto no existe ya
   const mostrarOpcionAgregar = !!onAgregarNueva && queryTrimmed.length > 0 && !yaExiste;
 
-  const seleccionar = (nombre: string) => {
-    onChange(nombre);
-    setQuery(nombre);
+  const seleccionar = (item: Ubicacion) => {
+    onChange(item.nombre);
+    onSelectItem?.(item);
+    setQuery(item.nombre);
     setOpen(false);
   };
 
@@ -75,7 +78,7 @@ export function ComboboxUbicaciones({
     try {
       const nueva = await onAgregarNueva(queryTrimmed);
       if (nueva) {
-        seleccionar(nueva.nombre);
+        seleccionar(nueva);
       }
     } finally {
       setCreando(false);
@@ -91,7 +94,7 @@ export function ComboboxUbicaciones({
       e.preventDefault();
       // Si hay una sola opción filtrada, seleccionarla
       if (opciones.length === 1) {
-        seleccionar(opciones[0].nombre);
+        seleccionar(opciones[0]);
       } else if (mostrarOpcionAgregar && !creando) {
         handleAgregarNueva();
       }
@@ -148,7 +151,7 @@ export function ComboboxUbicaciones({
               <button
                 key={u.id}
                 type="button"
-                onMouseDown={e => { e.preventDefault(); seleccionar(u.nombre); }}
+                onMouseDown={e => { e.preventDefault(); seleccionar(u); }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 ${
                   u.nombre === value ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700'
                 }`}

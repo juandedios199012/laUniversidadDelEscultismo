@@ -1,12 +1,12 @@
 import React from 'react';
-import { Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield, Heart } from 'lucide-react';
+import { Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield, Heart, PackageMinus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
-  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'portal-padres';
-  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'portal-padres') => void;
+  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'salida' | 'portal-padres';
+  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'salida' | 'portal-padres') => void;
 }
 
 export default function MobileLayout({ children, currentTab, onTabChange }: MobileLayoutProps) {
@@ -25,6 +25,7 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
     { id: 'asistencia' as const, icon: ClipboardCheck, label: 'Asistencia', modulo: 'asistencia' as const },
     { id: 'puntajes' as const, icon: Award, label: 'Puntajes', modulo: 'programa_semanal' as const },
     { id: 'progresion' as const, icon: TrendingUp, label: 'Progresión', modulo: 'progresion' as const },
+    { id: 'salida' as const, icon: PackageMinus, label: 'Salida', modulo: 'inventario' as const },
     { id: 'portal-padres' as const, icon: Heart, label: 'Mi Familia', modulo: 'portal_padres' as const },
   ];
 

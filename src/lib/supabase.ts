@@ -461,6 +461,7 @@ export interface InventarioItem {
   proveedor?: string;
   garantia_meses?: number;
   observaciones?: string;
+  visible_mobile?: boolean; // Si aparece en el selector de salida del mobile
   created_at: string;
   updated_at: string;
 }
@@ -473,11 +474,13 @@ export interface MovimientoInventario {
   cantidad_anterior: number;
   cantidad_nueva: number;
   responsable?: string;
-  destino?: string; // Para préstamos: a quién se presta
+  destino?: string; // Para préstamos/salidas: a quién se presta o entrega
   motivo?: string;
   fecha_movimiento: string;
   observaciones?: string;
   created_at: string;
+  persona_id?: string;  // Persona del sistema a la que se le hizo la salida
+  lote_id?: string;     // Agrupa las salidas de una misma sesión (salida masiva)
 }
 
 // ============= INTERFACES DE INVENTARIO =============

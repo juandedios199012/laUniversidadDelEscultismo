@@ -41,6 +41,30 @@ export class InventarioService {
   }
 
   /**
+   * 📱 Obtener items curados para el selector de salida del mobile.
+   * Solo lo que el admin marcó explícitamente con visible_mobile=true
+   * y que además tiene stock — el mobile nunca debe listar el
+   * catálogo completo, eso queda solo en la web.
+   * Endpoint: GET /api/inventario/mobile
+   */
+  static async getItemsVisiblesMobile(): Promise<InventarioItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('inventario')
+        .select('*')
+        .eq('visible_mobile', true)
+        .gt('cantidad_disponible', 0)
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error al obtener items visibles en mobile:', error);
+      return [];
+    }
+  }
+
+  /**
    * 🎯 Obtener items por categoría
    * Endpoint: GET /api/inventario/categoria/{categoria}
    */
@@ -97,6 +121,7 @@ export class InventarioService {
     fecha_ingreso?: string;
     proveedor?: string;
     observaciones?: string;
+    visible_mobile?: boolean;
   }): Promise<{ success: boolean; item_id?: string; error?: string }> {
     try {
       // Generate a unique codigo_item (required by DB schema as UNIQUE NOT NULL)
@@ -119,6 +144,7 @@ export class InventarioService {
           proveedor: item.proveedor || null,
           observaciones: item.observaciones || item.situacion_observaciones || null,
           estado_item: 'DISPONIBLE',
+          visible_mobile: item.visible_mobile ?? false,
         })
         .select('id')
         .single();
@@ -187,7 +213,9 @@ export class InventarioService {
     motivo?: string;
     responsable?: string;
     observaciones?: string;
-  }): Promise<{ success: boolean; movimiento_id?: string; nuevo_stock?: number; error?: string }> {
+    persona_id?: string;
+    lote_id?: string;
+  }): Promise<{ success: boolean; movimiento_id?: string; nuevo_stock?: number; destino?: string; error?: string }> {
     try {
       const { data, error } = await supabase
         .rpc('registrar_movimiento_inventario', {
@@ -196,7 +224,9 @@ export class InventarioService {
           p_cantidad: movimiento.cantidad,
           p_motivo: movimiento.motivo,
           p_responsable: movimiento.responsable,
-          p_observaciones: movimiento.observaciones
+          p_observaciones: movimiento.observaciones,
+          p_persona_id: movimiento.persona_id,
+          p_lote_id: movimiento.lote_id
         });
 
       if (error) throw error;
@@ -204,6 +234,86 @@ export class InventarioService {
     } catch (error) {
       console.error('❌ Error al registrar movimiento:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 📤 Registrar salida de un ítem a una sola persona del sistema.
+   * Endpoint: POST /api/inventario/salidas
+   */
+  static async registrarSalida(salida: {
+    item_id: string;
+    persona_id: string;
+    cantidad?: number;
+    motivo?: string;
+    responsable?: string;
+  }): Promise<{ success: boolean; movimiento_id?: string; nuevo_stock?: number; destino?: string; error?: string }> {
+    return this.registrarMovimiento({
+      item_id: salida.item_id,
+      tipo: 'salida',
+      cantidad: salida.cantidad ?? 1,
+      motivo: salida.motivo,
+      responsable: salida.responsable,
+      persona_id: salida.persona_id
+    });
+  }
+
+  /**
+   * 📤 Registrar la salida de un mismo ítem a varias personas a la vez
+   * (ej. entrega de una insignia a toda una rama). Todas quedan
+   * agrupadas bajo el mismo lote_id para poder reportar cobertura.
+   * Endpoint: POST /api/inventario/salidas/masiva
+   */
+  static async registrarSalidaMasiva(salida: {
+    item_id: string;
+    personas: string[];
+    motivo?: string;
+    responsable?: string;
+  }): Promise<{
+    success: boolean;
+    lote_id?: string;
+    entregados?: number;
+    fallidos?: Array<{ persona_id: string; error: string }>;
+    error?: string;
+  }> {
+    try {
+      const { data, error } = await supabase
+        .rpc('registrar_salida_masiva', {
+          p_item_id: salida.item_id,
+          p_personas: salida.personas,
+          p_motivo: salida.motivo,
+          p_responsable: salida.responsable
+        });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al registrar salida masiva:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
+  /**
+   * 📊 Obtener el resumen/cobertura de una salida masiva por lote_id
+   * Endpoint: GET /api/inventario/salidas/lote/{loteId}
+   */
+  static async obtenerResumenLote(loteId: string): Promise<{
+    lote_id: string;
+    item_id: string;
+    item_nombre: string;
+    entregados: number;
+    fecha: string;
+    participantes: Array<{ persona_id: string; nombre: string; fecha_movimiento: string }>;
+  } | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('obtener_resumen_lote', { p_lote_id: loteId });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al obtener resumen de lote:', error);
+      return null;
     }
   }
 
