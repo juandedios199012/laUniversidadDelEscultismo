@@ -187,18 +187,32 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack, onVerRan
               {/* Contexto inmediato: dónde quedó parado tras este reto,
                   sin tener que navegar a otra pantalla para averiguarlo. */}
               {(posicionPatrulla || posicionScout) && (
-                <div className="w-full max-w-sm flex flex-col gap-2 bg-fuchsia-50/70 border border-fuchsia-100 rounded-2xl px-4 py-3">
+                <div className="w-full max-w-sm flex flex-col gap-2">
                   {posicionScout && (
-                    <p className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
-                      <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
-                      {posicionScout.nombre}: puesto <span className="text-fuchsia-600">#{posicionScout.puesto}</span> de {posicionScout.total} · {posicionScout.puntosTotales} pts en total
-                    </p>
+                    <div className="flex items-center gap-3 bg-fuchsia-50/70 border border-fuchsia-100 rounded-2xl px-4 py-3">
+                      <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{posicionScout.nombre}</p>
+                        <p className="text-xs text-gray-500">{posicionScout.puntosTotales} pts en total</p>
+                      </div>
+                      <div className="shrink-0 text-center leading-tight">
+                        <p className="text-lg font-bold text-fuchsia-600">#{posicionScout.puesto}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">de {posicionScout.total}</p>
+                      </div>
+                    </div>
                   )}
                   {posicionPatrulla && (
-                    <p className="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
-                      <Users className="h-4 w-4 text-fuchsia-500 shrink-0" />
-                      Patrulla {posicionPatrulla.nombre}: puesto <span className="text-fuchsia-600">#{posicionPatrulla.puesto}</span> de {posicionPatrulla.total} · {posicionPatrulla.puntosTotales} pts en total
-                    </p>
+                    <div className="flex items-center gap-3 bg-fuchsia-50/70 border border-fuchsia-100 rounded-2xl px-4 py-3">
+                      <Users className="h-5 w-5 text-fuchsia-500 shrink-0" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm font-semibold text-gray-800 truncate">Patrulla {posicionPatrulla.nombre}</p>
+                        <p className="text-xs text-gray-500">{posicionPatrulla.puntosTotales} pts en total</p>
+                      </div>
+                      <div className="shrink-0 text-center leading-tight">
+                        <p className="text-lg font-bold text-fuchsia-600">#{posicionPatrulla.puesto}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">de {posicionPatrulla.total}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
