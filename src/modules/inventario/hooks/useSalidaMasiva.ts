@@ -21,6 +21,13 @@ export interface EntregaFallida {
  * todos marcados como entregados, y solo se destocan las excepciones.
  * Usada tanto por el modal web (PopUpSalidaMasiva) como por la
  * pantalla mobile (SalidaScreen) — una sola implementación.
+ *
+ * La primera vez que se carga un ítem nadie tiene una salida
+ * registrada todavía, así que el default "todos entregados" es
+ * correcto. De ahí en adelante se consulta movimientos_inventario
+ * para saber quién ya tiene una salida registrada y no volver a
+ * ofrecerlos como pendientes (evita duplicar la entrega/el descuento
+ * de stock si se reabre el formulario).
  */
 export function useSalidaMasiva(item: InventarioItem) {
   const [rama, setRama] = useState('');
@@ -30,6 +37,7 @@ export function useSalidaMasiva(item: InventarioItem) {
 
   const [elegibles, setElegibles] = useState<ParticipanteElegible[]>([]);
   const [entregados, setEntregados] = useState<Record<string, boolean>>({});
+  const [yaRegistrados, setYaRegistrados] = useState<Set<string>>(new Set());
 
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -40,6 +48,14 @@ export function useSalidaMasiva(item: InventarioItem) {
   const totalMarcados = useMemo(
     () => Object.values(entregados).filter(Boolean).length,
     [entregados]
+  );
+  // Entregas nuevas a registrar: marcadas y sin una salida previa ya
+  // guardada en la base de datos (esas no vuelven a descontar stock).
+  const totalNuevas = useMemo(
+    () => Object.entries(entregados).filter(
+      ([personaId, marcado]) => marcado && !yaRegistrados.has(personaId)
+    ).length,
+    [entregados, yaRegistrados]
   );
 
   const cargarElegibles = async () => {
@@ -68,11 +84,14 @@ export function useSalidaMasiva(item: InventarioItem) {
         return false;
       }
 
+      const registrados = await InventarioService.getPersonasConSalidaRegistrada(item.id);
+
       const inicial: Record<string, boolean> = {};
       lista.forEach(p => { inicial[p.persona_id] = true; });
 
       setElegibles(lista);
       setEntregados(inicial);
+      setYaRegistrados(registrados);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar participantes');
@@ -83,16 +102,23 @@ export function useSalidaMasiva(item: InventarioItem) {
   };
 
   const toggle = (personaId: string) => {
+    // Quien ya tiene una salida registrada no se puede "desentregar"
+    // desde esta pantalla: el check solo refleja ese estado real.
+    if (yaRegistrados.has(personaId)) return;
     setEntregados(prev => ({ ...prev, [personaId]: !prev[personaId] }));
   };
 
   const guardar = async () => {
     const personasAEntregar = Object.entries(entregados)
-      .filter(([, marcado]) => marcado)
+      .filter(([personaId, marcado]) => marcado && !yaRegistrados.has(personaId))
       .map(([personaId]) => personaId);
 
     if (personasAEntregar.length === 0) {
-      setError('No marcaste a nadie para entregar.');
+      setError(
+        yaRegistrados.size > 0
+          ? 'Todas las personas marcadas ya tenían esta entrega registrada.'
+          : 'No marcaste a nadie para entregar.'
+      );
       return false;
     }
 
@@ -129,6 +155,7 @@ export function useSalidaMasiva(item: InventarioItem) {
     responsableNombre, setResponsableNombre,
     elegibles,
     entregados,
+    yaRegistrados,
     toggle,
     cargando,
     guardando,
@@ -136,6 +163,7 @@ export function useSalidaMasiva(item: InventarioItem) {
     resultado,
     stockDisponible,
     totalMarcados,
+    totalNuevas,
     cargarElegibles,
     guardar,
   };

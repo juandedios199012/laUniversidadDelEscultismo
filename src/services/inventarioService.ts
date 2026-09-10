@@ -294,6 +294,31 @@ export class InventarioService {
   }
 
   /**
+   * 📤 Obtener los persona_id que ya tienen una salida registrada de
+   * un ítem (sin importar en qué lote/sesión se registró). Se usa
+   * para que la pantalla de salida masiva refleje el estado real de
+   * la base de datos en vez de asumir "entregado" por defecto para
+   * todos en cada carga.
+   * Endpoint: GET /api/inventario/{id}/salidas/personas
+   */
+  static async getPersonasConSalidaRegistrada(itemId: string): Promise<Set<string>> {
+    try {
+      const { data, error } = await supabase
+        .from('movimientos_inventario')
+        .select('persona_id')
+        .eq('item_id', itemId)
+        .eq('tipo_movimiento', 'salida')
+        .not('persona_id', 'is', null);
+
+      if (error) throw error;
+      return new Set((data || []).map((m: { persona_id: string }) => m.persona_id));
+    } catch (error) {
+      console.error('❌ Error al obtener entregas previas:', error);
+      return new Set();
+    }
+  }
+
+  /**
    * 📊 Obtener el resumen/cobertura de una salida masiva por lote_id
    * Endpoint: GET /api/inventario/salidas/lote/{loteId}
    */

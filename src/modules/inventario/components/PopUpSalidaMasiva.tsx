@@ -17,9 +17,9 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
     rama, setRama,
     fecha, setFecha,
     motivo, setMotivo,
-    elegibles, entregados, toggle,
+    elegibles, entregados, yaRegistrados, toggle,
     cargando, guardando, error, resultado,
-    stockDisponible, totalMarcados,
+    stockDisponible, totalMarcados, totalNuevas,
     cargarElegibles, guardar,
   } = useSalidaMasiva(item);
 
@@ -132,7 +132,7 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                     {totalMarcados} de {elegibles.length} marcados
                   </span>
                 </div>
-                {totalMarcados > stockDisponible && (
+                {totalNuevas > stockDisponible && (
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
                     Solo hay {stockDisponible} en stock
                   </span>
@@ -140,19 +140,25 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
               </div>
 
               <p className="text-xs text-gray-500">
-                Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.
+                {yaRegistrados.size > 0
+                  ? 'Quienes ya tienen esta entrega registrada aparecen marcados y no se pueden editar. Los demás empiezan como "entregado": toca a quien NO recibió el ítem.'
+                  : 'Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.'}
               </p>
 
               <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
                 {elegibles.map(p => {
                   const marcado = !!entregados[p.persona_id];
+                  const yaRegistrado = yaRegistrados.has(p.persona_id);
                   return (
                     <button
                       key={p.persona_id}
                       type="button"
                       onClick={() => toggle(p.persona_id)}
+                      disabled={yaRegistrado}
                       className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors ${
-                        marcado ? 'bg-white hover:bg-green-50' : 'bg-red-50 hover:bg-red-100'
+                        yaRegistrado
+                          ? 'bg-gray-50 cursor-default'
+                          : marcado ? 'bg-white hover:bg-green-50' : 'bg-red-50 hover:bg-red-100'
                       }`}
                     >
                       <div className="min-w-0">
@@ -161,7 +167,11 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                         </p>
                         <p className="text-xs text-gray-400">{p.codigo_asociado}</p>
                       </div>
-                      {marcado ? (
+                      {yaRegistrado ? (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 shrink-0">
+                          <Check className="w-4 h-4" /> Ya registrado
+                        </span>
+                      ) : marcado ? (
                         <span className="flex items-center gap-1 text-xs font-semibold text-green-600 shrink-0">
                           <Check className="w-4 h-4" /> Entregado
                         </span>
@@ -249,13 +259,13 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
               <button
                 type="button"
                 onClick={handleGuardar}
-                disabled={guardando || totalMarcados === 0}
+                disabled={guardando || totalNuevas === 0}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {guardando ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
                 ) : (
-                  `Guardar ${totalMarcados} entrega${totalMarcados === 1 ? '' : 's'}`
+                  `Guardar ${totalNuevas} entrega${totalNuevas === 1 ? '' : 's'}`
                 )}
               </button>
             </>

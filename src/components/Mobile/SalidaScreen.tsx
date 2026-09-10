@@ -104,9 +104,9 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
   const {
     rama, setRama,
     fecha, setFecha,
-    elegibles, entregados, toggle,
+    elegibles, entregados, yaRegistrados, toggle,
     cargando, guardando, error, resultado,
-    stockDisponible, totalMarcados,
+    stockDisponible, totalMarcados, totalNuevas,
     cargarElegibles, guardar,
   } = useSalidaMasiva(item);
 
@@ -194,7 +194,7 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
                     {totalMarcados} de {elegibles.length} marcados
                   </span>
                 </div>
-                {totalMarcados > stockDisponible && (
+                {totalNuevas > stockDisponible && (
                   <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
                     Solo hay {stockDisponible}
                   </span>
@@ -202,19 +202,23 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
               </div>
 
               <p className="text-xs text-gray-500">
-                Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.
+                {yaRegistrados.size > 0
+                  ? 'Quienes ya tienen esta entrega registrada aparecen marcados y no se pueden editar. Los demás empiezan como "entregado": toca a quien NO recibió el ítem.'
+                  : 'Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.'}
               </p>
 
               <div className="space-y-2">
                 {elegibles.map(p => {
                   const marcado = !!entregados[p.persona_id];
+                  const yaRegistrado = yaRegistrados.has(p.persona_id);
                   return (
                     <button
                       key={p.persona_id}
                       onClick={() => toggle(p.persona_id)}
+                      disabled={yaRegistrado}
                       className={`w-full flex items-center justify-between gap-3 rounded-xl p-3 shadow transition-all active:scale-98 text-left ${
-                        marcado ? 'bg-white' : 'bg-red-50 border-2 border-red-300'
-                      }`}
+                        yaRegistrado ? 'bg-gray-50' : marcado ? 'bg-white' : 'bg-red-50 border-2 border-red-300'
+                      } ${yaRegistrado ? 'cursor-default' : ''}`}
                     >
                       <div className="min-w-0">
                         <p className="font-medium text-gray-800 truncate">
@@ -222,7 +226,11 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
                         </p>
                         <p className="text-xs text-gray-400">{p.codigo_asociado}</p>
                       </div>
-                      {marcado ? (
+                      {yaRegistrado ? (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 shrink-0">
+                          <Check className="w-4 h-4" /> Ya registrado
+                        </span>
+                      ) : marcado ? (
                         <span className="flex items-center gap-1 text-xs font-semibold text-green-600 shrink-0">
                           <Check className="w-4 h-4" /> Entregado
                         </span>
@@ -242,10 +250,10 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
 
               <button
                 onClick={guardar}
-                disabled={guardando || totalMarcados === 0}
+                disabled={guardando || totalNuevas === 0}
                 className="w-full py-3 text-sm font-semibold text-white bg-red-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {guardando ? 'Guardando...' : `Guardar ${totalMarcados} entrega${totalMarcados === 1 ? '' : 's'}`}
+                {guardando ? 'Guardando...' : `Guardar ${totalNuevas} entrega${totalNuevas === 1 ? '' : 's'}`}
               </button>
             </>
           )}
