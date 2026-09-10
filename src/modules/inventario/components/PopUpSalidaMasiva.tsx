@@ -17,7 +17,7 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
     rama, setRama,
     fecha, setFecha,
     motivo, setMotivo,
-    elegibles, entregados, yaRegistrados, toggle,
+    elegibles, entregados, yaRegistrados, toggle, marcarTodos,
     cargando, guardando, error, resultado,
     stockDisponible, totalMarcados, totalNuevas,
     cargarElegibles, guardar,
@@ -144,6 +144,23 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                   ? 'Quienes ya tienen esta entrega registrada aparecen marcados y no se pueden editar. Los demás empiezan como "entregado": toca a quien NO recibió el ítem.'
                   : 'Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.'}
               </p>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => marcarTodos(true)}
+                  className="flex-1 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Marcar todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => marcarTodos(false)}
+                  className="flex-1 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Desmarcar todos
+                </button>
+              </div>
 
               <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
                 {elegibles.map(p => {

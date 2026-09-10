@@ -108,6 +108,20 @@ export function useSalidaMasiva(item: InventarioItem) {
     setEntregados(prev => ({ ...prev, [personaId]: !prev[personaId] }));
   };
 
+  // Atajo para cuando se entrega a casi todos (dejar el default y
+  // marcar excepciones) o a casi nadie (desmarcar todos y elegir a
+  // los pocos que sí reciben). Quienes ya están registrados no se
+  // ven afectados: su check siempre refleja la base de datos.
+  const marcarTodos = (valor: boolean) => {
+    setEntregados(prev => {
+      const siguiente = { ...prev };
+      elegibles.forEach(p => {
+        if (!yaRegistrados.has(p.persona_id)) siguiente[p.persona_id] = valor;
+      });
+      return siguiente;
+    });
+  };
+
   const guardar = async () => {
     const personasAEntregar = Object.entries(entregados)
       .filter(([personaId, marcado]) => marcado && !yaRegistrados.has(personaId))
@@ -157,6 +171,7 @@ export function useSalidaMasiva(item: InventarioItem) {
     entregados,
     yaRegistrados,
     toggle,
+    marcarTodos,
     cargando,
     guardando,
     error,

@@ -104,7 +104,7 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
   const {
     rama, setRama,
     fecha, setFecha,
-    elegibles, entregados, yaRegistrados, toggle,
+    elegibles, entregados, yaRegistrados, toggle, marcarTodos,
     cargando, guardando, error, resultado,
     stockDisponible, totalMarcados, totalNuevas,
     cargarElegibles, guardar,
@@ -206,6 +206,21 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
                   ? 'Quienes ya tienen esta entrega registrada aparecen marcados y no se pueden editar. Los demás empiezan como "entregado": toca a quien NO recibió el ítem.'
                   : 'Todos empiezan marcados como "entregado". Toca a quien NO recibió el ítem.'}
               </p>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => marcarTodos(true)}
+                  className="flex-1 py-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg active:scale-98"
+                >
+                  Marcar todos
+                </button>
+                <button
+                  onClick={() => marcarTodos(false)}
+                  className="flex-1 py-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg active:scale-98"
+                >
+                  Desmarcar todos
+                </button>
+              </div>
 
               <div className="space-y-2">
                 {elegibles.map(p => {
