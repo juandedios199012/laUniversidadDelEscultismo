@@ -279,7 +279,11 @@ function ModalNuevoPlan({ ramaSugerida, onClose, onCreado }: { ramaSugerida: str
     try {
       const res = await PlanificacionService.crearPlan({ nombre: nombre.trim(), rama, fecha_inicio: fechaInicio, fecha_fin: fechaFin, observaciones: observaciones.trim() || undefined });
       if (!res.success || !res.plan_id) { toast.error(res.message || 'No se pudo crear el plan'); return; }
-      toast.success(`Plan creado con ${res.tokens?.length || 0} links de patrulla generados`);
+      if (res.advertencia) {
+        toast.warning(res.advertencia);
+      } else {
+        toast.success(`Plan creado con ${res.tokens?.length || 0} links de patrulla generados`);
+      }
       onCreado(res.plan_id);
     } catch (err: any) {
       toast.error(err.message || 'Error al crear el plan');
@@ -336,6 +340,25 @@ function ModalLinks({ plan, tokens, puedeGestionar, onClose, onRegenerado }: {
   plan: PlanTrimestral; tokens: TokenPatrulla[]; puedeGestionar: boolean; onClose: () => void; onRegenerado: () => void;
 }) {
   const [regenerando, setRegenerando] = useState<string | null>(null);
+  const [provisionando, setProvisionando] = useState(false);
+
+  const provisionarFaltantes = async () => {
+    setProvisionando(true);
+    try {
+      const res = await PlanificacionService.provisionarTokensFaltantes(plan.id);
+      if (!res.success) { toast.error(res.message || 'No se pudo generar los links faltantes'); return; }
+      if ((res.tokens_generados || 0) === 0) {
+        toast.info('No hay patrullas activas nuevas: los links ya estaban completos, o no se encontró ninguna patrulla activa para esta rama.');
+      } else {
+        toast.success(`${res.tokens_generados} link(s) generado(s)`);
+      }
+      onRegenerado();
+    } catch (err: any) {
+      toast.error(err.message || 'Error al generar los links faltantes');
+    } finally {
+      setProvisionando(false);
+    }
+  };
 
   const copiar = async (link: string) => {
     try {
@@ -365,6 +388,11 @@ function ModalLinks({ plan, tokens, puedeGestionar, onClose, onRegenerado }: {
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Links por patrulla</DialogTitle></DialogHeader>
         <p className="text-sm text-gray-500">Cada patrulla usa su propio link desde el celular para proponer y votar, sin necesidad de iniciar sesión.</p>
+        {puedeGestionar && (
+          <Button variant="outline" size="sm" disabled={provisionando} onClick={provisionarFaltantes} className="self-start">
+            {provisionando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />} Generar links faltantes
+          </Button>
+        )}
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {tokens.map((t) => {
             const link = PlanificacionService.linkMovil(t.token);

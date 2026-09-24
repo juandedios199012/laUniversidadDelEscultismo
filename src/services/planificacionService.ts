@@ -192,8 +192,15 @@ export class PlanificacionService {
 
   static async crearPlan(datos: {
     nombre: string; rama: string; fecha_inicio: string; fecha_fin: string; observaciones?: string;
-  }): Promise<{ success: boolean; message?: string; plan_id?: string; tokens?: TokenPatrulla[] }> {
+  }): Promise<{ success: boolean; message?: string; plan_id?: string; tokens?: TokenPatrulla[]; advertencia?: string }> {
     const { data, error } = await supabase.rpc('crear_plan_trimestral', { p_datos: datos });
+    if (error) throw error;
+    return data as RpcResult;
+  }
+
+  /** Genera los tokens que falten (patrullas activadas después de crear el plan, o no encontradas por un bug ya corregido). */
+  static async provisionarTokensFaltantes(planId: string): Promise<{ success: boolean; message?: string; tokens_generados?: number }> {
+    const { data, error } = await supabase.rpc('provisionar_tokens_faltantes', { p_plan_id: planId });
     if (error) throw error;
     return data as RpcResult;
   }
