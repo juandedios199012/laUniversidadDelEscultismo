@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.tsx';
 import LandingPage from './pages/LandingPage.tsx';
+import PropuestaPatrullaMobile from './pages/PropuestaPatrullaMobile.tsx';
 import './index.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -19,6 +20,8 @@ if (!rootElement) {
       <BrowserRouter>
         <Routes>
           <Route path="/"   element={<LandingPage />} />
+          {/* Link móvil por patrulla — sin login, resuelve directo por token (ver database/145_planificacion_anual.sql) */}
+          <Route path="/p/:token" element={<PropuestaPatrullaMobile />} />
           <Route path="/*"  element={<App />} />
         </Routes>
       </BrowserRouter>

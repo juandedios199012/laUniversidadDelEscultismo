@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User, Sparkles, Handshake, Gamepad2
+  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -89,6 +89,7 @@ const menuGroups: MenuGroup[] = [
     gradient: 'from-indigo-500 to-purple-500',
     items: [
       { id: 'programa-semanal',    label: 'Programa',    icon: Calendar,      gradient: 'from-indigo-500 to-purple-500', modulo: 'programa_semanal'    },
+      { id: 'planificacion',       label: 'Planificación Anual', icon: CalendarRange, gradient: 'from-violet-500 to-fuchsia-500', modulo: 'planificacion' },
       { id: 'asistencia',          label: 'Asistencia',  icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500',    modulo: 'asistencia'          },
       { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent,           gradient: 'from-green-600 to-teal-600',   modulo: 'actividades_exterior' },
       { id: 'config-tipos-actividad-aire-libre', label: 'Tipos de Actividad', icon: Settings, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
