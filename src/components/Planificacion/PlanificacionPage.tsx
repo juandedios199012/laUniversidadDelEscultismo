@@ -71,6 +71,15 @@ export default function PlanificacionPage() {
         PlanificacionService.listarConteoVotos(id),
         PlanificacionService.listarTokens(id),
       ]);
+      if (!p) {
+        // El plan seleccionado ya no existe (borrado, o quedó desincronizado
+        // del filtro de rama) — limpiamos la selección en vez de mostrar un
+        // tablero con datos parciales.
+        toast.error('Ese plan ya no existe. Selecciona otro.');
+        setPlan(null);
+        setPlanId(null);
+        return;
+      }
       setPlan(p);
       setPropuestas(props);
       setActividades(acts);

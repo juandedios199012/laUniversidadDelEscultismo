@@ -114,7 +114,9 @@ export class PlanificacionService {
   }
 
   static async obtenerPlan(planId: string): Promise<PlanTrimestral | null> {
-    const { data, error } = await supabase.from('planes_trimestrales').select('*').eq('id', planId).single();
+    // maybeSingle() en vez de single(): si el plan no existe (borrado, id
+    // desincronizado, etc.) devuelve null en vez de lanzar PGRST116.
+    const { data, error } = await supabase.from('planes_trimestrales').select('*').eq('id', planId).maybeSingle();
     if (error) throw error;
     return data;
   }
