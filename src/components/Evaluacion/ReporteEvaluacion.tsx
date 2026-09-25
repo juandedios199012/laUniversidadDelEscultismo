@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Download, Loader2, Printer } from 'lucide-react';
+import { ArrowLeft, Braces, Download, FileText, Loader2, Printer, Table as TableIcon } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import {
@@ -7,6 +8,7 @@ import {
 } from '../../services/evaluacionService';
 import { calcularSemaforo, Semaforo } from '../../utils/semaforoEvaluacion';
 import { analizarMencionesPersonas, clasificarSentimiento, contarPalabrasFrecuentes } from '../../utils/analisisTextoLibre';
+import { aCSV, aJSON, aMarkdown, construirDatosExport, nombreArchivoBase } from '../../utils/exportarEvaluacion';
 import { generateAndDownloadPDF, generateReportMetadata } from '../../modules/reports/services/pdfService';
 import EvaluacionReportTemplate, { EvaluacionReportData } from '../../modules/reports/templates/pdf/EvaluacionReportTemplate';
 
@@ -223,11 +225,10 @@ export default function ReporteEvaluacion({ evaluacion, items, respuestas, respu
         totalRespuestas: respuestas.length,
         promedioGeneral,
         colorSemaforoGeneral: semaforoGeneral?.color || '#6b7280',
-        emojiSemaforoGeneral: semaforoGeneral?.emoji || '—',
         labelSemaforoGeneral: semaforoGeneral?.label || 'Sin datos',
-        categorias: datosPorCategoria.map((d) => ({ etiqueta: d.etiqueta, promedio: d.promedio!, colorSemaforo: d.semaforo!.color, emojiSemaforo: d.semaforo!.emoji })),
-        enunciados: promedioPorItem.map((d) => ({ codigo: d.codigo, etiqueta: d.item.enunciado, promedio: d.promedio!, colorSemaforo: d.semaforo!.color, emojiSemaforo: d.semaforo!.emoji })),
-        patrullas: datosPorPatrulla.map((d) => ({ etiqueta: d.patrulla, promedio: d.promedio, colorSemaforo: d.semaforo.color, emojiSemaforo: d.semaforo.emoji })),
+        categorias: datosPorCategoria.map((d) => ({ etiqueta: d.etiqueta, promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
+        enunciados: promedioPorItem.map((d) => ({ codigo: d.codigo, etiqueta: d.item.enunciado, promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
+        patrullas: datosPorPatrulla.map((d) => ({ etiqueta: d.patrulla, promedio: d.promedio, colorSemaforo: d.semaforo.color })),
         sentimiento,
         palabrasFrecuentes,
         mencionesJefes,
@@ -246,6 +247,19 @@ export default function ReporteEvaluacion({ evaluacion, items, respuestas, respu
     }
   };
 
+  const handleExportar = (formato: 'json' | 'csv' | 'md') => {
+    const datos = construirDatosExport(evaluacion, items, respuestas, respuestaItems);
+    const base = nombreArchivoBase(evaluacion.titulo) || 'evaluacion';
+    if (formato === 'json') {
+      saveAs(new Blob([aJSON(datos)], { type: 'application/json;charset=utf-8' }), `${base}.json`);
+    } else if (formato === 'csv') {
+      saveAs(new Blob([aCSV(datos)], { type: 'text/csv;charset=utf-8' }), `${base}.csv`);
+    } else {
+      saveAs(new Blob([aMarkdown(datos)], { type: 'text/markdown;charset=utf-8' }), `${base}.md`);
+    }
+    toast.success(`Datos exportados (${formato.toUpperCase()}) — pegalo/adjuntalo en una conversación con Claude para pedir un análisis más fino.`);
+  };
+
   return (
     <div>
       <style>{`
@@ -257,14 +271,21 @@ export default function ReporteEvaluacion({ evaluacion, items, respuestas, respu
         }
       `}</style>
 
-      <div className="no-imprimir flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="no-imprimir flex items-center justify-between mb-2 flex-wrap gap-2">
         <Button variant="ghost" size="sm" onClick={onVolver}><ArrowLeft className="w-4 h-4 mr-1" /> Volver</Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> Vista rápida (imprimir)</Button>
           <Button size="sm" onClick={handleDescargarPdf} disabled={generandoPdf}>
             {generandoPdf ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />} Descargar PDF
           </Button>
         </div>
+      </div>
+
+      <div className="no-imprimir flex items-center justify-end gap-2 mb-4 flex-wrap">
+        <span className="text-xs text-gray-400">Exportar preguntas + respuestas para analizar con IA (ej. pegarlo en Claude):</span>
+        <Button variant="outline" size="sm" onClick={() => handleExportar('json')}><Braces className="w-3.5 h-3.5 mr-1" /> JSON</Button>
+        <Button variant="outline" size="sm" onClick={() => handleExportar('csv')}><TableIcon className="w-3.5 h-3.5 mr-1" /> CSV</Button>
+        <Button variant="outline" size="sm" onClick={() => handleExportar('md')}><FileText className="w-3.5 h-3.5 mr-1" /> Markdown</Button>
       </div>
 
       <div id="reporte-evaluacion-imprimible" className="bg-white rounded-xl border border-gray-200 p-6 md:p-8 space-y-6 max-w-3xl mx-auto">
@@ -347,7 +368,20 @@ export default function ReporteEvaluacion({ evaluacion, items, respuestas, respu
                     ) : (
                       <>
                         {frecuentes.length >= 3 && (
-                          <p className="text-xs text-violet-600 mt-1">Palabras frecuentes: {frecuentes.map((f) => f.palabra).join(', ')}</p>
+                          <div className="mt-1 mb-2 space-y-1">
+                            {frecuentes.slice(0, 6).map((f) => (
+                              <div key={f.palabra} className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600 w-20 shrink-0 truncate">{f.palabra}</span>
+                                <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${f.esAccion ? 'bg-emerald-500' : 'bg-violet-400'}`}
+                                    style={{ width: `${Math.max(8, (f.frecuencia / (frecuentes[0]?.frecuencia || 1)) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-gray-400 w-4 text-right shrink-0">{f.frecuencia}</span>
+                              </div>
+                            ))}
+                          </div>
                         )}
                         <ul className="mt-1 space-y-1">
                           {textos.map((t, idx) => (

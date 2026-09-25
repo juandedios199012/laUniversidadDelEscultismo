@@ -11,6 +11,14 @@
  * El "análisis de sentimiento" y las "menciones de dirigentes" son
  * clasificación por palabras clave (ver src/utils/analisisTextoLibre.ts),
  * no un modelo de IA — se lo aclara explícitamente en el propio PDF.
+ *
+ * IMPORTANTE — nada de emojis acá: la fuente Helvetica estándar (la que
+ * usa este PDF, como el resto de los reportes del sistema) no tiene
+ * glifos para emoji. Un carácter que la fuente no puede dibujar no solo
+ * desaparece: corrompe el cálculo de ancho de los caracteres siguientes,
+ * y el texto sale superpuesto/ilegible. Todo indicador de color (el
+ * "semáforo") se dibuja acá como un círculo de color (<View>), nunca
+ * como el emoji 🟢🟡🔴.
  */
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
@@ -24,7 +32,12 @@ export interface RankingItem {
   etiqueta: string;
   promedio: number;
   colorSemaforo: string;
-  emojiSemaforo: string;
+}
+
+export interface PalabraFrecuentePdf {
+  palabra: string;
+  frecuencia: number;
+  esAccion: boolean;
 }
 
 export interface MencionPersonaPdf {
@@ -48,13 +61,12 @@ export interface EvaluacionReportData {
   totalRespuestas: number;
   promedioGeneral: number | null;
   colorSemaforoGeneral: string;
-  emojiSemaforoGeneral: string;
   labelSemaforoGeneral: string;
   categorias: RankingItem[]; // ranked mejor -> peor
   enunciados: RankingItem[]; // ranked peor -> mejor
   patrullas: RankingItem[];
   sentimiento: { positivas: number; negativas: number; neutras: number; total: number };
-  palabrasFrecuentes: Array<{ palabra: string; frecuencia: number }>;
+  palabrasFrecuentes: PalabraFrecuentePdf[];
   mencionesJefes: MencionPersonaPdf[];
   conclusiones: string[];
   respuestasAbiertas: RespuestaAbiertaPdf[];
@@ -74,27 +86,34 @@ const styles = StyleSheet.create({
   kpiCard: { flex: 1, padding: spacing.sm, backgroundColor: colors.light, borderRadius: 4 },
   kpiLabel: { fontSize: fontSizes.tiny, color: colors.gray },
   kpiValue: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: colors.dark, marginTop: 2 },
+  kpiValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+
+  dot: { width: 9, height: 9, borderRadius: 5 },
 
   conclusionBox: { padding: spacing.md, backgroundColor: '#EFF6FF', borderLeftWidth: 4, borderLeftColor: colors.primary, borderRadius: 2, marginBottom: spacing.md },
   conclusionItem: { flexDirection: 'row', marginBottom: 5 },
   conclusionBullet: { width: 12, fontSize: fontSizes.body, color: colors.primary },
   conclusionText: { flex: 1, fontSize: fontSizes.small, lineHeight: 1.4, color: colors.dark },
 
-  rankRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  rankBadge: { width: 22, fontSize: fontSizes.small, textAlign: 'center' },
-  rankLabel: { flex: 1, fontSize: fontSizes.small, color: colors.dark },
-  rankBarTrack: { width: 130, height: 7, backgroundColor: '#F1F5F9', borderRadius: 4, marginHorizontal: 6, overflow: 'hidden' },
+  rankRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  rankBadge: { width: 22, fontSize: fontSizes.small, textAlign: 'center', color: colors.gray },
+  rankLabelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5, paddingRight: 4 },
+  rankLabel: { fontSize: fontSizes.small, color: colors.dark },
+  rankBarTrack: { width: 120, height: 7, backgroundColor: '#F1F5F9', borderRadius: 4, marginHorizontal: 6, overflow: 'hidden' },
   rankBarFill: { height: 7, borderRadius: 4 },
   rankValue: { width: 26, fontSize: fontSizes.small, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
 
-  sentimentRow: { flexDirection: 'row', height: 18, borderRadius: 4, overflow: 'hidden', marginBottom: 4 },
-  sentimentLegendRow: { flexDirection: 'row', gap: 12 },
-  sentimentLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sentimentDot: { width: 8, height: 8, borderRadius: 4 },
-  sentimentLegendText: { fontSize: fontSizes.tiny, color: colors.gray },
+  legendRow: { flexDirection: 'row', gap: 14, marginBottom: spacing.sm },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendText: { fontSize: fontSizes.tiny, color: colors.gray },
 
-  wordCloudBox: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs },
-  wordChip: { fontSize: fontSizes.small, color: colors.primary, fontFamily: 'Helvetica-Bold' },
+  sentimentRow: { flexDirection: 'row', height: 18, borderRadius: 4, overflow: 'hidden', marginBottom: 4 },
+
+  wordBarRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  wordLabel: { width: 90, fontSize: fontSizes.small, color: colors.dark },
+  wordBarTrack: { flex: 1, height: 10, backgroundColor: '#F1F5F9', borderRadius: 4, overflow: 'hidden' },
+  wordBarFill: { height: 10, borderRadius: 4 },
+  wordValue: { width: 22, fontSize: fontSizes.tiny, color: colors.gray, textAlign: 'right' },
 
   table: { marginTop: 4 },
   tableHeaderRow: { flexDirection: 'row', backgroundColor: colors.primary, paddingVertical: 5, paddingHorizontal: 6, borderRadius: 3 },
@@ -112,6 +131,16 @@ const styles = StyleSheet.create({
   disclaimer: { fontSize: fontSizes.tiny, color: colors.gray, marginTop: spacing.sm, lineHeight: 1.4 },
 });
 
+function SemaforoLegend() {
+  return (
+    <View style={styles.legendRow}>
+      <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#059669' }]} /><Text style={styles.legendText}>Bien (≥70% de la escala)</Text></View>
+      <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#d97706' }]} /><Text style={styles.legendText}>A mejorar (40-70%)</Text></View>
+      <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#dc2626' }]} /><Text style={styles.legendText}>Atención (menos de 40%) — umbral fijo, no un diagnóstico</Text></View>
+    </View>
+  );
+}
+
 function RankingList({ items, mostrarCodigo }: { items: RankingItem[]; mostrarCodigo?: boolean }) {
   const max = Math.max(1, ...items.map((i) => i.promedio));
   return (
@@ -119,11 +148,32 @@ function RankingList({ items, mostrarCodigo }: { items: RankingItem[]; mostrarCo
       {items.map((it, idx) => (
         <View key={`${it.etiqueta}-${idx}`} style={styles.rankRow} wrap={false}>
           {mostrarCodigo && <Text style={styles.rankBadge}>{it.codigo}</Text>}
-          <Text style={styles.rankLabel}>{it.emojiSemaforo} {it.etiqueta}</Text>
+          <View style={styles.rankLabelRow}>
+            <View style={[styles.dot, { backgroundColor: it.colorSemaforo }]} />
+            <Text style={styles.rankLabel}>{it.etiqueta}</Text>
+          </View>
           <View style={styles.rankBarTrack}>
             <View style={[styles.rankBarFill, { width: `${Math.max(4, (it.promedio / max) * 100)}%`, backgroundColor: it.colorSemaforo }]} />
           </View>
           <Text style={styles.rankValue}>{it.promedio}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Gráfico de barras real para palabras frecuentes (no una línea de texto) — las palabras de "acción" (actividades/participación) se resaltan en verde, el resto en azul. */
+function PalabrasFrecuentesChart({ items }: { items: PalabraFrecuentePdf[] }) {
+  const max = Math.max(1, ...items.map((i) => i.frecuencia));
+  return (
+    <View>
+      {items.map((p) => (
+        <View key={p.palabra} style={styles.wordBarRow} wrap={false}>
+          <Text style={styles.wordLabel}>{p.palabra}</Text>
+          <View style={styles.wordBarTrack}>
+            <View style={[styles.wordBarFill, { width: `${Math.max(4, (p.frecuencia / max) * 100)}%`, backgroundColor: p.esAccion ? colors.success : colors.primary }]} />
+          </View>
+          <Text style={styles.wordValue}>{p.frecuencia}</Text>
         </View>
       ))}
     </View>
@@ -142,13 +192,12 @@ function Footer({ metadata }: { metadata: ReportMetadata }) {
 export default function EvaluacionReportTemplate({ data, metadata }: { data: EvaluacionReportData; metadata: ReportMetadata }) {
   const {
     titulo, descripcion, escalaMin, escalaMax, totalRespuestas, promedioGeneral,
-    colorSemaforoGeneral, emojiSemaforoGeneral, labelSemaforoGeneral,
+    colorSemaforoGeneral, labelSemaforoGeneral,
     categorias, enunciados, patrullas, sentimiento, palabrasFrecuentes, mencionesJefes,
     conclusiones, respuestasAbiertas,
   } = data;
 
   const totalSentimiento = sentimiento.total || 1;
-  const maxFrecuencia = palabrasFrecuentes[0]?.frecuencia || 1;
   const jefesPositivos = [...mencionesJefes].sort((a, b) => b.positivas - a.positivas).filter((m) => m.positivas > 0).slice(0, 5);
   const jefesNegativos = [...mencionesJefes].sort((a, b) => b.negativas - a.negativas).filter((m) => m.negativas > 0).slice(0, 5);
 
@@ -173,7 +222,10 @@ export default function EvaluacionReportTemplate({ data, metadata }: { data: Eva
           </View>
           <View style={[styles.kpiCard, { backgroundColor: `${colorSemaforoGeneral}1A` }]}>
             <Text style={styles.kpiLabel}>Estado general</Text>
-            <Text style={[styles.kpiValue, { color: colorSemaforoGeneral }]}>{emojiSemaforoGeneral} {labelSemaforoGeneral}</Text>
+            <View style={styles.kpiValueRow}>
+              <View style={[styles.dot, { backgroundColor: colorSemaforoGeneral, width: 12, height: 12, borderRadius: 6 }]} />
+              <Text style={[styles.kpiValue, { color: colorSemaforoGeneral, marginTop: 0 }]}>{labelSemaforoGeneral}</Text>
+            </View>
           </View>
           <View style={styles.kpiCard}>
             <Text style={styles.kpiLabel}>Promedio general</Text>
@@ -206,6 +258,7 @@ export default function EvaluacionReportTemplate({ data, metadata }: { data: Eva
           </View>
         )}
 
+        <SemaforoLegend />
         <Footer metadata={metadata} />
       </Page>
 
@@ -225,10 +278,10 @@ export default function EvaluacionReportTemplate({ data, metadata }: { data: Eva
                 <View style={{ width: `${(sentimiento.neutras / totalSentimiento) * 100}%`, backgroundColor: '#CBD5E1' }} />
                 <View style={{ width: `${(sentimiento.negativas / totalSentimiento) * 100}%`, backgroundColor: colors.error }} />
               </View>
-              <View style={styles.sentimentLegendRow}>
-                <View style={styles.sentimentLegendItem}><View style={[styles.sentimentDot, { backgroundColor: colors.success }]} /><Text style={styles.sentimentLegendText}>Positivo {sentimiento.positivas} ({Math.round((sentimiento.positivas / totalSentimiento) * 100)}%)</Text></View>
-                <View style={styles.sentimentLegendItem}><View style={[styles.sentimentDot, { backgroundColor: '#CBD5E1' }]} /><Text style={styles.sentimentLegendText}>Neutro {sentimiento.neutras}</Text></View>
-                <View style={styles.sentimentLegendItem}><View style={[styles.sentimentDot, { backgroundColor: colors.error }]} /><Text style={styles.sentimentLegendText}>Negativo {sentimiento.negativas}</Text></View>
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: colors.success }]} /><Text style={styles.legendText}>Positivo {sentimiento.positivas} ({Math.round((sentimiento.positivas / totalSentimiento) * 100)}%)</Text></View>
+                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#CBD5E1' }]} /><Text style={styles.legendText}>Neutro {sentimiento.neutras}</Text></View>
+                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: colors.error }]} /><Text style={styles.legendText}>Negativo {sentimiento.negativas}</Text></View>
               </View>
             </View>
           )}
@@ -236,11 +289,12 @@ export default function EvaluacionReportTemplate({ data, metadata }: { data: Eva
           {palabrasFrecuentes.length >= 3 && (
             <View style={{ marginBottom: spacing.md }}>
               <Text style={[styles.sectionTitle, { fontSize: 11, marginTop: 4 }]}>Palabras más usadas</Text>
-              <View style={styles.wordCloudBox}>
-                {palabrasFrecuentes.slice(0, 20).map((p) => (
-                  <Text key={p.palabra} style={[styles.wordChip, { fontSize: 8 + (p.frecuencia / maxFrecuencia) * 8 }]}>{p.palabra}</Text>
-                ))}
+              <Text style={styles.sectionCaption}>Se descartan artículos, verbos auxiliares y adverbios genéricos — quedan sobre todo temas, actividades y nombres.</Text>
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: colors.success }]} /><Text style={styles.legendText}>Palabra de actividad/participación</Text></View>
+                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: colors.primary }]} /><Text style={styles.legendText}>Otra palabra frecuente</Text></View>
               </View>
+              <PalabrasFrecuentesChart items={palabrasFrecuentes.slice(0, 15)} />
             </View>
           )}
 
@@ -281,7 +335,8 @@ export default function EvaluacionReportTemplate({ data, metadata }: { data: Eva
       {enunciados.length > 0 && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.sectionTitle}>Anexo 1 — Todos los enunciados de escala</Text>
-          <Text style={styles.sectionCaption}>De menor a mayor promedio. 🟢 Bien (≥70%) · 🟡 A mejorar (40-70%) · 🔴 Atención (&lt;40%) — umbral fijo, no un diagnóstico.</Text>
+          <Text style={styles.sectionCaption}>De menor a mayor promedio.</Text>
+          <SemaforoLegend />
           <RankingList items={enunciados} mostrarCodigo />
           <Footer metadata={metadata} />
         </Page>

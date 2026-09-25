@@ -18,20 +18,67 @@
  * ======================================================================
  */
 
-// Stopwords en español (artículos, preposiciones, pronombres comunes) —
-// se filtran para que el conteo muestre palabras con contenido real.
+// Stopwords en español: artículos, preposiciones, pronombres, Y también
+// verbos auxiliares/copulativos en sus conjugaciones comunes (ser/estar/
+// haber) y adverbios genéricos de tiempo/cantidad ("siempre", "también",
+// "mucho"...). Esto último es justo lo que se colaba antes como "palabra
+// frecuente" sin aportar nada para decidir — la lista es deliberadamente
+// grande para que lo que sobrevive el filtro sea, en su mayoría, palabras
+// con contenido real (actividades, temas, nombres).
 const STOPWORDS_ES = new Set([
+  // Artículos, preposiciones, conjunciones
   'de', 'la', 'que', 'el', 'en', 'y', 'a', 'los', 'se', 'del', 'las', 'un', 'por', 'con',
   'no', 'una', 'su', 'para', 'es', 'al', 'lo', 'como', 'mas', 'más', 'pero', 'sus', 'le',
-  'ya', 'o', 'fue', 'ha', 'si', 'sí', 'porque', 'esta', 'está', 'entre', 'cuando', 'muy',
-  'sin', 'sobre', 'tambien', 'también', 'me', 'hasta', 'donde', 'quien', 'desde', 'todo',
-  'nos', 'durante', 'todos', 'uno', 'les', 'ni', 'contra', 'otros', 'ese', 'eso', 'ante',
-  'ellos', 'e', 'esto', 'mi', 'antes', 'algunos', 'que', 'unos', 'yo', 'otro', 'otras',
-  'otra', 'el', 'tanto', 'esa', 'estos', 'mucho', 'quienes', 'nada', 'muchos', 'cual',
-  'poco', 'ella', 'estar', 'estas', 'algunas', 'algo', 'nosotros', 'mis', 'tu', 'tus',
-  'te', 'ti', 'fueron', 'era', 'eran', 'somos', 'son', 'soy', 'eres', 'esa', 'ese',
-  'aqui', 'aquí', 'alli', 'allí', 'ahi', 'ahí', 'nos', 'les', 'les', 'un', 'una', 'unos',
-  'unas', 'este', 'esta', 'estos', 'estas', 'ese', 'esos', 'esas', 'aquel', 'aquella',
+  'ya', 'o', 'u', 'e', 'ni', 'ante', 'contra', 'desde', 'durante', 'entre', 'hacia',
+  'hasta', 'mediante', 'sin', 'sobre', 'tras', 'segun', 'según', 'si', 'sí', 'porque',
+  'pues', 'aunque', 'mientras', 'cuando', 'donde', 'como', 'que',
+  // Pronombres
+  'yo', 'tu', 'tú', 'el', 'ella', 'ello', 'nosotros', 'nosotras', 'vosotros', 'vosotras',
+  'ellos', 'ellas', 'me', 'te', 'nos', 'os', 'les', 'la', 'lo', 'las', 'los', 'mi', 'mis',
+  'tus', 'su', 'sus', 'nuestro', 'nuestra', 'nuestros', 'nuestras', 'vuestro', 'vuestra',
+  'este', 'esta', 'esto', 'estos', 'estas', 'ese', 'esa', 'eso', 'esos', 'esas', 'aquel',
+  'aquella', 'aquello', 'aquellos', 'aquellas', 'quien', 'quienes', 'cual', 'cuales',
+  'cuyo', 'cuya', 'cuyos', 'cuyas', 'algo', 'alguien', 'alguno', 'alguna', 'algunos',
+  'algunas', 'nada', 'nadie', 'ninguno', 'ninguna', 'otro', 'otra', 'otros', 'otras',
+  'mismo', 'misma', 'mismos', 'mismas', 'tanto', 'tanta', 'tantos', 'tantas', 'todo',
+  'toda', 'todos', 'todas', 'uno', 'unos', 'unas', 'cada', 'varios', 'varias',
+  // Adverbios genéricos (tiempo, cantidad, modo) — no aportan contenido por sí solos
+  'aqui', 'aquí', 'alli', 'allí', 'ahi', 'ahí', 'aca', 'acá', 'alla', 'allá', 'ahora',
+  'antes', 'despues', 'después', 'luego', 'siempre', 'nunca', 'jamas', 'jamás', 'todavia',
+  'todavía', 'ya', 'aun', 'aún', 'tambien', 'también', 'tampoco', 'muy', 'mucho', 'mucha',
+  'muchos', 'muchas', 'poco', 'poca', 'pocos', 'pocas', 'demasiado', 'demasiada', 'bastante',
+  'casi', 'solo', 'sólo', 'solamente', 'incluso', 'ademas', 'además', 'asi', 'así',
+  'bien', 'mal', 'mejor', 'peor', 'menos', 'mas', 'más', 'tan',
+  // Ser / estar / haber / tener / hacer / ir — conjugaciones comunes
+  'ser', 'soy', 'eres', 'es', 'somos', 'sois', 'son', 'era', 'eras', 'eramos', 'éramos',
+  'erais', 'eran', 'fui', 'fuiste', 'fue', 'fuimos', 'fuisteis', 'fueron', 'sere', 'seré',
+  'seras', 'serás', 'sera', 'será', 'seremos', 'seran', 'serán', 'sido', 'siendo',
+  'estar', 'estoy', 'estas', 'estás', 'esta', 'está', 'estamos', 'estais', 'estáis',
+  'estan', 'están', 'estaba', 'estabas', 'estabamos', 'estábamos', 'estaban', 'estuve',
+  'estuviste', 'estuvo', 'estuvimos', 'estuvieron', 'estare', 'estaré', 'estara', 'estará',
+  'estado', 'estando',
+  'haber', 'he', 'has', 'ha', 'hemos', 'habeis', 'habéis', 'han', 'habia', 'había',
+  'habias', 'habías', 'habiamos', 'habíamos', 'habian', 'habían', 'hube', 'hubiste',
+  'hubo', 'hubimos', 'hubieron', 'habre', 'habré', 'habra', 'habrá', 'habido', 'habiendo',
+  'tener', 'tengo', 'tienes', 'tiene', 'tenemos', 'teneis', 'tenéis', 'tienen', 'tenia',
+  'tenía', 'tenias', 'tenías', 'teniamos', 'teníamos', 'tenian', 'tenían', 'tuve',
+  'tuviste', 'tuvo', 'tuvimos', 'tuvieron', 'tenido', 'teniendo',
+  'hacer', 'hago', 'haces', 'hace', 'hacemos', 'haceis', 'hacéis', 'hacen', 'hacia',
+  'hacía', 'hice', 'hiciste', 'hizo', 'hicimos', 'hicieron', 'hecho', 'haciendo',
+  'ir', 'voy', 'vas', 'va', 'vamos', 'vais', 'van', 'iba', 'ibas', 'ibamos', 'íbamos',
+  'iban', 'fui', 'fuiste', 'fue', 'fuimos', 'fueron', 'ido', 'yendo',
+  // Números escritos
+  'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez',
+]);
+
+// Palabras que, si aparecen, SÍ suelen ser útiles para decidir (verbos de
+// actividad/participación) — no se excluyen aunque sean frecuentes, y se
+// podrían usar en el futuro para resaltarlas distinto en el reporte.
+const PALABRAS_DE_ACCION = new Set([
+  'jugar', 'jugamos', 'jugaron', 'aprender', 'aprendimos', 'aprendieron', 'participar',
+  'participamos', 'participaron', 'construir', 'construimos', 'campamento', 'taller',
+  'talleres', 'actividad', 'actividades', 'juego', 'juegos', 'reunion', 'reunión',
+  'salida', 'excursion', 'excursión', 'competencia', 'proyecto',
 ]);
 
 function normalizar(texto: string): string {
@@ -43,16 +90,20 @@ function normalizar(texto: string): string {
 export interface PalabraFrecuente {
   palabra: string;
   frecuencia: number;
+  /** true si la palabra está en la lista de "acción" (actividades/participación) — útil para resaltarla en el gráfico. */
+  esAccion: boolean;
 }
 
 /**
  * Cuenta la frecuencia de palabras en un conjunto de respuestas de texto
  * libre. Puro cálculo sobre strings ya cargados — no llama a ningún
- * servicio externo.
+ * servicio externo. Filtra una lista amplia de palabras funcionales
+ * (artículos, verbos auxiliares, adverbios genéricos como "siempre") para
+ * que lo que sobrevive sea, en su mayoría, palabras con contenido real.
  */
 export function contarPalabrasFrecuentes(textos: string[], opciones?: { top?: number; longitudMinima?: number }): PalabraFrecuente[] {
   const top = opciones?.top ?? 20;
-  const longitudMinima = opciones?.longitudMinima ?? 3;
+  const longitudMinima = opciones?.longitudMinima ?? 4; // 4+ para filtrar más ruido corto que "bien"/"mal" no siempre capturan
 
   const conteo = new Map<string, number>();
   for (const texto of textos) {
@@ -68,7 +119,7 @@ export function contarPalabrasFrecuentes(textos: string[], opciones?: { top?: nu
   }
 
   return Array.from(conteo.entries())
-    .map(([palabra, frecuencia]) => ({ palabra, frecuencia }))
+    .map(([palabra, frecuencia]) => ({ palabra, frecuencia, esAccion: PALABRAS_DE_ACCION.has(palabra) }))
     .sort((a, b) => b.frecuencia - a.frecuencia)
     .slice(0, top);
 }

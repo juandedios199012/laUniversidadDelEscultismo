@@ -808,16 +808,19 @@ function RespuestasAbiertas({ items, respuestas, respuestaItems, puedeEliminar, 
             ) : (
               <>
                 {frecuentes.length >= 3 && (
-                  <div className="flex flex-wrap gap-x-2 gap-y-1 bg-violet-50 rounded-lg p-3">
-                    {frecuentes.map((p) => (
-                      <span
-                        key={p.palabra}
-                        className="text-violet-700 font-medium"
-                        style={{ fontSize: `${11 + (p.frecuencia / maxFrecuencia) * 14}px` }}
-                        title={`${p.frecuencia} veces`}
-                      >
-                        {p.palabra}
-                      </span>
+                  <div className="bg-violet-50 rounded-lg p-3 space-y-1">
+                    <p className="text-[10px] text-violet-600 font-semibold uppercase tracking-wide">Palabras más usadas en estas respuestas</p>
+                    {frecuentes.slice(0, 8).map((p) => (
+                      <div key={p.palabra} className="flex items-center gap-2">
+                        <span className="text-xs text-gray-700 w-20 shrink-0 truncate">{p.palabra}</span>
+                        <div className="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${p.esAccion ? 'bg-emerald-500' : 'bg-violet-400'}`}
+                            style={{ width: `${Math.max(6, (p.frecuencia / maxFrecuencia) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-gray-400 w-5 text-right shrink-0">{p.frecuencia}</span>
+                      </div>
                     ))}
                   </div>
                 )}
