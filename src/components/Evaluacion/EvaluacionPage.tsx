@@ -271,8 +271,8 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
           )}
           <Button variant="ghost" size="sm" onClick={onRefrescar}><RefreshCw className="w-4 h-4" /></Button>
           {can('evaluacion:eliminar') && (
-            <Button variant="destructive" size="sm" disabled={accionando} onClick={handleEliminar}>
-              <Trash2 className="w-4 h-4 mr-1" /> Eliminar
+            <Button variant="destructive" size="sm" disabled={accionando} onClick={handleEliminar} title="Borra la evaluación completa: enunciados y todas las respuestas">
+              <Trash2 className="w-4 h-4 mr-1" /> Eliminar evaluación
             </Button>
           )}
         </div>
@@ -586,12 +586,24 @@ function BuilderEnunciados({ evaluacionId, items, puedeEditar, onGuardado }: {
   );
 }
 
+function formatoFechaHora(iso?: string): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// En modo anónimo varias respuestas pueden mostrar el mismo "título" (ej.
+// dos scouts de la misma patrulla) — la fecha/hora es lo único que las
+// distingue de verdad, por eso se agrega siempre al subtítulo acá (no solo
+// para el caso anónimo) y se usa también en el diálogo de confirmación al
+// eliminar, para no borrar la respuesta equivocada por confundir dos que
+// se ven iguales.
 function nombreRespondiente(r: EvaluacionRespuesta): { titulo: string; subtitulo?: string } {
+  const fecha = formatoFechaHora(r.completado_en);
   if (r.scout_id) {
-    return { titulo: r.scout_nombre || 'Scout', subtitulo: r.patrulla_nombre };
+    return { titulo: r.scout_nombre || 'Scout', subtitulo: [r.patrulla_nombre, fecha].filter(Boolean).join(' · ') || undefined };
   }
   const edad = r.edad_autorreportada ? `${r.edad_autorreportada} años` : undefined;
-  return { titulo: `Anónimo — ${r.patrulla_autorreportada || 'sin patrulla'}`, subtitulo: edad };
+  return { titulo: `Anónimo — ${r.patrulla_autorreportada || 'sin patrulla'}`, subtitulo: [edad, fecha].filter(Boolean).join(' · ') || undefined };
 }
 
 // ======================================================================
@@ -637,8 +649,8 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
     return mapa;
   }, [valorPorRespuestaItem]);
 
-  const eliminarRespuesta = async (respuestaId: string) => {
-    if (!window.confirm('¿Eliminar esta respuesta? No se puede deshacer.')) return;
+  const eliminarRespuesta = async (respuestaId: string, nombreRespondiente: string) => {
+    if (!window.confirm(`¿Eliminar la respuesta de "${nombreRespondiente}"? Solo se borra esta respuesta — las de las demás personas quedan intactas. No se puede deshacer.`)) return;
     setEliminando(respuestaId);
     try {
       const res = await EvaluacionService.eliminarRespuesta(respuestaId);
@@ -677,7 +689,7 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
                       </TableHead>
                     );
                   })}
-                  {puedeEliminar && <TableHead className="w-8" />}
+                  {puedeEliminar && <TableHead className="text-center text-[10px]">Eliminar</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -704,9 +716,13 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
                         </TableCell>
                       ))}
                       {puedeEliminar && (
-                        <TableCell>
-                          <button onClick={() => eliminarRespuesta(r.id)} disabled={eliminando === r.id} className="text-red-400 hover:text-red-600">
-                            {eliminando === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        <TableCell className="text-center">
+                          <button
+                            onClick={() => eliminarRespuesta(r.id, subtitulo ? `${titulo} (${subtitulo})` : titulo)} disabled={eliminando === r.id}
+                            title="Eliminar solo esta respuesta"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded px-1.5 py-1 inline-flex items-center gap-1 text-[10px] font-medium whitespace-nowrap"
+                          >
+                            {eliminando === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
                           </button>
                         </TableCell>
                       )}
@@ -754,7 +770,7 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
 // ======================================================================
 function RespuestasAbiertas({ items, respuestas, respuestaItems, puedeEliminar, eliminando, onEliminar }: {
   items: EvaluacionItem[]; respuestas: EvaluacionRespuesta[]; respuestaItems: EvaluacionRespuestaItem[];
-  puedeEliminar: boolean; eliminando: string | null; onEliminar: (respuestaId: string) => void;
+  puedeEliminar: boolean; eliminando: string | null; onEliminar: (respuestaId: string, nombreRespondiente: string) => void;
 }) {
   const respuestaPorId = useMemo(() => {
     const mapa: Record<string, EvaluacionRespuesta> = {};
@@ -763,13 +779,16 @@ function RespuestasAbiertas({ items, respuestas, respuestaItems, puedeEliminar, 
   }, [respuestas]);
 
   const textosPorItem = useMemo(() => {
-    const mapa: Record<string, Array<{ respuestaId: string; texto: string; respondiente: string }>> = {};
+    const mapa: Record<string, Array<{ respuestaId: string; texto: string; respondiente: string; fecha: string }>> = {};
     for (const ri of respuestaItems) {
       if (!ri.valor_texto) continue;
       const r = respuestaPorId[ri.respuesta_id];
       if (!r) continue;
-      const { titulo } = nombreRespondiente(r);
-      (mapa[ri.item_id] = mapa[ri.item_id] || []).push({ respuestaId: ri.respuesta_id, texto: ri.valor_texto, respondiente: titulo });
+      const { titulo, subtitulo } = nombreRespondiente(r);
+      // subtitulo ya trae la fecha/hora — importa sobre todo en modo
+      // anónimo, donde dos respuestas pueden mostrar el mismo "título"
+      // (misma patrulla) y la fecha es lo único que las distingue.
+      (mapa[ri.item_id] = mapa[ri.item_id] || []).push({ respuestaId: ri.respuesta_id, texto: ri.valor_texto, respondiente: titulo, fecha: subtitulo || '' });
     }
     return mapa;
   }, [respuestaItems, respuestaPorId]);
@@ -807,11 +826,15 @@ function RespuestasAbiertas({ items, respuestas, respuestaItems, puedeEliminar, 
                     <div key={idx} className="flex items-start justify-between gap-2 bg-gray-50 rounded-lg p-2.5">
                       <div className="min-w-0">
                         <p className="text-sm text-gray-700">{r.texto}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{r.respondiente}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{r.respondiente}{r.fecha ? ` · ${r.fecha}` : ''}</p>
                       </div>
                       {puedeEliminar && (
-                        <button onClick={() => onEliminar(r.respuestaId)} disabled={eliminando === r.respuestaId} className="text-gray-300 hover:text-red-500 shrink-0">
-                          {eliminando === r.respuestaId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        <button
+                          onClick={() => onEliminar(r.respuestaId, r.fecha ? `${r.respondiente} (${r.fecha})` : r.respondiente)} disabled={eliminando === r.respuestaId}
+                          title="Eliminar solo esta respuesta"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded px-1.5 py-1 inline-flex items-center gap-1 text-[10px] font-medium shrink-0 whitespace-nowrap"
+                        >
+                          {eliminando === r.respuestaId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
                         </button>
                       )}
                     </div>
