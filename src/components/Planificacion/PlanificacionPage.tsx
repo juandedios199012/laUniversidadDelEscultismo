@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarRange, Copy, Link2, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarRange, Copy, Link2, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import {
   ActividadPlan,
@@ -17,7 +17,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 
-const RAMAS = ['Lobatos', 'Scouts', 'Rovers'];
+// Mismas ramas que usa el módulo Patrullas (src/components/Patrullas/Patrullas.tsx) —
+// `patrullas.rama` es texto libre, no el enum rama_enum de la instalación original.
+const RAMAS = ['Manada', 'Tropa', 'Comunidad', 'Clan'];
 
 const FASES: { estado: EstadoPlanTrimestral; label: string }[] = [
   { estado: 'PROPUESTAS_ABIERTAS', label: '1. Propuestas' },
@@ -28,7 +30,7 @@ const FASES: { estado: EstadoPlanTrimestral; label: string }[] = [
 
 export default function PlanificacionPage() {
   const { can, puedeAcceder } = usePermissions();
-  const [ramaFiltro, setRamaFiltro] = useState('Scouts');
+  const [ramaFiltro, setRamaFiltro] = useState('Tropa');
   const [planes, setPlanes] = useState<PlanTrimestral[]>([]);
   const [planId, setPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanTrimestral | null>(null);
@@ -122,6 +124,44 @@ export default function PlanificacionPage() {
     }
   };
 
+  const handleRetrocederFase = async (nuevoEstado: EstadoPlanTrimestral) => {
+    if (!plan) return;
+    setAvanzando(true);
+    try {
+      const res = await PlanificacionService.avanzarFase(plan.id, nuevoEstado);
+      if (!res.success) { toast.error(res.message || 'No se pudo retroceder de fase'); return; }
+      if (typeof res.actividades_canceladas === 'number' && res.actividades_canceladas > 0) {
+        toast.warning(`Se volvió a votación. Se cancelaron ${res.actividades_canceladas} actividad(es) del calendario publicado (quedan en el historial).`);
+      } else {
+        toast.success('Se volvió a la fase anterior');
+      }
+      refrescarDetalle();
+      cargarPlanes();
+    } catch (err: any) {
+      toast.error(err.message || 'Error al retroceder de fase');
+    } finally {
+      setAvanzando(false);
+    }
+  };
+
+  const handleEliminarPlan = async () => {
+    if (!plan) return;
+    if (!window.confirm(`¿Eliminar "${plan.nombre}" definitivamente? Se borran todas sus propuestas, votos y el calendario. Esta acción no se puede deshacer.`)) return;
+    setLoading(true);
+    try {
+      const res = await PlanificacionService.eliminarPlan(plan.id);
+      if (!res.success) { toast.error(res.message || 'No se pudo eliminar el plan'); return; }
+      toast.success('Plan eliminado');
+      setPlan(null);
+      setPlanId(null);
+      cargarPlanes();
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar el plan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!puedeAcceder('planificacion')) {
     return <div className="p-8 text-center text-gray-500">No tienes acceso a este módulo.</div>;
   }
@@ -187,10 +227,27 @@ export default function PlanificacionPage() {
                 );
               })}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => setModalLinks(true)}>
                 <Link2 className="w-4 h-4 mr-1" /> Links de patrullas
               </Button>
+
+              {can('planificacion:aprobar') && plan.estado === 'VOTACION' && (
+                <Button size="sm" variant="ghost" disabled={avanzando} onClick={() => handleRetrocederFase('PROPUESTAS_ABIERTAS')}>
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Volver a propuestas
+                </Button>
+              )}
+              {can('planificacion:aprobar') && plan.estado === 'VIGENTE' && (
+                <Button size="sm" variant="ghost" disabled={avanzando} onClick={() => handleRetrocederFase('VOTACION')}>
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Volver a votación
+                </Button>
+              )}
+              {can('planificacion:aprobar') && plan.estado === 'CERRADO' && (
+                <Button size="sm" variant="ghost" disabled={avanzando} onClick={() => handleRetrocederFase('VIGENTE')}>
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Reabrir plan vigente
+                </Button>
+              )}
+
               {can('planificacion:aprobar') && plan.estado === 'PROPUESTAS_ABIERTAS' && (
                 <Button size="sm" disabled={avanzando} onClick={() => handleAvanzarFase('VOTACION')}>
                   {avanzando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Abrir votación
@@ -207,6 +264,11 @@ export default function PlanificacionPage() {
                 </Button>
               )}
               <Button variant="ghost" size="sm" onClick={refrescarDetalle}><RefreshCw className="w-4 h-4" /></Button>
+              {can('planificacion:eliminar') && (
+                <Button variant="destructive" size="sm" onClick={handleEliminarPlan}>
+                  <Trash2 className="w-4 h-4 mr-1" /> Eliminar plan
+                </Button>
+              )}
             </div>
           </div>
 

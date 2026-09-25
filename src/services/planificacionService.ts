@@ -211,7 +211,7 @@ export class PlanificacionService {
     return data as RpcResult;
   }
 
-  static async avanzarFase(planId: string, nuevoEstado: EstadoPlanTrimestral): Promise<RpcResult & { actividades_creadas?: number; empates?: Array<{ fecha: string; propuestas_empatadas: number }> }> {
+  static async avanzarFase(planId: string, nuevoEstado: EstadoPlanTrimestral): Promise<RpcResult & { actividades_creadas?: number; actividades_canceladas?: number; empates?: Array<{ fecha: string; propuestas_empatadas: number }> }> {
     const { data, error } = await supabase.rpc('avanzar_fase_plan', { p_plan_id: planId, p_nuevo_estado: nuevoEstado });
     if (error) throw error;
     return data as RpcResult;
@@ -245,6 +245,13 @@ export class PlanificacionService {
 
   static async eliminarActividad(actividadId: string, motivo: string): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('eliminar_actividad_plan', { p_actividad_id: actividadId, p_motivo: motivo });
+    if (error) throw error;
+    return data as RpcResult;
+  }
+
+  /** Elimina el plan completo (propuestas, votos y actividades cascadean). Gateado server-side por planificacion:eliminar. */
+  static async eliminarPlan(planId: string): Promise<RpcResult> {
+    const { data, error } = await supabase.rpc('eliminar_plan_trimestral', { p_plan_id: planId });
     if (error) throw error;
     return data as RpcResult;
   }

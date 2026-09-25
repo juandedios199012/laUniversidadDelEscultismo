@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.tsx';
 import LandingPage from './pages/LandingPage.tsx';
 import PropuestaPatrullaMobile from './pages/PropuestaPatrullaMobile.tsx';
+import EvaluacionPublica from './pages/EvaluacionPublica.tsx';
 import './index.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +23,8 @@ if (!rootElement) {
           <Route path="/"   element={<LandingPage />} />
           {/* Link móvil por patrulla — sin login, resuelve directo por token (ver database/145_planificacion_anual.sql) */}
           <Route path="/p/:token" element={<PropuestaPatrullaMobile />} />
+          {/* Link público de encuestas de Evaluación — sin login, el scout se identifica buscando su nombre (ver database/150_evaluacion_modulo.sql) */}
+          <Route path="/e/:codigo" element={<EvaluacionPublica />} />
           <Route path="/*"  element={<App />} />
         </Routes>
       </BrowserRouter>

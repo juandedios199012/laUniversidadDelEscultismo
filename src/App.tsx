@@ -16,6 +16,7 @@ import ComitePadres from './components/ComitePadres/ComitePadres';
 import GestionDocumentos from './components/GestionDocumentos/GestionDocumentos';
 import JuvenilPage from './components/Juvenil/JuvenilPage';
 import PlanificacionPage from './components/Planificacion/PlanificacionPage';
+import EvaluacionPage from './components/Evaluacion/EvaluacionPage';
 import Colaboradores from './components/Colaboradores';
 import AprenderHacienoDashboard from './components/AprenderHaciendo/AprenderHacienoDashboard';
 // Módulo de Dirigentes con nuevo diseño Glassmorphism (DNGI-02)
@@ -141,6 +142,8 @@ function AppContent() {
         return <ProgramaSemanal />;
       case 'planificacion':
         return <PlanificacionPage />;
+      case 'evaluacion':
+        return <EvaluacionPage />;
       case 'reportes':
         return <Reports />;
       case 'seguridad':
