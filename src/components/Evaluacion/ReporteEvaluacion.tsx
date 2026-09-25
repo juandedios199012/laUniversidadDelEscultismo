@@ -9,6 +9,7 @@ import {
 import { calcularSemaforo, Semaforo } from '../../utils/semaforoEvaluacion';
 import { analizarMencionesPersonas, clasificarSentimiento, contarPalabrasFrecuentes } from '../../utils/analisisTextoLibre';
 import { aCSV, aJSON, aMarkdown, construirDatosExport, nombreArchivoBase } from '../../utils/exportarEvaluacion';
+import { limpiarParaPdf } from '../../utils/textoSeguroPdf';
 import { generateAndDownloadPDF, generateReportMetadata } from '../../modules/reports/services/pdfService';
 import EvaluacionReportTemplate, { EvaluacionReportData } from '../../modules/reports/templates/pdf/EvaluacionReportTemplate';
 
@@ -217,23 +218,29 @@ export default function ReporteEvaluacion({ evaluacion, items, respuestas, respu
   const handleDescargarPdf = async () => {
     setGenerandoPdf(true);
     try {
+      // limpiarParaPdf se aplica a TODO texto que entra al PDF, sin excepción
+      // — incluye texto que escribió un scout desde el celular (puede traer
+      // emoji), no solo texto propio de la app. Ver src/utils/textoSeguroPdf.ts.
       const data: EvaluacionReportData = {
-        titulo: evaluacion.titulo,
-        descripcion: evaluacion.descripcion,
+        titulo: limpiarParaPdf(evaluacion.titulo),
+        descripcion: limpiarParaPdf(evaluacion.descripcion) || undefined,
         escalaMin: evaluacion.escala_min,
         escalaMax: evaluacion.escala_max,
         totalRespuestas: respuestas.length,
         promedioGeneral,
         colorSemaforoGeneral: semaforoGeneral?.color || '#6b7280',
         labelSemaforoGeneral: semaforoGeneral?.label || 'Sin datos',
-        categorias: datosPorCategoria.map((d) => ({ etiqueta: d.etiqueta, promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
-        enunciados: promedioPorItem.map((d) => ({ codigo: d.codigo, etiqueta: d.item.enunciado, promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
-        patrullas: datosPorPatrulla.map((d) => ({ etiqueta: d.patrulla, promedio: d.promedio, colorSemaforo: d.semaforo.color })),
+        categorias: datosPorCategoria.map((d) => ({ etiqueta: limpiarParaPdf(d.etiqueta), promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
+        enunciados: promedioPorItem.map((d) => ({ codigo: d.codigo, etiqueta: limpiarParaPdf(d.item.enunciado), promedio: d.promedio!, colorSemaforo: d.semaforo!.color })),
+        patrullas: datosPorPatrulla.map((d) => ({ etiqueta: limpiarParaPdf(d.patrulla), promedio: d.promedio, colorSemaforo: d.semaforo.color })),
         sentimiento,
-        palabrasFrecuentes,
-        mencionesJefes,
-        conclusiones,
-        respuestasAbiertas: itemsTexto.map((it) => ({ enunciado: it.enunciado, respuestas: respuestasPorItemTexto[it.id] || [] })),
+        palabrasFrecuentes: palabrasFrecuentes.map((p) => ({ ...p, palabra: limpiarParaPdf(p.palabra) })),
+        mencionesJefes: mencionesJefes.map((m) => ({ ...m, nombre: limpiarParaPdf(m.nombre) })),
+        conclusiones: conclusiones.map(limpiarParaPdf),
+        respuestasAbiertas: itemsTexto.map((it) => ({
+          enunciado: limpiarParaPdf(it.enunciado),
+          respuestas: (respuestasPorItemTexto[it.id] || []).map((r) => ({ texto: limpiarParaPdf(r.texto), respondiente: limpiarParaPdf(r.respondiente) })),
+        })),
       };
       const metadata = generateReportMetadata();
       const nombreArchivo = `evaluacion_${evaluacion.titulo.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${new Date().toISOString().slice(0, 10)}`;
