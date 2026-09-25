@@ -35,12 +35,18 @@ export interface Evaluacion {
   updated_at: string;
 }
 
+export type TipoItemEvaluacion = 'ESCALA' | 'TEXTO_LIBRE';
+
 export interface EvaluacionItem {
   id: string;
   evaluacion_id: string;
   orden: number;
   enunciado: string;
   etiqueta?: string;
+  tipo_item: TipoItemEvaluacion;
+  limite_caracteres?: number;
+  longitud_minima?: number;
+  placeholder?: string;
 }
 
 export interface EvaluacionRespuesta {
@@ -57,7 +63,20 @@ export interface EvaluacionRespuesta {
 export interface EvaluacionRespuestaItem {
   respuesta_id: string;
   item_id: string;
-  valor_escala: number;
+  valor_escala?: number;
+  valor_texto?: string;
+}
+
+/** Payload de una respuesta a un ítem: escala si es tipo ESCALA, texto si es TEXTO_LIBRE. */
+export interface RespuestaItemPayload {
+  item_id: string;
+  valor_escala?: number;
+  valor_texto?: string;
+}
+
+export interface ItemPublico {
+  id: string; orden: number; enunciado: string; etiqueta?: string;
+  tipo_item: TipoItemEvaluacion; limite_caracteres?: number; longitud_minima?: number; placeholder?: string;
 }
 
 export interface ContextoEvaluacionPublica {
@@ -68,7 +87,7 @@ export interface ContextoEvaluacionPublica {
     escala_min: number; escala_max: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
     modo_anonimo: boolean;
   };
-  items?: Array<{ id: string; orden: number; enunciado: string; etiqueta?: string }>;
+  items?: ItemPublico[];
   patrullas_disponibles?: Array<{ id: string; nombre: string }> | null;
 }
 
@@ -155,10 +174,13 @@ export class EvaluacionService {
   static async listarRespuestaItems(evaluacionId: string): Promise<EvaluacionRespuestaItem[]> {
     const { data, error } = await supabase
       .from('evaluacion_respuesta_items')
-      .select('respuesta_id, item_id, valor_escala, evaluacion_respuestas!inner(evaluacion_id)')
+      .select('respuesta_id, item_id, valor_escala, valor_texto, evaluacion_respuestas!inner(evaluacion_id)')
       .eq('evaluacion_respuestas.evaluacion_id', evaluacionId);
     if (error) throw error;
-    return (data || []).map((row: any) => ({ respuesta_id: row.respuesta_id, item_id: row.item_id, valor_escala: row.valor_escala }));
+    return (data || []).map((row: any) => ({
+      respuesta_id: row.respuesta_id, item_id: row.item_id,
+      valor_escala: row.valor_escala ?? undefined, valor_texto: row.valor_texto ?? undefined,
+    }));
   }
 
   static linkPublico(codigoAcceso: string): string {
@@ -188,7 +210,10 @@ export class EvaluacionService {
     return data as RpcResult;
   }
 
-  static async guardarItems(evaluacionId: string, items: Array<{ enunciado: string; etiqueta?: string }>): Promise<RpcResult & { cantidad_items?: number }> {
+  static async guardarItems(evaluacionId: string, items: Array<{
+    enunciado: string; etiqueta?: string; tipo_item?: TipoItemEvaluacion;
+    limite_caracteres?: number; longitud_minima?: number; placeholder?: string;
+  }>): Promise<RpcResult & { cantidad_items?: number }> {
     const { data, error } = await supabase.rpc('guardar_items_evaluacion', { p_evaluacion_id: evaluacionId, p_items: items });
     if (error) throw error;
     return data as RpcResult;
@@ -242,21 +267,21 @@ export class EvaluacionService {
   }
 
   static async iniciarRespuesta(codigo: string, scoutId: string): Promise<{
-    success: boolean; message?: string; nombre_completo?: string; respuestas_previas?: Array<{ item_id: string; valor_escala: number }>;
+    success: boolean; message?: string; nombre_completo?: string; respuestas_previas?: RespuestaItemPayload[];
   }> {
     const { data, error } = await supabase.rpc('iniciar_respuesta_evaluacion', { p_codigo: codigo, p_scout_id: scoutId });
     if (error) throw error;
     return data as any;
   }
 
-  static async enviarRespuesta(codigo: string, scoutId: string, respuestas: Array<{ item_id: string; valor_escala: number }>): Promise<RpcResult> {
+  static async enviarRespuesta(codigo: string, scoutId: string, respuestas: RespuestaItemPayload[]): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('enviar_respuesta_evaluacion', { p_codigo: codigo, p_scout_id: scoutId, p_respuestas: respuestas });
     if (error) throw error;
     return data as RpcResult;
   }
 
   /** Flujo anónimo (evaluacion.modo_anonimo = true): edad + patrulla autoreportadas en vez de buscar el nombre. */
-  static async enviarRespuestaAnonima(codigo: string, edad: number | undefined, patrullaNombre: string, respuestas: Array<{ item_id: string; valor_escala: number }>): Promise<RpcResult> {
+  static async enviarRespuestaAnonima(codigo: string, edad: number | undefined, patrullaNombre: string, respuestas: RespuestaItemPayload[]): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('enviar_respuesta_anonima', {
       p_codigo: codigo, p_edad: edad ?? null, p_patrulla_nombre: patrullaNombre, p_respuestas: respuestas,
     });

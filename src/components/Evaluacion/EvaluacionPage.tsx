@@ -15,7 +15,9 @@ import {
   EvaluacionRespuestaItem,
   EvaluacionService,
   EstadoEvaluacion,
+  TipoItemEvaluacion,
 } from '../../services/evaluacionService';
+import { contarPalabrasFrecuentes } from '../../utils/analisisTextoLibre';
 import { PlanTrimestral, PlanificacionService } from '../../services/planificacionService';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -167,7 +169,11 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
 }) {
   const { can } = usePermissions();
   const [accionando, setAccionando] = useState(false);
-  const puedeEditarEnunciados = evaluacion.estado === 'BORRADOR' && respuestas.length === 0;
+  // Los enunciados se pueden editar mientras nadie haya respondido todavía,
+  // esté la evaluación en borrador o ya activa (publicada) — el backend
+  // (guardar_items_evaluacion) ya solo bloquea por respuestas existentes,
+  // no por el estado.
+  const puedeEditarEnunciados = respuestas.length === 0;
 
   const link = EvaluacionService.linkPublico(evaluacion.codigo_acceso);
 
@@ -267,7 +273,7 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
 
       <BuilderEnunciados evaluacionId={evaluacion.id} items={items} puedeEditar={can('evaluacion:editar') && puedeEditarEnunciados} onGuardado={onRefrescar} />
 
-      {!puedeEditarEnunciados && evaluacion.estado !== 'BORRADOR' && (
+      {!puedeEditarEnunciados && (
         <>
           <ResultadosEvaluacion
             items={items} respuestas={respuestas} respuestaItems={respuestaItems}
@@ -358,58 +364,149 @@ function ConfigEvaluacion({ evaluacion, puedeEditar, onGuardado }: { evaluacion:
 // ======================================================================
 // Builder: lista de enunciados, uno por línea
 // ======================================================================
-function lineaDesdeItem(i: EvaluacionItem): string {
-  return i.etiqueta ? `${i.enunciado} | ${i.etiqueta}` : i.enunciado;
+interface FilaBuilder {
+  key: string; // clave local, no es el id real hasta que se guarda
+  enunciado: string;
+  etiqueta: string;
+  tipo_item: TipoItemEvaluacion;
+  limite_caracteres: string;
+  longitud_minima: string;
+  placeholder: string;
+}
+
+function filaDesdeItem(i: EvaluacionItem): FilaBuilder {
+  return {
+    key: i.id,
+    enunciado: i.enunciado,
+    etiqueta: i.etiqueta || '',
+    tipo_item: i.tipo_item,
+    limite_caracteres: i.limite_caracteres ? String(i.limite_caracteres) : '500',
+    longitud_minima: i.longitud_minima ? String(i.longitud_minima) : '',
+    placeholder: i.placeholder || '',
+  };
+}
+
+function filaVacia(tipo: TipoItemEvaluacion): FilaBuilder {
+  return {
+    key: `nuevo-${Date.now()}-${Math.random()}`,
+    enunciado: '', etiqueta: '', tipo_item: tipo,
+    limite_caracteres: '500', longitud_minima: '', placeholder: '',
+  };
 }
 
 function BuilderEnunciados({ evaluacionId, items, puedeEditar, onGuardado }: {
   evaluacionId: string; items: EvaluacionItem[]; puedeEditar: boolean; onGuardado: () => void;
 }) {
-  const [texto, setTexto] = useState(items.map(lineaDesdeItem).join('\n'));
+  const [filas, setFilas] = useState<FilaBuilder[]>(items.length > 0 ? items.map(filaDesdeItem) : [filaVacia('ESCALA')]);
   const [guardando, setGuardando] = useState(false);
 
-  useEffect(() => { setTexto(items.map(lineaDesdeItem).join('\n')); }, [items]);
+  useEffect(() => { setFilas(items.length > 0 ? items.map(filaDesdeItem) : [filaVacia('ESCALA')]); }, [items]);
+
+  const actualizarFila = (key: string, cambios: Partial<FilaBuilder>) => {
+    setFilas((prev) => prev.map((f) => (f.key === key ? { ...f, ...cambios } : f)));
+  };
+  const quitarFila = (key: string) => setFilas((prev) => prev.filter((f) => f.key !== key));
+  const agregarFila = (tipo: TipoItemEvaluacion) => setFilas((prev) => [...prev, filaVacia(tipo)]);
 
   const guardar = async () => {
-    const enunciados = texto.split('\n').map((l) => l.trim()).filter(Boolean).map((linea) => {
-      const [enunciado, etiqueta] = linea.split('|').map((p) => p.trim());
-      return { enunciado, etiqueta: etiqueta || undefined };
-    });
-    if (enunciados.length === 0) { toast.error('Agrega al menos un enunciado'); return; }
+    const validas = filas.filter((f) => f.enunciado.trim());
+    if (validas.length === 0) { toast.error('Agrega al menos un enunciado'); return; }
     setGuardando(true);
     try {
-      const res = await EvaluacionService.guardarItems(evaluacionId, enunciados);
+      const payload = validas.map((f) => ({
+        enunciado: f.enunciado.trim(),
+        etiqueta: f.etiqueta.trim() || undefined,
+        tipo_item: f.tipo_item,
+        limite_caracteres: f.tipo_item === 'TEXTO_LIBRE' ? (parseInt(f.limite_caracteres, 10) || undefined) : undefined,
+        longitud_minima: f.tipo_item === 'TEXTO_LIBRE' ? (parseInt(f.longitud_minima, 10) || undefined) : undefined,
+        placeholder: f.tipo_item === 'TEXTO_LIBRE' ? (f.placeholder.trim() || undefined) : undefined,
+      }));
+      const res = await EvaluacionService.guardarItems(evaluacionId, payload);
       if (!res.success) { toast.error(res.message || 'No se pudo guardar'); return; }
-      toast.success(`${res.cantidad_items || enunciados.length} enunciado(s) guardado(s)`);
+      toast.success(`${res.cantidad_items || payload.length} enunciado(s) guardado(s)`);
       onGuardado();
     } catch (err: any) { toast.error(err.message || 'Error al guardar'); }
     finally { setGuardando(false); }
   };
 
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
-      <h2 className="font-semibold text-gray-900">Enunciados</h2>
-      {!puedeEditar && (
-        <p className="text-xs text-amber-600">
-          {items.length === 0 ? 'No se pueden editar enunciados en este estado.' : 'Ya hay respuestas registradas (o la evaluación no está en borrador): los enunciados quedan fijos para no perder datos.'}
-        </p>
-      )}
-      {puedeEditar ? (
-        <>
-          <p className="text-xs text-gray-400">
-            Uno por línea, en el orden en que se van a mostrar. Opcional: agregá <code className="bg-gray-100 px-1 rounded">| categoría</code> al final de la línea para agrupar enunciados en el gráfico radar de Analítica (ej. varios enunciados con <code className="bg-gray-100 px-1 rounded">| Cohesión</code>).
-          </p>
-          <Textarea
-            value={texto} onChange={(e) => setTexto(e.target.value)} rows={10}
-            placeholder={'Toma iniciativa | Proactividad\nAporta ideas nuevas al grupo | Cohesión\nIntegrado al grupo | Cohesión'}
-          />
-          <Button size="sm" onClick={guardar} disabled={guardando}>{guardando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar enunciados</Button>
-        </>
-      ) : (
+  if (!puedeEditar) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
+        <h2 className="font-semibold text-gray-900">Enunciados</h2>
+        {items.length === 0 && <p className="text-xs text-amber-600">No tenés permiso para editar enunciados en esta evaluación.</p>}
+        {items.length > 0 && <p className="text-xs text-amber-600">Ya hay respuestas registradas: los enunciados quedan fijos para no perder esas respuestas.</p>}
         <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
-          {items.map((i) => <li key={i.id}>{i.enunciado}{i.etiqueta && <span className="text-gray-400"> — {i.etiqueta}</span>}</li>)}
+          {items.map((i) => (
+            <li key={i.id}>
+              {i.enunciado}
+              {i.etiqueta && <span className="text-gray-400"> — {i.etiqueta}</span>}
+              {i.tipo_item === 'TEXTO_LIBRE' && <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">texto libre</Badge>}
+            </li>
+          ))}
         </ol>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+      <h2 className="font-semibold text-gray-900">Enunciados</h2>
+      <div className="space-y-3">
+        {filas.map((fila, idx) => (
+          <div key={fila.key} className="rounded-lg border border-gray-200 p-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-xs text-gray-400 mt-2.5 w-5 shrink-0">{idx + 1}.</span>
+              <div className="flex-1 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={fila.enunciado} onChange={(e) => actualizarFila(fila.key, { enunciado: e.target.value })}
+                    placeholder={fila.tipo_item === 'ESCALA' ? 'Ej. Toma iniciativa' : 'Ej. ¿Qué fue lo mejor del trimestre?'}
+                    className="flex-1"
+                  />
+                  <Select value={fila.tipo_item} onValueChange={(v) => actualizarFila(fila.key, { tipo_item: v as TipoItemEvaluacion })}>
+                    <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ESCALA">Escala (1-5)</SelectItem>
+                      <SelectItem value="TEXTO_LIBRE">Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {fila.tipo_item === 'ESCALA' && (
+                  <Input
+                    value={fila.etiqueta} onChange={(e) => actualizarFila(fila.key, { etiqueta: e.target.value })}
+                    placeholder="Categoría opcional (ej. Cohesión) — agrupa en el radar de Analítica"
+                    className="text-xs"
+                  />
+                )}
+
+                {fila.tipo_item === 'TEXTO_LIBRE' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={fila.placeholder} onChange={(e) => actualizarFila(fila.key, { placeholder: e.target.value })}
+                      placeholder="Texto de ayuda (opcional)" className="col-span-2 text-xs"
+                    />
+                    <div>
+                      <Label className="text-[10px] text-gray-400">Límite de caracteres</Label>
+                      <Input type="number" value={fila.limite_caracteres} onChange={(e) => actualizarFila(fila.key, { limite_caracteres: e.target.value })} placeholder="500" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-gray-400">Mínimo (opcional, obliga a responder)</Label>
+                      <Input type="number" value={fila.longitud_minima} onChange={(e) => actualizarFila(fila.key, { longitud_minima: e.target.value })} placeholder="Sin mínimo" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button onClick={() => quitarFila(fila.key)} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        <Button variant="outline" size="sm" onClick={() => agregarFila('ESCALA')}><Plus className="w-4 h-4 mr-1" /> Enunciado de escala</Button>
+        <Button variant="outline" size="sm" onClick={() => agregarFila('TEXTO_LIBRE')}><Plus className="w-4 h-4 mr-1" /> Pregunta de texto libre</Button>
+      </div>
+      <Button size="sm" onClick={guardar} disabled={guardando}>{guardando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar enunciados</Button>
     </div>
   );
 }
@@ -433,10 +530,13 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
 }) {
   const [eliminando, setEliminando] = useState<string | null>(null);
   const umbralAtencion = escalaMin + (escalaMax - escalaMin) * 0.4;
+  const itemsEscala = useMemo(() => items.filter((i) => i.tipo_item === 'ESCALA'), [items]);
+  const itemsTexto = useMemo(() => items.filter((i) => i.tipo_item === 'TEXTO_LIBRE'), [items]);
 
   const valorPorRespuestaItem = useMemo(() => {
     const mapa: Record<string, Record<string, number>> = {};
     for (const ri of respuestaItems) {
+      if (ri.valor_escala === undefined) continue;
       (mapa[ri.respuesta_id] = mapa[ri.respuesta_id] || {})[ri.item_id] = ri.valor_escala;
     }
     return mapa;
@@ -445,6 +545,7 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
   const promedioPorItem = useMemo(() => {
     const mapa: Record<string, { suma: number; cantidad: number }> = {};
     for (const ri of respuestaItems) {
+      if (ri.valor_escala === undefined) continue;
       const actual = mapa[ri.item_id] || { suma: 0, cantidad: 0 };
       actual.suma += ri.valor_escala;
       actual.cantidad += 1;
@@ -483,73 +584,165 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
-      <h2 className="font-semibold text-gray-900">Resultados</h2>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky left-0 bg-white">Respondiente</TableHead>
-              {items.map((it) => {
-                const p = promedioPorItem[it.id];
-                const bajo = p && (p.suma / p.cantidad) < umbralAtencion;
-                return (
-                  <TableHead key={it.id} className={`text-center max-w-[120px] ${bajo ? 'bg-amber-50' : ''}`} title={it.enunciado}>
-                    <span className="line-clamp-3 text-xs">{it.enunciado}</span>
-                    {bajo && <AlertTriangle className="w-3 h-3 text-amber-500 inline-block ml-1" />}
-                  </TableHead>
-                );
-              })}
-              {puedeEliminar && <TableHead className="w-8" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {respuestas.map((r) => {
-              const { titulo, subtitulo } = nombreRespondiente(r);
-              const promedio = promedioPorRespuesta[r.id];
-              const requiereAtencion = typeof promedio === 'number' && promedio < umbralAtencion;
-              return (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium whitespace-nowrap sticky left-0 bg-white">
-                    <span className="flex items-center gap-1.5">
-                      {titulo}
-                      {requiereAtencion && <Badge variant="warning" className="text-[9px] px-1.5 py-0">Atención</Badge>}
-                    </span>
-                    {subtitulo && <span className="block text-xs text-gray-400">{subtitulo}</span>}
-                  </TableCell>
-                  {items.map((it) => (
-                    <TableCell key={it.id} className="text-center">
-                      {valorPorRespuestaItem[r.id]?.[it.id] ?? '—'}
-                    </TableCell>
-                  ))}
-                  {puedeEliminar && (
-                    <TableCell>
-                      <button onClick={() => eliminarRespuesta(r.id)} disabled={eliminando === r.id} className="text-red-400 hover:text-red-600">
-                        {eliminando === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </TableCell>
-                  )}
+    <div className="space-y-4">
+      {itemsEscala.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+          <h2 className="font-semibold text-gray-900">Resultados — escala</h2>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 bg-white">Respondiente</TableHead>
+                  {itemsEscala.map((it) => {
+                    const p = promedioPorItem[it.id];
+                    const bajo = p && (p.suma / p.cantidad) < umbralAtencion;
+                    return (
+                      <TableHead key={it.id} className={`text-center max-w-[120px] ${bajo ? 'bg-amber-50' : ''}`} title={it.enunciado}>
+                        <span className="line-clamp-3 text-xs">{it.enunciado}</span>
+                        {bajo && <AlertTriangle className="w-3 h-3 text-amber-500 inline-block ml-1" />}
+                      </TableHead>
+                    );
+                  })}
+                  {puedeEliminar && <TableHead className="w-8" />}
                 </TableRow>
-              );
-            })}
-            <TableRow className="bg-gray-50 font-semibold">
-              <TableCell className="sticky left-0 bg-gray-50">Promedio</TableCell>
-              {items.map((it) => {
-                const p = promedioPorItem[it.id];
-                return (
-                  <TableCell key={it.id} className="text-center">
-                    {p ? (p.suma / p.cantidad).toFixed(1) : '—'}
-                  </TableCell>
-                );
-              })}
-              {puedeEliminar && <TableCell />}
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-      <p className="text-xs text-gray-400 flex items-center gap-1">
-        <AlertTriangle className="w-3 h-3 text-amber-500" /> "Atención" = regla simple (no es IA): promedio por debajo de {umbralAtencion.toFixed(1)} en una escala de {escalaMin} a {escalaMax}.
-      </p>
+              </TableHeader>
+              <TableBody>
+                {respuestas.map((r) => {
+                  const { titulo, subtitulo } = nombreRespondiente(r);
+                  const promedio = promedioPorRespuesta[r.id];
+                  const requiereAtencion = typeof promedio === 'number' && promedio < umbralAtencion;
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium whitespace-nowrap sticky left-0 bg-white">
+                        <span className="flex items-center gap-1.5">
+                          {titulo}
+                          {requiereAtencion && <Badge variant="warning" className="text-[9px] px-1.5 py-0">Atención</Badge>}
+                        </span>
+                        {subtitulo && <span className="block text-xs text-gray-400">{subtitulo}</span>}
+                      </TableCell>
+                      {itemsEscala.map((it) => (
+                        <TableCell key={it.id} className="text-center">
+                          {valorPorRespuestaItem[r.id]?.[it.id] ?? '—'}
+                        </TableCell>
+                      ))}
+                      {puedeEliminar && (
+                        <TableCell>
+                          <button onClick={() => eliminarRespuesta(r.id)} disabled={eliminando === r.id} className="text-red-400 hover:text-red-600">
+                            {eliminando === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          </button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="bg-gray-50 font-semibold">
+                  <TableCell className="sticky left-0 bg-gray-50">Promedio</TableCell>
+                  {itemsEscala.map((it) => {
+                    const p = promedioPorItem[it.id];
+                    return (
+                      <TableCell key={it.id} className="text-center">
+                        {p ? (p.suma / p.cantidad).toFixed(1) : '—'}
+                      </TableCell>
+                    );
+                  })}
+                  {puedeEliminar && <TableCell />}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-xs text-gray-400 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-500" /> "Atención" = regla simple (no es IA): promedio por debajo de {umbralAtencion.toFixed(1)} en una escala de {escalaMin} a {escalaMax}.
+          </p>
+        </div>
+      )}
+
+      {itemsTexto.length > 0 && (
+        <RespuestasAbiertas
+          items={itemsTexto} respuestas={respuestas} respuestaItems={respuestaItems}
+          puedeEliminar={puedeEliminar} eliminando={eliminando} onEliminar={eliminarRespuesta}
+        />
+      )}
+    </div>
+  );
+}
+
+// ======================================================================
+// Respuestas abiertas (preguntas de texto libre): lista de respuestas
+// por pregunta + frecuencia de palabras (conteo simple, no NLP/ML — ver
+// src/utils/analisisTextoLibre.ts). Sentiment analysis y topic
+// modeling/LDA quedan fuera a propósito (EVALUACION_ANALITICA_ML_PLAN.md §7).
+// ======================================================================
+function RespuestasAbiertas({ items, respuestas, respuestaItems, puedeEliminar, eliminando, onEliminar }: {
+  items: EvaluacionItem[]; respuestas: EvaluacionRespuesta[]; respuestaItems: EvaluacionRespuestaItem[];
+  puedeEliminar: boolean; eliminando: string | null; onEliminar: (respuestaId: string) => void;
+}) {
+  const respuestaPorId = useMemo(() => {
+    const mapa: Record<string, EvaluacionRespuesta> = {};
+    for (const r of respuestas) mapa[r.id] = r;
+    return mapa;
+  }, [respuestas]);
+
+  const textosPorItem = useMemo(() => {
+    const mapa: Record<string, Array<{ respuestaId: string; texto: string; respondiente: string }>> = {};
+    for (const ri of respuestaItems) {
+      if (!ri.valor_texto) continue;
+      const r = respuestaPorId[ri.respuesta_id];
+      if (!r) continue;
+      const { titulo } = nombreRespondiente(r);
+      (mapa[ri.item_id] = mapa[ri.item_id] || []).push({ respuestaId: ri.respuesta_id, texto: ri.valor_texto, respondiente: titulo });
+    }
+    return mapa;
+  }, [respuestaItems, respuestaPorId]);
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-5">
+      <h2 className="font-semibold text-gray-900">Respuestas abiertas</h2>
+      {items.map((item) => {
+        const respuestasItem = textosPorItem[item.id] || [];
+        const frecuentes = contarPalabrasFrecuentes(respuestasItem.map((r) => r.texto), { top: 15 });
+        const maxFrecuencia = frecuentes[0]?.frecuencia || 1;
+        return (
+          <div key={item.id} className="space-y-2">
+            <p className="font-medium text-gray-800 text-sm">{item.enunciado}</p>
+            {respuestasItem.length === 0 ? (
+              <p className="text-xs text-gray-400">Sin respuestas todavía.</p>
+            ) : (
+              <>
+                {frecuentes.length >= 3 && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 bg-violet-50 rounded-lg p-3">
+                    {frecuentes.map((p) => (
+                      <span
+                        key={p.palabra}
+                        className="text-violet-700 font-medium"
+                        style={{ fontSize: `${11 + (p.frecuencia / maxFrecuencia) * 14}px` }}
+                        title={`${p.frecuencia} veces`}
+                      >
+                        {p.palabra}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  {respuestasItem.map((r, idx) => (
+                    <div key={idx} className="flex items-start justify-between gap-2 bg-gray-50 rounded-lg p-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm text-gray-700">{r.texto}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{r.respondiente}</p>
+                      </div>
+                      {puedeEliminar && (
+                        <button onClick={() => onEliminar(r.respuestaId)} disabled={eliminando === r.respuestaId} className="text-gray-300 hover:text-red-500 shrink-0">
+                          {eliminando === r.respuestaId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+      <p className="text-[10px] text-gray-400">Nube de palabras = conteo de frecuencia sobre el texto (sin IA). No se aplica análisis de sentimiento ni de temas.</p>
     </div>
   );
 }
@@ -559,14 +752,16 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
 // radar por categoría (si hay enunciados etiquetados) y comparativo por
 // patrulla, con recharts (ya usado en el proyecto, ver Progresión).
 // ======================================================================
-function AnaliticaEvaluacion({ items, respuestas, respuestaItems, escalaMin, escalaMax }: {
+function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, escalaMin, escalaMax }: {
   items: EvaluacionItem[]; respuestas: EvaluacionRespuesta[]; respuestaItems: EvaluacionRespuestaItem[]; escalaMin: number; escalaMax: number;
 }) {
+  const items = useMemo(() => itemsTodos.filter((i) => i.tipo_item === 'ESCALA'), [itemsTodos]);
   const umbralAtencion = escalaMin + (escalaMax - escalaMin) * 0.4;
 
   const datosPorItem = useMemo(() => {
     const mapa: Record<string, { suma: number; cantidad: number }> = {};
     for (const ri of respuestaItems) {
+      if (ri.valor_escala === undefined) continue;
       const actual = mapa[ri.item_id] || { suma: 0, cantidad: 0 };
       actual.suma += ri.valor_escala; actual.cantidad += 1;
       mapa[ri.item_id] = actual;
@@ -589,6 +784,7 @@ function AnaliticaEvaluacion({ items, respuestas, respuestaItems, escalaMin, esc
 
     const sumaPorItem: Record<string, { suma: number; cantidad: number }> = {};
     for (const ri of respuestaItems) {
+      if (ri.valor_escala === undefined) continue;
       const actual = sumaPorItem[ri.item_id] || { suma: 0, cantidad: 0 };
       actual.suma += ri.valor_escala; actual.cantidad += 1;
       sumaPorItem[ri.item_id] = actual;
@@ -606,6 +802,7 @@ function AnaliticaEvaluacion({ items, respuestas, respuestaItems, escalaMin, esc
   const datosPorPatrulla = useMemo(() => {
     const valorPorRespuesta: Record<string, number[]> = {};
     for (const ri of respuestaItems) {
+      if (ri.valor_escala === undefined) continue; // ignora respuestas de texto libre acá
       (valorPorRespuesta[ri.respuesta_id] = valorPorRespuesta[ri.respuesta_id] || []).push(ri.valor_escala);
     }
     const acumPorPatrulla: Record<string, { suma: number; cantidad: number }> = {};

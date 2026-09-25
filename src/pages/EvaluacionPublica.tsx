@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 import { CheckCircle2, ClipboardList, EyeOff, Loader2, Pencil, Search, User } from 'lucide-react';
-import { ContextoEvaluacionPublica, EvaluacionService } from '../services/evaluacionService';
+import { ContextoEvaluacionPublica, EvaluacionService, ItemPublico, RespuestaItemPayload } from '../services/evaluacionService';
 
 type Identidad =
-  | { tipo: 'nombre'; scoutId: string; nombre: string; respuestasPrevias: Record<string, number> }
+  | { tipo: 'nombre'; scoutId: string; nombre: string; respuestasPrevias: Record<string, number | string> }
   | { tipo: 'anonimo'; edad?: number; patrulla: string };
 
 export default function EvaluacionPublica() {
@@ -28,8 +28,11 @@ export default function EvaluacionPublica() {
     try {
       const res = await EvaluacionService.iniciarRespuesta(codigo, scoutId);
       if (!res.success) { toast.error(res.message || 'No se pudo continuar'); return; }
-      const previas: Record<string, number> = {};
-      for (const p of res.respuestas_previas || []) previas[p.item_id] = p.valor_escala;
+      const previas: Record<string, number | string> = {};
+      for (const p of res.respuestas_previas || []) {
+        if (p.valor_texto !== undefined && p.valor_texto !== null) previas[p.item_id] = p.valor_texto;
+        else if (p.valor_escala !== undefined && p.valor_escala !== null) previas[p.item_id] = p.valor_escala;
+      }
       setIdentidad({ tipo: 'nombre', scoutId, nombre, respuestasPrevias: previas });
       setEnviado(false);
     } catch (err: any) {
@@ -65,7 +68,7 @@ export default function EvaluacionPublica() {
 
   const nombreMostrado = identidad?.tipo === 'nombre' ? identidad.nombre : identidad?.tipo === 'anonimo' ? `Anónimo — ${identidad.patrulla}` : '';
 
-  const enviarRespuesta = async (payload: Array<{ item_id: string; valor_escala: number }>) => {
+  const enviarRespuesta = async (payload: RespuestaItemPayload[]) => {
     if (!codigo || !identidad) return { success: false, message: 'No identificado' };
     if (identidad.tipo === 'nombre') {
       return EvaluacionService.enviarRespuesta(codigo, identidad.scoutId, payload);
@@ -215,13 +218,13 @@ function FormularioAnonimo({ patrullas, onContinuar }: {
 
 function FormularioEscala({ nombreMostrado, items, escalaMin, escalaMax, etiquetaMin, etiquetaMax, instrucciones, respuestasIniciales, onEnviar, onEnviado }: {
   nombreMostrado: string;
-  items: Array<{ id: string; orden: number; enunciado: string }>;
+  items: ItemPublico[];
   escalaMin: number; escalaMax: number; etiquetaMin?: string; etiquetaMax?: string; instrucciones?: string;
-  respuestasIniciales: Record<string, number>;
-  onEnviar: (payload: Array<{ item_id: string; valor_escala: number }>) => Promise<{ success: boolean; message?: string }>;
+  respuestasIniciales: Record<string, number | string>;
+  onEnviar: (payload: RespuestaItemPayload[]) => Promise<{ success: boolean; message?: string }>;
   onEnviado: () => void;
 }) {
-  const [respuestas, setRespuestas] = useState<Record<string, number>>(respuestasIniciales);
+  const [respuestas, setRespuestas] = useState<Record<string, number | string>>(respuestasIniciales);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => { setRespuestas(respuestasIniciales); }, [respuestasIniciales]);
@@ -232,13 +235,23 @@ function FormularioEscala({ nombreMostrado, items, escalaMin, escalaMax, etiquet
     return arr;
   }, [escalaMin, escalaMax]);
 
-  const faltantes = items.length - Object.keys(respuestas).filter((id) => items.some((it) => it.id === id)).length;
+  const faltantes = items.filter((it) => {
+    if (it.tipo_item === 'ESCALA') return respuestas[it.id] === undefined;
+    // Texto libre: solo cuenta como obligatorio si tiene longitud mínima configurada.
+    if (!it.longitud_minima) return false;
+    const texto = String(respuestas[it.id] || '');
+    return texto.length < it.longitud_minima;
+  }).length;
 
   const enviar = async () => {
-    if (faltantes > 0) { toast.error(`Te falta responder ${faltantes} punto(s)`); return; }
+    if (faltantes > 0) { toast.error(`Te falta completar ${faltantes} punto(s)`); return; }
     setEnviando(true);
     try {
-      const payload = items.map((it) => ({ item_id: it.id, valor_escala: respuestas[it.id] }));
+      const payload: RespuestaItemPayload[] = items
+        .filter((it) => respuestas[it.id] !== undefined && respuestas[it.id] !== '')
+        .map((it) => it.tipo_item === 'ESCALA'
+          ? { item_id: it.id, valor_escala: Number(respuestas[it.id]) }
+          : { item_id: it.id, valor_texto: String(respuestas[it.id]) });
       const res = await onEnviar(payload);
       if (!res.success) { toast.error(res.message || 'No se pudo enviar'); return; }
       toast.success('¡Enviado!');
@@ -261,24 +274,35 @@ function FormularioEscala({ nombreMostrado, items, escalaMin, escalaMax, etiquet
       {items.map((item) => (
         <div key={item.id} className="bg-white rounded-2xl border border-gray-200 p-4">
           <p className="font-medium text-gray-900 mb-3">{item.enunciado}</p>
-          <div className="flex items-center justify-between gap-1">
-            {etiquetaMin && <span className="text-[10px] text-gray-400 shrink-0 w-12">{etiquetaMin}</span>}
-            <div className="flex-1 flex items-center justify-center gap-2">
-              {opciones.map((valor) => {
-                const seleccionado = respuestas[item.id] === valor;
-                return (
-                  <button
-                    key={valor}
-                    onClick={() => setRespuestas((prev) => ({ ...prev, [item.id]: valor }))}
-                    className={`w-10 h-10 rounded-full font-bold text-sm border-2 shrink-0 ${seleccionado ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-gray-300 text-gray-500'}`}
-                  >
-                    {valor}
-                  </button>
-                );
-              })}
+
+          {item.tipo_item === 'ESCALA' ? (
+            <div className="flex items-center justify-between gap-1">
+              {etiquetaMin && <span className="text-[10px] text-gray-400 shrink-0 w-12">{etiquetaMin}</span>}
+              <div className="flex-1 flex items-center justify-center gap-2">
+                {opciones.map((valor) => {
+                  const seleccionado = respuestas[item.id] === valor;
+                  return (
+                    <button
+                      key={valor}
+                      onClick={() => setRespuestas((prev) => ({ ...prev, [item.id]: valor }))}
+                      className={`w-10 h-10 rounded-full font-bold text-sm border-2 shrink-0 ${seleccionado ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-gray-300 text-gray-500'}`}
+                    >
+                      {valor}
+                    </button>
+                  );
+                })}
+              </div>
+              {etiquetaMax && <span className="text-[10px] text-gray-400 shrink-0 w-12 text-right">{etiquetaMax}</span>}
             </div>
-            {etiquetaMax && <span className="text-[10px] text-gray-400 shrink-0 w-12 text-right">{etiquetaMax}</span>}
-          </div>
+          ) : (
+            <TextoLibreCampo
+              valor={String(respuestas[item.id] || '')}
+              onChange={(v) => setRespuestas((prev) => ({ ...prev, [item.id]: v }))}
+              placeholder={item.placeholder}
+              limite={item.limite_caracteres}
+              minimo={item.longitud_minima}
+            />
+          )}
         </div>
       ))}
 
@@ -289,7 +313,34 @@ function FormularioEscala({ nombreMostrado, items, escalaMin, escalaMax, etiquet
       >
         {enviando && <Loader2 className="w-4 h-4 animate-spin" />} Enviar mis respuestas
       </button>
-      {faltantes > 0 && <p className="text-center text-xs text-gray-400">Te falta responder {faltantes} punto(s)</p>}
+      {faltantes > 0 && <p className="text-center text-xs text-gray-400">Te falta completar {faltantes} punto(s)</p>}
+    </div>
+  );
+}
+
+function TextoLibreCampo({ valor, onChange, placeholder, limite, minimo }: {
+  valor: string; onChange: (v: string) => void; placeholder?: string; limite?: number; minimo?: number;
+}) {
+  const tope = limite || 500;
+  const faltaMinimo = minimo && valor.length < minimo;
+  return (
+    <div>
+      <textarea
+        value={valor}
+        onChange={(e) => onChange(e.target.value.slice(0, tope))}
+        placeholder={placeholder || 'Escribí tu respuesta...'}
+        rows={3}
+        maxLength={tope}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base resize-y"
+      />
+      <div className="flex items-center justify-between mt-1">
+        {minimo ? (
+          <span className={`text-[10px] ${faltaMinimo ? 'text-amber-600' : 'text-gray-400'}`}>
+            {faltaMinimo ? `Mínimo ${minimo} caracteres` : '✓ listo'}
+          </span>
+        ) : <span />}
+        <span className="text-[10px] text-gray-400">{valor.length}/{tope}</span>
+      </div>
     </div>
   );
 }
