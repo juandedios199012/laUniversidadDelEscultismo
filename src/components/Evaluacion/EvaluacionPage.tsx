@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  AlertTriangle, BarChart3, ClipboardList, Copy, Eye, EyeOff, Loader2, Plus, RefreshCw, Trash2, Undo2,
+  BarChart3, ClipboardList, Copy, Eye, EyeOff, FileText, Loader2, Plus, RefreshCw, Trash2, Undo2,
 } from 'lucide-react';
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Cell, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart,
+  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import {
@@ -20,6 +20,7 @@ import {
   PRESET_ETIQUETAS_ESCALA_1_5,
 } from '../../services/evaluacionService';
 import { contarPalabrasFrecuentes } from '../../utils/analisisTextoLibre';
+import { calcularSemaforo, umbralAtencion } from '../../utils/semaforoEvaluacion';
 import { PlanTrimestral, PlanificacionService } from '../../services/planificacionService';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -29,10 +30,7 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-
-// Paleta categórica fija (nunca ciclada) para series por patrulla en los
-// gráficos de Analítica — mismo espíritu que la guía de dataviz del proyecto.
-const PALETA_CATEGORICA = ['#7c3aed', '#059669', '#d97706', '#0284c7', '#e11d48', '#4b5563'];
+import ReporteEvaluacion from './ReporteEvaluacion';
 
 const ESTADO_LABEL: Record<EstadoEvaluacion, string> = {
   BORRADOR: 'Borrador',
@@ -171,11 +169,21 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
 }) {
   const { can } = usePermissions();
   const [accionando, setAccionando] = useState(false);
+  const [mostrarReporte, setMostrarReporte] = useState(false);
   // Los enunciados se pueden editar mientras nadie haya respondido todavía,
   // esté la evaluación en borrador o ya activa (publicada) — el backend
   // (guardar_items_evaluacion) ya solo bloquea por respuestas existentes,
   // no por el estado.
   const puedeEditarEnunciados = respuestas.length === 0;
+
+  if (mostrarReporte) {
+    return (
+      <ReporteEvaluacion
+        evaluacion={evaluacion} items={items} respuestas={respuestas} respuestaItems={respuestaItems}
+        onVolver={() => setMostrarReporte(false)}
+      />
+    );
+  }
 
   const link = EvaluacionService.linkPublico(evaluacion.codigo_acceso);
 
@@ -240,6 +248,9 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
           <span className="text-sm text-gray-500">{respuestas.length} respuesta(s)</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {respuestas.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setMostrarReporte(true)}><FileText className="w-4 h-4 mr-1" /> Ver reporte</Button>
+          )}
           {(evaluacion.estado === 'ACTIVA' || evaluacion.estado === 'CERRADA') && (
             <Button variant="outline" size="sm" onClick={copiarLink}><Copy className="w-4 h-4 mr-1" /> Copiar link</Button>
           )}
@@ -593,7 +604,6 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
   escalaMin: number; escalaMax: number; puedeEliminar: boolean; onRespuestaEliminada: () => void;
 }) {
   const [eliminando, setEliminando] = useState<string | null>(null);
-  const umbralAtencion = escalaMin + (escalaMax - escalaMin) * 0.4;
   const itemsEscala = useMemo(() => items.filter((i) => i.tipo_item === 'ESCALA'), [items]);
   const itemsTexto = useMemo(() => items.filter((i) => i.tipo_item === 'TEXTO_LIBRE'), [items]);
 
@@ -659,11 +669,11 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
                   <TableHead className="sticky left-0 bg-white">Respondiente</TableHead>
                   {itemsEscala.map((it) => {
                     const p = promedioPorItem[it.id];
-                    const bajo = p && (p.suma / p.cantidad) < umbralAtencion;
+                    const sem = p ? calcularSemaforo(p.suma / p.cantidad, escalaMin, escalaMax) : null;
                     return (
-                      <TableHead key={it.id} className={`text-center max-w-[120px] ${bajo ? 'bg-amber-50' : ''}`} title={it.enunciado}>
+                      <TableHead key={it.id} className={`text-center max-w-[120px] ${sem?.claseFondo || ''}`} title={it.enunciado}>
                         <span className="line-clamp-3 text-xs">{it.enunciado}</span>
-                        {bajo && <AlertTriangle className="w-3 h-3 text-amber-500 inline-block ml-1" />}
+                        {sem && <span className="ml-1">{sem.emoji}</span>}
                       </TableHead>
                     );
                   })}
@@ -674,13 +684,17 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
                 {respuestas.map((r) => {
                   const { titulo, subtitulo } = nombreRespondiente(r);
                   const promedio = promedioPorRespuesta[r.id];
-                  const requiereAtencion = typeof promedio === 'number' && promedio < umbralAtencion;
+                  const sem = typeof promedio === 'number' ? calcularSemaforo(promedio, escalaMin, escalaMax) : null;
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium whitespace-nowrap sticky left-0 bg-white">
                         <span className="flex items-center gap-1.5">
                           {titulo}
-                          {requiereAtencion && <Badge variant="warning" className="text-[9px] px-1.5 py-0">Atención</Badge>}
+                          {sem && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${sem.claseFondo} ${sem.claseTexto} font-semibold`}>
+                              {sem.emoji} {sem.label}
+                            </span>
+                          )}
                         </span>
                         {subtitulo && <span className="block text-xs text-gray-400">{subtitulo}</span>}
                       </TableCell>
@@ -714,8 +728,10 @@ function ResultadosEvaluacion({ items, respuestas, respuestaItems, escalaMin, es
               </TableBody>
             </Table>
           </div>
-          <p className="text-xs text-gray-400 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-amber-500" /> "Atención" = regla simple (no es IA): promedio por debajo de {umbralAtencion.toFixed(1)} en una escala de {escalaMin} a {escalaMax}.
+          <p className="text-xs text-gray-400 flex items-center gap-3">
+            <span>🟢 Bien (≥70% de la escala)</span>
+            <span>🟡 A mejorar (40-70%)</span>
+            <span>🔴 Atención (&lt;40%)</span>
           </p>
         </div>
       )}
@@ -820,7 +836,7 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
   items: EvaluacionItem[]; respuestas: EvaluacionRespuesta[]; respuestaItems: EvaluacionRespuestaItem[]; escalaMin: number; escalaMax: number;
 }) {
   const items = useMemo(() => itemsTodos.filter((i) => i.tipo_item === 'ESCALA'), [itemsTodos]);
-  const umbralAtencion = escalaMin + (escalaMax - escalaMin) * 0.4;
+  const umbralAtencionVal = umbralAtencion(escalaMin, escalaMax);
 
   const datosPorItem = useMemo(() => {
     const mapa: Record<string, { suma: number; cantidad: number }> = {};
@@ -830,12 +846,27 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
       actual.suma += ri.valor_escala; actual.cantidad += 1;
       mapa[ri.item_id] = actual;
     }
-    return items.map((it) => ({
-      nombre: it.enunciado.length > 28 ? it.enunciado.slice(0, 26) + '…' : it.enunciado,
-      enunciadoCompleto: it.enunciado,
-      promedio: mapa[it.id] ? Number((mapa[it.id].suma / mapa[it.id].cantidad).toFixed(2)) : 0,
-    }));
-  }, [items, respuestaItems]);
+    // Código estable (P1, P2...) según el orden real del enunciado en la
+    // evaluación — así "P3" significa lo mismo acá, en Resultados y en el
+    // Reporte, aunque el gráfico se muestre ordenado de peor a mejor.
+    return items.map((it, idx) => {
+      const promedio = mapa[it.id] ? Number((mapa[it.id].suma / mapa[it.id].cantidad).toFixed(2)) : 0;
+      return {
+        codigo: `P${idx + 1}`,
+        enunciadoCompleto: it.enunciado,
+        promedio,
+        tieneRespuestas: !!mapa[it.id],
+        semaforo: calcularSemaforo(promedio, escalaMin, escalaMax),
+      };
+    });
+  }, [items, respuestaItems, escalaMin, escalaMax]);
+
+  // Ordenado de peor a mejor promedio — para que lo que necesita atención
+  // aparezca primero tanto en el gráfico como en la leyenda de abajo.
+  const datosOrdenados = useMemo(
+    () => [...datosPorItem].filter((d) => d.tieneRespuestas).sort((a, b) => a.promedio - b.promedio),
+    [datosPorItem]
+  );
 
   const datosPorEtiqueta = useMemo(() => {
     const itemsPorEtiqueta: Record<string, string[]> = {};
@@ -883,11 +914,13 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
     return Object.entries(acumPorPatrulla).map(([patrulla, v]) => ({ patrulla, promedio: Number((v.suma / v.cantidad).toFixed(2)) }));
   }, [respuestas, respuestaItems]);
 
-  const itemsEnAtencion = datosPorItem.filter((d) => d.promedio > 0 && d.promedio < umbralAtencion);
   const totalRespuestas = respuestas.length;
-  const promedioGeneral = datosPorItem.length > 0
-    ? Number((datosPorItem.reduce((a, d) => a + d.promedio, 0) / datosPorItem.filter((d) => d.promedio > 0).length || 0).toFixed(2))
+  const conDatos = datosPorItem.filter((d) => d.tieneRespuestas);
+  const promedioGeneral = conDatos.length > 0
+    ? Number((conDatos.reduce((a, d) => a + d.promedio, 0) / conDatos.length).toFixed(2))
     : 0;
+  const semaforoGeneral = conDatos.length > 0 ? calcularSemaforo(promedioGeneral, escalaMin, escalaMax) : null;
+  const enAtencion = conDatos.filter((d) => d.semaforo.nivel === 'atencion');
 
   if (respuestas.length === 0) return null;
 
@@ -901,29 +934,50 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile label="Respuestas" valor={String(totalRespuestas)} />
-        <KpiTile label="Promedio general" valor={promedioGeneral.toFixed(1)} />
-        <KpiTile label="Enunciados en atención" valor={String(itemsEnAtencion.length)} alerta={itemsEnAtencion.length > 0} />
+        {semaforoGeneral && (
+          <div className={`rounded-lg border p-3 ${semaforoGeneral.claseFondo} ${semaforoGeneral.claseBorde}`}>
+            <p className="text-[11px] text-gray-500">Estado general</p>
+            <p className={`text-xl font-bold ${semaforoGeneral.claseTexto}`}>{semaforoGeneral.emoji} {promedioGeneral.toFixed(1)}</p>
+          </div>
+        )}
+        <KpiTile label="Enunciados en atención" valor={String(enAtencion.length)} alerta={enAtencion.length > 0} />
         <KpiTile label="Escala" valor={`${escalaMin} a ${escalaMax}`} />
       </div>
 
-      <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Promedio por enunciado</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={datosPorItem} layout="vertical" margin={{ left: 8, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-              <XAxis type="number" domain={[0, escalaMax]} tick={{ fontSize: 11, fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="nombre" width={140} tick={{ fontSize: 11, fill: '#6b7280' }} />
-              <Tooltip
-                formatter={(value: number) => [value, 'Promedio']}
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.enunciadoCompleto || ''}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Bar dataKey="promedio" fill="#7c3aed" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {datosOrdenados.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-gray-700 mb-1">Promedio por enunciado</h3>
+          <p className="text-xs text-gray-400 mb-2">Ordenado de menor a mayor puntaje — lo que necesita más atención aparece primero.</p>
+          <div style={{ height: Math.max(180, datosOrdenados.length * 34) }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={datosOrdenados} layout="vertical" margin={{ left: 4, right: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                <XAxis type="number" domain={[0, escalaMax]} tick={{ fontSize: 11, fill: '#6b7280' }} />
+                <YAxis type="category" dataKey="codigo" width={32} tick={{ fontSize: 12, fill: '#374151', fontWeight: 600 }} />
+                <ReferenceLine x={umbralAtencionVal} stroke="#dc2626" strokeDasharray="4 4" strokeOpacity={0.5} />
+                <Tooltip
+                  formatter={(value: number) => [value, 'Promedio']}
+                  labelFormatter={(_, payload) => payload?.[0]?.payload?.enunciadoCompleto || ''}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar dataKey="promedio" radius={[0, 4, 4, 0]} maxBarSize={22}>
+                  {datosOrdenados.map((d) => <Cell key={d.codigo} fill={d.semaforo.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Leyenda: código -> enunciado completo, mismo orden que el gráfico (peor primero) */}
+          <div className="mt-2 space-y-1">
+            {datosOrdenados.map((d) => (
+              <div key={d.codigo} className="flex items-center gap-2 text-xs">
+                <span className="font-bold text-gray-500 w-7 shrink-0">{d.codigo}</span>
+                <span className={`shrink-0 px-1.5 py-0.5 rounded-full font-semibold ${d.semaforo.claseFondo} ${d.semaforo.claseTexto}`}>{d.semaforo.emoji} {d.promedio}</span>
+                <span className="text-gray-600 truncate">{d.enunciadoCompleto}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {datosPorEtiqueta && (
         <div>
@@ -955,9 +1009,9 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
                 <XAxis dataKey="patrulla" tick={{ fontSize: 11, fill: '#6b7280' }} />
                 <YAxis domain={[0, escalaMax]} tick={{ fontSize: 11, fill: '#6b7280' }} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <ReferenceLine y={umbralAtencionVal} stroke="#dc2626" strokeDasharray="4 4" strokeOpacity={0.5} />
                 <Bar name="Promedio" dataKey="promedio" radius={[4, 4, 0, 0]}>
-                  {datosPorPatrulla.map((d, idx) => <Cell key={d.patrulla} fill={PALETA_CATEGORICA[idx % PALETA_CATEGORICA.length]} />)}
+                  {datosPorPatrulla.map((d) => <Cell key={d.patrulla} fill={calcularSemaforo(d.promedio, escalaMin, escalaMax).color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -965,17 +1019,7 @@ function AnaliticaEvaluacion({ items: itemsTodos, respuestas, respuestaItems, es
         </div>
       )}
 
-      {itemsEnAtencion.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-xs font-semibold text-amber-800 flex items-center gap-1 mb-1">
-            <AlertTriangle className="w-3.5 h-3.5" /> Posibles focos de atención (regla simple: promedio por debajo de {umbralAtencion.toFixed(1)})
-          </p>
-          <ul className="text-xs text-amber-700 list-disc list-inside space-y-0.5">
-            {itemsEnAtencion.map((d) => <li key={d.enunciadoCompleto}>{d.enunciadoCompleto} — {d.promedio}</li>)}
-          </ul>
-          <p className="text-[10px] text-amber-600 mt-1">Esto es un umbral fijo sobre el promedio, no un modelo predictivo — usalo como punto de partida para conversar con la patrulla, no como diagnóstico.</p>
-        </div>
-      )}
+      <p className="text-[10px] text-gray-400">🟢🟡🔴 son un umbral fijo sobre el promedio (no un modelo predictivo) — un punto de partida para conversar, no un diagnóstico.</p>
     </div>
   );
 }

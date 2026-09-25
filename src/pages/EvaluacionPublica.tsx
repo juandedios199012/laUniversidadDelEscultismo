@@ -404,15 +404,40 @@ function TextoLibreCampo({ valor, onChange, placeholder, limite, minimo, permiti
   const tope = limite || 500;
   const faltaMinimo = minimo && valor.length < minimo;
 
-  const dictar = () => {
+  // baseRef = lo que ya había en la caja ANTES de tocar el micrófono esta
+  // vez (texto tecleado a mano, o de una tanda de dictado anterior).
+  // acumuladoRef = frases ya CONFIRMADAS (esFinal=true) durante esta tanda.
+  // El interino (esFinal=false) nunca se guarda en un ref: se muestra en
+  // vivo y se descarta/reemplaza en cada evento hasta que se confirma.
+  const baseRef = React.useRef('');
+  const acumuladoRef = React.useRef('');
+  const controlRef = React.useRef<ReturnType<typeof iniciarDictado> | null>(null);
+
+  const alternarDictado = () => {
+    if (escuchando) {
+      controlRef.current?.detener();
+      return;
+    }
     if (!reconocimientoVozDisponible()) {
       toast.error('Este navegador no permite dictado por voz. Podés escribir tu respuesta.');
       return;
     }
+    baseRef.current = valor;
+    acumuladoRef.current = '';
     setEscuchando(true);
-    iniciarDictado(
-      (texto) => onChange((valor ? valor + ' ' : '') + texto),
-      () => setEscuchando(false)
+    controlRef.current = iniciarDictado(
+      (fragmento, esFinal) => {
+        const base = baseRef.current ? baseRef.current + ' ' : '';
+        if (esFinal) {
+          acumuladoRef.current = (acumuladoRef.current ? acumuladoRef.current + ' ' : '') + fragmento;
+          onChange((base + acumuladoRef.current).slice(0, tope));
+        } else {
+          // Vista en vivo: base + lo ya confirmado + lo que está diciendo ahora (todavía puede cambiar).
+          const confirmado = acumuladoRef.current ? acumuladoRef.current + ' ' : '';
+          onChange((base + confirmado + fragmento).slice(0, tope));
+        }
+      },
+      () => { setEscuchando(false); controlRef.current = null; }
     );
   };
 
@@ -429,11 +454,10 @@ function TextoLibreCampo({ valor, onChange, placeholder, limite, minimo, permiti
       {permitirDictado && (
         <button
           type="button"
-          onClick={dictar}
-          disabled={escuchando}
-          className={`mt-2 w-full rounded-lg py-2.5 font-semibold text-sm flex items-center justify-center gap-2 border-2 ${escuchando ? 'bg-red-50 border-red-300 text-red-600' : 'bg-white border-gray-200 text-gray-600'}`}
+          onClick={alternarDictado}
+          className={`mt-2 w-full rounded-lg py-2.5 font-semibold text-sm flex items-center justify-center gap-2 border-2 ${escuchando ? 'bg-red-50 border-red-300 text-red-600 animate-pulse' : 'bg-white border-gray-200 text-gray-600'}`}
         >
-          <Mic className="w-4 h-4" /> {escuchando ? 'Escuchando... hablá ahora' : 'Hablar mi respuesta'}
+          <Mic className="w-4 h-4" /> {escuchando ? 'Escuchando... tocá para terminar' : 'Hablar mi respuesta'}
         </button>
       )}
       <div className="flex items-center justify-between mt-1">

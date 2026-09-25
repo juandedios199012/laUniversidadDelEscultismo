@@ -56,13 +56,23 @@ export function detenerVoz(): void {
 }
 
 // ---- Voz a texto (STT / dictado) ----
+//
+// Ojo: esto SOLO transcribe — el audio en sí nunca se guarda en ningún
+// archivo ni llega a nuestra base de datos. Lo único que se guarda es el
+// texto que el navegador reconoce, igual que si el scout lo hubiera
+// tecleado. Mientras transcribe, el navegador (Chrome/Safari) manda el
+// audio al servicio de voz del fabricante para procesarlo en tiempo real
+// — eso es infraestructura del navegador, no nuestra, y no queda ningún
+// registro de eso acá tampoco.
 
 interface SpeechRecognitionResultLike {
-  results: { 0: { 0: { transcript: string } } }[];
+  resultIndex: number;
+  results: { length: number; [index: number]: { isFinal: boolean; 0: { transcript: string } } };
 }
 
 interface SpeechRecognitionLike {
   lang: string;
+  continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
   start: () => void;
@@ -82,27 +92,63 @@ export function reconocimientoVozDisponible(): boolean {
   return getSpeechRecognitionCtor() !== null;
 }
 
+export interface ControlDictado {
+  /** Corta el dictado a mano (ej. cuando el scout vuelve a tocar el botón del micrófono). */
+  detener: () => void;
+}
+
 /**
- * Arranca el dictado por voz. Llama a `onResultado(texto)` cuando termina de
- * transcribir, y `onFin()` siempre al terminar (con o sin resultado), para
- * que el que llama pueda resetear su estado de "escuchando".
+ * Arranca el dictado por voz en modo CONTINUO + con resultados EN VIVO
+ * (`interimResults`): el texto va apareciendo casi al instante mientras la
+ * persona habla —no espera a que termine la frase— y se va afinando a
+ * medida que el motor de voz entiende mejor lo que dijo. Sin esto, la caja
+ * de texto se queda "muda" varios segundos hasta detectar una pausa, lo
+ * cual no tiene sentido como feedback visual si quien está mirando no lee.
+ *
+ * `onResultado(fragmento, esFinal)` se llama:
+ *  - con `esFinal=false` mientras la frase todavía se está reconociendo
+ *    (fragmento "en vivo", puede cambiar/corregirse en la próxima llamada
+ *    — quien llama debe REEMPLAZAR el interino anterior, no acumularlo);
+ *  - con `esFinal=true` una vez que esa frase quedó fija (ahí sí hay que
+ *    sumarla al texto acumulado en forma definitiva).
+ *
+ * `onFin` se llama una sola vez al terminar de escuchar (por `detener()`,
+ * error, o corte del navegador), para resetear el estado visual.
+ *
+ * Devuelve `null` si el navegador no soporta reconocimiento de voz.
+ *
+ * Nota de latencia real: esto NO es instantáneo tipo "carácter por
+ * carácter local" — Chrome/Safari mandan el audio a su servicio de voz en
+ * la nube para reconocerlo, así que hace falta conexión a internet y hay
+ * uno o dos décimas de segundo de ida y vuelta (normalmente imperceptible,
+ * pero puede notarse con mala señal — en un campamento sin datos, esto
+ * directamente no va a andar, y el campo de texto normal sigue siendo la
+ * alternativa).
  */
-export function iniciarDictado(onResultado: (texto: string) => void, onFin: () => void): void {
+export function iniciarDictado(onResultado: (fragmento: string, esFinal: boolean) => void, onFin: () => void): ControlDictado | null {
   const Ctor = getSpeechRecognitionCtor();
-  if (!Ctor) { onFin(); return; }
+  if (!Ctor) { onFin(); return null; }
   try {
     const rec = new Ctor();
     rec.lang = 'es-ES';
-    rec.interimResults = false;
+    rec.continuous = true; // no cortar en la primera pausa
+    rec.interimResults = true; // mostrar en vivo, no solo al final de cada frase
     rec.maxAlternatives = 1;
     rec.onresult = (e) => {
-      const texto = e.results?.[0]?.[0]?.transcript;
-      if (texto) onResultado(texto);
+      let interino = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const resultado = e.results[i];
+        if (resultado.isFinal) onResultado(resultado[0].transcript.trim(), true);
+        else interino += resultado[0].transcript;
+      }
+      if (interino.trim()) onResultado(interino.trim(), false);
     };
     rec.onerror = () => onFin();
     rec.onend = () => onFin();
     rec.start();
+    return { detener: () => rec.stop() };
   } catch {
     onFin();
+    return null;
   }
 }
