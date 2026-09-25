@@ -1,17 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
-import { CheckCircle2, ClipboardList, Loader2, Pencil, Search, User } from 'lucide-react';
+import { CheckCircle2, ClipboardList, EyeOff, Loader2, Pencil, Search, User } from 'lucide-react';
 import { ContextoEvaluacionPublica, EvaluacionService } from '../services/evaluacionService';
+
+type Identidad =
+  | { tipo: 'nombre'; scoutId: string; nombre: string; respuestasPrevias: Record<string, number> }
+  | { tipo: 'anonimo'; edad?: number; patrulla: string };
 
 export default function EvaluacionPublica() {
   const { codigo } = useParams<{ codigo: string }>();
   const [contexto, setContexto] = useState<ContextoEvaluacionPublica | null>(null);
   const [cargando, setCargando] = useState(true);
-
-  const [scoutId, setScoutId] = useState<string | null>(null);
-  const [nombreCompleto, setNombreCompleto] = useState('');
-  const [respuestas, setRespuestas] = useState<Record<string, number>>({});
+  const [identidad, setIdentidad] = useState<Identidad | null>(null);
   const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
@@ -22,20 +23,23 @@ export default function EvaluacionPublica() {
       .finally(() => setCargando(false));
   }, [codigo]);
 
-  const identificarme = async (id: string, nombre: string) => {
+  const identificarPorNombre = async (scoutId: string, nombre: string) => {
     if (!codigo) return;
     try {
-      const res = await EvaluacionService.iniciarRespuesta(codigo, id);
+      const res = await EvaluacionService.iniciarRespuesta(codigo, scoutId);
       if (!res.success) { toast.error(res.message || 'No se pudo continuar'); return; }
       const previas: Record<string, number> = {};
       for (const p of res.respuestas_previas || []) previas[p.item_id] = p.valor_escala;
-      setScoutId(id);
-      setNombreCompleto(nombre);
-      setRespuestas(previas);
+      setIdentidad({ tipo: 'nombre', scoutId, nombre, respuestasPrevias: previas });
       setEnviado(false);
     } catch (err: any) {
       toast.error(err.message || 'Error al identificarte');
     }
+  };
+
+  const identificarAnonimo = (edad: number | undefined, patrulla: string) => {
+    setIdentidad({ tipo: 'anonimo', edad, patrulla });
+    setEnviado(false);
   };
 
   if (cargando) {
@@ -57,7 +61,17 @@ export default function EvaluacionPublica() {
     );
   }
 
-  const { evaluacion, items = [] } = contexto;
+  const { evaluacion, items = [], patrullas_disponibles } = contexto;
+
+  const nombreMostrado = identidad?.tipo === 'nombre' ? identidad.nombre : identidad?.tipo === 'anonimo' ? `Anónimo — ${identidad.patrulla}` : '';
+
+  const enviarRespuesta = async (payload: Array<{ item_id: string; valor_escala: number }>) => {
+    if (!codigo || !identidad) return { success: false, message: 'No identificado' };
+    if (identidad.tipo === 'nombre') {
+      return EvaluacionService.enviarRespuesta(codigo, identidad.scoutId, payload);
+    }
+    return EvaluacionService.enviarRespuestaAnonima(codigo, identidad.edad, identidad.patrulla, payload);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-10">
@@ -65,29 +79,32 @@ export default function EvaluacionPublica() {
       <header className="sticky top-0 z-10 bg-violet-600 text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-4 shadow-sm">
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5" />
-          <p className="text-xs uppercase tracking-wide opacity-80">Evaluación</p>
+          <p className="text-xs uppercase tracking-wide opacity-80">Evaluación{evaluacion.modo_anonimo ? ' · anónima' : ''}</p>
         </div>
         <h1 className="text-2xl font-extrabold">{evaluacion.titulo}</h1>
         {evaluacion.descripcion && <p className="text-sm opacity-90 mt-1">{evaluacion.descripcion}</p>}
       </header>
 
       <main className="px-4 pt-4">
-        {!scoutId ? (
-          <BuscadorScout codigo={codigo!} onIdentificado={identificarme} />
+        {!identidad ? (
+          evaluacion.modo_anonimo ? (
+            <FormularioAnonimo patrullas={patrullas_disponibles || []} onContinuar={identificarAnonimo} />
+          ) : (
+            <BuscadorScout codigo={codigo!} onIdentificado={identificarPorNombre} />
+          )
         ) : enviado ? (
-          <Confirmacion nombre={nombreCompleto} onEditar={() => setEnviado(false)} />
+          <Confirmacion nombre={nombreMostrado} permiteEditar={identidad.tipo === 'nombre'} onEditar={() => setEnviado(false)} />
         ) : (
           <FormularioEscala
-            codigo={codigo!}
-            scoutId={scoutId}
-            nombreCompleto={nombreCompleto}
+            nombreMostrado={nombreMostrado}
             items={items}
             escalaMin={evaluacion.escala_min}
             escalaMax={evaluacion.escala_max}
             etiquetaMin={evaluacion.etiqueta_escala_min}
             etiquetaMax={evaluacion.etiqueta_escala_max}
             instrucciones={evaluacion.instrucciones}
-            respuestasIniciales={respuestas}
+            respuestasIniciales={identidad.tipo === 'nombre' ? identidad.respuestasPrevias : {}}
+            onEnviar={enviarRespuesta}
             onEnviado={() => setEnviado(true)}
           />
         )}
@@ -161,11 +178,47 @@ function BuscadorScout({ codigo, onIdentificado }: { codigo: string; onIdentific
   );
 }
 
-function FormularioEscala({ codigo, scoutId, nombreCompleto, items, escalaMin, escalaMax, etiquetaMin, etiquetaMax, instrucciones, respuestasIniciales, onEnviado }: {
-  codigo: string; scoutId: string; nombreCompleto: string;
+function FormularioAnonimo({ patrullas, onContinuar }: {
+  patrullas: Array<{ id: string; nombre: string }>;
+  onContinuar: (edad: number | undefined, patrulla: string) => void;
+}) {
+  const [edad, setEdad] = useState('');
+  const [patrulla, setPatrulla] = useState('');
+
+  const continuar = () => {
+    if (!patrulla) { toast.error('Elegí tu patrulla'); return; }
+    const edadNum = edad ? parseInt(edad, 10) : undefined;
+    onContinuar(edadNum, patrulla);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+      <div className="flex items-center gap-2 text-gray-600">
+        <EyeOff className="w-4 h-4" />
+        <p className="text-sm">Esta evaluación es anónima: no se guarda tu nombre.</p>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Tu edad (opcional)</label>
+        <input type="number" min={1} max={99} value={edad} onChange={(e) => setEdad(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base" placeholder="13" />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Tu patrulla</label>
+        <select value={patrulla} onChange={(e) => setPatrulla(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base bg-white">
+          <option value="">Elegí tu patrulla...</option>
+          {patrullas.map((p) => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+        </select>
+      </div>
+      <button onClick={continuar} className="w-full rounded-xl py-3 bg-violet-600 text-white font-bold">Continuar</button>
+    </div>
+  );
+}
+
+function FormularioEscala({ nombreMostrado, items, escalaMin, escalaMax, etiquetaMin, etiquetaMax, instrucciones, respuestasIniciales, onEnviar, onEnviado }: {
+  nombreMostrado: string;
   items: Array<{ id: string; orden: number; enunciado: string }>;
   escalaMin: number; escalaMax: number; etiquetaMin?: string; etiquetaMax?: string; instrucciones?: string;
   respuestasIniciales: Record<string, number>;
+  onEnviar: (payload: Array<{ item_id: string; valor_escala: number }>) => Promise<{ success: boolean; message?: string }>;
   onEnviado: () => void;
 }) {
   const [respuestas, setRespuestas] = useState<Record<string, number>>(respuestasIniciales);
@@ -186,7 +239,7 @@ function FormularioEscala({ codigo, scoutId, nombreCompleto, items, escalaMin, e
     setEnviando(true);
     try {
       const payload = items.map((it) => ({ item_id: it.id, valor_escala: respuestas[it.id] }));
-      const res = await EvaluacionService.enviarRespuesta(codigo, scoutId, payload);
+      const res = await onEnviar(payload);
       if (!res.success) { toast.error(res.message || 'No se pudo enviar'); return; }
       toast.success('¡Enviado!');
       onEnviado();
@@ -201,7 +254,7 @@ function FormularioEscala({ codigo, scoutId, nombreCompleto, items, escalaMin, e
     <div className="space-y-3">
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
         <p className="text-sm text-gray-500">Respondiendo como</p>
-        <p className="font-bold text-gray-900">{nombreCompleto}</p>
+        <p className="font-bold text-gray-900">{nombreMostrado}</p>
         {instrucciones && <p className="text-sm text-gray-600 mt-2">{instrucciones}</p>}
       </div>
 
@@ -241,15 +294,17 @@ function FormularioEscala({ codigo, scoutId, nombreCompleto, items, escalaMin, e
   );
 }
 
-function Confirmacion({ nombre, onEditar }: { nombre: string; onEditar: () => void }) {
+function Confirmacion({ nombre, permiteEditar, onEditar }: { nombre: string; permiteEditar: boolean; onEditar: () => void }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center space-y-3">
       <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-      <p className="font-bold text-lg text-gray-900">¡Gracias, {nombre.split(' ')[0]}!</p>
+      <p className="font-bold text-lg text-gray-900">¡Gracias{permiteEditar ? `, ${nombre.split(' ')[0]}` : ''}!</p>
       <p className="text-sm text-gray-500">Tu evaluación quedó registrada.</p>
-      <button onClick={onEditar} className="inline-flex items-center gap-1 text-violet-600 text-sm font-medium mt-2">
-        <Pencil className="w-3.5 h-3.5" /> Corregir mis respuestas
-      </button>
+      {permiteEditar && (
+        <button onClick={onEditar} className="inline-flex items-center gap-1 text-violet-600 text-sm font-medium mt-2">
+          <Pencil className="w-3.5 h-3.5" /> Corregir mis respuestas
+        </button>
+      )}
     </div>
   );
 }

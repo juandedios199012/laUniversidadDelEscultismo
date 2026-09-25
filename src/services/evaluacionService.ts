@@ -29,6 +29,7 @@ export interface Evaluacion {
   escala_max: number;
   etiqueta_escala_min?: string;
   etiqueta_escala_max?: string;
+  modo_anonimo: boolean;
   estado: EstadoEvaluacion;
   created_at: string;
   updated_at: string;
@@ -39,14 +40,17 @@ export interface EvaluacionItem {
   evaluacion_id: string;
   orden: number;
   enunciado: string;
+  etiqueta?: string;
 }
 
 export interface EvaluacionRespuesta {
   id: string;
   evaluacion_id: string;
-  scout_id: string;
+  scout_id: string | null;
   scout_nombre?: string;
   patrulla_nombre?: string;
+  edad_autorreportada?: number;
+  patrulla_autorreportada?: string;
   completado_en?: string;
 }
 
@@ -62,8 +66,10 @@ export interface ContextoEvaluacionPublica {
   evaluacion?: {
     id: string; titulo: string; descripcion?: string; instrucciones?: string;
     escala_min: number; escala_max: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
+    modo_anonimo: boolean;
   };
-  items?: Array<{ id: string; orden: number; enunciado: string }>;
+  items?: Array<{ id: string; orden: number; enunciado: string; etiqueta?: string }>;
+  patrullas_disponibles?: Array<{ id: string; nombre: string }> | null;
 }
 
 interface RpcResult {
@@ -102,39 +108,46 @@ export class EvaluacionService {
   static async listarRespuestas(evaluacionId: string): Promise<EvaluacionRespuesta[]> {
     const { data: respuestas, error } = await supabase
       .from('evaluacion_respuestas')
-      .select('id, evaluacion_id, scout_id, completado_en')
+      .select('id, evaluacion_id, scout_id, edad_autorreportada, patrulla_autorreportada, completado_en')
       .eq('evaluacion_id', evaluacionId);
     if (error) throw error;
     if (!respuestas || respuestas.length === 0) return [];
 
-    const scoutIds = respuestas.map((r) => r.scout_id);
-
-    // Consultas separadas y simples (en vez de un embed anidado de 3-4
-    // niveles vía scouts->personas + scouts->miembros_patrulla->patrullas,
-    // más frágil frente a cómo PostgREST resuelve relaciones inversas) —
-    // se combinan acá mismo en JS.
-    const [{ data: scoutsRows, error: errScouts }, { data: miembrosRows, error: errMiembros }] = await Promise.all([
-      supabase.from('scouts').select('id, persona_id, personas(nombres, apellidos)').in('id', scoutIds),
-      supabase.from('miembros_patrulla').select('scout_id, estado_miembro, patrullas(nombre)').in('scout_id', scoutIds).eq('estado_miembro', 'ACTIVO'),
-    ]);
-    if (errScouts) throw errScouts;
-    if (errMiembros) throw errMiembros;
+    // Solo hay scout_id que resolver en evaluaciones con nombre (no
+    // anónimas) — en modo anónimo scout_id es null y ya viene
+    // patrulla_autorreportada/edad_autorreportada directo en la fila.
+    const scoutIds = respuestas.map((r) => r.scout_id).filter((id): id is string => !!id);
 
     const nombrePorScout: Record<string, string> = {};
-    for (const s of (scoutsRows || []) as any[]) {
-      if (s.personas) nombrePorScout[s.id] = `${s.personas.nombres} ${s.personas.apellidos}`;
-    }
     const patrullaPorScout: Record<string, string> = {};
-    for (const m of (miembrosRows || []) as any[]) {
-      if (m.patrullas?.nombre) patrullaPorScout[m.scout_id] = m.patrullas.nombre;
+    if (scoutIds.length > 0) {
+      // Consultas separadas y simples (en vez de un embed anidado de 3-4
+      // niveles vía scouts->personas + scouts->miembros_patrulla->patrullas,
+      // más frágil frente a cómo PostgREST resuelve relaciones inversas) —
+      // se combinan acá mismo en JS.
+      const [{ data: scoutsRows, error: errScouts }, { data: miembrosRows, error: errMiembros }] = await Promise.all([
+        supabase.from('scouts').select('id, persona_id, personas(nombres, apellidos)').in('id', scoutIds),
+        supabase.from('miembros_patrulla').select('scout_id, estado_miembro, patrullas(nombre)').in('scout_id', scoutIds).eq('estado_miembro', 'ACTIVO'),
+      ]);
+      if (errScouts) throw errScouts;
+      if (errMiembros) throw errMiembros;
+
+      for (const s of (scoutsRows || []) as any[]) {
+        if (s.personas) nombrePorScout[s.id] = `${s.personas.nombres} ${s.personas.apellidos}`;
+      }
+      for (const m of (miembrosRows || []) as any[]) {
+        if (m.patrullas?.nombre) patrullaPorScout[m.scout_id] = m.patrullas.nombre;
+      }
     }
 
     return respuestas.map((r) => ({
       id: r.id,
       evaluacion_id: r.evaluacion_id,
       scout_id: r.scout_id,
-      scout_nombre: nombrePorScout[r.scout_id],
-      patrulla_nombre: patrullaPorScout[r.scout_id],
+      scout_nombre: r.scout_id ? nombrePorScout[r.scout_id] : undefined,
+      patrulla_nombre: r.scout_id ? patrullaPorScout[r.scout_id] : undefined,
+      edad_autorreportada: r.edad_autorreportada ?? undefined,
+      patrulla_autorreportada: r.patrulla_autorreportada ?? undefined,
       completado_en: r.completado_en,
     }));
   }
@@ -159,6 +172,7 @@ export class EvaluacionService {
   static async crearEvaluacion(datos: {
     titulo: string; descripcion?: string; instrucciones?: string; plan_trimestral_id?: string;
     escala_min?: number; escala_max?: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
+    modo_anonimo?: boolean;
   }): Promise<RpcResult & { evaluacion_id?: string }> {
     const { data, error } = await supabase.rpc('crear_evaluacion', { p_datos: datos });
     if (error) throw error;
@@ -174,7 +188,7 @@ export class EvaluacionService {
     return data as RpcResult;
   }
 
-  static async guardarItems(evaluacionId: string, items: Array<{ enunciado: string }>): Promise<RpcResult & { cantidad_items?: number }> {
+  static async guardarItems(evaluacionId: string, items: Array<{ enunciado: string; etiqueta?: string }>): Promise<RpcResult & { cantidad_items?: number }> {
     const { data, error } = await supabase.rpc('guardar_items_evaluacion', { p_evaluacion_id: evaluacionId, p_items: items });
     if (error) throw error;
     return data as RpcResult;
@@ -200,6 +214,13 @@ export class EvaluacionService {
 
   static async eliminar(evaluacionId: string): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('eliminar_evaluacion', { p_evaluacion_id: evaluacionId });
+    if (error) throw error;
+    return data as RpcResult;
+  }
+
+  /** Elimina una respuesta puntual (ej. duplicada o cargada por error) sin borrar el resto de la evaluación. */
+  static async eliminarRespuesta(respuestaId: string): Promise<RpcResult> {
+    const { data, error } = await supabase.rpc('eliminar_respuesta_evaluacion', { p_respuesta_id: respuestaId });
     if (error) throw error;
     return data as RpcResult;
   }
@@ -230,6 +251,15 @@ export class EvaluacionService {
 
   static async enviarRespuesta(codigo: string, scoutId: string, respuestas: Array<{ item_id: string; valor_escala: number }>): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('enviar_respuesta_evaluacion', { p_codigo: codigo, p_scout_id: scoutId, p_respuestas: respuestas });
+    if (error) throw error;
+    return data as RpcResult;
+  }
+
+  /** Flujo anónimo (evaluacion.modo_anonimo = true): edad + patrulla autoreportadas en vez de buscar el nombre. */
+  static async enviarRespuestaAnonima(codigo: string, edad: number | undefined, patrullaNombre: string, respuestas: Array<{ item_id: string; valor_escala: number }>): Promise<RpcResult> {
+    const { data, error } = await supabase.rpc('enviar_respuesta_anonima', {
+      p_codigo: codigo, p_edad: edad ?? null, p_patrulla_nombre: patrullaNombre, p_respuestas: respuestas,
+    });
     if (error) throw error;
     return data as RpcResult;
   }
