@@ -16,6 +16,8 @@ import {
   EvaluacionService,
   EstadoEvaluacion,
   TipoItemEvaluacion,
+  EtiquetaEscala,
+  PRESET_ETIQUETAS_ESCALA_1_5,
 } from '../../services/evaluacionService';
 import { contarPalabrasFrecuentes } from '../../utils/analisisTextoLibre';
 import { PlanTrimestral, PlanificacionService } from '../../services/planificacionService';
@@ -290,31 +292,61 @@ function DetalleEvaluacion({ evaluacion, items, respuestas, respuestaItems, onRe
 // ======================================================================
 // Config: título, descripción, instrucciones, escala, plan vinculado
 // ======================================================================
+function etiquetasParaEscala(min: number, max: number, actuales: EtiquetaEscala[]): EtiquetaEscala[] {
+  const porValor: Record<number, EtiquetaEscala> = {};
+  for (const e of actuales) porValor[e.valor] = e;
+  const resultado: EtiquetaEscala[] = [];
+  for (let v = min; v <= max; v++) resultado.push(porValor[v] || { valor: v, etiqueta: '', emoji: '' });
+  return resultado;
+}
+
 function ConfigEvaluacion({ evaluacion, puedeEditar, onGuardado }: { evaluacion: Evaluacion; puedeEditar: boolean; onGuardado: () => void }) {
   const [titulo, setTitulo] = useState(evaluacion.titulo);
   const [descripcion, setDescripcion] = useState(evaluacion.descripcion || '');
   const [instrucciones, setInstrucciones] = useState(evaluacion.instrucciones || '');
   const [escalaMin, setEscalaMin] = useState(String(evaluacion.escala_min));
   const [escalaMax, setEscalaMax] = useState(String(evaluacion.escala_max));
-  const [etiquetaMin, setEtiquetaMin] = useState(evaluacion.etiqueta_escala_min || '');
-  const [etiquetaMax, setEtiquetaMax] = useState(evaluacion.etiqueta_escala_max || '');
+  const [etiquetas, setEtiquetas] = useState<EtiquetaEscala[]>(
+    etiquetasParaEscala(evaluacion.escala_min, evaluacion.escala_max, evaluacion.etiquetas_escala || [])
+  );
   const [planId, setPlanId] = useState(evaluacion.plan_trimestral_id || '');
   const [planes, setPlanes] = useState<PlanTrimestral[]>([]);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => { PlanificacionService.listarPlanes().then(setPlanes).catch(() => {}); }, []);
 
+  // Si cambia el rango de escala, regenera las filas de etiquetas manteniendo las que coincidan en valor.
+  const sincronizarRangoEtiquetas = (nuevoMin: string, nuevoMax: string) => {
+    const min = parseInt(nuevoMin, 10);
+    const max = parseInt(nuevoMax, 10);
+    if (!isNaN(min) && !isNaN(max) && max > min && max - min <= 10) {
+      setEtiquetas((prev) => etiquetasParaEscala(min, max, prev));
+    }
+  };
+
+  const usarPresetRecomendado = () => {
+    setEscalaMin('1'); setEscalaMax('5');
+    setEtiquetas(PRESET_ETIQUETAS_ESCALA_1_5.map((e) => ({ ...e })));
+  };
+
+  const actualizarEtiqueta = (valor: number, cambios: Partial<EtiquetaEscala>) => {
+    setEtiquetas((prev) => prev.map((e) => (e.valor === valor ? { ...e, ...cambios } : e)));
+  };
+
   const guardar = async () => {
     if (!titulo.trim()) { toast.error('El título es obligatorio'); return; }
     const min = parseInt(escalaMin, 10);
     const max = parseInt(escalaMax, 10);
     if (isNaN(min) || isNaN(max) || max <= min) { toast.error('La escala máxima debe ser mayor que la mínima'); return; }
+    const etiquetasCompletas = etiquetas.filter((e) => e.etiqueta.trim());
     setGuardando(true);
     try {
       const res = await EvaluacionService.actualizarEvaluacion(evaluacion.id, {
         titulo: titulo.trim(), descripcion: descripcion.trim() || undefined, instrucciones: instrucciones.trim() || undefined,
         plan_trimestral_id: planId || undefined, escala_min: min, escala_max: max,
-        etiqueta_escala_min: etiquetaMin.trim() || undefined, etiqueta_escala_max: etiquetaMax.trim() || undefined,
+        etiqueta_escala_min: etiquetasCompletas.find((e) => e.valor === min)?.etiqueta,
+        etiqueta_escala_max: etiquetasCompletas.find((e) => e.valor === max)?.etiqueta,
+        etiquetas_escala: etiquetasCompletas.length > 0 ? etiquetasCompletas : undefined,
       });
       if (!res.success) { toast.error(res.message || 'No se pudo guardar'); return; }
       toast.success('Guardado');
@@ -338,12 +370,44 @@ function ConfigEvaluacion({ evaluacion, puedeEditar, onGuardado }: { evaluacion:
         <Label>Instrucciones para el scout (opcional)</Label>
         <Textarea value={instrucciones} onChange={(e) => setInstrucciones(e.target.value)} disabled={!puedeEditar} rows={2} placeholder="Ej. Marca del 1 al 5 según qué tan de acuerdo estás con cada frase." />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div><Label>Escala mín.</Label><Input type="number" value={escalaMin} onChange={(e) => setEscalaMin(e.target.value)} disabled={!puedeEditar} /></div>
-        <div><Label>Escala máx.</Label><Input type="number" value={escalaMax} onChange={(e) => setEscalaMax(e.target.value)} disabled={!puedeEditar} /></div>
-        <div><Label>Etiqueta mín. (opcional)</Label><Input value={etiquetaMin} onChange={(e) => setEtiquetaMin(e.target.value)} disabled={!puedeEditar} placeholder="Nunca" /></div>
-        <div><Label>Etiqueta máx. (opcional)</Label><Input value={etiquetaMax} onChange={(e) => setEtiquetaMax(e.target.value)} disabled={!puedeEditar} placeholder="Siempre" /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Escala mín.</Label>
+          <Input type="number" value={escalaMin} onChange={(e) => { setEscalaMin(e.target.value); sincronizarRangoEtiquetas(e.target.value, escalaMax); }} disabled={!puedeEditar} />
+        </div>
+        <div>
+          <Label>Escala máx.</Label>
+          <Input type="number" value={escalaMax} onChange={(e) => { setEscalaMax(e.target.value); sincronizarRangoEtiquetas(escalaMin, e.target.value); }} disabled={!puedeEditar} />
+        </div>
       </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label>Qué significa cada número (recomendado para que no queden números pelados)</Label>
+          {puedeEditar && (
+            <button type="button" onClick={usarPresetRecomendado} className="text-xs text-violet-600 font-medium shrink-0 ml-2">
+              Usar preset recomendado
+            </button>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          {etiquetas.map((e) => (
+            <div key={e.valor} className="flex items-center gap-2">
+              <span className="w-6 text-center text-sm font-bold text-gray-500 shrink-0">{e.valor}</span>
+              <Input
+                value={e.emoji || ''} onChange={(ev) => actualizarEtiqueta(e.valor, { emoji: ev.target.value })}
+                disabled={!puedeEditar} placeholder="🙂" className="w-14 text-center shrink-0"
+              />
+              <Input
+                value={e.etiqueta} onChange={(ev) => actualizarEtiqueta(e.valor, { etiqueta: ev.target.value })}
+                disabled={!puedeEditar} placeholder="Ej. A veces" className="flex-1"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-gray-400">Opcional, pero recomendado para scouts más chicos: sin esto, el formulario público muestra solo el número.</p>
+      </div>
+
       <div>
         <Label>Vincular a un plan trimestral (opcional)</Label>
         <Select value={planId || '__none__'} onValueChange={(v) => setPlanId(v === '__none__' ? '' : v)} disabled={!puedeEditar}>

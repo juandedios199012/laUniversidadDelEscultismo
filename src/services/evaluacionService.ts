@@ -18,6 +18,27 @@ import { supabase } from '../lib/supabase';
 
 export type EstadoEvaluacion = 'BORRADOR' | 'ACTIVA' | 'CERRADA';
 
+/** Etiqueta por cada punto de la escala (no solo los extremos) — ver database/154_evaluacion_etiquetas_escala.sql. */
+export interface EtiquetaEscala {
+  valor: number;
+  etiqueta: string;
+  emoji?: string;
+}
+
+/**
+ * Preset recomendado para escala 1-5 con niños ~11 años: palabra + ícono
+ * en cada punto (no solo número), según el "Smileyometer" (Fun Toolkit,
+ * Read & MacFarlane) — estándar citado en interacción niño-computadora
+ * para escalas de valoración con niños de 8-12 años.
+ */
+export const PRESET_ETIQUETAS_ESCALA_1_5: EtiquetaEscala[] = [
+  { valor: 1, etiqueta: 'Nunca', emoji: '😞' },
+  { valor: 2, etiqueta: 'Casi nunca', emoji: '😕' },
+  { valor: 3, etiqueta: 'A veces', emoji: '😐' },
+  { valor: 4, etiqueta: 'Casi siempre', emoji: '🙂' },
+  { valor: 5, etiqueta: 'Siempre', emoji: '😄' },
+];
+
 export interface Evaluacion {
   id: string;
   codigo_acceso: string;
@@ -29,6 +50,7 @@ export interface Evaluacion {
   escala_max: number;
   etiqueta_escala_min?: string;
   etiqueta_escala_max?: string;
+  etiquetas_escala?: EtiquetaEscala[];
   modo_anonimo: boolean;
   estado: EstadoEvaluacion;
   created_at: string;
@@ -85,6 +107,7 @@ export interface ContextoEvaluacionPublica {
   evaluacion?: {
     id: string; titulo: string; descripcion?: string; instrucciones?: string;
     escala_min: number; escala_max: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
+    etiquetas_escala?: EtiquetaEscala[];
     modo_anonimo: boolean;
   };
   items?: ItemPublico[];
@@ -194,7 +217,7 @@ export class EvaluacionService {
   static async crearEvaluacion(datos: {
     titulo: string; descripcion?: string; instrucciones?: string; plan_trimestral_id?: string;
     escala_min?: number; escala_max?: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
-    modo_anonimo?: boolean;
+    etiquetas_escala?: EtiquetaEscala[]; modo_anonimo?: boolean;
   }): Promise<RpcResult & { evaluacion_id?: string }> {
     const { data, error } = await supabase.rpc('crear_evaluacion', { p_datos: datos });
     if (error) throw error;
@@ -204,6 +227,7 @@ export class EvaluacionService {
   static async actualizarEvaluacion(evaluacionId: string, datos: {
     titulo: string; descripcion?: string; instrucciones?: string; plan_trimestral_id?: string;
     escala_min?: number; escala_max?: number; etiqueta_escala_min?: string; etiqueta_escala_max?: string;
+    etiquetas_escala?: EtiquetaEscala[];
   }): Promise<RpcResult> {
     const { data, error } = await supabase.rpc('actualizar_evaluacion', { p_evaluacion_id: evaluacionId, p_datos: datos });
     if (error) throw error;
