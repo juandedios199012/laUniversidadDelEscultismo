@@ -141,6 +141,25 @@ export class EvaluacionService {
     return data;
   }
 
+  /**
+   * Nombres de pila de dirigentes (para detectar menciones en respuestas
+   * de texto libre — ver src/utils/analisisTextoLibre.ts). Sin filtrar por
+   * estado a propósito: la convención de valores de "activo" no es
+   * consistente entre tablas en este proyecto (ver database/149_*.sql),
+   * y acá el costo de traer de más es bajo — es solo para buscar
+   * coincidencias de texto, no una lista operativa.
+   */
+  static async listarNombresDirigentes(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('dirigentes')
+      .select('persona_id, personas(nombres)');
+    if (error) throw error;
+    const nombres = (data || [])
+      .map((row: any) => row.personas?.nombres as string | undefined)
+      .filter((n): n is string => !!n?.trim());
+    return Array.from(new Set(nombres));
+  }
+
   static async listarItems(evaluacionId: string): Promise<EvaluacionItem[]> {
     const { data, error } = await supabase.from('evaluacion_items').select('*').eq('evaluacion_id', evaluacionId).order('orden', { ascending: true });
     if (error) throw error;
