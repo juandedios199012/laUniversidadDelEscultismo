@@ -109,13 +109,28 @@ interface TableroPlanificacionProps {
   propuestas: PropuestaActividad[];
   actividades: ActividadPlan[];
   conteoVotos: Record<string, Record<string, number>>;
+  busqueda?: string;
+  onClearSearch?: () => void;
   onRefrescar: () => void;
   onEditarActividad: (actividad: ActividadPlan) => void;
   onCrearEnFecha: (fecha: string) => void;
 }
 
+function coincideBusqueda(texto: string | undefined, busqueda: string): boolean {
+  if (!busqueda.trim()) return true;
+  return (texto || '').toLowerCase().includes(busqueda.trim().toLowerCase());
+}
+
 export default function TableroPlanificacion({
-  plan, propuestas, actividades, conteoVotos, onRefrescar, onEditarActividad, onCrearEnFecha,
+  plan,
+  propuestas,
+  actividades,
+  conteoVotos,
+  busqueda = '',
+  onClearSearch,
+  onRefrescar,
+  onEditarActividad,
+  onCrearEnFecha,
 }: TableroPlanificacionProps) {
   const { can } = usePermissions();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -124,11 +139,34 @@ export default function TableroPlanificacion({
   const meses = useMemo(() => generarMeses(plan.fecha_inicio, plan.fecha_fin), [plan.fecha_inicio, plan.fecha_fin]);
   const maxDias = 31;
 
+  const actividadesFiltradas = useMemo(
+    () => actividades.filter(
+      (actividad) =>
+        !actividad.estado || actividad.estado !== 'CANCELADA' || !busqueda.trim() ||
+        coincideBusqueda(actividad.titulo, busqueda) ||
+        coincideBusqueda(actividad.descripcion, busqueda) ||
+        coincideBusqueda(actividad.lugar, busqueda) ||
+        coincideBusqueda(actividad.patrulla_origen_nombre, busqueda),
+    ),
+    [actividades, busqueda],
+  );
+
+  const propuestasFiltradas = useMemo(
+    () => propuestas.filter(
+      (propuesta) =>
+        coincideBusqueda(propuesta.titulo, busqueda) ||
+        coincideBusqueda(propuesta.descripcion, busqueda) ||
+        coincideBusqueda(propuesta.lugar_sugerido, busqueda) ||
+        coincideBusqueda(propuesta.patrulla_nombre, busqueda),
+    ),
+    [busqueda, propuestas],
+  );
+
   // Post-its por fecha (clave = YYYY-MM-DD)
   const postItsPorFecha = useMemo(() => {
     const mapa: Record<string, PostItItem[]> = {};
     if (plan.estado === 'VIGENTE' || plan.estado === 'CERRADO') {
-      for (const act of actividades) {
+      for (const act of actividadesFiltradas) {
         if (act.estado === 'CANCELADA') continue;
         (mapa[act.fecha] = mapa[act.fecha] || []).push({
           tipo: 'actividad',
@@ -141,8 +179,6 @@ export default function TableroPlanificacion({
         });
       }
     } else {
-      // Solo se marca "ganadora" cuando hay un máximo único (sin empate) — un
-      // empate real lo resuelve la RPC avanzar_fase_plan, no esta vista previa.
       const gananciaPorFecha: Record<string, string> = {};
       if (plan.estado === 'VOTACION') {
         for (const [fecha, conteo] of Object.entries(conteoVotos)) {
@@ -156,7 +192,7 @@ export default function TableroPlanificacion({
           gananciaPorFecha[fecha] = empatados === 1 ? mejorId : '';
         }
       }
-      for (const prop of propuestas) {
+      for (const prop of propuestasFiltradas) {
         (mapa[prop.fecha] = mapa[prop.fecha] || []).push({
           tipo: 'propuesta',
           id: prop.id,
@@ -171,7 +207,7 @@ export default function TableroPlanificacion({
       }
     }
     return mapa;
-  }, [propuestas, actividades, conteoVotos, plan.estado]);
+  }, [actividadesFiltradas, busqueda, conteoVotos, plan.estado, propuestasFiltradas]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -204,8 +240,27 @@ export default function TableroPlanificacion({
     }
   };
 
+  const resultadosMostrados = Object.values(postItsPorFecha).reduce((total, items) => total + items.length, 0);
+
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <section aria-label="Tablero trimestral" className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">Tablero del trimestre</h2>
+          <p className="text-xs text-slate-500">{resultadosMostrados} elementos visibles</p>
+        </div>
+        {busqueda.trim() && (
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="text-sm text-indigo-600 hover:text-indigo-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded"
+            aria-label="Limpiar búsqueda"
+          >
+            Limpiar búsqueda
+          </button>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="min-w-[1400px]" style={{ opacity: moviendo ? 0.7 : 1 }}>
@@ -238,6 +293,11 @@ export default function TableroPlanificacion({
                     const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
                     return (
                       <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
+                        {items.length === 0 && busqueda.trim() && (
+                          <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400">
+                            Sin coincidencias
+                          </div>
+                        )}
                         {items.map((item) => (
                           <PostIt
                             key={`${item.tipo}-${item.id}`}
@@ -252,8 +312,10 @@ export default function TableroPlanificacion({
                         ))}
                         {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
                           <button
+                            type="button"
+                            aria-label={`Crear actividad en ${fecha}`}
                             onClick={() => onCrearEnFecha(fecha)}
-                            className="w-full h-full min-h-[36px] text-gray-300 hover:text-gray-500 text-lg"
+                            className="w-full h-full min-h-[36px] text-gray-300 hover:text-gray-500 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md"
                             title="Agregar actividad"
                           >
                             +
@@ -273,6 +335,6 @@ export default function TableroPlanificacion({
         <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Color = patrulla</span>
         <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Arrastra un post-it a otro día para moverlo</span>
       </div>
-    </div>
+    </section>
   );
 }

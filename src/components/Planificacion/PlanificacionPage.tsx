@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarRange, Copy, Link2, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarRange, CheckCircle2, Clock3, Copy, Link2, Loader2, Plus, RefreshCw, Search, Sparkles, Target, Trash2 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import {
   ActividadPlan,
@@ -28,9 +28,102 @@ const FASES: { estado: EstadoPlanTrimestral; label: string }[] = [
   { estado: 'CERRADO', label: '4. Cerrado' },
 ];
 
+function MetricCard({
+  title,
+  value,
+  caption,
+  accent,
+}: {
+  title: string;
+  value: string | number;
+  caption: string;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{title}</span>
+        <span className={`h-2.5 w-2.5 rounded-full ${accent}`} aria-hidden="true" />
+      </div>
+      <div className="text-2xl font-bold text-slate-900">{value}</div>
+      <p className="mt-1 text-xs text-slate-500">{caption}</p>
+    </div>
+  );
+}
+
+function PhasePill({ estado }: { estado?: EstadoPlanTrimestral }) {
+  const map: Record<EstadoPlanTrimestral, { label: string; className: string }> = {
+    PROPUESTAS_ABIERTAS: { label: 'Propuestas', className: 'bg-violet-100 text-violet-700 border-violet-200' },
+    VOTACION: { label: 'Votación', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+    VIGENTE: { label: 'Plan vigente', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    CERRADO: { label: 'Cerrado', className: 'bg-slate-200 text-slate-700 border-slate-300' },
+  };
+
+  const phase = estado ? map[estado] : map.PROPUESTAS_ABIERTAS;
+
+  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${phase.className}`}>{phase.label}</span>;
+}
+
+function MobileAgendaList({
+  actividades,
+  onEditarActividad,
+}: {
+  actividades: ActividadPlan[];
+  onEditarActividad: (actividad: ActividadPlan) => void;
+}) {
+  const estadoClasses: Record<string, string> = {
+    CONFIRMADA: 'bg-emerald-100 text-emerald-700',
+    MODIFICADA: 'bg-amber-100 text-amber-700',
+    CANCELADA: 'bg-rose-100 text-rose-700',
+    REEMPLAZADA: 'bg-violet-100 text-violet-700',
+  };
+
+  if (actividades.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">
+        No hay actividades para mostrar con los filtros actuales.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {actividades.map((actividad) => (
+        <button
+          key={actividad.id}
+          type="button"
+          onClick={() => onEditarActividad(actividad)}
+          className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{actividad.titulo}</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                {new Date(actividad.fecha + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })}
+                {actividad.fecha_fin && actividad.fecha_fin !== actividad.fecha ? ` - ${new Date(actividad.fecha_fin + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })}` : ''}
+              </p>
+            </div>
+            <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${estadoClasses[actividad.estado] ?? 'bg-slate-100 text-slate-600'}`}>
+              {actividad.estado}
+            </span>
+          </div>
+
+          <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+            {actividad.lugar && <p>📍 {actividad.lugar}</p>}
+            {actividad.patrulla_origen_nombre && <p>👥 {actividad.patrulla_origen_nombre}</p>}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function PlanificacionPage() {
   const { can, puedeAcceder } = usePermissions();
   const [ramaFiltro, setRamaFiltro] = useState('Tropa');
+  const [busqueda, setBusqueda] = useState('');
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false));
+  const [vistaMobile, setVistaMobile] = useState<'tablero' | 'lista'>('tablero');
   const [planes, setPlanes] = useState<PlanTrimestral[]>([]);
   const [planId, setPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanTrimestral | null>(null);
@@ -97,7 +190,43 @@ export default function PlanificacionPage() {
   useEffect(() => { cargarPlanes(); }, [cargarPlanes]);
   useEffect(() => { if (planId) cargarDetallePlan(planId); }, [planId, cargarDetallePlan]);
 
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const refrescarDetalle = useCallback(() => { if (planId) cargarDetallePlan(planId); }, [planId, cargarDetallePlan]);
+
+  const metricas = useMemo(() => {
+    const totalVotos = Object.values(conteoVotos).reduce(
+      (sum, fechaConteo) => sum + Object.values(fechaConteo).reduce((acc, votos) => acc + votos, 0),
+      0,
+    );
+
+    const propuestasActivas = propuestas.filter((propuesta) => {
+      if (!busqueda.trim()) return true;
+      const haystack = `${propuesta.titulo} ${propuesta.patrulla_nombre ?? ''} ${propuesta.descripcion ?? ''} ${propuesta.lugar_sugerido ?? ''}`.toLowerCase();
+      return haystack.includes(busqueda.trim().toLowerCase());
+    }).length;
+
+    return {
+      propuestas: propuestasActivas,
+      actividades: actividades.filter((actividad) => actividad.estado !== 'CANCELADA').length,
+      votos: totalVotos,
+      pendientes: actividades.filter((actividad) => actividad.estado !== 'CANCELADA').length,
+    };
+  }, [actividades, busqueda, conteoVotos, propuestas]);
+
+  const actividadesFiltradas = useMemo(() => {
+    const query = busqueda.trim().toLowerCase();
+    return actividades.filter((actividad) => {
+      if (!query) return true;
+      const haystack = `${actividad.titulo} ${actividad.descripcion ?? ''} ${actividad.lugar ?? ''} ${actividad.patrulla_origen_nombre ?? ''}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [actividades, busqueda]);
 
   const handleAvanzarFase = async (nuevoEstado: EstadoPlanTrimestral) => {
     if (!plan) return;
@@ -176,7 +305,17 @@ export default function PlanificacionPage() {
             <p className="text-sm text-gray-500">Propuestas de patrulla → votación → plan trimestral vigente</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
+            <Input
+              aria-label="Buscar actividades o propuestas"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar actividad o patrulla"
+              className="pl-9"
+            />
+          </div>
           <Select value={ramaFiltro} onValueChange={setRamaFiltro}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -188,6 +327,68 @@ export default function PlanificacionPage() {
           )}
         </div>
       </header>
+
+      {plan ? (
+        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="rounded-xl bg-indigo-600 p-2 text-white">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-indigo-600">Plan activo</p>
+                  <h2 className="text-lg font-bold text-slate-900">{plan.nombre}</h2>
+                </div>
+              </div>
+              <PhasePill estado={plan.estado} />
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Rama</p>
+                <p className="mt-1 font-semibold text-slate-800">{plan.rama}</p>
+              </div>
+              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Inicio</p>
+                <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_inicio + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              </div>
+              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Fin</p>
+                <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_fin + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-indigo-600" />
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">Acciones rápidas</h3>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              <Button variant="outline" className="justify-start" onClick={() => setModalLinks(true)}>
+                <Link2 className="w-4 h-4 mr-2" /> Links de patrullas
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => setModalNuevoPlan(true)}>
+                <Plus className="w-4 h-4 mr-2" /> Nuevo plan
+              </Button>
+              <Button variant="ghost" className="justify-start" onClick={refrescarDetalle}>
+                <RefreshCw className="w-4 h-4 mr-2" /> Actualizar tablero
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section aria-label="Resumen del plan" className="grid gap-3 md:grid-cols-4">
+        <MetricCard title="Propuestas" value={metricas.propuestas} caption="Totales según el filtro actual" accent="bg-violet-500" />
+        <MetricCard title="Actividades" value={metricas.actividades} caption="Confirmadas o en vigencia" accent="bg-indigo-500" />
+        <MetricCard title="Votos" value={metricas.votos} caption="Votos registrados" accent="bg-emerald-500" />
+        <MetricCard title="Pendientes" value={metricas.pendientes} caption="Requieren revisión" accent="bg-amber-500" />
+      </section>
 
       {planes.length === 0 && !loading && (
         <div className="rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-500">
@@ -206,6 +407,27 @@ export default function PlanificacionPage() {
               {p.nombre}
             </button>
           ))}
+        </div>
+      )}
+
+      {isMobile && plan && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setVistaMobile('tablero')}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'tablero' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Tablero
+            </button>
+            <button
+              type="button"
+              onClick={() => setVistaMobile('lista')}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'lista' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Lista
+            </button>
+          </div>
         </div>
       )}
 
@@ -272,15 +494,21 @@ export default function PlanificacionPage() {
             </div>
           </div>
 
-          <TableroPlanificacion
-            plan={plan}
-            propuestas={propuestas}
-            actividades={actividades}
-            conteoVotos={conteoVotos}
-            onRefrescar={refrescarDetalle}
-            onEditarActividad={setModalActividad}
-            onCrearEnFecha={setModalNuevaActividadFecha}
-          />
+          {isMobile && vistaMobile === 'lista' ? (
+            <MobileAgendaList actividades={actividadesFiltradas} onEditarActividad={setModalActividad} />
+          ) : (
+            <TableroPlanificacion
+              plan={plan}
+              propuestas={propuestas}
+              actividades={actividades}
+              conteoVotos={conteoVotos}
+              busqueda={busqueda}
+              onClearSearch={() => setBusqueda('')}
+              onRefrescar={refrescarDetalle}
+              onEditarActividad={setModalActividad}
+              onCrearEnFecha={setModalNuevaActividadFecha}
+            />
+          )}
         </>
       )}
 
