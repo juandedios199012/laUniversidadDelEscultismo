@@ -896,8 +896,10 @@ export const TIPOS_COMIDA_ACTIVIDAD = [
 export const ROLES_STAFF_ACTIVIDAD = [
   { value: 'JEFE_CAMPAMENTO', label: 'Jefe de Campamento', emoji: '👑' },
   { value: 'SUBJEFE_CAMPAMENTO', label: 'Subjefe de Campamento', emoji: '🎖️' },
+  { value: 'DIRECTOR', label: 'Director', emoji: '🎯' },
   { value: 'DIRIGENTE', label: 'Dirigente', emoji: '⭐' },
-  { value: 'APOYO', label: 'Apoyo', emoji: '🤝' },
+  { value: 'ADMINISTRACION', label: 'Administración', emoji: '🤝' },
+  { value: 'COLABORADOR', label: 'Colaborador', emoji: '🧩' },
   { value: 'COCINERO', label: 'Cocinero/a', emoji: '👨‍🍳' },
   { value: 'ENFERMERO', label: 'Enfermero/a', emoji: '🩺' },
   { value: 'TRANSPORTE', label: 'Transporte', emoji: '🚌' },

@@ -68,7 +68,7 @@ const ModalTipoCosto: React.FC<ModalTipoCostoProps> = ({ tipoEditar, onCerrar, o
               autoFocus
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej: Campamento, Movilidad, Alimentación..."
+              placeholder="Ej: Transporte, Alimentación, Materiales..."
               className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
@@ -162,7 +162,7 @@ const TiposCostoAireLibre: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Tipos de Costo</h1>
           <p className="text-sm text-gray-500">
-            Administra los rubros de costo (Campamento, Movilidad, Alimentación...) que componen el costo por participante de una actividad de Aire Libre.
+            Administra los rubros de costo (Transporte, Alimentación, Materiales...) que componen el costo por participante de una actividad de Aire Libre.
           </p>
         </div>
       </div>
