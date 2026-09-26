@@ -296,76 +296,86 @@ export default function PlanificacionPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-[1500px] mx-auto space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <CalendarRange className="w-7 h-7 text-indigo-600" />
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Planificación Anual</h1>
-            <p className="text-sm text-gray-500">Propuestas de patrulla → votación → plan trimestral vigente</p>
+    <div className="p-4 md:p-6 max-w-[1500px] mx-auto space-y-5">
+      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-900 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+        <div className="flex flex-col gap-4 p-5 md:p-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-sm">
+              <CalendarRange className="w-6 h-6 text-indigo-200" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-200/80">Panel operativo</p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">Planificación Anual</h1>
+              <p className="mt-1 text-sm text-slate-200">Propuestas de patrulla → votación → plan trimestral vigente</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
-            <Input
-              aria-label="Buscar actividades o propuestas"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar actividad o patrulla"
-              className="pl-9"
-            />
+
+          <div className="flex w-full max-w-2xl flex-col gap-2 md:flex-row md:items-center md:justify-end">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
+              <Input
+                aria-label="Buscar actividades o propuestas"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar actividad o patrulla"
+                className="h-11 border-white/10 bg-white/10 pl-9 text-white placeholder:text-slate-300 focus-visible:ring-white/40"
+              />
+            </div>
+            <Select value={ramaFiltro} onValueChange={setRamaFiltro}>
+              <SelectTrigger className="h-11 w-full min-w-[150px] border-white/10 bg-white/10 text-white placeholder:text-slate-300 focus:ring-white/40 md:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RAMAS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {can('planificacion:aprobar') && (
+              <Button onClick={() => setModalNuevoPlan(true)} className="h-11 whitespace-nowrap bg-white text-slate-900 hover:bg-slate-100">
+                <Plus className="w-4 h-4 mr-1" /> Nuevo plan
+              </Button>
+            )}
           </div>
-          <Select value={ramaFiltro} onValueChange={setRamaFiltro}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {RAMAS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {can('planificacion:aprobar') && (
-            <Button onClick={() => setModalNuevoPlan(true)}><Plus className="w-4 h-4 mr-1" /> Nuevo plan</Button>
-          )}
         </div>
       </header>
 
       {plan ? (
-        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-sm">
+        <section className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
+          <div className="overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-[0_18px_35px_rgba(79,70,229,0.08)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="rounded-xl bg-indigo-600 p-2 text-white">
-                  <Sparkles className="h-4 w-4" />
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-indigo-600">Plan activo</p>
-                  <h2 className="text-lg font-bold text-slate-900">{plan.nombre}</h2>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-600">Plan activo</p>
+                  <h2 className="text-xl font-bold text-slate-900">{plan.nombre}</h2>
                 </div>
               </div>
               <PhasePill estado={plan.estado} />
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Rama</p>
                 <p className="mt-1 font-semibold text-slate-800">{plan.rama}</p>
               </div>
-              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Inicio</p>
                 <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_inicio + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
-              <div className="rounded-xl bg-white/80 p-3 border border-white/80">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Fin</p>
                 <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_fin + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-indigo-600" />
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">Acciones rápidas</h3>
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Target className="h-4 w-4" />
               </div>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">Acciones rápidas</h3>
             </div>
 
             <div className="mt-4 grid gap-2">

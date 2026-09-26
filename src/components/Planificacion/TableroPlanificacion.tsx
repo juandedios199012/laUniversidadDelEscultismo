@@ -243,17 +243,17 @@ export default function TableroPlanificacion({
   const resultadosMostrados = Object.values(postItsPorFecha).reduce((total, items) => total + items.length, 0);
 
   return (
-    <section aria-label="Tablero trimestral" className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 md:flex-row md:items-center md:justify-between">
+    <section aria-label="Tablero trimestral" className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-col gap-2 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-600">Tablero del trimestre</h2>
-          <p className="text-xs text-slate-500">{resultadosMostrados} elementos visibles</p>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-100">Tablero del trimestre</h2>
+          <p className="text-xs text-slate-300">{resultadosMostrados} elementos visibles</p>
         </div>
         {busqueda.trim() && (
           <button
             type="button"
             onClick={onClearSearch}
-            className="text-sm text-indigo-600 hover:text-indigo-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded"
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-indigo-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             aria-label="Limpiar búsqueda"
           >
             Limpiar búsqueda
@@ -264,30 +264,29 @@ export default function TableroPlanificacion({
       <div className="overflow-x-auto">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="min-w-[1400px]" style={{ opacity: moviendo ? 0.7 : 1 }}>
-            {/* Encabezado de días (1..31) */}
-            <div className="grid" style={{ gridTemplateColumns: `140px repeat(${maxDias}, minmax(42px, 1fr))` }}>
-              <div className="bg-gray-900 text-white text-xs font-semibold flex items-center px-3 py-2 sticky left-0 z-10">
+            <div className="grid border-b border-slate-200 bg-slate-50" style={{ gridTemplateColumns: `170px repeat(${maxDias}, minmax(42px, 1fr))` }}>
+              <div className="sticky left-0 z-10 flex items-center bg-slate-900 px-3 py-2 text-left text-[11px] font-semibold text-white">
                 {plan.rama} · {plan.nombre}
               </div>
               {Array.from({ length: maxDias }, (_, i) => (
-                <div key={i} className="text-center text-[10px] text-gray-400 py-2 border-b border-gray-200">{i + 1}</div>
+                <div key={i} className="border-l border-slate-200 py-2 text-center text-[10px] font-medium tracking-[0.12em] text-slate-400">{i + 1}</div>
               ))}
             </div>
 
             {meses.map((mes) => {
               const totalDias = diasEnMes(mes.anio, mes.mesIndex0);
               return (
-                <div key={`${mes.anio}-${mes.mesIndex0}`} className="grid" style={{ gridTemplateColumns: `140px repeat(${maxDias}, minmax(42px, 1fr))` }}>
-                  <div className="bg-gray-900 text-white text-sm font-bold flex items-center px-3 sticky left-0 z-10">
+                <div key={`${mes.anio}-${mes.mesIndex0}`} className="grid border-b border-slate-200" style={{ gridTemplateColumns: `170px repeat(${maxDias}, minmax(42px, 1fr))` }}>
+                  <div className="sticky left-0 z-10 flex items-center bg-slate-900 px-3 py-2 text-sm font-bold text-white">
                     {mes.label} {mes.anio}
                   </div>
                   {Array.from({ length: maxDias }, (_, idx) => {
                     const dia = idx + 1;
                     if (dia > totalDias) {
-                      return <div key={dia} className="bg-gray-50" />;
+                      return <div key={dia} className="border-l border-slate-100 bg-slate-50/70" />;
                     }
                     const fecha = fechaISO(mes.anio, mes.mesIndex0, dia);
-                    const dow = new Date(mes.anio, mes.mesIndex0, dia).getDay(); // 0 domingo, 6 sábado
+                    const dow = new Date(mes.anio, mes.mesIndex0, dia).getDay();
                     const esFinde = dow === 0 || dow === 6;
                     const items = postItsPorFecha[fecha] || [];
                     const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
@@ -331,9 +330,9 @@ export default function TableroPlanificacion({
         </DndContext>
       </div>
 
-      <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Color = patrulla</span>
-        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Arrastra un post-it a otro día para moverlo</span>
+      <div className="flex flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+        <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Color = patrulla</span>
+        <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Arrastra un post-it a otro día para moverlo</span>
       </div>
     </section>
   );
