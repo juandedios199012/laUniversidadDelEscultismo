@@ -34,6 +34,16 @@ export interface TipoCostoAireLibre {
   total_uso?: number;
 }
 
+export const TIPOS_COSTO_AIRE_LIBRE_DEFAULT: TipoCostoAireLibre[] = [
+  { id: 'fallback-transporte', descripcion: 'Transporte', activo: true },
+  { id: 'fallback-hospedaje', descripcion: 'Hospedaje', activo: true },
+  { id: 'fallback-alimentacion', descripcion: 'Alimentación', activo: true },
+  { id: 'fallback-salud-seguridad', descripcion: 'Salud y Seguridad', activo: true },
+  { id: 'fallback-programa', descripcion: 'Programa', activo: true },
+  { id: 'fallback-imprevistos', descripcion: 'Imprevistos', activo: true },
+  { id: 'fallback-fondo-emergencia', descripcion: 'Fondo para uso en caso de emergencia', activo: true },
+];
+
 export interface CostoActividad {
   tipo_costo_id: string;
   descripcion?: string;
@@ -1108,7 +1118,34 @@ export class ActividadesExteriorService {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al listar tipos de costo');
 
-    return data.tipos || [];
+    let tipos = Array.isArray(data.tipos) && data.tipos.length > 0 ? data.tipos : [];
+
+    if (tipos.length === 0) {
+      for (const tipo of TIPOS_COSTO_AIRE_LIBRE_DEFAULT) {
+        try {
+          await supabase.rpc('api_upsert_tipo_costo_aire_libre', {
+            p_id: null,
+            p_descripcion: tipo.descripcion,
+            p_activo: true,
+          });
+        } catch (seedError) {
+          console.warn('No se pudo seedear tipo de costo:', tipo.descripcion, seedError);
+        }
+      }
+
+      const { data: refreshedData, error: refreshedError } = await supabase.rpc('api_listar_tipos_costo_aire_libre', {
+        p_solo_activos: soloActivos,
+      });
+
+      if (refreshedError) throw refreshedError;
+      tipos = Array.isArray(refreshedData?.tipos) && refreshedData.tipos.length > 0 ? refreshedData.tipos : TIPOS_COSTO_AIRE_LIBRE_DEFAULT;
+    }
+
+    if (soloActivos) {
+      return tipos.filter((tipo) => tipo.activo !== false);
+    }
+
+    return tipos;
   }
 
   static async upsertTipoCostoAireLibre(tipo: {
@@ -1143,15 +1180,23 @@ export class ActividadesExteriorService {
     actividadId: string,
     costos: { tipo_costo_id: string; monto: number }[]
   ): Promise<{ costo_por_participante: number }> {
+    const costosSanitizados = (costos || [])
+      .filter((item) => !!item?.tipo_costo_id)
+      .filter((item) => /^[0-9a-fA-F-]{36}$/.test(item.tipo_costo_id))
+      .map((item) => ({
+        tipo_costo_id: item.tipo_costo_id,
+        monto: Number.isFinite(item.monto) ? Number(item.monto) : 0,
+      }));
+
     const { data, error } = await supabase.rpc('api_guardar_costos_actividad', {
       p_actividad_id: actividadId,
-      p_costos: costos,
+      p_costos: costosSanitizados,
     });
 
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al guardar los costos de la actividad');
 
-    return { costo_por_participante: data.costo_por_participante };
+    return { costo_por_participante: Number(data.costo_por_participante || 0) };
   }
 
   /**

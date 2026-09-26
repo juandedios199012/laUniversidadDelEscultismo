@@ -602,10 +602,12 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
         riesgo_protocolo: data.riesgo_protocolo,
       };
 
-      const costosArray = Object.entries(costosPorTipo).map(([tipo_costo_id, monto]) => ({
-        tipo_costo_id,
-        monto: monto || 0,
-      }));
+      const costosArray = tiposCostoDisponibles
+        .map((tipo) => ({
+          tipo_costo_id: tipo.id,
+          monto: Number(costosPorTipo[tipo.id] ?? 0),
+        }))
+        .filter((item) => !!item.tipo_costo_id && /^[0-9a-fA-F-]{36}$/.test(item.tipo_costo_id));
 
       // Agrega el staff elegido en el paso "Responsables". api_agregar_staff
       // valida UNIQUE(actividad_id, persona_id): si la persona ya estaba en
