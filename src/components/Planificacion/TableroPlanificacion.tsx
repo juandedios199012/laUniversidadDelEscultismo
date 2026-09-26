@@ -92,12 +92,12 @@ function PostIt({ item, onClick }: { item: PostItItem; onClick: () => void }) {
   );
 }
 
-function DayCell({ fecha, esFinde, deshabilitado, compact, children }: { fecha: string; esFinde: boolean; deshabilitado: boolean; compact?: boolean; children: React.ReactNode }) {
+function DayCell({ fecha, esFinde, deshabilitado, children }: { fecha: string; esFinde: boolean; deshabilitado: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: fecha, disabled: deshabilitado });
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[${compact ? '76px' : '64px'}] border border-slate-200 bg-white p-1 align-top ${esFinde ? 'bg-amber-50/60' : 'bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
+      className={`h-[92px] rounded-xl border p-1 ${esFinde ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
     >
       {children}
     </div>
@@ -264,9 +264,9 @@ export default function TableroPlanificacion({
   const resultadosMostrados = Object.values(postItsPorFecha).reduce((total, items) => total + items.length, 0);
 
   return (
-    <section aria-label="Calendario trimestral" className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f3f3f1] shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-[#f3f3f1] px-4 py-3">
-        <div className="inline-flex items-center rounded-full bg-[#2d2f35] px-4 py-2 text-lg font-bold text-white shadow-sm">
+    <section aria-label="Calendario trimestral" className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f2f6f4] shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#f5f7f6] px-4 py-3">
+        <div className="inline-flex items-center rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-sm">
           Calendario {new Date(plan.fecha_inicio + 'T00:00:00').getFullYear()}
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -284,28 +284,25 @@ export default function TableroPlanificacion({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="p-4">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="min-w-[1180px] p-3" style={{ opacity: moviendo ? 0.7 : 1 }}>
-            <div className="grid grid-cols-[160px_1fr] rounded-t-2xl overflow-hidden border border-slate-200 bg-white">
-              <div className="bg-[#2d2f35] px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80">Meses</div>
-              <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia) => (
-                  <div key={dia} className="border-l border-slate-200 bg-[#f4f4f3] py-2.5">{dia}</div>
-                ))}
-              </div>
-            </div>
-
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3" style={{ opacity: moviendo ? 0.7 : 1 }}>
             {calendarioMensual.map((mes) => (
-              <div key={`${mes.anio}-${mes.mesIndex0}`} className="grid grid-cols-[160px_1fr] border-b border-slate-200 bg-white last:rounded-b-2xl">
-                <div className="flex min-h-[220px] items-start justify-center bg-[#2d2f35] px-3 py-4 text-left text-2xl font-bold text-white">
-                  <span className="mt-1 leading-none">{mes.label}</span>
+              <div key={`${mes.anio}-${mes.mesIndex0}`} className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+                <div className="border-b border-slate-200 bg-[#1b2a35] px-3 py-3 text-center text-lg font-bold text-white">
+                  {mes.label}
                 </div>
 
-                <div className="grid grid-cols-7 gap-0">
+                <div className="grid grid-cols-7 gap-1 p-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, idx) => (
+                    <div key={`${mes.anio}-${mes.mesIndex0}-${dia}-${idx}`} className={idx === 5 || idx === 6 ? 'text-[#1f5f8b]' : 'text-slate-500'}>{dia}</div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 p-2 pt-0">
                   {mes.semanas.flat().map((celda, index) => {
                     if (celda.esVacio) {
-                      return <div key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="min-h-[84px] border-l border-slate-200 bg-slate-50/50" />;
+                      return <div key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="h-[92px] rounded-xl bg-slate-50/80" />;
                     }
 
                     const fecha = celda.fecha as string;
@@ -315,30 +312,36 @@ export default function TableroPlanificacion({
                     const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
 
                     return (
-                      <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'} compact>
-                        <div className="flex items-center justify-between px-1 pb-1">
-                          <span className="text-[10px] font-semibold text-slate-500">{celda.dia}</span>
+                      <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500">{celda.dia}</span>
                         </div>
 
                         <div className="space-y-1">
                           {items.map((item) => (
-                            <PostIt
+                            <button
                               key={`${item.tipo}-${item.id}`}
-                              item={item}
+                              type="button"
                               onClick={() => {
                                 if (item.tipo === 'actividad') {
                                   const act = actividades.find((a) => a.id === item.id);
                                   if (act) onEditarActividad(act);
                                 }
                               }}
-                            />
+                              title={item.titulo}
+                              className={`flex w-full items-center gap-1 rounded-md border border-black/5 px-1.5 py-0.5 text-left text-[9px] font-semibold shadow-sm transition hover:shadow-md ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
+                              style={{ backgroundColor: item.color }}
+                            >
+                              <span className="truncate">{item.titulo}</span>
+                            </button>
                           ))}
+
                           {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
                             <button
                               type="button"
                               aria-label={`Crear actividad en ${fecha}`}
                               onClick={() => onCrearEnFecha(fecha)}
-                              className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-slate-300 text-lg text-slate-300 transition hover:border-indigo-300 hover:text-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                              className="flex h-7 w-full items-center justify-center rounded-md border border-dashed border-slate-300 text-lg text-slate-300 transition hover:border-indigo-300 hover:text-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                               title="Agregar actividad"
                             >
                               +
