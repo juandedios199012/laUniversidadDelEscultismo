@@ -92,12 +92,12 @@ function PostIt({ item, onClick }: { item: PostItItem; onClick: () => void }) {
   );
 }
 
-function DayCell({ fecha, esFinde, deshabilitado, children }: { fecha: string; esFinde: boolean; deshabilitado: boolean; children: React.ReactNode }) {
+function DayCell({ fecha, esFinde, deshabilitado, compact, children }: { fecha: string; esFinde: boolean; deshabilitado: boolean; compact?: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: fecha, disabled: deshabilitado });
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[64px] border border-gray-200 p-1 align-top ${esFinde ? 'bg-amber-50' : 'bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
+      className={`min-h-[${compact ? '76px' : '64px'}] border border-slate-200 bg-white p-1 align-top ${esFinde ? 'bg-amber-50/60' : 'bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
     >
       {children}
     </div>
@@ -137,7 +137,28 @@ export default function TableroPlanificacion({
   const [moviendo, setMoviendo] = useState(false);
 
   const meses = useMemo(() => generarMeses(plan.fecha_inicio, plan.fecha_fin), [plan.fecha_inicio, plan.fecha_fin]);
-  const maxDias = 31;
+
+  const calendarioMensual = useMemo(() => {
+    return meses.map((mes) => {
+      const totalDias = diasEnMes(mes.anio, mes.mesIndex0);
+      const primerDia = new Date(mes.anio, mes.mesIndex0, 1);
+      const huecoInicial = primerDia.getDay();
+      const celdas: Array<{ fecha?: string; dia?: number; esVacio: boolean }> = [];
+
+      for (let i = 0; i < huecoInicial; i += 1) celdas.push({ esVacio: true });
+      for (let dia = 1; dia <= totalDias; dia += 1) {
+        celdas.push({ fecha: fechaISO(mes.anio, mes.mesIndex0, dia), dia, esVacio: false });
+      }
+
+      while (celdas.length % 7 !== 0) celdas.push({ esVacio: true });
+
+      return {
+        ...mes,
+        celdas,
+        semanas: Array.from({ length: Math.ceil(celdas.length / 7) }, (_, idx) => celdas.slice(idx * 7, idx * 7 + 7)),
+      };
+    });
+  }, [meses]);
 
   const actividadesFiltradas = useMemo(
     () => actividades.filter(
@@ -243,89 +264,93 @@ export default function TableroPlanificacion({
   const resultadosMostrados = Object.values(postItsPorFecha).reduce((total, items) => total + items.length, 0);
 
   return (
-    <section aria-label="Tablero trimestral" className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-col gap-2 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-4 py-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-100">Tablero del trimestre</h2>
-          <p className="text-xs text-slate-300">{resultadosMostrados} elementos visibles</p>
+    <section aria-label="Calendario trimestral" className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f3f3f1] shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-[#f3f3f1] px-4 py-3">
+        <div className="inline-flex items-center rounded-full bg-[#2d2f35] px-4 py-2 text-lg font-bold text-white shadow-sm">
+          Calendario {new Date(plan.fecha_inicio + 'T00:00:00').getFullYear()}
         </div>
-        {busqueda.trim() && (
-          <button
-            type="button"
-            onClick={onClearSearch}
-            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-indigo-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-            aria-label="Limpiar búsqueda"
-          >
-            Limpiar búsqueda
-          </button>
-        )}
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span>{resultadosMostrados} elementos visibles</span>
+          {busqueda.trim() && (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              aria-label="Limpiar búsqueda"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="min-w-[1400px]" style={{ opacity: moviendo ? 0.7 : 1 }}>
-            <div className="grid border-b border-slate-200 bg-slate-50" style={{ gridTemplateColumns: `170px repeat(${maxDias}, minmax(42px, 1fr))` }}>
-              <div className="sticky left-0 z-10 flex items-center bg-slate-900 px-3 py-2 text-left text-[11px] font-semibold text-white">
-                {plan.rama} · {plan.nombre}
+          <div className="min-w-[1180px] p-3" style={{ opacity: moviendo ? 0.7 : 1 }}>
+            <div className="grid grid-cols-[160px_1fr] rounded-t-2xl overflow-hidden border border-slate-200 bg-white">
+              <div className="bg-[#2d2f35] px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/80">Meses</div>
+              <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia) => (
+                  <div key={dia} className="border-l border-slate-200 bg-[#f4f4f3] py-2.5">{dia}</div>
+                ))}
               </div>
-              {Array.from({ length: maxDias }, (_, i) => (
-                <div key={i} className="border-l border-slate-200 py-2 text-center text-[10px] font-medium tracking-[0.12em] text-slate-400">{i + 1}</div>
-              ))}
             </div>
 
-            {meses.map((mes) => {
-              const totalDias = diasEnMes(mes.anio, mes.mesIndex0);
-              return (
-                <div key={`${mes.anio}-${mes.mesIndex0}`} className="grid border-b border-slate-200" style={{ gridTemplateColumns: `170px repeat(${maxDias}, minmax(42px, 1fr))` }}>
-                  <div className="sticky left-0 z-10 flex items-center bg-slate-900 px-3 py-2 text-sm font-bold text-white">
-                    {mes.label} {mes.anio}
-                  </div>
-                  {Array.from({ length: maxDias }, (_, idx) => {
-                    const dia = idx + 1;
-                    if (dia > totalDias) {
-                      return <div key={dia} className="border-l border-slate-100 bg-slate-50/70" />;
+            {calendarioMensual.map((mes) => (
+              <div key={`${mes.anio}-${mes.mesIndex0}`} className="grid grid-cols-[160px_1fr] border-b border-slate-200 bg-white last:rounded-b-2xl">
+                <div className="flex min-h-[220px] items-start justify-center bg-[#2d2f35] px-3 py-4 text-left text-2xl font-bold text-white">
+                  <span className="mt-1 leading-none">{mes.label}</span>
+                </div>
+
+                <div className="grid grid-cols-7 gap-0">
+                  {mes.semanas.flat().map((celda, index) => {
+                    if (celda.esVacio) {
+                      return <div key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="min-h-[84px] border-l border-slate-200 bg-slate-50/50" />;
                     }
-                    const fecha = fechaISO(mes.anio, mes.mesIndex0, dia);
-                    const dow = new Date(mes.anio, mes.mesIndex0, dia).getDay();
+
+                    const fecha = celda.fecha as string;
+                    const dow = new Date(`${fecha}T00:00:00`).getDay();
                     const esFinde = dow === 0 || dow === 6;
                     const items = postItsPorFecha[fecha] || [];
                     const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
+
                     return (
-                      <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
-                        {items.length === 0 && busqueda.trim() && (
-                          <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400">
-                            Sin coincidencias
-                          </div>
-                        )}
-                        {items.map((item) => (
-                          <PostIt
-                            key={`${item.tipo}-${item.id}`}
-                            item={item}
-                            onClick={() => {
-                              if (item.tipo === 'actividad') {
-                                const act = actividades.find((a) => a.id === item.id);
-                                if (act) onEditarActividad(act);
-                              }
-                            }}
-                          />
-                        ))}
-                        {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
-                          <button
-                            type="button"
-                            aria-label={`Crear actividad en ${fecha}`}
-                            onClick={() => onCrearEnFecha(fecha)}
-                            className="w-full h-full min-h-[36px] text-gray-300 hover:text-gray-500 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md"
-                            title="Agregar actividad"
-                          >
-                            +
-                          </button>
-                        )}
+                      <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'} compact>
+                        <div className="flex items-center justify-between px-1 pb-1">
+                          <span className="text-[10px] font-semibold text-slate-500">{celda.dia}</span>
+                        </div>
+
+                        <div className="space-y-1">
+                          {items.map((item) => (
+                            <PostIt
+                              key={`${item.tipo}-${item.id}`}
+                              item={item}
+                              onClick={() => {
+                                if (item.tipo === 'actividad') {
+                                  const act = actividades.find((a) => a.id === item.id);
+                                  if (act) onEditarActividad(act);
+                                }
+                              }}
+                            />
+                          ))}
+                          {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
+                            <button
+                              type="button"
+                              aria-label={`Crear actividad en ${fecha}`}
+                              onClick={() => onCrearEnFecha(fecha)}
+                              className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-slate-300 text-lg text-slate-300 transition hover:border-indigo-300 hover:text-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                              title="Agregar actividad"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
                       </DayCell>
                     );
                   })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </DndContext>
       </div>
