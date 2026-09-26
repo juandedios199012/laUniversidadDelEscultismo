@@ -2,8 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { DndContext, DragEndEvent, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
-import { GripVertical, MapPin, Users } from 'lucide-react';
+import { MapPin, Mic, Plus, Minus, Volume2, VolumeX, Users } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import {
   ActividadPlan,
   PlanTrimestral,
@@ -68,39 +72,36 @@ function PostIt({ item, onClick }: { item: PostItItem; onClick: () => void }) {
   const style: React.CSSProperties = {
     backgroundColor: item.color,
     transform: transform ? CSS.Translate.toString(transform) : undefined,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.55 : 1,
   };
+
   return (
     <button
       ref={setNodeRef}
+      type="button"
       style={style}
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`w-full text-left rounded-md px-1.5 py-1 mb-1 text-[11px] leading-tight shadow-sm border border-black/5 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
+      className={`flex w-full items-center gap-1 rounded-md border border-black/5 px-1 py-0.5 text-left text-[9px] font-semibold shadow-sm transition hover:shadow-md active:cursor-grabbing ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
       title={item.titulo}
     >
-      <div className="flex items-start gap-0.5">
-        <GripVertical className="w-3 h-3 shrink-0 opacity-40 mt-0.5" />
-        <div className="min-w-0">
-          <p className="font-semibold truncate">{item.titulo}{item.esMultiDia ? ' →' : ''}</p>
-          {item.patrullaNombre && <p className="truncate opacity-70">{item.patrullaNombre}</p>}
-          {typeof item.votos === 'number' && <p className="opacity-70">🗳️ {item.votos}</p>}
-        </div>
-      </div>
+      <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
+      {item.esMultiDia && <span className="text-[8px] font-bold">→</span>}
     </button>
   );
 }
 
 function DayCell({ fecha, esFinde, deshabilitado, children }: { fecha: string; esFinde: boolean; deshabilitado: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: fecha, disabled: deshabilitado });
+
   return (
-    <div
+    <td
       ref={setNodeRef}
-      className={`h-[92px] rounded-xl border p-1 ${esFinde ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
+      className={`h-[92px] rounded-lg border p-1 align-top ${esFinde ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white'} ${isOver ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
     >
       {children}
-    </div>
+    </td>
   );
 }
 
@@ -135,6 +136,81 @@ export default function TableroPlanificacion({
   const { can } = usePermissions();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [moviendo, setMoviendo] = useState(false);
+  const [escalaTexto, setEscalaTexto] = useState(1);
+  const [vozActiva, setVozActiva] = useState(false);
+  const [dictadoActivo, setDictadoActivo] = useState(false);
+  const [soportaDictado, setSoportaDictado] = useState(false);
+
+  React.useEffect(() => {
+    setSoportaDictado(typeof window !== 'undefined' && !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition);
+  }, []);
+
+  const leerResumen = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      toast.error('Tu navegador no admite lectura por voz en esta pantalla.');
+      return;
+    }
+
+    if (vozActiva) {
+      window.speechSynthesis.cancel();
+      setVozActiva(false);
+      return;
+    }
+
+    const resumen = [
+      `Calendario del plan ${plan.nombre || 'trimestral'}.`,
+      `Desde ${plan.fecha_inicio} hasta ${plan.fecha_fin}.`,
+      `${resultadosMostrados} elementos visibles.`
+    ].join(' ');
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(resumen);
+    utterance.lang = 'es-PE';
+    utterance.onend = () => setVozActiva(false);
+    utterance.onerror = () => setVozActiva(false);
+    setVozActiva(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const alternarDictado = () => {
+    if (!soportaDictado || typeof window === 'undefined') {
+      toast.error('Este navegador no admite dictado por voz.');
+      return;
+    }
+
+    if (dictadoActivo) {
+      setDictadoActivo(false);
+      return;
+    }
+
+    const RecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new RecognitionCtor();
+    recognition.lang = 'es-PE';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0]?.transcript || '')
+        .join(' ')
+        .trim();
+
+      if (transcript) {
+        if (onClearSearch) {
+          onClearSearch();
+        }
+      }
+    };
+
+    recognition.onerror = () => {
+      setDictadoActivo(false);
+      toast.error('No se pudo iniciar el dictado por voz.');
+    };
+    recognition.onend = () => setDictadoActivo(false);
+
+    setDictadoActivo(true);
+    recognition.start();
+  };
 
   const meses = useMemo(() => generarMeses(plan.fecha_inicio, plan.fecha_fin), [plan.fecha_inicio, plan.fecha_fin]);
 
@@ -264,104 +340,173 @@ export default function TableroPlanificacion({
   const resultadosMostrados = Object.values(postItsPorFecha).reduce((total, items) => total + items.length, 0);
 
   return (
-    <section aria-label="Calendario trimestral" className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f2f6f4] shadow-[0_18px_35px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#f5f7f6] px-4 py-3">
-        <div className="inline-flex items-center rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-sm">
-          Calendario {new Date(plan.fecha_inicio + 'T00:00:00').getFullYear()}
-        </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>{resultadosMostrados} elementos visibles</span>
-          {busqueda.trim() && (
-            <button
-              type="button"
-              onClick={onClearSearch}
-              className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-              aria-label="Limpiar búsqueda"
-            >
-              Limpiar
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="p-4">
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3" style={{ opacity: moviendo ? 0.7 : 1 }}>
-            {calendarioMensual.map((mes) => (
-              <div key={`${mes.anio}-${mes.mesIndex0}`} className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-                <div className="border-b border-slate-200 bg-[#1b2a35] px-3 py-3 text-center text-lg font-bold text-white">
-                  {mes.label}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 p-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, idx) => (
-                    <div key={`${mes.anio}-${mes.mesIndex0}-${dia}-${idx}`} className={idx === 5 || idx === 6 ? 'text-[#1f5f8b]' : 'text-slate-500'}>{dia}</div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 p-2 pt-0">
-                  {mes.semanas.flat().map((celda, index) => {
-                    if (celda.esVacio) {
-                      return <div key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="h-[92px] rounded-xl bg-slate-50/80" />;
-                    }
-
-                    const fecha = celda.fecha as string;
-                    const dow = new Date(`${fecha}T00:00:00`).getDay();
-                    const esFinde = dow === 0 || dow === 6;
-                    const items = postItsPorFecha[fecha] || [];
-                    const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
-
-                    return (
-                      <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500">{celda.dia}</span>
-                        </div>
-
-                        <div className="space-y-1">
-                          {items.map((item) => (
-                            <button
-                              key={`${item.tipo}-${item.id}`}
-                              type="button"
-                              onClick={() => {
-                                if (item.tipo === 'actividad') {
-                                  const act = actividades.find((a) => a.id === item.id);
-                                  if (act) onEditarActividad(act);
-                                }
-                              }}
-                              title={item.titulo}
-                              className={`flex w-full items-center gap-1 rounded-md border border-black/5 px-1.5 py-0.5 text-left text-[9px] font-semibold shadow-sm transition hover:shadow-md ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
-                              style={{ backgroundColor: item.color }}
-                            >
-                              <span className="truncate">{item.titulo}</span>
-                            </button>
-                          ))}
-
-                          {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
-                            <button
-                              type="button"
-                              aria-label={`Crear actividad en ${fecha}`}
-                              onClick={() => onCrearEnFecha(fecha)}
-                              className="flex h-7 w-full items-center justify-center rounded-md border border-dashed border-slate-300 text-lg text-slate-300 transition hover:border-indigo-300 hover:text-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-                              title="Agregar actividad"
-                            >
-                              +
-                            </button>
-                          )}
-                        </div>
-                      </DayCell>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+    <TooltipProvider delayDuration={180}>
+      <section
+        aria-label="Calendario trimestral"
+        className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f2f6f4] shadow-[0_18px_35px_rgba(15,23,42,0.06)]"
+        style={{ fontSize: `${escalaTexto}rem` }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#f5f7f6] px-4 py-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-sm">
+            <Badge variant="secondary" className="bg-white/10 text-white border-white/10 hover:bg-white/10">
+              Calendario
+            </Badge>
+            {new Date(plan.fecha_inicio + 'T00:00:00').getFullYear()}
           </div>
-        </DndContext>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
-        <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Color = patrulla</span>
-        <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Arrastra un post-it a otro día para moverlo</span>
-      </div>
-    </section>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <div className="inline-flex items-center rounded-full border border-slate-300 bg-white p-1 shadow-sm">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" aria-label="Reducir tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.max(0.95, Number((prev - 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reducir texto</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" aria-label="Aumentar tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.min(1.7, Number((prev + 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Aumentar texto</TooltipContent>
+              </Tooltip>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button type="button" variant="outline" onClick={leerResumen} className="gap-1.5 rounded-full border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700">
+                  {vozActiva ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                  {vozActiva ? 'Detener' : 'Escuchar'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{vozActiva ? 'Detener lectura de voz' : 'Leer el calendario en voz alta'}</TooltipContent>
+            </Tooltip>
+
+            {soportaDictado && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={dictadoActivo ? 'success' : 'outline'}
+                    onClick={alternarDictado}
+                    className={`gap-1.5 rounded-full ${dictadoActivo ? '' : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700'}`}
+                    aria-label={dictadoActivo ? 'Detener dictado por voz' : 'Activar dictado por voz'}
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                    {dictadoActivo ? 'Grabando' : 'Mic'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{dictadoActivo ? 'Detener dictado por voz' : 'Activar dictado por voz'}</TooltipContent>
+              </Tooltip>
+            )}
+
+            <Badge variant="outline" className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600">
+              {resultadosMostrados} visibles
+            </Badge>
+
+            {busqueda.trim() && (
+              <Button type="button" variant="outline" size="sm" onClick={onClearSearch} className="rounded-full border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700">
+                Limpiar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4">
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3" style={{ opacity: moviendo ? 0.7 : 1 }}>
+              {calendarioMensual.map((mes) => (
+                <Card key={`${mes.anio}-${mes.mesIndex0}`} className="overflow-hidden border-slate-200 bg-white shadow-[0_10px_22px_rgba(15,23,42,0.04)]">
+                  <div className="border-b border-slate-200 bg-[#1b2a35] px-3 py-3 text-center text-base font-bold text-white">
+                    {mes.label}
+                  </div>
+
+                  <CardContent className="p-2">
+                    <table className="w-full border-separate border-spacing-1">
+                      <thead>
+                        <tr>
+                          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, idx) => (
+                            <th key={`${mes.anio}-${mes.mesIndex0}-head-${idx}`} className={`pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${idx === 5 || idx === 6 ? 'text-[#1f5f8b]' : 'text-slate-500'}`}>
+                              {dia}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {mes.semanas.map((semana, semanaIndex) => (
+                          <tr key={`${mes.anio}-${mes.mesIndex0}-week-${semanaIndex}`}>
+                            {semana.map((celda, index) => {
+                              if (celda.esVacio) {
+                                return <td key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="h-[92px] rounded-lg bg-slate-50/80" />;
+                              }
+
+                              const fecha = celda.fecha as string;
+                              const dow = new Date(`${fecha}T00:00:00`).getDay();
+                              const esFinde = dow === 0 || dow === 6;
+                              const items = postItsPorFecha[fecha] || [];
+                              const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
+
+                              return (
+                                <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
+                                  <div className="mb-1 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-500">{celda.dia}</span>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    {items.slice(0, 2).map((item) => (
+                                      <PostIt
+                                        key={`${item.tipo}-${item.id}`}
+                                        item={item}
+                                        onClick={() => {
+                                          if (item.tipo === 'actividad') {
+                                            const act = actividades.find((a) => a.id === item.id);
+                                            if (act) onEditarActividad(act);
+                                          }
+                                        }}
+                                      />
+                                    ))}
+
+                                    {items.length > 2 && (
+                                      <div className="text-[8px] font-semibold text-slate-500">+{items.length - 2} más</div>
+                                    )}
+
+                                    {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={`Crear actividad en ${fecha}`}
+                                        onClick={() => onCrearEnFecha(fecha)}
+                                        className="flex h-6 w-full rounded-md border border-dashed border-slate-300 text-base text-slate-400 hover:border-indigo-300 hover:text-indigo-500"
+                                        title="Agregar actividad"
+                                      >
+                                        +
+                                      </Button>
+                                    )}
+                                  </div>
+                                </DayCell>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </DndContext>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+          <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Color = patrulla</span>
+          <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Arrastra la actividad a otra fecha</span>
+        </div>
+      </section>
+    </TooltipProvider>
   );
 }
