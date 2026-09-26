@@ -1182,7 +1182,6 @@ export class ActividadesExteriorService {
   ): Promise<{ costo_por_participante: number }> {
     const costosSanitizados = (costos || [])
       .filter((item) => !!item?.tipo_costo_id)
-      .filter((item) => /^[0-9a-fA-F-]{36}$/.test(item.tipo_costo_id))
       .map((item) => ({
         tipo_costo_id: item.tipo_costo_id,
         monto: Number.isFinite(item.monto) ? Number(item.monto) : 0,

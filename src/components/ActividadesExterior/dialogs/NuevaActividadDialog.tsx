@@ -607,7 +607,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
           tipo_costo_id: tipo.id,
           monto: Number(costosPorTipo[tipo.id] ?? 0),
         }))
-        .filter((item) => !!item.tipo_costo_id && /^[0-9a-fA-F-]{36}$/.test(item.tipo_costo_id));
+        .filter((item) => !!item.tipo_costo_id);
 
       // Agrega el staff elegido en el paso "Responsables". api_agregar_staff
       // valida UNIQUE(actividad_id, persona_id): si la persona ya estaba en

@@ -62,6 +62,20 @@ const RAMAS = [
   { value: 'CLAN', label: '🔥 Clan' },
 ];
 
+const normalizarRama = (valor?: string | null) =>
+  (valor ?? '')
+    .toString()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+const getRamaLabel = (rama?: string | null) => {
+  const clave = normalizarRama(rama);
+  const opcion = RAMAS.find((r) => r.value === clave);
+  return opcion ? opcion.label.replace(/^[^\s]+\s/, '') : (rama || 'Sin rama');
+};
+
 const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> = ({
   open,
   onOpenChange,
@@ -103,11 +117,12 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
       const scoutsData = (data || []).map(s => {
         // persona puede venir como array o como objeto dependiendo de la relación
         const personaData = Array.isArray(s.persona) ? s.persona[0] : s.persona;
+        const ramaNormalizada = normalizarRama(s.rama_actual || 'Sin rama');
         return {
           id: s.id,
           codigo: personaData?.codigo_asociado || '',
           nombre: personaData ? `${personaData.nombres} ${personaData.apellidos}` : 'Sin nombre',
-          rama: s.rama_actual || 'Sin rama',
+          rama: ramaNormalizada === 'SIN RAMA' ? 'SIN RAMA' : ramaNormalizada,
           inscrito: participantesActuales.includes(s.id),
         };
       }).sort((a, b) => a.codigo.localeCompare(b.codigo));
@@ -126,9 +141,9 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
       const matchBusqueda = !busqueda || 
         s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         s.codigo.toLowerCase().includes(busqueda.toLowerCase());
-      
-      const matchRama = filtroRama === 'TODOS' || s.rama === filtroRama;
-      
+
+      const matchRama = filtroRama === 'TODOS' || normalizarRama(s.rama) === normalizarRama(filtroRama);
+
       return matchBusqueda && matchRama && !s.inscrito;
     });
   }, [scouts, busqueda, filtroRama]);
@@ -272,7 +287,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{scout.nombre}</span>
                         <Badge variant="outline" className="shrink-0">
-                          {scout.rama}
+                          {getRamaLabel(scout.rama)}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground font-mono">
