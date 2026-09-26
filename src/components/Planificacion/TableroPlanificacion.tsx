@@ -111,6 +111,7 @@ interface TableroPlanificacionProps {
   actividades: ActividadPlan[];
   conteoVotos: Record<string, Record<string, number>>;
   busqueda?: string;
+  onSearchChange?: (value: string) => void;
   onClearSearch?: () => void;
   onRefrescar: () => void;
   onEditarActividad: (actividad: ActividadPlan) => void;
@@ -128,6 +129,7 @@ export default function TableroPlanificacion({
   actividades,
   conteoVotos,
   busqueda = '',
+  onSearchChange,
   onClearSearch,
   onRefrescar,
   onEditarActividad,
@@ -142,7 +144,8 @@ export default function TableroPlanificacion({
   const [soportaDictado, setSoportaDictado] = useState(false);
 
   React.useEffect(() => {
-    setSoportaDictado(typeof window !== 'undefined' && !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition);
+    const hasSpeechRecognition = typeof window !== 'undefined' && (!!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition);
+    setSoportaDictado(hasSpeechRecognition);
   }, []);
 
   const leerResumen = () => {
@@ -195,10 +198,24 @@ export default function TableroPlanificacion({
         .join(' ')
         .trim();
 
-      if (transcript) {
-        if (onClearSearch) {
-          onClearSearch();
-        }
+      if (!transcript) return;
+
+      const normalized = transcript.toLowerCase();
+      const limpiar = normalized.includes('limpiar') || normalized.includes('borrar') || normalized.includes('reset');
+      const fraseBusqueda = normalized
+        .replace(/(buscar|filtrar|mostrar|buscar por|muestra|encuentra)/gi, '')
+        .replace(/(limpiar|borrar|reset|todo)/gi, '')
+        .trim();
+
+      if (limpiar) {
+        onClearSearch?.();
+        toast.success('Búsqueda limpia');
+        return;
+      }
+
+      if (fraseBusqueda) {
+        onSearchChange?.(fraseBusqueda);
+        toast.success(`Buscando: ${fraseBusqueda}`);
       }
     };
 
@@ -344,7 +361,6 @@ export default function TableroPlanificacion({
       <section
         aria-label="Calendario trimestral"
         className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f2f6f4] shadow-[0_18px_35px_rgba(15,23,42,0.06)]"
-        style={{ fontSize: `${escalaTexto}rem` }}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#f5f7f6] px-4 py-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-sm">
@@ -355,24 +371,38 @@ export default function TableroPlanificacion({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <div className="inline-flex items-center rounded-full border border-slate-300 bg-white p-1 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white p-1 shadow-sm">
+              <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Texto</span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon" aria-label="Reducir tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.max(0.95, Number((prev - 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                  <Button type="button" variant="ghost" size="icon" aria-label="Reducir tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.max(0.9, Number((prev - 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100" title="Reducir texto">
                     <Minus className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Reducir texto</TooltipContent>
               </Tooltip>
 
+              <span className="min-w-[2.7rem] text-center text-[11px] font-bold text-slate-700" aria-live="polite">{escalaTexto.toFixed(1)}x</span>
+
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon" aria-label="Aumentar tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.min(1.7, Number((prev + 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                  <Button type="button" variant="ghost" size="icon" aria-label="Aumentar tamaño de letra" onClick={() => setEscalaTexto((prev) => Number(Math.min(1.8, Number((prev + 0.1).toFixed(1)))))} className="h-8 w-8 rounded-full hover:bg-slate-100" title="Aumentar texto">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Aumentar texto</TooltipContent>
               </Tooltip>
+            </div>
+
+            <div className="min-w-[200px] flex-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 shadow-sm">
+              <input
+                type="search"
+                value={busqueda}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                placeholder="Buscar por titular, lugar o patrulla"
+                aria-label="Buscar actividades o propuestas"
+                className="w-full border-0 bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none"
+              />
             </div>
 
             <Tooltip>
@@ -425,76 +455,72 @@ export default function TableroPlanificacion({
                   </div>
 
                   <CardContent className="p-2">
-                    <table className="w-full border-separate border-spacing-1">
-                      <thead>
-                        <tr>
-                          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, idx) => (
-                            <th key={`${mes.anio}-${mes.mesIndex0}-head-${idx}`} className={`pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${idx === 5 || idx === 6 ? 'text-[#1f5f8b]' : 'text-slate-500'}`}>
-                              {dia}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
+                    <div className="grid grid-cols-7 gap-1">
+                      {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((dia, idx) => (
+                        <div key={`${mes.anio}-${mes.mesIndex0}-head-${idx}`} className={`pb-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] ${idx === 5 || idx === 6 ? 'text-[#1f5f8b]' : 'text-slate-500'}`}>
+                          {dia}
+                        </div>
+                      ))}
+                    </div>
 
-                      <tbody>
-                        {mes.semanas.map((semana, semanaIndex) => (
-                          <tr key={`${mes.anio}-${mes.mesIndex0}-week-${semanaIndex}`}>
-                            {semana.map((celda, index) => {
-                              if (celda.esVacio) {
-                                return <td key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="h-[92px] rounded-lg bg-slate-50/80" />;
-                              }
+                    <div className="space-y-1">
+                      {mes.semanas.map((semana, semanaIndex) => (
+                        <div key={`${mes.anio}-${mes.mesIndex0}-week-${semanaIndex}`} className="grid grid-cols-7 gap-1">
+                          {semana.map((celda, index) => {
+                            if (celda.esVacio) {
+                              return <div key={`${mes.anio}-${mes.mesIndex0}-empty-${index}`} className="h-[96px] rounded-lg bg-slate-50/80" />;
+                            }
 
-                              const fecha = celda.fecha as string;
-                              const dow = new Date(`${fecha}T00:00:00`).getDay();
-                              const esFinde = dow === 0 || dow === 6;
-                              const items = postItsPorFecha[fecha] || [];
-                              const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
+                            const fecha = celda.fecha as string;
+                            const dow = new Date(`${fecha}T00:00:00`).getDay();
+                            const esFinde = dow === 0 || dow === 6;
+                            const items = postItsPorFecha[fecha] || [];
+                            const puedeCrearAqui = plan.estado === 'PROPUESTAS_ABIERTAS' || plan.estado === 'VIGENTE';
 
-                              return (
-                                <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
-                                  <div className="mb-1 flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-slate-500">{celda.dia}</span>
-                                  </div>
+                            return (
+                              <DayCell key={fecha} fecha={fecha} esFinde={esFinde} deshabilitado={plan.estado === 'CERRADO'}>
+                                <div className="mb-1 flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-slate-500">{celda.dia}</span>
+                                </div>
 
-                                  <div className="space-y-1">
-                                    {items.slice(0, 2).map((item) => (
-                                      <PostIt
-                                        key={`${item.tipo}-${item.id}`}
-                                        item={item}
-                                        onClick={() => {
-                                          if (item.tipo === 'actividad') {
-                                            const act = actividades.find((a) => a.id === item.id);
-                                            if (act) onEditarActividad(act);
-                                          }
-                                        }}
-                                      />
-                                    ))}
+                                <div className="space-y-1">
+                                  {items.slice(0, 2).map((item) => (
+                                    <PostIt
+                                      key={`${item.tipo}-${item.id}`}
+                                      item={item}
+                                      onClick={() => {
+                                        if (item.tipo === 'actividad') {
+                                          const act = actividades.find((a) => a.id === item.id);
+                                          if (act) onEditarActividad(act);
+                                        }
+                                      }}
+                                    />
+                                  ))}
 
-                                    {items.length > 2 && (
-                                      <div className="text-[8px] font-semibold text-slate-500">+{items.length - 2} más</div>
-                                    )}
+                                  {items.length > 2 && (
+                                    <div className="text-[8px] font-semibold text-slate-500">+{items.length - 2} más</div>
+                                  )}
 
-                                    {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label={`Crear actividad en ${fecha}`}
-                                        onClick={() => onCrearEnFecha(fecha)}
-                                        className="flex h-6 w-full rounded-md border border-dashed border-slate-300 text-base text-slate-400 hover:border-indigo-300 hover:text-indigo-500"
-                                        title="Agregar actividad"
-                                      >
-                                        +
-                                      </Button>
-                                    )}
-                                  </div>
-                                </DayCell>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                  {items.length === 0 && puedeCrearAqui && can('planificacion:aprobar') && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Crear actividad en ${fecha}`}
+                                      onClick={() => onCrearEnFecha(fecha)}
+                                      className="flex h-5 w-full rounded-md border border-dashed border-slate-300 text-[11px] text-slate-400 hover:border-indigo-300 hover:text-indigo-500"
+                                      title="Agregar actividad"
+                                    >
+                                      +
+                                    </Button>
+                                  )}
+                                </div>
+                              </DayCell>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

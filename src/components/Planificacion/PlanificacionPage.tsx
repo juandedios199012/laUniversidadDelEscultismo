@@ -513,6 +513,7 @@ export default function PlanificacionPage() {
               actividades={actividades}
               conteoVotos={conteoVotos}
               busqueda={busqueda}
+              onSearchChange={setBusqueda}
               onClearSearch={() => setBusqueda('')}
               onRefrescar={refrescarDetalle}
               onEditarActividad={setModalActividad}
