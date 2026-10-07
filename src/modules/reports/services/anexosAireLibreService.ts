@@ -88,7 +88,8 @@ export async function generarAnexo1(actividadId: string): Promise<ReportGenerati
 
     const { inicio, fin } = rangoFechas(actividad);
     const staff = actividad.staff || [];
-    const presupuestoBase = Number(dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0);
+    const participantesCount = Math.max(actividad.participantes?.length || 0, 1);
+    const presupuestoBase = Number((dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0) * participantesCount);
     const presupuestoReal = Number(dashboard?.total_real ?? 0);
     const diferenciaBaseReal = Number(dashboard?.diferencia_base_real ?? (presupuestoReal - presupuestoBase));
     const porcentajeEjecucionVsBase = typeof dashboard?.porcentaje_ejecucion_vs_base === 'number'
