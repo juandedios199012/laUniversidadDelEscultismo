@@ -62,9 +62,21 @@ function dividirEnLineas(texto?: string): string[] {
 }
 
 export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProps> = ({ data }) => {
-  const rangoFechas = data.fechaInicio === data.fechaFin
-    ? data.fechaInicio
-    : `${data.fechaInicio} - ${data.fechaFin}`;
+  const formatearFechaHoraActividad = (): string => {
+    const mismoDia = data.fechaInicio === data.fechaFin;
+    const horaInicio = data.horaConcentracion || '';
+    const horaFin = data.horaFin || '';
+
+    if (mismoDia) {
+      const parteFecha = data.fechaInicio || '';
+      const parteHora = horaInicio && horaFin ? `${horaInicio} - ${horaFin}` : horaInicio || horaFin;
+      return parteHora ? `${parteFecha} • ${parteHora}` : parteFecha;
+    }
+
+    const parteInicio = horaInicio ? `${data.fechaInicio} ${horaInicio}` : data.fechaInicio;
+    const parteFin = horaFin ? `${data.fechaFin} ${horaFin}` : data.fechaFin;
+    return `${parteInicio} - ${parteFin}`;
+  };
 
   const itemsQueLlevar = [
     ...dividirEnLineas(data.equipamientoObligatorio),
@@ -72,6 +84,8 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
     ...dividirEnLineas(data.recomendaciones),
   ];
   const itemsAMostrar = itemsQueLlevar.length > 0 ? itemsQueLlevar : ITEMS_QUE_LLEVAR_FALLBACK;
+  const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
+  const formatPct = (valor?: number) => `${Number(valor ?? 0).toFixed(1)}%`;
 
   return (
     <Document>
@@ -103,10 +117,16 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
         <View style={anexoStyles.table}>
           {fila('Nombre de la Actividad:', data.nombreActividad)}
           {fila('Lugar de la Actividad:', data.lugar)}
-          {fila('Fecha(s) de la Actividad:', `${rangoFechas}${data.horaConcentracion ? ` — ${data.horaConcentracion}` : ''}`)}
-          {fila('Adulto Responsable:', data.adultoResponsable || '—')}
-          {fila('Adulto(s) Acompañantes:', data.adultosAcompanantes || '—')}
-          {fila('Costo del Evento', `S/. ${data.costoPorParticipante.toFixed(2)} nuevos soles`)}
+          {fila('Fecha(s) y hora de la Actividad:', formatearFechaHoraActividad())}
+          {fila('Director:', data.director || data.adultoResponsable || '—')}
+          {fila('Dirigente Responsable:', data.dirigenteResponsable || '—')}
+          {fila('Dirigente(s) Acompañante(s):', data.adultosAcompanantes || '—')}
+          {fila('Cuota de participación:', formatMonto(data.costoPorParticipante))}
+          {typeof data.presupuestoBase === 'number' && fila('Presupuesto Base (Costos):', formatMonto(data.presupuestoBase))}
+          {typeof data.presupuestoReal === 'number' && fila('Presupuesto Ejecutado:', formatMonto(data.presupuestoReal))}
+          {typeof data.diferenciaBaseReal === 'number' && fila('Diferencia Base vs. Ejecutado:', `${data.diferenciaBaseReal >= 0 ? '+' : '-'}${formatMonto(Math.abs(data.diferenciaBaseReal))}`)}
+          {typeof data.porcentajeEjecucionVsBase === 'number' && fila('Ejecución vs. Base:', formatPct(data.porcentajeEjecucionVsBase))}
+          {fila('Colaborador:', data.colaborador || '—')}
         </View>
 
         <Text style={[anexoStyles.text, { marginBottom: 4 }]}>Asimismo, declaro:</Text>

@@ -32,6 +32,8 @@ export const Anexo1SolicitudAprobacionTemplate: React.FC<Anexo1SolicitudAprobaci
   const rangoFechas = data.fechaInicio === data.fechaFin
     ? data.fechaInicio
     : `${data.fechaInicio} - ${data.fechaFin}`;
+  const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
+  const formatPct = (valor?: number) => `${Number(valor ?? 0).toFixed(1)}%`;
 
   return (
     <Document>
@@ -58,7 +60,11 @@ export const Anexo1SolicitudAprobacionTemplate: React.FC<Anexo1SolicitudAprobaci
           {fila('Lugar de la Actividad:', data.lugar)}
           {fila('Fecha(s) de la Actividad:', `${rangoFechas}${data.horaConcentracion ? ` — ${data.horaConcentracion}` : ''}`)}
           {fila('Adulto Voluntario Responsable:', data.adultoResponsable || '—')}
-          {fila('Costo Total de la Actividad:', `S/. ${data.costoPorParticipante.toFixed(2)}`)}
+          {fila('Costo Total de la Actividad:', formatMonto(data.costoPorParticipante))}
+          {typeof data.presupuestoBase === 'number' && fila('Presupuesto Base (Costos):', formatMonto(data.presupuestoBase))}
+          {typeof data.presupuestoReal === 'number' && fila('Presupuesto Ejecutado:', formatMonto(data.presupuestoReal))}
+          {typeof data.diferenciaBaseReal === 'number' && fila('Diferencia Base vs. Ejecutado:', `${data.diferenciaBaseReal >= 0 ? '+' : '-'}${formatMonto(Math.abs(data.diferenciaBaseReal))}`)}
+          {typeof data.porcentajeEjecucionVsBase === 'number' && fila('Ejecución vs. Base:', formatPct(data.porcentajeEjecucionVsBase))}
         </View>
 
         <View style={anexoStyles.table}>

@@ -582,21 +582,27 @@ export interface DashboardPresupuesto {
   total_items: number;
   total_vouchers: number;
   porcentaje_avance: number;
+  presupuesto_base?: number;
+  diferencia_base_real?: number;
+  porcentaje_ejecucion_vs_base?: number;
   por_categoria: DashboardPresupuestoCategoria[];
+  base_por_categoria?: DashboardPresupuestoCategoria[];
   vouchers?: VoucherCompra[];
 }
 
 export interface DashboardPresupuestoCategoria {
   categoria: string;
-  total_items: number;
-  items_count: number;
-  items_comprados: number;
-  items_pendientes: number;
-  total_estimado: number;
-  total_real: number;
-  diferencia: number;
-  vouchers: number;
-  porcentaje_avance: number;
+  total_items?: number;
+  items_count?: number;
+  items_comprados?: number;
+  items_pendientes?: number;
+  total_estimado?: number;
+  total_real?: number;
+  diferencia?: number;
+  vouchers?: number;
+  porcentaje_avance?: number;
+  presupuesto_base?: number;
+  diferencia_base_real?: number;
 }
 
 // ============= INTERFACES MATERIALES BLOQUE =============

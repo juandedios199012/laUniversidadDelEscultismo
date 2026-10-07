@@ -25,6 +25,36 @@ function buscarStaffPorRol(staff: StaffActividad[], keywords: string[]): StaffAc
   return staff.find((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
 }
 
+function buscarStaffsPorRol(staff: StaffActividad[], keywords: string[]): StaffActividad[] {
+  return staff.filter((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
+}
+
+function obtenerHoraFinActividad(actividad: ActividadExteriorCompleta): string | undefined {
+  const horas: string[] = [];
+
+  if (actividad.programas?.length) {
+    actividad.programas.forEach((programa) => {
+      if (programa.hora_fin) horas.push(programa.hora_fin);
+      (programa.bloques || []).forEach((bloque) => {
+        if (bloque.hora_fin) horas.push(bloque.hora_fin);
+      });
+    });
+  }
+
+  if (actividad.hora_concentracion) {
+    horas.push(actividad.hora_concentracion);
+  }
+
+  if (!horas.length) return undefined;
+
+  const valor = horas
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+    .at(-1);
+
+  return valor || undefined;
+}
+
 function rangoFechas(actividad: ActividadExteriorCompleta): { inicio: string; fin: string } {
   return {
     inicio: formatDate(actividad.fecha_inicio),
@@ -50,13 +80,20 @@ async function obtenerActividadYFirmante(actividadId: string) {
  */
 export async function generarAnexo1(actividadId: string): Promise<ReportGenerationResult> {
   try {
-    const [{ actividad, plantilla }, comisionadoLocal] = await Promise.all([
+    const [{ actividad, plantilla }, comisionadoLocal, dashboard] = await Promise.all([
       obtenerActividadYFirmante(actividadId),
       ComisionadoLocalService.obtener(),
+      ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId),
     ]);
 
     const { inicio, fin } = rangoFechas(actividad);
     const staff = actividad.staff || [];
+    const presupuestoBase = Number(dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0);
+    const presupuestoReal = Number(dashboard?.total_real ?? 0);
+    const diferenciaBaseReal = Number(dashboard?.diferencia_base_real ?? (presupuestoReal - presupuestoBase));
+    const porcentajeEjecucionVsBase = typeof dashboard?.porcentaje_ejecucion_vs_base === 'number'
+      ? dashboard.porcentaje_ejecucion_vs_base
+      : (presupuestoBase > 0 ? (presupuestoReal / presupuestoBase) * 100 : 0);
 
     const data: Anexo1Data = {
       nombreActividad: actividad.nombre,
@@ -67,6 +104,10 @@ export async function generarAnexo1(actividadId: string): Promise<ReportGenerati
       fechaFin: fin,
       horaConcentracion: actividad.hora_concentracion,
       costoPorParticipante: actividad.costo_por_participante || 0,
+      presupuestoBase,
+      presupuestoReal,
+      diferenciaBaseReal,
+      porcentajeEjecucionVsBase,
       adultoResponsable: buscarStaffPorRol(staff, ['JEFE', 'DIRIGENTE'])?.nombre,
       responsableSalud: buscarStaffPorRol(staff, ['ENFERMERO', 'MEDICO', 'SALUD'])?.nombre,
       responsableSFH: buscarStaffPorRol(staff, ['SFH'])?.nombre,
@@ -138,10 +179,30 @@ export async function generarAnexo3(actividadId: string): Promise<ReportGenerati
  */
 export async function generarAnexo4(actividadId: string): Promise<ReportGenerationResult> {
   try {
-    const actividad = await ActividadesExteriorService.obtenerActividad(actividadId);
+    const [actividad, dashboard] = await Promise.all([
+      ActividadesExteriorService.obtenerActividad(actividadId),
+      ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId),
+    ]);
     const { inicio, fin } = rangoFechas(actividad);
     const staff = actividad.staff || [];
-    const adultoResponsable = buscarStaffPorRol(staff, ['JEFE', 'DIRIGENTE']);
+    const director = buscarStaffPorRol(staff, ['DIRECTOR']) || buscarStaffPorRol(staff, ['JEFE', 'CAMPAMENTO']);
+    const dirigenteResponsable = buscarStaffPorRol(staff, ['RESPONSABLE', 'DIRIGENTE']) || buscarStaffPorRol(staff, ['JEFE', 'CAMPAMENTO']);
+    const colaboradores = buscarStaffsPorRol(staff, ['COLABORADOR']);
+    const acompanantes = staff.filter((s) => {
+      const nombre = (s.rol || '').toUpperCase();
+      return s.id !== director?.id &&
+        s.id !== dirigenteResponsable?.id &&
+        !nombre.includes('COLABORADOR') &&
+        !nombre.includes('DIRECTOR') &&
+        !nombre.includes('RESPONSABLE') &&
+        !nombre.includes('JEFE');
+    });
+    const presupuestoBase = Number(dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0);
+    const presupuestoReal = Number(dashboard?.total_real ?? 0);
+    const diferenciaBaseReal = Number(dashboard?.diferencia_base_real ?? (presupuestoReal - presupuestoBase));
+    const porcentajeEjecucionVsBase = typeof dashboard?.porcentaje_ejecucion_vs_base === 'number'
+      ? dashboard.porcentaje_ejecucion_vs_base
+      : (presupuestoBase > 0 ? (presupuestoReal / presupuestoBase) * 100 : 0);
 
     const data: Anexo4Data = {
       nombreActividad: actividad.nombre,
@@ -149,12 +210,15 @@ export async function generarAnexo4(actividadId: string): Promise<ReportGenerati
       fechaInicio: inicio,
       fechaFin: fin,
       horaConcentracion: actividad.hora_concentracion,
+      horaFin: obtenerHoraFinActividad(actividad),
       costoPorParticipante: actividad.costo_por_participante || 0,
-      adultoResponsable: adultoResponsable?.nombre,
-      adultosAcompanantes: staff
-        .filter((s) => s.id !== adultoResponsable?.id)
-        .map((s) => s.nombre)
-        .join(', '),
+      presupuestoBase,
+      presupuestoReal,
+      diferenciaBaseReal,
+      porcentajeEjecucionVsBase,
+      adultosAcompanantes: acompanantes.map((s) => s.nombre).join(', '),
+      colaborador: colaboradores.map((s) => s.nombre).join(', ') || undefined,
+      adultoResponsable: director?.nombre || dirigenteResponsable?.nombre,
       fechaDocumento: fechaLarga(),
       equipamientoObligatorio: actividad.equipamiento_obligatorio,
       equipamientoOpcional: actividad.equipamiento_opcional,
