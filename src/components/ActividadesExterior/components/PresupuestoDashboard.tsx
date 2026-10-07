@@ -117,37 +117,15 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
     );
   }
 
-  const presupuestoBase = dashboard.presupuesto_base ?? 0;
-  const diferenciaBaseReal = dashboard.diferencia_base_real ?? (dashboard.total_real - presupuestoBase);
   const porcentajeAvance = dashboard.total_estimado > 0
     ? Math.min((dashboard.total_real / dashboard.total_estimado) * 100, 100)
     : 0;
-  const porcentajeEjecucionBase = dashboard.porcentaje_ejecucion_vs_base ?? (
-    presupuestoBase > 0 ? (dashboard.total_real / presupuestoBase) * 100 : 0
-  );
 
   const diferenciaTotal = dashboard.total_real - dashboard.total_estimado;
   const esAhorro = diferenciaTotal < 0;
 
   return (
     <div className="space-y-6">
-      {presupuestoBase > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium text-amber-800">Presupuesto base del paso Costos</p>
-              <p className="text-2xl font-bold text-amber-900">{formatMonto(presupuestoBase)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-amber-700">Ejecución vs base</p>
-              <p className={`text-lg font-semibold ${diferenciaBaseReal <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {diferenciaBaseReal <= 0 ? 'Ahorro' : 'Sobre base'}: {formatMonto(Math.abs(diferenciaBaseReal))}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header con título */}
       <div className="flex items-center justify-between">
         <div>
@@ -160,20 +138,7 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
       </div>
 
       {/* KPIs Principales */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Presupuesto Base */}
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Base</p>
-                <p className="text-2xl font-bold">{formatMonto(presupuestoBase)}</p>
-              </div>
-              <Banknote className="h-8 w-8 text-amber-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Estimado */}
         <Card>
           <CardContent className="pt-4">
@@ -237,23 +202,6 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{dashboard.items_comprados} comprados</span>
                 <span>{dashboard.items_pendientes} pendientes</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Ejecución vs base */}
-        <Card>
-          <CardContent className="pt-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Ejecución base</p>
-                <span className="text-sm font-medium">{porcentajeEjecucionBase.toFixed(0)}%</span>
-              </div>
-              <Progress value={Math.min(porcentajeEjecucionBase, 100)} className="h-2" />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Base: {formatMonto(presupuestoBase)}</span>
-                <span>Real: {formatMonto(dashboard.total_real)}</span>
               </div>
             </div>
           </CardContent>

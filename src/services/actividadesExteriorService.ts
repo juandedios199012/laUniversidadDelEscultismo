@@ -582,11 +582,7 @@ export interface DashboardPresupuesto {
   total_items: number;
   total_vouchers: number;
   porcentaje_avance: number;
-  presupuesto_base?: number;
-  diferencia_base_real?: number;
-  porcentaje_ejecucion_vs_base?: number;
   por_categoria: DashboardPresupuestoCategoria[];
-  base_por_categoria?: DashboardPresupuestoCategoria[];
   vouchers?: VoucherCompra[];
 }
 
@@ -601,8 +597,6 @@ export interface DashboardPresupuestoCategoria {
   diferencia?: number;
   vouchers?: number;
   porcentaje_avance?: number;
-  presupuesto_base?: number;
-  diferencia_base_real?: number;
 }
 
 // ============= INTERFACES MATERIALES BLOQUE =============

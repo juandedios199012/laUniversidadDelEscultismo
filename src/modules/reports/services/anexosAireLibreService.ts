@@ -88,13 +88,7 @@ export async function generarAnexo1(actividadId: string): Promise<ReportGenerati
 
     const { inicio, fin } = rangoFechas(actividad);
     const staff = actividad.staff || [];
-    const participantesCount = Math.max(actividad.participantes?.length || 0, 1);
-    const presupuestoBase = Number((dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0) * participantesCount);
     const presupuestoReal = Number(dashboard?.total_real ?? 0);
-    const diferenciaBaseReal = Number(dashboard?.diferencia_base_real ?? (presupuestoReal - presupuestoBase));
-    const porcentajeEjecucionVsBase = typeof dashboard?.porcentaje_ejecucion_vs_base === 'number'
-      ? dashboard.porcentaje_ejecucion_vs_base
-      : (presupuestoBase > 0 ? (presupuestoReal / presupuestoBase) * 100 : 0);
 
     const data: Anexo1Data = {
       nombreActividad: actividad.nombre,
@@ -105,10 +99,7 @@ export async function generarAnexo1(actividadId: string): Promise<ReportGenerati
       fechaFin: fin,
       horaConcentracion: actividad.hora_concentracion,
       costoPorParticipante: actividad.costo_por_participante || 0,
-      presupuestoBase,
       presupuestoReal,
-      diferenciaBaseReal,
-      porcentajeEjecucionVsBase,
       adultoResponsable: buscarStaffPorRol(staff, ['JEFE', 'DIRIGENTE'])?.nombre,
       responsableSalud: buscarStaffPorRol(staff, ['ENFERMERO', 'MEDICO', 'SALUD'])?.nombre,
       responsableSFH: buscarStaffPorRol(staff, ['SFH'])?.nombre,
@@ -198,12 +189,7 @@ export async function generarAnexo4(actividadId: string): Promise<ReportGenerati
         !nombre.includes('RESPONSABLE') &&
         !nombre.includes('JEFE');
     });
-    const presupuestoBase = Number(dashboard?.presupuesto_base ?? actividad.costo_por_participante ?? 0);
     const presupuestoReal = Number(dashboard?.total_real ?? 0);
-    const diferenciaBaseReal = Number(dashboard?.diferencia_base_real ?? (presupuestoReal - presupuestoBase));
-    const porcentajeEjecucionVsBase = typeof dashboard?.porcentaje_ejecucion_vs_base === 'number'
-      ? dashboard.porcentaje_ejecucion_vs_base
-      : (presupuestoBase > 0 ? (presupuestoReal / presupuestoBase) * 100 : 0);
 
     const data: Anexo4Data = {
       nombreActividad: actividad.nombre,
@@ -213,10 +199,7 @@ export async function generarAnexo4(actividadId: string): Promise<ReportGenerati
       horaConcentracion: actividad.hora_concentracion,
       horaFin: obtenerHoraFinActividad(actividad),
       costoPorParticipante: actividad.costo_por_participante || 0,
-      presupuestoBase,
       presupuestoReal,
-      diferenciaBaseReal,
-      porcentajeEjecucionVsBase,
       adultosAcompanantes: acompanantes.map((s) => s.nombre).join(', '),
       colaborador: colaboradores.map((s) => s.nombre).join(', ') || undefined,
       adultoResponsable: director?.nombre || dirigenteResponsable?.nombre,

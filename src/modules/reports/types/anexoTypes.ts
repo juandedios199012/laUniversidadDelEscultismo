@@ -20,10 +20,7 @@ export interface Anexo1Data {
   fechaFin: string;
   horaConcentracion?: string;
   costoPorParticipante: number;
-  presupuestoBase?: number;
   presupuestoReal?: number;
-  diferenciaBaseReal?: number;
-  porcentajeEjecucionVsBase?: number;
   adultoResponsable?: string;
   responsableSalud?: string;
   responsableSFH?: string;
@@ -66,10 +63,7 @@ export interface Anexo4Data {
   horaConcentracion?: string;
   horaFin?: string;
   costoPorParticipante: number;
-  presupuestoBase?: number;
   presupuestoReal?: number;
-  diferenciaBaseReal?: number;
-  porcentajeEjecucionVsBase?: number;
   director?: string;
   dirigenteResponsable?: string;
   adultosAcompanantes?: string;

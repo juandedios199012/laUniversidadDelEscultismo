@@ -85,7 +85,6 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
   ];
   const itemsAMostrar = itemsQueLlevar.length > 0 ? itemsQueLlevar : ITEMS_QUE_LLEVAR_FALLBACK;
   const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
-  const formatPct = (valor?: number) => `${Number(valor ?? 0).toFixed(1)}%`;
 
   return (
     <Document>
@@ -122,10 +121,7 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
           {fila('Dirigente Responsable:', data.dirigenteResponsable || '—')}
           {fila('Dirigente(s) Acompañante(s):', data.adultosAcompanantes || '—')}
           {fila('Cuota de participación:', formatMonto(data.costoPorParticipante))}
-          {typeof data.presupuestoBase === 'number' && fila('Presupuesto Base (Costos):', formatMonto(data.presupuestoBase))}
           {typeof data.presupuestoReal === 'number' && fila('Presupuesto Ejecutado:', formatMonto(data.presupuestoReal))}
-          {typeof data.diferenciaBaseReal === 'number' && fila('Diferencia Base vs. Ejecutado:', `${data.diferenciaBaseReal >= 0 ? '+' : '-'}${formatMonto(Math.abs(data.diferenciaBaseReal))}`)}
-          {typeof data.porcentajeEjecucionVsBase === 'number' && fila('Ejecución vs. Base:', formatPct(data.porcentajeEjecucionVsBase))}
           {fila('Colaborador:', data.colaborador || '—')}
         </View>
 
