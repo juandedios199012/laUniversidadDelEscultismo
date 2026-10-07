@@ -316,7 +316,6 @@ export async function generarReporteFinanciero(actividadId: string): Promise<Rep
       ingresos: participantes
         .map((p) => ({
           nombre: p.scout_nombre,
-          patrulla: p.patrulla_nombre,
           cuota: p.monto_a_pagar ?? actividad.costo_por_participante ?? 0,
           pagado: p.monto_pagado || 0,
         }))

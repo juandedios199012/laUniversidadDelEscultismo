@@ -77,7 +77,6 @@ export interface Anexo4Data {
 
 export interface ReporteFinancieroIngreso {
   nombre: string;
-  patrulla?: string;
   cuota: number;
   pagado: number;
 }

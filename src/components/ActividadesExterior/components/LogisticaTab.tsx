@@ -21,6 +21,7 @@ import {
   Radio,
   Loader2,
   AlertTriangle,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,7 @@ import {
   TIPOS_COSTO_LOGISTICA,
   ESTADOS_LOGISTICA,
 } from '@/services/actividadesExteriorService';
+import RegistrarCompraItemDialog from '../dialogs/RegistrarCompraItemDialog';
 
 // Schema de validación
 const logisticaSchema = z.object({
@@ -117,6 +119,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
   const [saving, setSaving] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [itemEditar, setItemEditar] = useState<ItemLogistica | null>(null);
+  const [itemParaCompra, setItemParaCompra] = useState<ItemLogistica | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form
@@ -459,6 +462,14 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                               </TableCell>
                               <TableCell className="text-right font-medium">
                                 {formatMonto(item.costo_total_alquiler || item.subtotal)}
+                                {item.subtotal_real != null && (() => {
+                                  const dif = item.subtotal_real - (item.costo_total_alquiler || item.subtotal);
+                                  return (
+                                    <p className={`text-xs font-normal ${dif > 0 ? 'text-red-600' : dif < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                      Real: {formatMonto(item.subtotal_real)}
+                                    </p>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="text-center">
                                 {readonly ? (
@@ -490,6 +501,15 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                               {!readonly && (
                                 <TableCell>
                                   <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      title="Registrar precio real"
+                                      onClick={() => setItemParaCompra(item)}
+                                    >
+                                      <Receipt className="h-3.5 w-3.5" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -871,6 +891,28 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
           </Form>
         </DialogContent>
       </Dialog>
+
+      <RegistrarCompraItemDialog
+        open={!!itemParaCompra}
+        onOpenChange={(open) => {
+          if (!open) setItemParaCompra(null);
+        }}
+        item={itemParaCompra ? {
+          id: itemParaCompra.id,
+          nombre: itemParaCompra.nombre,
+          unidad: itemParaCompra.unidad,
+          cantidad: itemParaCompra.cantidad,
+          precio_unitario: itemParaCompra.precio_unitario,
+          subtotal: itemParaCompra.costo_total_alquiler || itemParaCompra.subtotal,
+          proveedor: itemParaCompra.proveedor_nombre,
+        } : null}
+        tipoItem="logistica"
+        actividadId={actividadId}
+        onSuccess={() => {
+          setItemParaCompra(null);
+          cargarItems();
+        }}
+      />
     </Card>
   );
 };

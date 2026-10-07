@@ -695,6 +695,12 @@ export interface ItemLogistica {
   es_critico: boolean;
   notas?: string;
   orden: number;
+  // Compra real (null mientras no se registre el precio real)
+  precio_unitario_real?: number | null;
+  cantidad_real?: number | null;
+  subtotal_real?: number | null;
+  lugar_compra?: string;
+  notas_compra?: string;
 }
 
 export interface NuevoItemLogistica {
