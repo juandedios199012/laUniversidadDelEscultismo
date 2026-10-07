@@ -80,6 +80,7 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
   const [cantidad, setCantidad] = useState('1');
   const [precioUnitario, setPrecioUnitario] = useState('');
   const [proveedor, setProveedor] = useState('');
+  const [presupuestoItemId, setPresupuestoItemId] = useState<string>('');
   const [fechaCompra, setFechaCompra] = useState(new Date().toISOString().split('T')[0]);
   const [tipoComprobante, setTipoComprobante] = useState('BOLETA');
   const [numeroComprobante, setNumeroComprobante] = useState('');
@@ -108,6 +109,7 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
     setCantidad('1');
     setPrecioUnitario('');
     setProveedor('');
+    setPresupuestoItemId('');
     setFechaCompra(new Date().toISOString().split('T')[0]);
     setTipoComprobante('BOLETA');
     setNumeroComprobante('');
@@ -156,16 +158,20 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
 
   // Al seleccionar un item de presupuesto, pre-llenar datos
   const handleSelectPresupuesto = (itemId: string) => {
-    if (itemId) {
-      const item = presupuesto.find(p => p.id === itemId);
-      if (item) {
-        setConcepto(item.concepto);
-        setCategoria(item.categoria);
-        setPrecioUnitario(item.precio_unitario.toString());
-        setCantidad(item.cantidad.toString());
-        setProveedor(item.proveedor || '');
-        setDescripcion(item.descripcion || '');
-      }
+    setPresupuestoItemId(itemId || '');
+
+    if (!itemId) {
+      return;
+    }
+
+    const item = presupuesto.find(p => p.id === itemId);
+    if (item) {
+      setConcepto(item.concepto);
+      setCategoria(item.categoria);
+      setPrecioUnitario(item.precio_unitario.toString());
+      setCantidad(item.cantidad.toString());
+      setProveedor(item.proveedor || '');
+      setDescripcion(item.descripcion || '');
     }
   };
 
