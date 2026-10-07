@@ -74,3 +74,59 @@ export interface Anexo4Data {
   equipamientoOpcional?: string;
   recomendaciones?: string;
 }
+
+export interface ReporteFinancieroIngreso {
+  nombre: string;
+  patrulla?: string;
+  cuota: number;
+  pagado: number;
+}
+
+export interface ReporteFinancieroCategoria {
+  categoria: string;
+  estimado: number;
+  real: number;
+}
+
+export interface ReporteFinancieroItem {
+  categoria: string;
+  origen?: string;
+  concepto: string;
+  cantidad: number;
+  unidad?: string;
+  precioUnitario: number;
+  subtotalEstimado: number;
+  subtotalReal: number;
+  proveedor?: string;
+}
+
+export interface ReporteFinancieroCompra {
+  fecha: string;
+  concepto: string;
+  categoria?: string;
+  proveedor?: string;
+  comprobante?: string;
+  monto: number;
+}
+
+export interface ReporteFinancieroData {
+  nombreActividad: string;
+  lugar: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: string;
+  fechaDocumento: string;
+  costoPorParticipante: number;
+  // Resumen
+  cuotasEsperadas: number;
+  recaudado: number;
+  totalEstimado: number;
+  totalGastado: number;
+  totalPendienteCompra: number;
+  // Detalle
+  ingresos: ReporteFinancieroIngreso[];
+  categorias: ReporteFinancieroCategoria[];
+  itemsComprados: ReporteFinancieroItem[];
+  comprasDirectas: ReporteFinancieroCompra[];
+  itemsPendientes: ReporteFinancieroItem[];
+}

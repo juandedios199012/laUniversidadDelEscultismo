@@ -599,6 +599,27 @@ export interface DashboardPresupuestoCategoria {
   porcentaje_avance?: number;
 }
 
+export interface DetallePresupuestoItem {
+  item_id: string;
+  tipo_item: 'ingrediente' | 'material' | 'logistica';
+  categoria: string;
+  origen?: string;
+  concepto: string;
+  unidad?: string;
+  cantidad_estimada: number;
+  precio_estimado: number;
+  subtotal_estimado: number;
+  cantidad_real: number;
+  precio_real: number;
+  subtotal_real: number;
+  comprado: boolean;
+  estado: string;
+  proveedor?: string;
+  lugar_compra?: string;
+  fecha_compra?: string;
+  total_vouchers: number;
+}
+
 // ============= INTERFACES MATERIALES BLOQUE =============
 
 export type EstadoMaterial = 'PENDIENTE' | 'EN_INVENTARIO' | 'COTIZADO' | 'COMPRADO' | 'ASIGNADO';
@@ -3025,6 +3046,22 @@ export class ActividadesExteriorService {
     if (!data?.success) throw new Error(data?.error || 'Error al obtener dashboard');
 
     return data.data;
+  }
+
+  /**
+   * Detalle de ítems planificados (Menú, Materiales, Logística) con estimado vs real
+   */
+  static async obtenerDetallePresupuesto(
+    actividadId: string
+  ): Promise<DetallePresupuestoItem[]> {
+    const { data, error } = await supabase.rpc('api_obtener_detalle_presupuesto_actividad', {
+      p_actividad_id: actividadId,
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener detalle de presupuesto');
+
+    return data.data || [];
   }
 
   // ============= PATRULLAS POR ACTIVIDAD =============

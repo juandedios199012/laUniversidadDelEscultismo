@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ActividadesExteriorService, ActividadExteriorCompleta, DashboardInventario } from '@/services/actividadesExteriorService';
+import { ActividadesExteriorService, ActividadExteriorCompleta, DashboardInventario, DashboardPresupuesto } from '@/services/actividadesExteriorService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
@@ -68,10 +68,12 @@ const CAMPOS_REPORTE: Record<string, { id: string; label: string; default: boole
   presupuesto: [
     { id: 'concepto', label: 'Concepto', default: true },
     { id: 'categoria', label: 'Categoría', default: true },
+    { id: 'origen', label: 'Origen', default: false },
     { id: 'cantidad', label: 'Cantidad', default: true },
     { id: 'precio_unitario', label: 'P. Unit.', default: true },
-    { id: 'monto_total', label: 'Total', default: true },
-    { id: 'monto_ejecutado', label: 'Ejecutado', default: true },
+    { id: 'monto_total', label: 'Estimado', default: true },
+    { id: 'monto_ejecutado', label: 'Gastado', default: true },
+    { id: 'estado', label: 'Estado', default: true },
     { id: 'proveedor', label: 'Proveedor', default: false },
   ],
   inventario: [
@@ -134,6 +136,7 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
   const [formatoExport, setFormatoExport] = useState<'pdf' | 'excel'>('pdf');
   const [exportando, setExportando] = useState(false);
   const [generandoAnexoId, setGenerandoAnexoId] = useState<string | null>(null);
+  const [dashboardPresupuesto, setDashboardPresupuesto] = useState<DashboardPresupuesto | null>(null);
 
   useEffect(() => {
     cargarDatos();
@@ -150,8 +153,12 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const dashboard = await ActividadesExteriorService.dashboardInventario(actividad.id);
+      const [dashboard, presupuesto] = await Promise.all([
+        ActividadesExteriorService.dashboardInventario(actividad.id),
+        ActividadesExteriorService.obtenerDashboardPresupuesto(actividad.id).catch(() => null),
+      ]);
       setInventarioDashboard(dashboard);
+      setDashboardPresupuesto(presupuesto);
     } catch (error) {
       console.error('Error cargando datos:', error);
     } finally {
@@ -178,7 +185,9 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
     totalParticipantes: actividad.participantes?.length || 0,
     staff: actividad.staff?.length || 0,
     
-    montoTotal: actividad.participantes?.reduce((sum, p) => sum + (p.monto_a_pagar || 0), 0) || 0,
+    montoTotal: actividad.participantes?.reduce(
+      (sum, p) => sum + (p.monto_a_pagar ?? actividad.costo_por_participante ?? 0), 0,
+    ) || 0,
     montoPagado: actividad.participantes?.reduce((sum, p) => sum + (p.monto_pagado || 0), 0) || 0,
     get porcentajeRecaudacion() {
       return this.montoTotal > 0 ? Math.round((this.montoPagado / this.montoTotal) * 100) : 0;
@@ -189,7 +198,9 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
       return this.totalParticipantes > 0 ? Math.round((this.conAutorizacion / this.totalParticipantes) * 100) : 0;
     },
     
-    comprasTotal: actividad.compras?.reduce((sum, c) => sum + (c.monto_total || 0), 0) || 0,
+    // Gastado real: ítems planificados comprados + compras directas
+    gastadoTotal: dashboardPresupuesto?.total_real
+      ?? (actividad.compras?.reduce((sum, c) => sum + (c.monto_total || 0), 0) || 0),
     
     bloquesPrograma: actividad.programas?.reduce((sum: number, p) => sum + (p.bloques?.length || 0), 0) || 0,
     diasPrograma: actividad.programas?.length || 0,
@@ -233,16 +244,20 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
           confirmado: p.confirmado ? '✓ Sí' : '✗ No',
         }));
       
-      case 'presupuesto':
-        return (actividad.presupuesto || []).map(item => ({
+      case 'presupuesto': {
+        const detalle = await ActividadesExteriorService.obtenerDetallePresupuesto(actividad.id);
+        return detalle.map(item => ({
           concepto: item.concepto,
           categoria: item.categoria || '-',
-          cantidad: item.cantidad,
-          precio_unitario: `S/ ${(item.precio_unitario || 0).toFixed(2)}`,
-          monto_total: `S/ ${(item.monto_total || 0).toFixed(2)}`,
-          monto_ejecutado: `S/ ${(item.monto_ejecutado || 0).toFixed(2)}`,
-          proveedor: item.proveedor || '-',
+          origen: item.origen || '-',
+          cantidad: `${item.cantidad_estimada}${item.unidad ? ` ${item.unidad}` : ''}`,
+          precio_unitario: `S/ ${(Number(item.precio_estimado) || 0).toFixed(2)}`,
+          monto_total: `S/ ${(Number(item.subtotal_estimado) || 0).toFixed(2)}`,
+          monto_ejecutado: item.comprado ? `S/ ${(Number(item.subtotal_real) || 0).toFixed(2)}` : '-',
+          estado: item.estado,
+          proveedor: item.proveedor || item.lugar_compra || '-',
         }));
+      }
       
       case 'inventario':
         const inventario = await ActividadesExteriorService.listarInventario(actividad.id);
@@ -550,16 +565,19 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
             </div>
             <Separator />
             <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-muted-foreground">Total compras</span>
-              <span className="font-medium">S/ {kpis.comprasTotal.toFixed(2)}</span>
+              <span className="text-muted-foreground">Total gastado</span>
+              <span className="font-medium">S/ {kpis.gastadoTotal.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between items-center py-2 text-lg font-semibold">
-              <span>Balance</span>
-              <span className={kpis.montoPagado - kpis.comprasTotal >= 0 ? 'text-green-600' : 'text-red-600'}>
-                S/ {(kpis.montoPagado - kpis.comprasTotal).toFixed(2)}
+              <span>Saldo (recaudado − gastado)</span>
+              <span className={kpis.montoPagado - kpis.gastadoTotal >= 0 ? 'text-green-600' : 'text-red-600'}>
+                S/ {(kpis.montoPagado - kpis.gastadoTotal).toFixed(2)}
               </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              El reporte financiero completo en PDF está en el módulo Reportes › Finanzas de Actividad (Aire Libre).
+            </p>
           </CardContent>
         </Card>
 

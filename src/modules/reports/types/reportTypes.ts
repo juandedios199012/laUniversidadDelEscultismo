@@ -22,6 +22,8 @@ export enum ReportType {
   ESTADO_CUENTA_PERSONA = 'estado_cuenta_persona',
   REPORTE_ACTIVIDADES = 'reporte_actividades',
   REPORTE_INVENTARIO = 'reporte_inventario',
+  // Finanzas de una actividad del módulo Aire Libre
+  FINANCIERO_ACTIVIDAD_AIRE_LIBRE = 'financiero_actividad_aire_libre',
   // Reporte Excel con todos los campos
   SCOUTS_EXCEL_COMPLETO = 'scouts_excel_completo',
   // Reporte de Especialidades (migrado desde módulo)

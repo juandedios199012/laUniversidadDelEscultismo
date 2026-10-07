@@ -12,6 +12,9 @@ import {
   ActividadesExteriorService,
   ActividadExteriorCompleta,
   StaffActividad,
+  DetallePresupuestoItem,
+  CATEGORIAS_PRESUPUESTO_ACTIVIDAD,
+  ESTADOS_ACTIVIDAD_EXTERIOR,
 } from '@/services/actividadesExteriorService';
 import { DocumentosService } from '@/services/documentosService';
 import { ComisionadoLocalService } from '@/services/comisionadoLocalService';
@@ -19,7 +22,15 @@ import { fechaLarga } from '@/components/GestionDocumentos/CartaOficialDocumento
 import { Anexo1SolicitudAprobacionTemplate } from '../templates/pdf/anexos/Anexo1SolicitudAprobacionTemplate';
 import { Anexo3ListaParticipantesTemplate } from '../templates/pdf/anexos/Anexo3ListaParticipantesTemplate';
 import { Anexo4AutorizacionTemplate } from '../templates/pdf/anexos/Anexo4AutorizacionTemplate';
-import { Anexo1Data, Anexo3Data, Anexo4Data } from '../types/anexoTypes';
+import { ReporteFinancieroTemplate } from '../templates/pdf/anexos/ReporteFinancieroTemplate';
+import {
+  Anexo1Data,
+  Anexo3Data,
+  Anexo4Data,
+  ReporteFinancieroCategoria,
+  ReporteFinancieroData,
+  ReporteFinancieroItem,
+} from '../types/anexoTypes';
 
 function buscarStaffPorRol(staff: StaffActividad[], keywords: string[]): StaffActividad | undefined {
   return staff.find((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
@@ -217,6 +228,121 @@ export async function generarAnexo4(actividadId: string): Promise<ReportGenerati
       status: ReportStatus.ERROR,
       fileName: 'anexo4.pdf',
       error: error instanceof Error ? error.message : 'Error desconocido al generar el Anexo 4',
+    };
+  }
+}
+
+/**
+ * Misma normalización que api_obtener_dashboard_presupuesto: une ítems
+ * planificados y compras directas bajo una sola categoría.
+ */
+function normalizarCategoria(categoria?: string | null): string {
+  const valor = (categoria || '').trim().toUpperCase() || 'OTROS';
+  if (valor === 'MENU') return 'ALIMENTACION';
+  if (valor === 'TRANSPORTE' || valor === 'ALQUILER') return 'LOGISTICA';
+  return valor;
+}
+
+function etiquetaCategoria(categoria: string): string {
+  if (categoria === 'LOGISTICA') return 'Logística';
+  return CATEGORIAS_PRESUPUESTO_ACTIVIDAD.find((c) => c.value === categoria)?.label || categoria;
+}
+
+function aItemReporte(item: DetallePresupuestoItem, usarReal: boolean): ReporteFinancieroItem {
+  return {
+    categoria: etiquetaCategoria(normalizarCategoria(item.categoria)),
+    origen: item.origen,
+    concepto: item.concepto,
+    cantidad: Number(usarReal ? item.cantidad_real : item.cantidad_estimada) || 0,
+    unidad: item.unidad,
+    precioUnitario: Number(usarReal ? item.precio_real : item.precio_estimado) || 0,
+    subtotalEstimado: Number(item.subtotal_estimado) || 0,
+    subtotalReal: usarReal ? Number(item.subtotal_real) || 0 : 0,
+    proveedor: item.proveedor || item.lugar_compra,
+  };
+}
+
+/**
+ * REPORTE FINANCIERO - Ingresos, egresos y saldo de la actividad
+ */
+export async function generarReporteFinanciero(actividadId: string): Promise<ReportGenerationResult> {
+  try {
+    const [actividad, detalle] = await Promise.all([
+      ActividadesExteriorService.obtenerActividad(actividadId),
+      ActividadesExteriorService.obtenerDetallePresupuesto(actividadId),
+    ]);
+    const { inicio, fin } = rangoFechas(actividad);
+    const participantes = actividad.participantes || [];
+    const compras = actividad.compras || [];
+
+    const comprados = detalle.filter((it) => it.comprado);
+    const pendientes = detalle.filter((it) => it.estado === 'PENDIENTE');
+
+    // Egresos por categoría: estimado de ítems planificados, real de comprados + compras directas
+    const porCategoria = new Map<string, ReporteFinancieroCategoria>();
+    const acumular = (categoria: string | undefined, estimado: number, real: number) => {
+      const clave = normalizarCategoria(categoria);
+      const actual = porCategoria.get(clave) || { categoria: etiquetaCategoria(clave), estimado: 0, real: 0 };
+      actual.estimado += estimado;
+      actual.real += real;
+      porCategoria.set(clave, actual);
+    };
+    detalle.forEach((it) => acumular(
+      it.categoria,
+      Number(it.subtotal_estimado) || 0,
+      it.comprado ? Number(it.subtotal_real) || 0 : 0,
+    ));
+    compras.forEach((c) => acumular(c.categoria, 0, Number(c.monto_total) || 0));
+
+    const categorias = Array.from(porCategoria.values()).sort((a, b) => a.categoria.localeCompare(b.categoria));
+    const itemsComprados = comprados.map((it) => aItemReporte(it, true));
+    const itemsPendientes = pendientes.map((it) => aItemReporte(it, false));
+
+    const data: ReporteFinancieroData = {
+      nombreActividad: actividad.nombre,
+      lugar: actividad.ubicacion,
+      fechaInicio: inicio,
+      fechaFin: fin,
+      estado: ESTADOS_ACTIVIDAD_EXTERIOR.find((e) => e.value === actividad.estado)?.label || actividad.estado,
+      fechaDocumento: formatDate(new Date()),
+      costoPorParticipante: actividad.costo_por_participante || 0,
+      cuotasEsperadas: participantes.reduce(
+        (acc, p) => acc + (p.monto_a_pagar ?? actividad.costo_por_participante ?? 0), 0,
+      ),
+      recaudado: participantes.reduce((acc, p) => acc + (p.monto_pagado || 0), 0),
+      totalEstimado: detalle.reduce((acc, it) => acc + (Number(it.subtotal_estimado) || 0), 0),
+      totalGastado: categorias.reduce((acc, c) => acc + c.real, 0),
+      totalPendienteCompra: itemsPendientes.reduce((acc, it) => acc + it.subtotalEstimado, 0),
+      ingresos: participantes
+        .map((p) => ({
+          nombre: p.scout_nombre,
+          patrulla: p.patrulla_nombre,
+          cuota: p.monto_a_pagar ?? actividad.costo_por_participante ?? 0,
+          pagado: p.monto_pagado || 0,
+        }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+      categorias,
+      itemsComprados,
+      comprasDirectas: compras
+        .map((c) => ({
+          fecha: formatDate(c.fecha_compra),
+          concepto: c.concepto,
+          categoria: c.categoria ? etiquetaCategoria(c.categoria.toUpperCase()) : undefined,
+          proveedor: c.proveedor,
+          comprobante: [c.tipo_comprobante, c.numero_comprobante].filter(Boolean).join(' ') || undefined,
+          monto: Number(c.monto_total) || 0,
+        })),
+      itemsPendientes,
+    };
+
+    const Component = React.createElement(ReporteFinancieroTemplate, { data });
+    return await generateAndDownloadPDF(Component, nombreArchivo('Reporte_Financiero', actividad));
+  } catch (error) {
+    console.error('Error generando Reporte Financiero:', error);
+    return {
+      status: ReportStatus.ERROR,
+      fileName: 'reporte_financiero.pdf',
+      error: error instanceof Error ? error.message : 'Error desconocido al generar el Reporte Financiero',
     };
   }
 }

@@ -39,6 +39,8 @@ import ComitePadresService from '../../../services/comitePadresService';
 import ReportsService from '../../../services/reportsService';
 import FinanzasService, { ConceptoFinanzas, SaldoPersona } from '../../../services/finanzasService';
 import InventarioService from '../../../services/inventarioService';
+import { ActividadesExteriorService, ActividadExteriorResumen } from '../../../services/actividadesExteriorService';
+import { generarReporteFinanciero } from '../services/anexosAireLibreService';
 import {
   getRankingPatrullas,
 } from '../services/reportDataService';
@@ -233,6 +235,10 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   const [estadoCuentaPersonaId, setEstadoCuentaPersonaId] = useState<string>('');
   const [personasConMovimientosList, setPersonasConMovimientosList] = useState<SaldoPersona[]>([]);
 
+  // Estado para el filtro de Actividad del reporte "Finanzas de Actividad (Aire Libre)"
+  const [financieroActividadId, setFinancieroActividadId] = useState<string>('');
+  const [actividadesAireLibreList, setActividadesAireLibreList] = useState<ActividadExteriorResumen[]>([]);
+
   // Estado para el filtro de Persona (buscador) del reporte "Historia Médica"
   const [historiaMedicaPersona, setHistoriaMedicaPersona] = useState<PersonaResult | null>(null);
   const [historiaMedicaFechaLlenado, setHistoriaMedicaFechaLlenado] = useState<string>(
@@ -272,7 +278,19 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
     loadDirigentesYComite();
     loadConceptosFinanzas();
     loadPersonasConMovimientos();
+    loadActividadesAireLibre();
   }, []);
+
+  const loadActividadesAireLibre = async () => {
+    try {
+      const { actividades } = await ActividadesExteriorService.listarActividades({ limite: 200 });
+      setActividadesAireLibreList(
+        [...(actividades || [])].sort((a, b) => (b.fecha_inicio || '').localeCompare(a.fecha_inicio || ''))
+      );
+    } catch (error) {
+      console.error('Error cargando actividades de Aire Libre:', error);
+    }
+  };
 
   const loadConceptosFinanzas = async () => {
     try {
@@ -562,6 +580,14 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
           badge: 'Nuevo'
         },
         {
+          type: ReportType.FINANCIERO_ACTIVIDAD_AIRE_LIBRE,
+          title: 'Finanzas de Actividad (Aire Libre)',
+          description: 'Cuotas recaudadas, gastos (Menú, Materiales, Logística y Compras), saldo y pendientes de una actividad',
+          icon: <CreditCard className="w-6 h-6" />,
+          color: 'emerald',
+          badge: '¡Nuevo!'
+        },
+        {
           type: ReportType.REPORTE_INVENTARIO,
           title: 'Reporte de Inventario',
           description: 'Stock, préstamos y movimientos',
@@ -668,6 +694,12 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
 
         case ReportType.REPORTE_INVENTARIO:
           return await exportInventarioReport(format, metadata);
+
+        case ReportType.FINANCIERO_ACTIVIDAD_AIRE_LIBRE:
+          if (!financieroActividadId) {
+            return { status: 'error' as any, fileName: 'error', error: 'Selecciona una actividad' };
+          }
+          return await generarReporteFinanciero(financieroActividadId);
 
         case ReportType.DNI_SCOUTS:
           return await exportDniScouts(format);
@@ -2033,7 +2065,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
       return [ExportFormat.DOCX];
     }
 
-    if (reportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT) {
+    if (reportType === ReportType.DNI_SCOUT_APODERADO_POR_SCOUT || reportType === ReportType.FINANCIERO_ACTIVIDAD_AIRE_LIBRE) {
       return [ExportFormat.PDF];
     }
 
@@ -2624,6 +2656,29 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 Agrupa los ingresos de Finanzas &gt; Cuenta por Persona por Concepto, mostrando el subtotal bruto (cobrado), neto (ya descontada la inversión) y deuda por cobrar de cada uno. Marca uno o más conceptos, o deja todo sin marcar para verlos todos.
+              </p>
+            </div>
+          )}
+
+          {selectedReportType === ReportType.FINANCIERO_ACTIVIDAD_AIRE_LIBRE && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Actividad
+              </label>
+              <select
+                value={financieroActividadId}
+                onChange={(e) => setFinancieroActividadId(e.target.value)}
+                className="w-full md:w-96 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Selecciona una actividad</option>
+                {actividadesAireLibreList.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nombre}{a.fecha_inicio ? ` (${a.fecha_inicio.split('T')[0]})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                Rendición de cuentas de una actividad de Aire Libre: cuotas esperadas y recaudadas por participante, gastos por categoría (ítems de Menú, Materiales y Logística comprados + compras directas), saldo a favor o en contra, y lo pendiente por comprar.
               </p>
             </div>
           )}
