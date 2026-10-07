@@ -1,17 +1,19 @@
 import React from 'react';
-import { Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield, Heart, PackageMinus } from 'lucide-react';
+import { Users, ClipboardCheck, Award, TrendingUp, LogOut, Shield, Heart, PackageMinus, Wallet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 
+export type MobileTab = 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'salida' | 'egresos' | 'portal-padres';
+
 interface MobileLayoutProps {
   children: React.ReactNode;
-  currentTab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'salida' | 'portal-padres';
-  onTabChange: (tab: 'scouts' | 'asistencia' | 'puntajes' | 'progresion' | 'salida' | 'portal-padres') => void;
+  currentTab: MobileTab;
+  onTabChange: (tab: MobileTab) => void;
 }
 
 export default function MobileLayout({ children, currentTab, onTabChange }: MobileLayoutProps) {
   const { user, signOut } = useAuth();
-  const { puedeAcceder, rolPrincipal, loading: loadingPermisos } = usePermissions();
+  const { puedeAcceder, puedeCrear, rolPrincipal, loading: loadingPermisos } = usePermissions();
 
   const handleLogout = async () => {
     if (confirm('¿Cerrar sesión?')) {
@@ -26,13 +28,15 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
     { id: 'puntajes' as const, icon: Award, label: 'Puntajes', modulo: 'programa_semanal' as const },
     { id: 'progresion' as const, icon: TrendingUp, label: 'Progresión', modulo: 'progresion' as const },
     { id: 'salida' as const, icon: PackageMinus, label: 'Salida', modulo: 'inventario' as const },
+    // Registrar egresos requiere permiso de crear en Finanzas, no solo de lectura
+    { id: 'egresos' as const, icon: Wallet, label: 'Egresos', modulo: 'finanzas' as const, requiereCrear: true },
     { id: 'portal-padres' as const, icon: Heart, label: 'Mi Familia', modulo: 'portal_padres' as const },
   ];
 
   // Filtrar tabs según permisos (si está cargando, mostrar todos)
   const tabsVisibles = loadingPermisos 
     ? tabs 
-    : tabs.filter(tab => puedeAcceder(tab.modulo));
+    : tabs.filter(tab => ('requiereCrear' in tab ? puedeCrear(tab.modulo) : puedeAcceder(tab.modulo)));
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
