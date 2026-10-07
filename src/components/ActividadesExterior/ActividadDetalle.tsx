@@ -401,8 +401,13 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
     p.estado_autorizacion === 'FIRMADA' || p.estado_autorizacion === 'RECIBIDA' || p.estado_autorizacion === 'EXONERADA'
   ).length;
   const totalRecaudado = actividad.participantes.reduce((sum, p) => sum + (p.monto_pagado || 0), 0);
-  // Presupuesto calculado desde ingredientes + materiales + logística
+  // Presupuesto estimado desde ingredientes + materiales + logística
   const totalPresupuesto = dashboardPresupuesto?.total_estimado || 0;
+  // Gastado real: ítems comprados + compras directas
+  const totalGastado = dashboardPresupuesto?.total_real || 0;
+  const saldoCaja = totalRecaudado - totalGastado;
+  const totalComprasDirectas = actividad.compras?.reduce((sum, c) => sum + c.monto_total, 0) || 0;
+  const disponible = totalPresupuesto - totalGastado;
 
   // Calcular días de actividad
   const diasActividad = (() => {
@@ -486,7 +491,7 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
       </div>
 
       {/* KPIs rápidos */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="text-sm text-muted-foreground">Confirmados</div>
@@ -513,9 +518,19 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <div className="text-sm text-muted-foreground">Presupuesto</div>
+            <div className="text-sm text-muted-foreground">Gastado</div>
             <div className="text-2xl font-bold">
-              {formatMonto(totalPresupuesto)}
+              {formatMonto(totalGastado)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="text-sm text-muted-foreground">
+              {saldoCaja >= 0 ? 'Saldo a favor' : 'Saldo en contra'}
+            </div>
+            <div className={`text-2xl font-bold ${saldoCaja >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {formatMonto(Math.abs(saldoCaja))}
             </div>
           </CardContent>
         </Card>
@@ -1150,25 +1165,24 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
               {/* KPIs de compras */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Total Compras</p>
+                  <p className="text-sm text-muted-foreground">Compras directas</p>
                   <p className="text-2xl font-bold text-primary">
-                    {formatMonto(actividad.compras?.reduce((sum, c) => sum + c.monto_total, 0) || 0)}
+                    {formatMonto(totalComprasDirectas)}
                   </p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Presupuesto</p>
+                  <p className="text-sm text-muted-foreground">Estimado</p>
                   <p className="text-2xl font-bold">
                     {formatMonto(totalPresupuesto)}
                   </p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">Disponible</p>
-                  <p className={`text-2xl font-bold ${
-                    (totalPresupuesto - (actividad.compras?.reduce((sum, c) => sum + c.monto_total, 0) || 0)) >= 0 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {formatMonto(totalPresupuesto - (actividad.compras?.reduce((sum, c) => sum + c.monto_total, 0) || 0))}
+                  <p className={`text-2xl font-bold ${disponible >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatMonto(disponible)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Estimado − gastado total ({formatMonto(totalGastado)})
                   </p>
                 </div>
               </div>

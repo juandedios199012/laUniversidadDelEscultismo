@@ -123,6 +123,7 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
 
   const diferenciaTotal = dashboard.total_real - dashboard.total_estimado;
   const esAhorro = diferenciaTotal < 0;
+  const totalItems = dashboard.total_items ?? (dashboard.items_comprados + dashboard.items_pendientes);
 
   return (
     <div className="space-y-6">
@@ -133,7 +134,7 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
           <p className="text-sm text-muted-foreground">{actividadNombre}</p>
         </div>
         <Badge variant="outline" className="text-sm">
-          {dashboard.items_comprados}/{dashboard.total_items} comprados
+          {dashboard.items_comprados}/{totalItems} comprados
         </Badge>
       </div>
 
@@ -389,7 +390,7 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
                     </p>
                   </div>
                 </>
-              ) : dashboard.items_comprados === dashboard.total_items ? (
+              ) : dashboard.items_comprados > 0 && dashboard.items_comprados >= totalItems ? (
                 <>
                   <CheckCircle2 className="h-6 w-6 text-green-500" />
                   <div>
@@ -412,19 +413,21 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
               )}
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Balance Final</p>
-              <p className={`text-2xl font-bold ${
-                esAhorro ? 'text-green-600' : diferenciaTotal > 0 ? 'text-red-600' : ''
-              }`}>
-                {dashboard.total_real > 0 ? (
-                  <>
-                    {esAhorro ? 'Ahorro: ' : diferenciaTotal > 0 ? 'Sobrecosto: ' : ''}
-                    {formatMonto(Math.abs(diferenciaTotal))}
-                  </>
-                ) : (
-                  formatMonto(dashboard.total_estimado)
-                )}
+              <p className="text-sm text-muted-foreground">
+                {dashboard.total_real > 0 ? 'Total gastado' : 'Total estimado'}
               </p>
+              <p className="text-2xl font-bold">
+                {formatMonto(dashboard.total_real > 0 ? dashboard.total_real : dashboard.total_estimado)}
+              </p>
+              {dashboard.total_real > 0 && (
+                <p className={`text-sm font-medium ${
+                  esAhorro ? 'text-green-600' : diferenciaTotal > 0 ? 'text-red-600' : 'text-muted-foreground'
+                }`}>
+                  {diferenciaTotal === 0
+                    ? 'Igual a lo estimado'
+                    : `${esAhorro ? 'Ahorro' : 'Sobrecosto'}: ${formatMonto(Math.abs(diferenciaTotal))}`}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
