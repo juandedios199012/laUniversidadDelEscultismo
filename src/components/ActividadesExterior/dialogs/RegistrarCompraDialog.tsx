@@ -74,7 +74,6 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Datos del formulario
-  const [presupuestoItemId, setPresupuestoItemId] = useState<string>('');
   const [concepto, setConcepto] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -103,7 +102,6 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
 
   const resetForm = () => {
     setStep(1);
-    setPresupuestoItemId('');
     setConcepto('');
     setDescripcion('');
     setCategoria('');
@@ -158,7 +156,6 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
 
   // Al seleccionar un item de presupuesto, pre-llenar datos
   const handleSelectPresupuesto = (itemId: string) => {
-    setPresupuestoItemId(itemId);
     if (itemId) {
       const item = presupuesto.find(p => p.id === itemId);
       if (item) {
@@ -266,7 +263,6 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
 
       // 2. Registrar compra
       await ActividadesExteriorService.registrarCompra(actividadId, {
-        presupuesto_item_id: presupuestoItemId || undefined,
         concepto,
         descripcion: descripcion || undefined,
         categoria: categoria || undefined,

@@ -739,7 +739,6 @@ export interface CompraActividad {
   metodo_pago?: string;
   fecha_compra: string;
   notas?: string;
-  presupuesto_item_id?: string;
   presupuesto_concepto?: string;
   created_at?: string;
 }
@@ -758,7 +757,6 @@ export interface NuevaCompra {
   metodo_pago?: string;
   fecha_compra?: string;
   notas?: string;
-  presupuesto_item_id?: string;
 }
 
 export interface NuevoStaff {
