@@ -84,6 +84,7 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
   const getCategoryIcon = (categoria: string) => {
     switch (categoria.toUpperCase()) {
       case 'MENU':
+      case 'ALIMENTACION':
         return <Utensils className="h-5 w-5 text-orange-500" />;
       case 'MATERIALES':
         return <Package className="h-5 w-5 text-blue-500" />;
@@ -271,11 +272,15 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
           {dashboard.por_categoria && dashboard.por_categoria.length > 0 ? (
             <Accordion type="single" collapsible className="w-full">
               {dashboard.por_categoria.map((categoria) => {
-                const catDiferencia = categoria.total_real - categoria.total_estimado;
+                const catEstimado = Number(categoria.total_estimado ?? 0);
+                const catReal = Number(categoria.total_real ?? 0);
+                const catDiferencia = catReal - catEstimado;
                 const catEsAhorro = catDiferencia < 0;
-                const catAvance = categoria.total_estimado > 0
-                  ? (categoria.total_real / categoria.total_estimado) * 100
+                const catSinPresupuesto = catEstimado === 0 && catReal > 0;
+                const catAvance = catEstimado > 0
+                  ? (catReal / catEstimado) * 100
                   : 0;
+                const catItems = categoria.total_items ?? categoria.items_count ?? 0;
 
                 return (
                   <AccordionItem key={categoria.categoria} value={categoria.categoria}>
@@ -286,20 +291,24 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
                           <div className="text-left">
                             <p className="font-medium">{categoria.categoria}</p>
                             <p className="text-xs text-muted-foreground">
-                              {categoria.items_count} items
+                              {catItems} {catItems === 1 ? 'item' : 'items'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="font-medium">{formatMonto(categoria.total_estimado)}</p>
-                            {categoria.total_real > 0 && (
-                              <p className={`text-xs ${catEsAhorro ? 'text-green-600' : catDiferencia > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                Real: {formatMonto(categoria.total_real)}
+                            <p className="font-medium">{formatMonto(catEstimado)}</p>
+                            {catReal > 0 && (
+                              <p className={`text-xs ${catSinPresupuesto ? 'text-amber-600' : catEsAhorro ? 'text-green-600' : catDiferencia > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                Real: {formatMonto(catReal)}
                               </p>
                             )}
                           </div>
-                          {catDiferencia !== 0 && categoria.total_real > 0 && (
+                          {catSinPresupuesto ? (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300">
+                              Sin presupuesto
+                            </Badge>
+                          ) : catDiferencia !== 0 && catReal > 0 && (
                             <Badge
                               variant="outline"
                               className={catEsAhorro ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}
@@ -329,12 +338,12 @@ const PresupuestoDashboard: React.FC<PresupuestoDashboardProps> = ({
                         <div className="grid grid-cols-3 gap-3 text-center">
                           <div className="bg-muted/30 rounded-lg p-2">
                             <p className="text-xs text-muted-foreground">Estimado</p>
-                            <p className="font-medium">{formatMonto(categoria.total_estimado)}</p>
+                            <p className="font-medium">{formatMonto(catEstimado)}</p>
                           </div>
                           <div className="bg-muted/30 rounded-lg p-2">
                             <p className="text-xs text-muted-foreground">Real</p>
                             <p className="font-medium">
-                              {categoria.total_real > 0 ? formatMonto(categoria.total_real) : '—'}
+                              {catReal > 0 ? formatMonto(catReal) : '—'}
                             </p>
                           </div>
                           <div className={`rounded-lg p-2 ${
