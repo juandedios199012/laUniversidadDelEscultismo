@@ -283,9 +283,19 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
   }, {} as Record<string, ItemLogistica[]>);
 
   // Calcular totales
-  const totalPresupuestado = items.reduce((sum, i) => sum + (i.costo_total_alquiler || i.subtotal || 0), 0);
+  // Estimado: lo planificado. Gastado: precio real si se registró; si el ítem ya está
+  // confirmado sin precio real se asume el estimado (igual que v_presupuesto_vs_real_actividad).
+  const ESTADOS_PAGADOS = ['CONFIRMADO', 'EN_LUGAR', 'DEVUELTO'];
+  const estimadoItem = (i: ItemLogistica) => i.costo_total_alquiler || i.subtotal || 0;
+  const gastadoItem = (i: ItemLogistica) =>
+    i.subtotal_real != null ? i.subtotal_real : ESTADOS_PAGADOS.includes(i.estado) ? estimadoItem(i) : 0;
+  const totalPresupuestado = items.reduce((sum, i) => sum + estimadoItem(i), 0);
+  const totalGastado = items.reduce((sum, i) => sum + gastadoItem(i), 0);
+  const itemsPagados = items.filter(i => ESTADOS_PAGADOS.includes(i.estado));
+  const totalEstimadoPagados = itemsPagados.reduce((sum, i) => sum + estimadoItem(i), 0);
+  // Diferencia solo sobre lo ya pagado (lo pendiente no es ahorro)
+  const diferenciaGastado = totalGastado - totalEstimadoPagados;
   const itemsCriticos = items.filter(i => i.es_critico);
-  const itemsConfirmados = items.filter(i => i.estado === 'CONFIRMADO' || i.estado === 'EN_LUGAR');
 
   const formatMonto = (monto: number) => `S/ ${monto.toFixed(2)}`;
 
@@ -342,10 +352,15 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
           <div className="bg-muted/50 rounded-lg p-4">
             <p className="text-sm text-muted-foreground">Presupuesto</p>
             <p className="text-2xl font-bold text-green-600">{formatMonto(totalPresupuestado)}</p>
+            {itemsPagados.length > 0 && (
+              <p className={`text-xs ${diferenciaGastado > 0 ? 'text-red-600' : diferenciaGastado < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                Gastado: {formatMonto(totalGastado)}
+              </p>
+            )}
           </div>
           <div className="bg-muted/50 rounded-lg p-4">
             <p className="text-sm text-muted-foreground">Confirmados</p>
-            <p className="text-2xl font-bold text-blue-600">{itemsConfirmados.length}</p>
+            <p className="text-2xl font-bold text-blue-600">{itemsPagados.length}</p>
           </div>
           <div className="bg-muted/50 rounded-lg p-4">
             <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -375,7 +390,9 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
           <div className="space-y-4">
             {Object.entries(itemsPorCategoria).map(([categoria, itemsCat]) => {
               const categoriaInfo = CATEGORIAS_LOGISTICA.find(c => c.value === categoria);
-              const totalCategoria = itemsCat.reduce((sum, i) => sum + (i.costo_total_alquiler || i.subtotal || 0), 0);
+              const totalCategoria = itemsCat.reduce((sum, i) => sum + estimadoItem(i), 0);
+              const gastadoCategoria = itemsCat.reduce((sum, i) => sum + gastadoItem(i), 0);
+              const pagadosCat = itemsCat.filter(i => ESTADOS_PAGADOS.includes(i.estado));
               const isExpanded = expandedCategories.has(categoria);
 
               return (
@@ -395,6 +412,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                             </h4>
                             <p className="text-sm text-muted-foreground">
                               {itemsCat.length} items • {formatMonto(totalCategoria)}
+                              {pagadosCat.length > 0 && ` • Gastado ${formatMonto(gastadoCategoria)}`}
                             </p>
                           </div>
                         </div>
@@ -405,7 +423,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                             </Badge>
                           )}
                           <Badge variant="outline">
-                            {itemsCat.filter(i => i.estado === 'CONFIRMADO' || i.estado === 'EN_LUGAR').length}/{itemsCat.length} ✓
+                            {pagadosCat.length}/{itemsCat.length} ✓
                           </Badge>
                         </div>
                       </div>
@@ -544,9 +562,27 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
         {/* Total general */}
         {items.length > 0 && (
           <div className="flex justify-end">
-            <div className="bg-primary/10 rounded-lg p-4 text-right">
-              <p className="text-sm text-muted-foreground">Total Logística</p>
-              <p className="text-2xl font-bold">{formatMonto(totalPresupuestado)}</p>
+            <div className="bg-primary/10 rounded-lg p-4 text-right space-y-1 min-w-[240px]">
+              <p className="text-sm font-medium">Total Logística</p>
+              <div className="flex justify-between gap-6 text-sm">
+                <span className="text-muted-foreground">Presupuesto</span>
+                <span className="font-medium">{formatMonto(totalPresupuestado)}</span>
+              </div>
+              <div className="flex justify-between gap-6">
+                <span className="text-sm text-muted-foreground">Gastado</span>
+                <span className="text-2xl font-bold">{formatMonto(totalGastado)}</span>
+              </div>
+              {diferenciaGastado !== 0 && (
+                <div className={`flex justify-between gap-6 text-sm font-medium ${diferenciaGastado > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <span>{diferenciaGastado > 0 ? 'Sobrecosto' : 'Ahorro'}</span>
+                  <span>{formatMonto(Math.abs(diferenciaGastado))}</span>
+                </div>
+              )}
+              {itemsPagados.length < items.length && (
+                <p className="text-xs text-muted-foreground">
+                  {items.length - itemsPagados.length} ítem(s) aún sin confirmar
+                </p>
+              )}
             </div>
           </div>
         )}
