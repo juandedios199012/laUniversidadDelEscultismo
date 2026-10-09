@@ -1052,6 +1052,14 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                p.estado_autorizacion === 'EXONERADA' ? '🛡️' : '⏳'}{' '}
                               {p.estado_autorizacion || 'PENDIENTE'}
                             </Badge>
+                            {p.autorizacion_aceptada_at && (
+                              <p
+                                className="text-[11px] text-muted-foreground mt-1"
+                                title={p.autorizacion_aceptada_nombre ? `Aceptado por ${p.autorizacion_aceptada_nombre}` : undefined}
+                              >
+                                👪 Aceptó en portal · {new Date(p.autorizacion_aceptada_at).toLocaleDateString('es-PE')}
+                              </p>
+                            )}
                           </td>
                           <td className="py-3 px-2 text-right">
                             <div>
@@ -1068,6 +1076,25 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
                                 </p>
                               ) : (
                                 <p className="text-xs text-muted-foreground">Pendiente</p>
+                              )}
+                              {(p.monto_pagado || 0) > 0 && (p.metodo_pago || p.pago_origen === 'PORTAL_PADRES') && (
+                                <p className="text-[11px] text-muted-foreground flex items-center justify-end gap-1">
+                                  {p.pago_origen === 'PORTAL_PADRES' && (
+                                    <span className="px-1.5 rounded bg-blue-100 text-blue-700 font-medium">Padre</span>
+                                  )}
+                                  {p.metodo_pago}
+                                  {p.comprobante_pago && (
+                                    <a
+                                      href={p.comprobante_pago}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                      title="Ver comprobante"
+                                    >
+                                      🧾
+                                    </a>
+                                  )}
+                                </p>
                               )}
                             </div>
                           </td>

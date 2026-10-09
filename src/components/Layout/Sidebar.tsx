@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList
+  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList, FileSignature
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -97,6 +97,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'config-puntos-encuentro-aire-libre', label: 'Puntos de Encuentro', icon: MapPin, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-tipos-costo-aire-libre', label: 'Tipos de Costo', icon: Wallet, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-comisionado-local', label: 'Comisionado Local', icon: User, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
+      { id: 'config-textos-anexo4', label: 'Textos Anexo 4', icon: FileSignature, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'mapas',               label: 'Mapas',       icon: Map,            gradient: 'from-emerald-500 to-teal-500', modulo: 'mapas'               },
     ],
   },

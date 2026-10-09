@@ -18,6 +18,64 @@ export interface HijoInfo {
   parentesco: string;
 }
 
+/** Actividad al aire libre de un hijo, con estado del Anexo 4 y del pago. */
+export interface ActividadHijo {
+  participante_id: string;
+  scout_id: string;
+  scout_nombre: string;
+  scout_dni: string | null;
+  scout_sexo: string | null;
+  scout_codigo_asociado: string | null;
+  scout_rama: string | null;
+  /** Familiar que corresponde al usuario autenticado (prellena el Anexo 4). */
+  apoderado_nombre: string | null;
+  apoderado_dni: string | null;
+  apoderado_parentesco: string | null;
+  actividad_id: string;
+  nombre: string;
+  tipo: string;
+  estado: string;
+  lugar: string | null;
+  punto_encuentro: string | null;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  hora_concentracion: string | null;
+  hora_fin: string | null;
+  costo_por_participante: number;
+  fecha_limite_pago: string | null;
+  equipamiento_obligatorio: string | null;
+  equipamiento_opcional: string | null;
+  recomendaciones: string | null;
+  responsable: string | null;
+  staff: { nombre: string; rol: string }[];
+  vigente: boolean;
+  estado_autorizacion: string | null;
+  fecha_autorizacion: string | null;
+  autorizacion_aceptada_at: string | null;
+  autorizacion_aceptada_nombre: string | null;
+  autorizacion_aceptada_dni: string | null;
+  autorizacion_declaraciones: string[] | null;
+  monto_a_pagar: number;
+  monto_pagado: number;
+  pagado_completo: boolean;
+  metodo_pago: string | null;
+  fecha_pago: string | null;
+  comprobante_pago: string | null;
+  pago_origen: string | null;
+}
+
+export type MedioPagoPadre = 'EFECTIVO' | 'YAPE' | 'PLIN';
+
+export const ESTADOS_AUTORIZACION_OK = ['FIRMADA', 'EXONERADA'];
+
+export function autorizacionPendiente(a: ActividadHijo): boolean {
+  return !ESTADOS_AUTORIZACION_OK.includes(a.estado_autorizacion ?? 'PENDIENTE');
+}
+
+export function pagoPendiente(a: ActividadHijo): boolean {
+  return !a.pagado_completo && a.monto_a_pagar - a.monto_pagado > 0;
+}
+
 /** Campos que un padre puede editar de su hijo — sin rama/patrulla/código/estado (paso "Scout", administrativo). */
 export interface ActualizarHijoData {
   nombres?: string;
@@ -167,6 +225,92 @@ export class PortalPadresService {
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
     }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Aire Libre: Anexo 4 (ACEPTO) y pago
+  // ──────────────────────────────────────────────────────────────
+
+  /** Actividades de mis hijos. Sin scoutId → todos los hijos del usuario. */
+  static async getActividadesHijos(
+    scoutId?: string,
+  ): Promise<{ data: ActividadHijo[] | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase.rpc('api_portal_padres_actividades_hijos', {
+        p_scout_id: scoutId ?? null,
+      });
+
+      if (error) return { data: null, error: error.message };
+      if (!data?.success) return { data: null, error: data?.error || 'Error al obtener actividades' };
+
+      const actividades: ActividadHijo[] = (Array.isArray(data.data) ? data.data : []).map(
+        (a: ActividadHijo) => ({
+          ...a,
+          monto_a_pagar: Number(a.monto_a_pagar) || 0,
+          monto_pagado: Number(a.monto_pagado) || 0,
+          costo_por_participante: Number(a.costo_por_participante) || 0,
+          staff: Array.isArray(a.staff) ? a.staff : [],
+        }),
+      );
+      return { data: actividades, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : 'Error desconocido' };
+    }
+  }
+
+  /** Botón ACEPTO del Anexo 4: marca la autorización como FIRMADA. */
+  static async aceptarAutorizacion(
+    participanteId: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await supabase.rpc('api_portal_padres_aceptar_autorizacion', {
+      p_participante_id: participanteId,
+    });
+
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error || 'No se pudo registrar la autorización' };
+    return { success: true };
+  }
+
+  /**
+   * Sube el voucher de Yape/Plin a vouchers-pago/portal/{scoutId}/
+   * (la policy de Storage valida que el scout sea hijo del usuario).
+   */
+  static async subirVoucher(
+    scoutId: string,
+    participanteId: string,
+    file: File,
+  ): Promise<{ url: string; nombre: string }> {
+    const ext = file.name.split('.').pop();
+    const filePath = `vouchers-pago/portal/${scoutId}/pago_${participanteId}_${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('finanzas')
+      .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage.from('finanzas').getPublicUrl(filePath);
+    return { url: publicUrl, nombre: file.name };
+  }
+
+  /** Registra el pago (misma lógica que el registro del administrador). */
+  static async registrarPago(
+    participanteId: string,
+    pago: {
+      monto: number;
+      metodo_pago: MedioPagoPadre;
+      comprobante_pago?: string;
+      comprobante_nombre?: string;
+    },
+  ): Promise<{ success: boolean; pagado_completo?: boolean; error?: string }> {
+    const { data, error } = await supabase.rpc('api_portal_padres_registrar_pago', {
+      p_participante_id: participanteId,
+      p_datos: pago,
+    });
+
+    if (error) return { success: false, error: error.message };
+    if (!data?.success) return { success: false, error: data?.error || 'No se pudo registrar el pago' };
+    return { success: true, pagado_completo: data.pagado_completo };
   }
 }
 

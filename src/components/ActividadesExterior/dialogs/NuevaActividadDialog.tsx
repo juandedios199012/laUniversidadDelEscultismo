@@ -100,6 +100,7 @@ const actividadSchema = z.object({
   fecha_inicio: z.string().min(1, 'Selecciona fecha de inicio'),
   fecha_fin: z.string().min(1, 'Selecciona fecha de fin'),
   hora_concentracion: z.string().optional(),
+  hora_fin: z.string().optional(),
   punto_encuentro_id: z.string().optional(),
   ubicacion: z.string().min(3, 'Ingresa la ubicación'),
   lugar_detalle: z.string().optional(),
@@ -159,6 +160,7 @@ interface ActividadEditar {
   fecha_inicio: string;
   fecha_fin: string;
   hora_concentracion?: string;
+  hora_fin?: string;
   punto_encuentro_id?: string | null;
   ubicacion: string;
   lugar_detalle?: string;
@@ -376,6 +378,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
       fecha_inicio: '',
       fecha_fin: '',
       hora_concentracion: '',
+      hora_fin: '',
       punto_encuentro_id: '',
       ubicacion: '',
       lugar_detalle: '',
@@ -430,6 +433,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
         fecha_inicio: actividadEditar.fecha_inicio,
         fecha_fin: actividadEditar.fecha_fin,
         hora_concentracion: actividadEditar.hora_concentracion || '',
+        hora_fin: actividadEditar.hora_fin || '',
         punto_encuentro_id: actividadEditar.punto_encuentro_id || '',
         ubicacion: actividadEditar.ubicacion,
         lugar_detalle: actividadEditar.lugar_detalle || '',
@@ -458,6 +462,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
         fecha_inicio: '',
         fecha_fin: '',
         hora_concentracion: '',
+        hora_fin: '',
         punto_encuentro_id: '',
         ubicacion: '',
         lugar_detalle: '',
@@ -591,6 +596,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
         fecha_inicio: data.fecha_inicio,
         fecha_fin: data.fecha_fin,
         hora_concentracion: data.hora_concentracion,
+        hora_fin: data.hora_fin,
         punto_encuentro_id: data.punto_encuentro_id || null,
         ubicacion: data.ubicacion,
         lugar_detalle: data.lugar_detalle,
@@ -1164,6 +1170,30 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="hora_fin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de Fin</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              type="time"
+                              className="pl-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
 
                   <FormField
                     control={form.control}

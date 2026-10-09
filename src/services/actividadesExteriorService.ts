@@ -129,6 +129,7 @@ export interface ActividadExteriorResumen {
 export interface ActividadExteriorCompleta extends ActividadExteriorResumen {
   descripcion?: string;
   hora_concentracion?: string;
+  hora_fin?: string | null;
   punto_encuentro?: string;
   punto_encuentro_id?: string | null;
   punto_encuentro_lugar?: string;
@@ -172,6 +173,7 @@ export interface NuevaActividadExterior {
   fecha_inicio: string;
   fecha_fin: string;
   hora_concentracion?: string;
+  hora_fin?: string;
   punto_encuentro_id?: string | null;
   ubicacion: string;
   lugar_detalle?: string;
@@ -251,9 +253,18 @@ export interface ParticipanteActividad {
   confirmado: boolean;
   estado_autorizacion: EstadoAutorizacionExterior;
   fecha_autorizacion?: string;
+  autorizacion_aceptada_at?: string | null;
+  autorizacion_aceptada_nombre?: string | null;
   monto_a_pagar?: number;
   monto_pagado: number;
   pagado_completo: boolean;
+  metodo_pago?: string | null;
+  fecha_pago?: string | null;
+  comprobante_pago?: string | null;
+  comprobante_nombre?: string | null;
+  notas_pago?: string | null;
+  /** ADMIN | PORTAL_PADRES */
+  pago_origen?: string | null;
   restricciones_alimentarias?: string;
   observaciones?: string;
   patrulla_actividad_id?: string;
@@ -1306,44 +1317,22 @@ export class ActividadesExteriorService {
   }
 
   /**
-   * Actualiza una actividad existente
+   * Actualiza una actividad existente vía api_actualizar_actividad.
+   * Solo se modifican las claves enviadas (undefined no viaja en el JSON):
+   * la RPC acepta los nombres del frontend (ubicacion, lugar_detalle) y
+   * guarda también objetivos, ODS, cronograma, imagen, riesgo y hora_fin.
    */
   static async actualizarActividad(
     actividadId: string, 
     updates: Partial<NuevaActividadExterior>
   ): Promise<void> {
-    // Mapear campos del formulario a la BD
-    const dbUpdates: Record<string, any> = {
-      nombre: updates.nombre,
-      descripcion: updates.descripcion,
-      tipo: updates.tipo,
-      estado: updates.estado,
-      fecha_inicio: updates.fecha_inicio,
-      fecha_fin: updates.fecha_fin,
-      hora_concentracion: updates.hora_concentracion,
-      punto_encuentro_id: updates.punto_encuentro_id,
-      lugar: updates.ubicacion, // ubicacion -> lugar
-      direccion: updates.lugar_detalle, // lugar_detalle -> direccion
-      costo_por_participante: updates.costo_por_participante,
-      equipamiento_obligatorio: updates.equipamiento_obligatorio,
-      equipamiento_opcional: updates.equipamiento_opcional,
-      recomendaciones: updates.recomendaciones,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Remover campos undefined
-    Object.keys(dbUpdates).forEach(key => {
-      if (dbUpdates[key] === undefined) {
-        delete dbUpdates[key];
-      }
+    const { data, error } = await supabase.rpc('api_actualizar_actividad', {
+      p_actividad_id: actividadId,
+      p_datos: updates,
     });
 
-    const { error } = await supabase
-      .from('actividades_aire_libre')
-      .update(dbUpdates)
-      .eq('id', actividadId);
-
     if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al actualizar actividad');
   }
 
   /**
@@ -1894,22 +1883,6 @@ export class ActividadesExteriorService {
   }
 
   // ============= MÉTODOS DE ACTUALIZACIÓN =============
-
-  /**
-   * Actualiza actividad vía RPC
-   */
-  static async actualizarActividadRPC(
-    actividadId: string,
-    datos: Partial<NuevaActividadExterior>
-  ): Promise<void> {
-    const { data, error } = await supabase.rpc('api_actualizar_actividad', {
-      p_actividad_id: actividadId,
-      p_datos: datos,
-    });
-
-    if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || 'Error al actualizar actividad');
-  }
 
   /**
    * Actualiza un programa

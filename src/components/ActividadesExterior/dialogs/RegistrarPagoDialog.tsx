@@ -38,7 +38,10 @@ interface ParticipantePago {
   monto_a_pagar: number;
   monto_pagado: number;
   pagado_completo: boolean;
-  metodo_pago?: string;
+  metodo_pago?: string | null;
+  fecha_pago?: string | null;
+  comprobante_pago?: string | null;
+  pago_origen?: string | null;
 }
 
 interface RegistrarPagoDialogProps {
@@ -250,6 +253,30 @@ const RegistrarPagoDialog: React.FC<RegistrarPagoDialogProps> = ({
               <p className="text-center text-sm mt-2 text-yellow-600 font-medium">
                 Pendiente: S/ {montoPendiente.toFixed(2)}
               </p>
+            )}
+
+            {montoPagado > 0 && (participante.metodo_pago || participante.comprobante_pago) && (
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>Último pago:</span>
+                {participante.metodo_pago && <strong className="text-foreground">{participante.metodo_pago}</strong>}
+                {participante.fecha_pago && (
+                  <span>· {new Date(participante.fecha_pago + 'T00:00:00').toLocaleDateString('es-PE')}</span>
+                )}
+                {participante.pago_origen === 'PORTAL_PADRES' && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">Registrado por el padre</Badge>
+                )}
+                {participante.comprobante_pago && (
+                  <a
+                    href={participante.comprobante_pago}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Image className="h-3 w-3" />
+                    Ver comprobante
+                  </a>
+                )}
+              </div>
             )}
           </div>
 

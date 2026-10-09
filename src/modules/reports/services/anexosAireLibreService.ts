@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { generateAndDownloadPDF, formatDate } from './pdfService';
+import { generateAndDownloadPDF, generatePDF, formatDate } from './pdfService';
 import { ReportGenerationResult, ReportStatus } from '../types/reportTypes';
 import {
   ActividadesExteriorService,
@@ -18,6 +18,7 @@ import {
 } from '@/services/actividadesExteriorService';
 import { DocumentosService } from '@/services/documentosService';
 import { ComisionadoLocalService } from '@/services/comisionadoLocalService';
+import { ConfigAnexo4Service } from '@/services/configAnexo4Service';
 import { fechaLarga } from '@/components/GestionDocumentos/CartaOficialDocumento';
 import { Anexo1SolicitudAprobacionTemplate } from '../templates/pdf/anexos/Anexo1SolicitudAprobacionTemplate';
 import { Anexo3ListaParticipantesTemplate } from '../templates/pdf/anexos/Anexo3ListaParticipantesTemplate';
@@ -32,38 +33,44 @@ import {
   ReporteFinancieroItem,
 } from '../types/anexoTypes';
 
-function buscarStaffPorRol(staff: StaffActividad[], keywords: string[]): StaffActividad | undefined {
+type StaffConRol = Pick<StaffActividad, 'nombre' | 'rol'>;
+
+function buscarStaffPorRol<T extends StaffConRol>(staff: T[], keywords: string[]): T | undefined {
   return staff.find((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
 }
 
-function buscarStaffsPorRol(staff: StaffActividad[], keywords: string[]): StaffActividad[] {
+function buscarStaffsPorRol<T extends StaffConRol>(staff: T[], keywords: string[]): T[] {
   return staff.filter((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
 }
 
-function obtenerHoraFinActividad(actividad: ActividadExteriorCompleta): string | undefined {
-  const horas: string[] = [];
+/**
+ * Campos de responsables del Anexo 4, por rol exacto del step "Responsables":
+ *   Director ← DIRECTOR · Dirigente Responsable ← RESPONSABLE
+ *   Dirigente(s) Acompañante(s) ← DIRIGENTE · Colaborador ← COLABORADOR
+ */
+export function staffAnexo4(staff: StaffConRol[]): Pick<
+  Anexo4Data,
+  'director' | 'dirigenteResponsable' | 'adultosAcompanantes' | 'colaborador'
+> {
+  const nombresConRol = (codigo: string) =>
+    staff
+      .filter((s) => (s.rol || '').trim().toUpperCase() === codigo)
+      .map((s) => s.nombre)
+      .join(', ') || undefined;
 
-  if (actividad.programas?.length) {
-    actividad.programas.forEach((programa) => {
-      if (programa.hora_fin) horas.push(programa.hora_fin);
-      (programa.bloques || []).forEach((bloque) => {
-        if (bloque.hora_fin) horas.push(bloque.hora_fin);
-      });
-    });
-  }
+  return {
+    director: nombresConRol('DIRECTOR'),
+    dirigenteResponsable: nombresConRol('RESPONSABLE'),
+    adultosAcompanantes: nombresConRol('DIRIGENTE'),
+    colaborador: nombresConRol('COLABORADOR'),
+  };
+}
 
-  if (actividad.hora_concentracion) {
-    horas.push(actividad.hora_concentracion);
-  }
-
-  if (!horas.length) return undefined;
-
-  const valor = horas
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b))
-    .at(-1);
-
-  return valor || undefined;
+/** PDF del Anexo 4 como Blob (Portal de Padres: se muestra en pantalla antes del ACEPTO). */
+export async function generarAnexo4Blob(data: Anexo4Data): Promise<Blob> {
+  const result = await generatePDF(React.createElement(Anexo4AutorizacionTemplate, { data }), 'anexo4');
+  if (!result.blob) throw new Error(result.error || 'No se pudo generar el Anexo 4');
+  return result.blob;
 }
 
 function rangoFechas(actividad: ActividadExteriorCompleta): { inicio: string; fin: string } {
@@ -182,24 +189,12 @@ export async function generarAnexo3(actividadId: string): Promise<ReportGenerati
  */
 export async function generarAnexo4(actividadId: string): Promise<ReportGenerationResult> {
   try {
-    const [actividad, dashboard] = await Promise.all([
+    const [actividad, dashboard, config] = await Promise.all([
       ActividadesExteriorService.obtenerActividad(actividadId),
       ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId),
+      ConfigAnexo4Service.obtenerOVacio(),
     ]);
     const { inicio, fin } = rangoFechas(actividad);
-    const staff = actividad.staff || [];
-    const director = buscarStaffPorRol(staff, ['DIRECTOR']) || buscarStaffPorRol(staff, ['JEFE', 'CAMPAMENTO']);
-    const dirigenteResponsable = buscarStaffPorRol(staff, ['RESPONSABLE', 'DIRIGENTE']) || buscarStaffPorRol(staff, ['JEFE', 'CAMPAMENTO']);
-    const colaboradores = buscarStaffsPorRol(staff, ['COLABORADOR']);
-    const acompanantes = staff.filter((s) => {
-      const nombre = (s.rol || '').toUpperCase();
-      return s.id !== director?.id &&
-        s.id !== dirigenteResponsable?.id &&
-        !nombre.includes('COLABORADOR') &&
-        !nombre.includes('DIRECTOR') &&
-        !nombre.includes('RESPONSABLE') &&
-        !nombre.includes('JEFE');
-    });
     const presupuestoReal = Number(dashboard?.total_real ?? 0);
 
     const data: Anexo4Data = {
@@ -208,16 +203,16 @@ export async function generarAnexo4(actividadId: string): Promise<ReportGenerati
       fechaInicio: inicio,
       fechaFin: fin,
       horaConcentracion: actividad.hora_concentracion,
-      horaFin: obtenerHoraFinActividad(actividad),
+      horaFin: actividad.hora_fin || undefined,
       costoPorParticipante: actividad.costo_por_participante || 0,
       presupuestoReal,
-      adultosAcompanantes: acompanantes.map((s) => s.nombre).join(', '),
-      colaborador: colaboradores.map((s) => s.nombre).join(', ') || undefined,
-      adultoResponsable: director?.nombre || dirigenteResponsable?.nombre,
+      ...staffAnexo4(actividad.staff || []),
       fechaDocumento: fechaLarga(),
       equipamientoObligatorio: actividad.equipamiento_obligatorio,
       equipamientoOpcional: actividad.equipamiento_opcional,
       recomendaciones: actividad.recomendaciones,
+      declaraciones: config.declaraciones,
+      itemsQueLlevarDefault: config.items_que_llevar,
     };
 
     const Component = React.createElement(Anexo4AutorizacionTemplate, { data });

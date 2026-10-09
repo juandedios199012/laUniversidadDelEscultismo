@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { HijoInfo } from '../../services/portalPadresService';
-import { ArrowLeft, User, Calendar, Hash, Info, TrendingUp, Pencil } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { HijoInfo, ActividadHijo } from '../../services/portalPadresService';
+import type { ConfigAnexo4 } from '../../services/configAnexo4Service';
+import { ArrowLeft, User, Calendar, Hash, Info, TrendingUp, Pencil, Tent } from 'lucide-react';
 import DetalleHijoProgresion from './DetalleHijoProgresion';
 import EditarHijoWizardDialog from './EditarHijoWizardDialog';
+import ActividadesHijoList from './ActividadesHijoList';
 import { calculateAge } from '../../lib/utils';
 
-type TabDetalle = 'basica' | 'progresion';
+export type TabDetalle = 'basica' | 'progresion' | 'actividades';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -41,14 +43,29 @@ function ramaColor(rama: string): string {
 interface DetalleHijoProps {
   hijo: HijoInfo;
   onVolver?: () => void;  // undefined si es vista directa (solo 1 hijo)
+  actividades: ActividadHijo[];
+  configAnexo4: ConfigAnexo4;
+  onCompletarActividad: (participanteId: string) => void;
+  tabInicial?: TabDetalle;
 }
 
 // ─────────────────────────────────────────────────────────────
 // Componente
 // ─────────────────────────────────────────────────────────────
 
-const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
-  const [tab, setTab] = useState<TabDetalle>('basica');
+const DetalleHijo: React.FC<DetalleHijoProps> = ({
+  hijo,
+  onVolver,
+  actividades,
+  configAnexo4,
+  onCompletarActividad,
+  tabInicial = 'basica',
+}) => {
+  const [tab, setTab] = useState<TabDetalle>(tabInicial);
+
+  useEffect(() => {
+    setTab(tabInicial);
+  }, [tabInicial, hijo.scout_id]);
   const [editOpen, setEditOpen] = useState(false);
 
   return (
@@ -91,7 +108,29 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({ hijo, onVolver }) => {
           <TrendingUp className="w-4 h-4" />
           Progresión
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('actividades')}
+          className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
+            tab === 'actividades'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Tent className="w-4 h-4" />
+          Actividades
+        </button>
       </div>
+
+      {/* Contenido del tab Actividades (Anexo 4 + pago) */}
+      {tab === 'actividades' && (
+        <ActividadesHijoList
+          actividades={actividades}
+          config={configAnexo4}
+          onCompletar={onCompletarActividad}
+          emptyMessage={`${hijo.nombres} no está inscrito en actividades al aire libre.`}
+        />
+      )}
 
       {/* Contenido del tab Progresión */}
       {tab === 'progresion' && (

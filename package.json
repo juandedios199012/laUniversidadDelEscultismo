@@ -58,6 +58,7 @@
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.344.0",
+    "pdfjs-dist": "^4.10.38",
     "pizzip": "^3.2.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",

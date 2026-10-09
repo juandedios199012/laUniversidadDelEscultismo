@@ -73,6 +73,14 @@ export interface Anexo4Data {
   equipamientoObligatorio?: string;
   equipamientoOpcional?: string;
   recomendaciones?: string;
+  /** Textos configurados (Aire Libre → Textos Anexo 4). Sin valor → textos por defecto. */
+  declaraciones?: string[];
+  itemsQueLlevarDefault?: string[];
+  /** Portal de Padres: datos prellenados en lugar de líneas en blanco. */
+  firmante?: { nombre: string; dni?: string; parentesco: 'Padre' | 'Madre' | 'Apoderado' };
+  menor?: { nombre: string; dni?: string; tipo: 'niño' | 'niña' | 'joven'; codigoAsociado?: string };
+  /** Aceptación digital (botón ACEPTO): reemplaza la línea de firma. */
+  aceptacion?: { fecha: string; nombre?: string; dni?: string };
 }
 
 export interface ReporteFinancieroIngreso {

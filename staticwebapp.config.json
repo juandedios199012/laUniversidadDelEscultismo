@@ -11,7 +11,8 @@
   },
   "mimeTypes": {
     ".json": "application/json",
-    ".js": "application/javascript"
+    ".js": "application/javascript",
+    ".mjs": "application/javascript"
   },
   "routes": [
     {

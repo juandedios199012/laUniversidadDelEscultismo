@@ -8,6 +8,7 @@ import TiposActividadAireLibre from './components/Configuracion/TiposActividadAi
 import PuntosEncuentroAireLibre from './components/Configuracion/PuntosEncuentroAireLibre';
 import TiposCostoAireLibre from './components/Configuracion/TiposCostoAireLibre';
 import ComisionadoLocal from './components/Configuracion/ComisionadoLocal';
+import TextosAnexo4 from './components/Configuracion/TextosAnexo4';
 import ConceptosFinanzas from './components/Configuracion/ConceptosFinanzas';
 import LibroOro from './components/LibroOro/LibroOro';
 import ProgramaSemanal from './components/ProgramaSemanal/ProgramaSemanal';
@@ -136,6 +137,8 @@ function AppContent() {
         return <TiposCostoAireLibre />;
       case 'config-comisionado-local':
         return <ComisionadoLocal />;
+      case 'config-textos-anexo4':
+        return <TextosAnexo4 />;
       case 'libro-oro':
         return <LibroOro />;
       case 'programa-semanal':
