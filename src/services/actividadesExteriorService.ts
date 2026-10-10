@@ -946,6 +946,7 @@ export const ROLES_STAFF_ACTIVIDAD = [
   { value: 'DIRIGENTE', label: 'Dirigente', emoji: '⭐' },
   { value: 'ADMINISTRACION', label: 'Administración', emoji: '🤝' },
   { value: 'COLABORADOR', label: 'Colaborador', emoji: '🧩' },
+  { value: 'RESPONSABLE_SFH', label: 'Responsable de SFH', emoji: '🛡️' },
   { value: 'COCINERO', label: 'Cocinero/a', emoji: '👨‍🍳' },
   { value: 'ENFERMERO', label: 'Enfermero/a', emoji: '🩺' },
   { value: 'TRANSPORTE', label: 'Transporte', emoji: '🚌' },

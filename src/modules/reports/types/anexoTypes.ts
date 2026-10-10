@@ -1,31 +1,40 @@
 /**
  * Tipos de datos para los Anexos PDF del módulo Aire Libre (Anexo 1, 3, 4).
  * Se arman en `anexosAireLibreService.ts` a partir de
- * `ActividadExteriorCompleta` + identidad del grupo (plantilla de carta,
- * Comisionado Local) — los templates solo reciben estos objetos ya listos.
+ * `ActividadExteriorCompleta` + Aprobadores + Jefe de Grupo
+ * (módulo Dirigentes) — los templates solo reciben estos objetos ya listos.
  */
 
-export interface FirmanteGrupo {
+/** Jefe de Grupo (módulo Dirigentes) y su Grupo Scout. */
+export interface JefeGrupoAnexo {
   nombre?: string;
-  cargo?: string;
   dni?: string;
+  cargo?: string;
+  firmaBase64?: string;
+  /** Ej: "Grupo Scout Lima 12" */
+  nombreGrupo?: string;
+  /** Ej: "Lima" */
+  localidad?: string;
+  /** Ej: "Lima 12" */
+  localidadNumeral?: string;
 }
 
 export interface Anexo1Data {
+  /** Aprobador a quien va dirigida la solicitud */
+  destinatario?: { nombre: string; cargo: string };
+  jefeGrupo: JefeGrupoAnexo;
   nombreActividad: string;
   tipoActividad: string;
   ramas?: string;
   lugar: string;
-  fechaInicio: string;
-  fechaFin: string;
-  horaConcentracion?: string;
+  /** Mismo formato que el Anexo 4 (fechas y horas de la actividad) */
+  fechaHora: string;
   costoPorParticipante: number;
   presupuestoReal?: number;
   adultoResponsable?: string;
   responsableSalud?: string;
   responsableSFH?: string;
-  jefeGrupo: FirmanteGrupo;
-  comisionadoLocal?: string;
+  /** ISO "YYYY-MM-DD" */
   fechaDocumento: string;
 }
 

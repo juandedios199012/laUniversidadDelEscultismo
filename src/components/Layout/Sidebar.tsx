@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList, FileSignature
+  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList, FileSignature, UserCheck
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -57,6 +57,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { id: 'dirigentes',    label: 'Dirigentes',    icon: Shield,     gradient: 'from-orange-500 to-red-500',    modulo: 'dirigentes'    },
       { id: 'colaboradores', label: 'Colaboradores', icon: Handshake,  gradient: 'from-amber-500 to-orange-500',  modulo: 'colaboradores' },
+      { id: 'aprobadores',   label: 'Aprobadores',   icon: UserCheck,  gradient: 'from-orange-400 to-amber-500',  modulo: 'aprobadores'   },
       { id: 'comite-padres', label: 'Comité Padres', icon: Users,      gradient: 'from-purple-400 to-violet-400', modulo: 'comite_padres' },
     ],
   },
@@ -96,7 +97,6 @@ const menuGroups: MenuGroup[] = [
       { id: 'config-tipos-actividad-aire-libre', label: 'Tipos de Actividad', icon: Settings, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-puntos-encuentro-aire-libre', label: 'Puntos de Encuentro', icon: MapPin, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-tipos-costo-aire-libre', label: 'Tipos de Costo', icon: Wallet, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
-      { id: 'config-comisionado-local', label: 'Comisionado Local', icon: User, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-textos-anexo4', label: 'Textos Anexo 4', icon: FileSignature, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'mapas',               label: 'Mapas',       icon: Map,            gradient: 'from-emerald-500 to-teal-500', modulo: 'mapas'               },
     ],

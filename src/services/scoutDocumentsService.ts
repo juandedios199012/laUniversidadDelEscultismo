@@ -14,7 +14,7 @@ import imageCompression from 'browser-image-compression';
 // ============================================
 
 export type DocumentType = 'documento_identidad' | 'huella_digital' | 'firma';
-export type EntityType = 'scout' | 'familiar';
+export type EntityType = 'scout' | 'familiar' | 'dirigente';
 export type DocumentSide = 'ANVERSO' | 'REVERSO';
 
 export interface DocumentMetadata {

@@ -10,11 +10,23 @@ import {
   EstadisticasDirigentes,
   DocumentoDirigente,
   FormacionDirigente,
+  CargoDirigente,
 } from '../types/dirigente';
 
 // ============================================================================
 // CLASE PRINCIPAL DEL SERVICIO
 // ============================================================================
+
+export interface JefeGrupo {
+  dirigente_id: string;
+  nombre_completo: string;
+  numero_documento: string | null;
+  cargo: CargoDirigente;
+  nombre_grupo: string | null;
+  localidad: string | null;
+  numeral: string | null;
+  region: string | null;
+}
 
 export class DirigenteService {
   // ==========================================================================
@@ -41,6 +53,19 @@ export class DirigenteService {
       console.error('Error al obtener dirigentes:', error);
       throw error;
     }
+  }
+
+  /**
+   * Jefe de Grupo vigente (dirigente ACTIVO con cargo JEFE_GRUPO) y los
+   * datos de su Grupo Scout. Firmante del Anexo 1 de Aire Libre.
+   */
+  static async obtenerJefeGrupo(): Promise<JefeGrupo | null> {
+    const { data, error } = await supabase.rpc('api_obtener_jefe_grupo');
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al obtener el Jefe de Grupo');
+
+    return data.data ?? null;
   }
 
   /**

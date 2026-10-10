@@ -6,27 +6,12 @@
  * diferida (import()) para no cargar @react-pdf/renderer hasta abrirlo.
  */
 
-import { formatDate } from '@/modules/reports/services/pdfService';
-import { staffAnexo4 } from '@/modules/reports/services/anexosAireLibreService';
+import { fechaHoraActividad, staffAnexo4 } from '@/modules/reports/services/anexosAireLibreService';
 import { armarAutorizacionApoderadoData } from '@/modules/reports/services/reportDataService';
 import { generarAutorizacionApoderadoBlob } from '@/modules/reports/services/autorizacionApoderadoExportService';
 import { fechaLarga } from '@/components/GestionDocumentos/CartaOficialDocumento';
 import type { AutorizacionApoderadoReportData } from '@/modules/reports/types/reportTypes';
 import { PortalPadresService, type ActividadHijo } from '@/services/portalPadresService';
-
-/** Mismo día: "fecha • hora inicio - hora fin". Varios días: "inicio hora - fin hora". */
-function fechaHoraActividad(a: ActividadHijo): string {
-  const inicio = formatDate(a.fecha_inicio);
-  const fin = formatDate(a.fecha_fin || a.fecha_inicio);
-  const horaInicio = (a.hora_concentracion || '').slice(0, 5);
-  const horaFin = (a.hora_fin || '').slice(0, 5);
-
-  if (inicio === fin) {
-    const horas = horaInicio && horaFin ? `${horaInicio} - ${horaFin}` : horaInicio || horaFin;
-    return horas ? `${inicio} • ${horas}` : inicio;
-  }
-  return `${horaInicio ? `${inicio} ${horaInicio}` : inicio} - ${horaFin ? `${fin} ${horaFin}` : fin}`;
-}
 
 /** Datos de la actividad desde Aire Libre (en el reporte se escriben a mano). */
 function actividadAireLibre(a: ActividadHijo): AutorizacionApoderadoReportData['actividad'] {

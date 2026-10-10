@@ -7,7 +7,7 @@ import ConfiguracionDocumentosInscripcion from './components/Configuracion/Confi
 import TiposActividadAireLibre from './components/Configuracion/TiposActividadAireLibre';
 import PuntosEncuentroAireLibre from './components/Configuracion/PuntosEncuentroAireLibre';
 import TiposCostoAireLibre from './components/Configuracion/TiposCostoAireLibre';
-import ComisionadoLocal from './components/Configuracion/ComisionadoLocal';
+import Aprobadores from './components/Aprobadores/Aprobadores';
 import TextosAnexo4 from './components/Configuracion/TextosAnexo4';
 import ConceptosFinanzas from './components/Configuracion/ConceptosFinanzas';
 import LibroOro from './components/LibroOro/LibroOro';
@@ -135,8 +135,8 @@ function AppContent() {
         return <PuntosEncuentroAireLibre />;
       case 'config-tipos-costo-aire-libre':
         return <TiposCostoAireLibre />;
-      case 'config-comisionado-local':
-        return <ComisionadoLocal />;
+      case 'aprobadores':
+        return <Aprobadores />;
       case 'config-textos-anexo4':
         return <TextosAnexo4 />;
       case 'libro-oro':

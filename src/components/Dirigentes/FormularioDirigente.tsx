@@ -36,6 +36,7 @@ import { supabase } from '../../lib/supabase';
 import { PersonSearchCombobox } from '../shared/PersonSearch';
 import { UbigeoSelector } from '../RegistroScout/components/UbigeoSelector';
 import { IdentityDocumentUpload } from '../RegistroScout/components/IdentityDocumentUpload';
+import { DocumentUpload } from '../RegistroScout/components/DocumentUpload';
 import personaDocumentsService from '../../services/personaDocumentsService';
 import type { PersonaResult } from '../../services/personaService';
 
@@ -1027,6 +1028,22 @@ export const FormularioDirigenteComponent: React.FC<FormularioDirigenteProps> = 
               entityId={personaId}
               service={personaDocumentsService}
               label="Documento de Identidad (Anverso y Reverso)"
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* SECCIÓN: FIRMA (solo en edición) — se imprime en el Anexo 1 si es Jefe de Grupo */}
+        {isEditing && dirigenteId && (
+          <CollapsibleSection
+            title="Firma"
+            icon={Icons.Shield}
+          >
+            <DocumentUpload
+              entityType="dirigente"
+              entityId={dirigenteId}
+              documentType="firma"
+              label="Firma del Dirigente"
+              description="Sube una imagen de la firma del dirigente (igual que en su documento de identidad)"
             />
           </CollapsibleSection>
         )}

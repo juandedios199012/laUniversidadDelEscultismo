@@ -1,88 +1,87 @@
 /**
  * ANEXO 1 - Solicitud de Aprobación de Actividad
- * Carta al Comisionado Local pidiendo autorización para una actividad
- * de Aire Libre. Texto institucional fijo; solo los datos de la
- * actividad y de los firmantes son dinámicos.
+ * Carta al Aprobador (ej. Comisionado Local) pidiendo
+ * autorización para una actividad de Aire Libre, firmada por el Jefe de
+ * Grupo. Mismo formato oficial que el Anexo 4 (marca de agua, tabla y
+ * firma compartidas en anexoAspPdf.tsx).
  *
  * @react-pdf/renderer - No soporta emojis, usar texto plano.
  */
 
 import React from 'react';
-import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { AnexoHeader } from './AnexoHeader';
-import { anexoStyles } from './anexoPdfStyles';
+import { Document, Page, Text } from '@react-pdf/renderer';
+import { anexoAspStyles as styles, MarcaAguaAsp, TablaAsp, FirmaAsp, formatFechaLargaAsp } from '../anexoAspPdf';
 import { Anexo1Data } from '../../../types/anexoTypes';
 
 interface Anexo1SolicitudAprobacionTemplateProps {
   data: Anexo1Data;
 }
 
-const fila = (label: string, valor: string) => (
-  <View style={anexoStyles.tableRow} key={label}>
-    <View style={[anexoStyles.labelCell, { width: '35%' }]}>
-      <Text>{label}</Text>
-    </View>
-    <View style={[anexoStyles.valueCellLast, { width: '65%' }]}>
-      <Text>{valor || '—'}</Text>
-    </View>
-  </View>
-);
+const LINEA = '________________________';
+const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
 
 export const Anexo1SolicitudAprobacionTemplate: React.FC<Anexo1SolicitudAprobacionTemplateProps> = ({ data }) => {
-  const rangoFechas = data.fechaInicio === data.fechaFin
-    ? data.fechaInicio
-    : `${data.fechaInicio} - ${data.fechaFin}`;
-  const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
+  const { destinatario, jefeGrupo } = data;
+
+  const filasActividad: [string, string][] = [
+    ['Nombre de la Actividad:', data.nombreActividad],
+    ['Tipo de Actividad:', data.tipoActividad],
+    ['Rama(s) que participa(n):', data.ramas || ''],
+    ['Lugar de la Actividad:', data.lugar],
+    ['Fecha(s) de la Actividad:', data.fechaHora],
+    ['Adulto Voluntario Responsable:', data.adultoResponsable || ''],
+    ['Costo Total de la Actividad:', formatMonto(data.costoPorParticipante)],
+  ];
+  if (typeof data.presupuestoReal === 'number') {
+    filasActividad.push(['Presupuesto Ejecutado:', formatMonto(data.presupuestoReal)]);
+  }
 
   return (
     <Document>
-      <Page size="A4" style={anexoStyles.page}>
-        <AnexoHeader titulo="ANEXO 1 - SOLICITUD DE APROBACIÓN DE ACTIVIDAD" />
+      <Page size="A4" style={styles.page}>
+        <MarcaAguaAsp />
 
-        <Text style={[anexoStyles.text, { textAlign: 'right', marginBottom: 12 }]}>
-          {data.fechaDocumento}
+        <Text style={[styles.mainTitle, { marginBottom: 6 }]}>ANEXO 1 - SOLICITUD DE APROBACIÓN DE ACTIVIDAD</Text>
+
+        <Text style={[styles.paragraph, { textAlign: 'right', marginBottom: 14 }]}>
+          {jefeGrupo.localidad || 'Lima'}, {formatFechaLargaAsp(data.fechaDocumento)}
         </Text>
 
-        <Text style={anexoStyles.text}>Sr.</Text>
-        <Text style={[anexoStyles.text, anexoStyles.textBold]}>{data.comisionadoLocal || '________________________'}</Text>
-        <Text style={anexoStyles.text}>Comisionado Local</Text>
-        <Text style={[anexoStyles.text, { marginBottom: 8 }]}>Presente. -</Text>
+        <Text style={styles.paragraph}>Sr.</Text>
+        <Text style={[styles.paragraph, { fontFamily: 'Helvetica-Bold' }]}>{destinatario?.nombre || LINEA}</Text>
+        <Text style={styles.paragraph}>{destinatario?.cargo || LINEA}</Text>
+        <Text style={[styles.paragraph, { textDecoration: 'underline', marginBottom: 8 }]}>Presente. -</Text>
 
-        <Text style={anexoStyles.paragraph}>
-          Yo, {data.jefeGrupo.nombre || '________________'}, identificado con DNI N° {data.jefeGrupo.dni || '__________'}, {data.jefeGrupo.cargo || 'Jefe del Grupo Scout Lima 12'}, me es grato dirigirme a usted para solicitar autorización para la actividad descrita a continuación:
+        <Text style={styles.paragraph}>
+          Yo, {jefeGrupo.nombre || LINEA}, identificado con DNI N° {jefeGrupo.dni || '__________'}, {jefeGrupo.cargo || 'Jefe de Grupo'} del {jefeGrupo.nombreGrupo || 'Grupo Scout'}, me es grato dirigirme a usted para solicitar autorización para la actividad descrita a continuación:
         </Text>
 
-        <View style={anexoStyles.table}>
-          {fila('Nombre de la Actividad:', data.nombreActividad)}
-          {fila('Tipo de Actividad:', data.tipoActividad)}
-          {fila('Rama(s) que participa(n):', data.ramas || '—')}
-          {fila('Lugar de la Actividad:', data.lugar)}
-          {fila('Fecha(s) de la Actividad:', `${rangoFechas}${data.horaConcentracion ? ` — ${data.horaConcentracion}` : ''}`)}
-          {fila('Adulto Voluntario Responsable:', data.adultoResponsable || '—')}
-          {fila('Costo Total de la Actividad:', formatMonto(data.costoPorParticipante))}
-          {typeof data.presupuestoReal === 'number' && fila('Presupuesto Ejecutado:', formatMonto(data.presupuestoReal))}
-        </View>
+        <TablaAsp filas={filasActividad} />
 
-        <View style={anexoStyles.table}>
-          {fila('Responsable de Salud:', data.responsableSalud || '—')}
-          {fila('Responsable de SFH:', data.responsableSFH || '—')}
-        </View>
+        <TablaAsp
+          filas={[
+            ['Responsable de Salud:', data.responsableSalud || ''],
+            ['Responsable de SFH:', data.responsableSFH || ''],
+          ]}
+        />
 
-        <Text style={anexoStyles.paragraph}>
+        <Text style={styles.paragraph}>
           Asimismo, nos comprometemos a cumplir con los requisitos, documentación y plazos que indica el documento de Normas para Actividades Presenciales de la ASP.
         </Text>
 
-        <Text style={[anexoStyles.text, { marginBottom: 24 }]}>
+        <Text style={[styles.paragraph, { marginTop: 8, marginBottom: 30 }]}>
           Sin otro particular nos despedimos agradeciendo su apoyo.
         </Text>
 
-        <View style={anexoStyles.firmaContainer}>
-          <View style={anexoStyles.firmaLinea} />
-          <Text style={[anexoStyles.text, anexoStyles.textBold]}>Firma</Text>
-          <Text style={anexoStyles.text}>Nombre y Apellidos: {data.jefeGrupo.nombre || '—'}</Text>
-          <Text style={anexoStyles.text}>DNI: {data.jefeGrupo.dni || '—'}</Text>
-          <Text style={anexoStyles.text}>Cargo Institucional: {data.jefeGrupo.cargo || 'Jefe de Grupo'}</Text>
-        </View>
+        <FirmaAsp
+          firmaBase64={jefeGrupo.firmaBase64}
+          datos={[
+            `Nombre y Apellidos: ${jefeGrupo.nombre || ''}`,
+            `DNI: ${jefeGrupo.dni || ''}`,
+            `Cargo Institucional: ${jefeGrupo.cargo || ''}`,
+            `Localidad y Numeral: ${jefeGrupo.localidadNumeral || ''}`,
+          ]}
+        />
       </Page>
     </Document>
   );

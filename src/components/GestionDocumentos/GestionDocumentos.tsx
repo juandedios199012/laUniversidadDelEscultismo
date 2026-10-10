@@ -617,10 +617,6 @@ function PlantillaTab({ plantilla, onSaved }: { plantilla: PlantillaCarta | null
           <input className={inputCls} value={form.firma_cargo || ''} onChange={(e) => set('firma_cargo', e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>Firma — DNI</label>
-          <input className={inputCls} placeholder="Usado también en el Anexo 1 de Aire Libre" value={form.firma_dni || ''} onChange={(e) => set('firma_dni', e.target.value)} />
-        </div>
-        <div>
           <label className={labelCls}>Firma — registro</label>
           <input className={inputCls} value={form.firma_registro || ''} onChange={(e) => set('firma_registro', e.target.value)} />
         </div>

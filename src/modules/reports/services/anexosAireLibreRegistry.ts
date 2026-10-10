@@ -6,16 +6,18 @@
  */
 
 import { ReportGenerationResult } from '../types/reportTypes';
-import { generarAnexo1, generarAnexo3, generarAnexo4 } from './anexosAireLibreService';
+import { generarAnexo1, generarAnexo3, generarAnexo4, OpcionesAnexo } from './anexosAireLibreService';
 
 export interface AnexoAireLibreRegistroItem {
   id: string;
   label: string;
-  generar: (actividadId: string) => Promise<ReportGenerationResult>;
+  generar: (actividadId: string, opciones?: OpcionesAnexo) => Promise<ReportGenerationResult>;
+  /** Pide elegir el Aprobador destinatario antes de generar */
+  requiereAprobador?: boolean;
 }
 
 export const ANEXOS_AIRE_LIBRE: AnexoAireLibreRegistroItem[] = [
-  { id: 'anexo1', label: 'Anexo 1 - Solicitud de Aprobación', generar: generarAnexo1 },
+  { id: 'anexo1', label: 'Anexo 1 - Solicitud de Aprobación', generar: generarAnexo1, requiereAprobador: true },
   { id: 'anexo3', label: 'Anexo 3 - Lista de Participantes', generar: generarAnexo3 },
   { id: 'anexo4', label: 'Anexo 4 - Autorización de Participación', generar: generarAnexo4 },
 ];

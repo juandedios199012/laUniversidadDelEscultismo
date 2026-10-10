@@ -1,6 +1,6 @@
 /**
  * Ensambla los datos de una actividad de Aire Libre + identidad del grupo
- * (plantilla de carta, Comisionado Local) en los tipos de `anexoTypes.ts`,
+ * (Jefe de Grupo, Aprobadores) en los tipos de `anexoTypes.ts`,
  * y genera/descarga el PDF de cada Anexo. Mismo idioma que
  * `historiaMedicaExportService.ts`: React.createElement + generateAndDownloadPDF.
  */
@@ -16,8 +16,10 @@ import {
   CATEGORIAS_PRESUPUESTO_ACTIVIDAD,
   ESTADOS_ACTIVIDAD_EXTERIOR,
 } from '@/services/actividadesExteriorService';
-import { DocumentosService } from '@/services/documentosService';
-import { ComisionadoLocalService } from '@/services/comisionadoLocalService';
+import { DirigenteService } from '@/services/dirigenteService';
+import { Aprobador } from '@/services/aprobadoresService';
+import { scoutDocumentsService } from '@/services/scoutDocumentsService';
+import { CARGOS_LABELS } from '@/types/dirigente';
 import { ConfigAnexo4Service } from '@/services/configAnexo4Service';
 import { fechaLarga } from '@/components/GestionDocumentos/CartaOficialDocumento';
 import { Anexo1SolicitudAprobacionTemplate } from '../templates/pdf/anexos/Anexo1SolicitudAprobacionTemplate';
@@ -62,6 +64,33 @@ export function staffAnexo4(staff: StaffConRol[]): Pick<
   };
 }
 
+/**
+ * "Fecha(s) y hora" de la actividad, igual en el Anexo 1 y el Anexo 4.
+ * Mismo día: "fecha • hora inicio - hora fin". Varios días: "inicio hora - fin hora".
+ */
+export function fechaHoraActividad(a: {
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+  hora_concentracion?: string | null;
+  hora_fin?: string | null;
+}): string {
+  const inicio = formatDate(a.fecha_inicio);
+  const fin = formatDate(a.fecha_fin || a.fecha_inicio);
+  const horaInicio = (a.hora_concentracion || '').slice(0, 5);
+  const horaFin = (a.hora_fin || '').slice(0, 5);
+
+  if (inicio === fin) {
+    const horas = horaInicio && horaFin ? `${horaInicio} - ${horaFin}` : horaInicio || horaFin;
+    return horas ? `${inicio} • ${horas}` : inicio;
+  }
+  return `${horaInicio ? `${inicio} ${horaInicio}` : inicio} - ${horaFin ? `${fin} ${horaFin}` : fin}`;
+}
+
+function hoyISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function rangoFechas(actividad: ActividadExteriorCompleta): { inicio: string; fin: string } {
   return {
     inicio: formatDate(actividad.fecha_inicio),
@@ -74,49 +103,56 @@ function nombreArchivo(prefijo: string, actividad: ActividadExteriorCompleta): s
   return `${prefijo}_${slug}_${new Date().toISOString().split('T')[0]}`;
 }
 
-async function obtenerActividadYFirmante(actividadId: string) {
-  const [actividad, plantilla] = await Promise.all([
-    ActividadesExteriorService.obtenerActividad(actividadId),
-    DocumentosService.obtenerPlantilla(),
-  ]);
-  return { actividad, plantilla };
+export interface OpcionesAnexo {
+  /** Anexo 1: Aprobador a quien va dirigida la solicitud */
+  aprobador?: Aprobador | null;
 }
 
 /**
  * ANEXO 1 - Solicitud de Aprobación de Actividad
+ *   Destinatario ← Aprobadores · Firmante ← Jefe de Grupo (Dirigentes)
+ *   Tabla ← Aire Libre (fechas/horas y responsables igual que el Anexo 4)
  */
-export async function generarAnexo1(actividadId: string): Promise<ReportGenerationResult> {
+export async function generarAnexo1(actividadId: string, opciones?: OpcionesAnexo): Promise<ReportGenerationResult> {
   try {
-    const [{ actividad, plantilla }, comisionadoLocal, dashboard] = await Promise.all([
-      obtenerActividadYFirmante(actividadId),
-      ComisionadoLocalService.obtener(),
+    const [actividad, jefe, dashboard] = await Promise.all([
+      ActividadesExteriorService.obtenerActividad(actividadId),
+      DirigenteService.obtenerJefeGrupo(),
       ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId),
     ]);
 
-    const { inicio, fin } = rangoFechas(actividad);
+    const firmaJefe = jefe?.dirigente_id
+      ? await scoutDocumentsService.getDocumentForPdf('dirigente', jefe.dirigente_id, 'firma').catch(() => null)
+      : null;
+
     const staff = actividad.staff || [];
-    const presupuestoReal = Number(dashboard?.total_real ?? 0);
+    const { director, dirigenteResponsable } = staffAnexo4(staff);
+    const destinatario = opciones?.aprobador;
 
     const data: Anexo1Data = {
+      destinatario: destinatario
+        ? { nombre: destinatario.nombre_completo, cargo: destinatario.cargo }
+        : undefined,
+      jefeGrupo: {
+        nombre: jefe?.nombre_completo,
+        dni: jefe?.numero_documento || undefined,
+        cargo: jefe ? CARGOS_LABELS[jefe.cargo] || jefe.cargo : undefined,
+        firmaBase64: firmaJefe || undefined,
+        nombreGrupo: jefe?.nombre_grupo || undefined,
+        localidad: jefe?.localidad || undefined,
+        localidadNumeral: [jefe?.localidad, jefe?.numeral].filter(Boolean).join(' ') || undefined,
+      },
       nombreActividad: actividad.nombre,
       tipoActividad: actividad.tipo,
       ramas: actividad.ramas_participantes?.join(', '),
       lugar: actividad.ubicacion,
-      fechaInicio: inicio,
-      fechaFin: fin,
-      horaConcentracion: actividad.hora_concentracion,
+      fechaHora: fechaHoraActividad(actividad),
       costoPorParticipante: actividad.costo_por_participante || 0,
-      presupuestoReal,
-      adultoResponsable: buscarStaffPorRol(staff, ['JEFE', 'DIRIGENTE'])?.nombre,
+      presupuestoReal: Number(dashboard?.total_real ?? 0),
+      adultoResponsable: dirigenteResponsable || director,
       responsableSalud: buscarStaffPorRol(staff, ['ENFERMERO', 'MEDICO', 'SALUD'])?.nombre,
       responsableSFH: buscarStaffPorRol(staff, ['SFH'])?.nombre,
-      jefeGrupo: {
-        nombre: plantilla?.firma_nombre,
-        cargo: plantilla?.firma_cargo,
-        dni: plantilla?.firma_dni,
-      },
-      comisionadoLocal: comisionadoLocal || undefined,
-      fechaDocumento: fechaLarga(),
+      fechaDocumento: hoyISO(),
     };
 
     const Component = React.createElement(Anexo1SolicitudAprobacionTemplate, { data });

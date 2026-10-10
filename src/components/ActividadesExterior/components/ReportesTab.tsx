@@ -38,6 +38,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { ANEXOS_AIRE_LIBRE } from '@/modules/reports/services/anexosAireLibreRegistry';
 import { ReportStatus } from '@/modules/reports/types/reportTypes';
+import { Aprobador, AprobadoresService } from '@/services/aprobadoresService';
 
 interface ReportesTabProps {
   actividad: ActividadExteriorCompleta;
@@ -136,11 +137,23 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
   const [formatoExport, setFormatoExport] = useState<'pdf' | 'excel'>('pdf');
   const [exportando, setExportando] = useState(false);
   const [generandoAnexoId, setGenerandoAnexoId] = useState<string | null>(null);
+  // Anexo 1: destinatario (Aprobador); si hay uno solo se usa directo
+  const [aprobadores, setAprobadores] = useState<Aprobador[]>([]);
+  const [aprobadorId, setAprobadorId] = useState('');
   const [dashboardPresupuesto, setDashboardPresupuesto] = useState<DashboardPresupuesto | null>(null);
 
   useEffect(() => {
     cargarDatos();
   }, [actividad.id]);
+
+  useEffect(() => {
+    AprobadoresService.listar()
+      .then((lista) => {
+        setAprobadores(lista);
+        if (lista.length === 1) setAprobadorId(lista[0].id);
+      })
+      .catch(() => setAprobadores([]));
+  }, []);
 
   useEffect(() => {
     // Inicializar campos por defecto al cambiar tipo de reporte
@@ -167,9 +180,19 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
   };
 
   const generarAnexo = async (anexo: (typeof ANEXOS_AIRE_LIBRE)[number]) => {
+    const aprobador = aprobadores.find((a) => a.id === aprobadorId) ?? null;
+    if (anexo.requiereAprobador && !aprobador) {
+      toast.error(
+        aprobadores.length
+          ? 'Selecciona a quién va dirigido el Anexo 1'
+          : 'Registra un Aprobador (Adultos → Aprobadores)',
+      );
+      return;
+    }
+
     setGenerandoAnexoId(anexo.id);
     try {
-      const resultado = await anexo.generar(actividad.id);
+      const resultado = await anexo.generar(actividad.id, { aprobador });
       if (resultado.status === ReportStatus.SUCCESS) {
         toast.success(`${anexo.label} generado correctamente`);
       } else {
@@ -678,18 +701,37 @@ const ReportesTab: React.FC<ReportesTabProps> = ({
             Anexos
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          {ANEXOS_AIRE_LIBRE.map((anexo) => (
-            <Button
-              key={anexo.id}
-              variant="outline"
-              disabled={generandoAnexoId !== null}
-              onClick={() => generarAnexo(anexo)}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {generandoAnexoId === anexo.id ? 'Generando...' : anexo.label}
-            </Button>
-          ))}
+        <CardContent className="space-y-4">
+          <div className="max-w-sm space-y-1.5">
+            <Label>Anexo 1 dirigido a (Aprobador)</Label>
+            <Select value={aprobadorId} onValueChange={setAprobadorId}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={aprobadores.length ? 'Selecciona un aprobador' : 'No hay Aprobadores registrados'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {aprobadores.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.nombre_completo} — {r.cargo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {ANEXOS_AIRE_LIBRE.map((anexo) => (
+              <Button
+                key={anexo.id}
+                variant="outline"
+                disabled={generandoAnexoId !== null}
+                onClick={() => generarAnexo(anexo)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {generandoAnexoId === anexo.id ? 'Generando...' : anexo.label}
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

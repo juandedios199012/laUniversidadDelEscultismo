@@ -14,48 +14,11 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from '@react-pdf/renderer';
 import { AutorizacionApoderadoReportData } from '../../types/reportTypes';
-import { marcaAguaFichaMedicaBase64 } from '../../../../assets/images/marcaAguaFichaMedicaBase64';
+import { anexoAspStyles, MarcaAguaAsp, TablaAsp, FirmaAsp, formatFechaLargaAsp } from './anexoAspPdf';
 
-const COLORS = {
-  primary: '#4F81BD',
-  border: '#000000',
-};
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: 'Helvetica',
-    fontSize: 9,
-  },
-  watermark: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 595,
-    height: 842,
-    zIndex: -1,
-  },
-  mainTitle: {
-    fontSize: 13,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    textDecoration: 'underline',
-  },
-  subTitle: {
-    fontSize: 10,
-    fontFamily: 'Helvetica-BoldOblique',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 14,
-  },
-  paragraph: {
-    fontSize: 9,
-    lineHeight: 1.5,
-    marginBottom: 4,
-  },
+const styles = { ...anexoAspStyles, ...StyleSheet.create({
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -66,7 +29,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#000000',
     marginLeft: 4,
     marginRight: 3,
     alignItems: 'center',
@@ -75,40 +38,6 @@ const styles = StyleSheet.create({
   checkboxMark: {
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
-  },
-  table: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginTop: 6,
-    marginBottom: 10,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    minHeight: 20,
-  },
-  tableRowLast: {
-    flexDirection: 'row',
-    minHeight: 20,
-  },
-  labelCell: {
-    width: '35%',
-    backgroundColor: COLORS.primary,
-    padding: 4,
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 8,
-    color: '#FFFFFF',
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
-  },
-  valueCell: {
-    width: '65%',
-    padding: 4,
-    fontSize: 8,
-    justifyContent: 'center',
   },
   declaracionRow: {
     flexDirection: 'row',
@@ -124,36 +53,6 @@ const styles = StyleSheet.create({
     textAlign: 'justify',
     lineHeight: 1.4,
   },
-  fechaDocumento: {
-    textAlign: 'right',
-    fontSize: 9,
-    marginTop: 12,
-    marginBottom: 30,
-  },
-  firmaLinea: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    width: 260,
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  firmaImagen: {
-    width: 180,
-    height: 45,
-    alignSelf: 'center',
-    marginBottom: 2,
-    objectFit: 'contain',
-  },
-  firmaLabel: {
-    fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-  },
-  firmaDato: {
-    fontSize: 9,
-    textAlign: 'center',
-    marginTop: 4,
-  },
   aceptacion: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -161,7 +60,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-});
+}) };
 
 const DECLARACIONES = [
   'Que acepto la normativa y condiciones de la actividad, reconociendo expresamente que mi representado se encuentra en condiciones físicas adecuadas para el desarrollo de las diferentes acciones de la actividad.',
@@ -182,18 +81,6 @@ function actividadFilas(actividad?: AutorizacionApoderadoReportData['actividad']
     ['Dirigente(s) Acompañante(s)', actividad?.acompanantes || ''],
     ['Colaborador:', actividad?.colaborador || ''],
   ];
-}
-
-const MESES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
-
-function formatFechaLarga(fechaStr?: string): string {
-  if (!fechaStr) return '';
-  const fecha = new Date(`${fechaStr}T00:00:00`);
-  if (isNaN(fecha.getTime())) return fechaStr;
-  return `${fecha.getDate()} de ${MESES[fecha.getMonth()]} del ${fecha.getFullYear()}`;
 }
 
 const Checkbox: React.FC<{ label: string; checked: boolean }> = ({ label, checked }) => (
@@ -223,7 +110,7 @@ export const AutorizacionApoderadoPage: React.FC<AutorizacionApoderadoTemplatePr
 
   return (
     <Page size="A4" style={styles.page}>
-      <Image src={marcaAguaFichaMedicaBase64} style={styles.watermark} fixed />
+      <MarcaAguaAsp />
 
       <Text style={styles.mainTitle}>ANEXO 4 - AUTORIZACIÓN DE PARTICIPACIÓN</Text>
       <Text style={styles.subTitle}>Para Miembros Juveniles Menores de Edad</Text>
@@ -249,18 +136,7 @@ export const AutorizacionApoderadoPage: React.FC<AutorizacionApoderadoTemplatePr
         y código de asociado N° {data.codigoScout || ''} por medio de la presente, autorizo la participación de mi menor hijo(a) en la Actividad organizada por el Grupo Scout Lima 12, que tiene las siguientes características:
       </Text>
 
-      <View style={styles.table}>
-        {actividadFilas(data.actividad).map(([label, valor], idx, arr) => (
-          <View key={label} style={idx === arr.length - 1 ? styles.tableRowLast : styles.tableRow}>
-            <View style={styles.labelCell}>
-              <Text>{label}</Text>
-            </View>
-            <View style={styles.valueCell}>
-              <Text>{valor}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
+      <TablaAsp filas={actividadFilas(data.actividad)} />
 
       <Text style={[styles.paragraph, { fontFamily: 'Helvetica-Bold' }]}>Asimismo, declaro:</Text>
       {DECLARACIONES.map((texto, idx) => (
@@ -271,16 +147,16 @@ export const AutorizacionApoderadoPage: React.FC<AutorizacionApoderadoTemplatePr
       ))}
 
       <Text style={styles.fechaDocumento}>
-        Lima, {formatFechaLarga(data.fechaDocumento)}
+        Lima, {formatFechaLargaAsp(data.fechaDocumento)}
       </Text>
 
-      {data.apoderado?.firmaBase64 && (
-        <Image src={data.apoderado.firmaBase64} style={styles.firmaImagen} />
-      )}
-      <View style={styles.firmaLinea} />
-      <Text style={styles.firmaLabel}>Firma</Text>
-      <Text style={styles.firmaDato}>Nombre y Apellidos: {data.apoderado?.nombre || ''}</Text>
-      <Text style={styles.firmaDato}>DNI: {data.apoderado?.numeroDocumento || ''}</Text>
+      <FirmaAsp
+        firmaBase64={data.apoderado?.firmaBase64}
+        datos={[
+          `Nombre y Apellidos: ${data.apoderado?.nombre || ''}`,
+          `DNI: ${data.apoderado?.numeroDocumento || ''}`,
+        ]}
+      />
       {data.aceptacion && (
         <Text style={styles.aceptacion}>
           ACEPTADO DIGITALMENTE EN EL PORTAL DE PADRES - {data.aceptacion.fecha}
