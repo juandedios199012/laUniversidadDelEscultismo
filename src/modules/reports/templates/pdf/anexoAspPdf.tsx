@@ -118,15 +118,25 @@ export const MarcaAguaAsp: React.FC = () => (
   <Image src={marcaAguaFichaMedicaBase64} style={anexoAspStyles.watermark} fixed />
 );
 
+interface TablaAspProps {
+  filas: [string, string][];
+  /** Ancho de la tabla (centrada), ej. '75%'. Por defecto 100%. */
+  ancho?: string;
+  /** Filas pares del valor con fondo gris (formato del Anexo 1). */
+  cebra?: boolean;
+  /** Etiquetas en texto normal en lugar de negrita. */
+  etiquetaNormal?: boolean;
+}
+
 /** Tabla de dos columnas: etiqueta (fondo azul) y valor. */
-export const TablaAsp: React.FC<{ filas: [string, string][] }> = ({ filas }) => (
-  <View style={anexoAspStyles.table}>
+export const TablaAsp: React.FC<TablaAspProps> = ({ filas, ancho, cebra, etiquetaNormal }) => (
+  <View style={[anexoAspStyles.table, ancho ? { width: ancho, alignSelf: 'center' } : {}]}>
     {filas.map(([label, valor], idx) => (
       <View key={label} style={idx === filas.length - 1 ? anexoAspStyles.tableRowLast : anexoAspStyles.tableRow}>
-        <View style={anexoAspStyles.labelCell}>
+        <View style={[anexoAspStyles.labelCell, etiquetaNormal ? { fontFamily: 'Helvetica' } : {}]}>
           <Text>{label}</Text>
         </View>
-        <View style={anexoAspStyles.valueCell}>
+        <View style={[anexoAspStyles.valueCell, cebra && idx % 2 === 0 ? { backgroundColor: '#F2F2F2' } : {}]}>
           <Text>{valor}</Text>
         </View>
       </View>

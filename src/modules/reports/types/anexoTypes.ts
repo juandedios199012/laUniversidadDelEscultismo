@@ -29,10 +29,13 @@ export interface Anexo1Data {
   lugar: string;
   /** Mismo formato que el Anexo 4 (fechas y horas de la actividad) */
   fechaHora: string;
+  /** Responsables, por rol, igual que el Anexo 4 */
+  director?: string;
+  dirigenteResponsable?: string;
+  adultosAcompanantes?: string;
+  colaborador?: string;
   costoPorParticipante: number;
-  presupuestoReal?: number;
-  adultoResponsable?: string;
-  responsableSalud?: string;
+  responsableSaludSeguridad?: string;
   responsableSFH?: string;
   /** ISO "YYYY-MM-DD" */
   fechaDocumento: string;

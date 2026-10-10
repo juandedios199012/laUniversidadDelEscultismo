@@ -115,10 +115,9 @@ export interface OpcionesAnexo {
  */
 export async function generarAnexo1(actividadId: string, opciones?: OpcionesAnexo): Promise<ReportGenerationResult> {
   try {
-    const [actividad, jefe, dashboard] = await Promise.all([
+    const [actividad, jefe] = await Promise.all([
       ActividadesExteriorService.obtenerActividad(actividadId),
       DirigenteService.obtenerJefeGrupo(),
-      ActividadesExteriorService.obtenerDashboardPresupuesto(actividadId),
     ]);
 
     const firmaJefe = jefe?.dirigente_id
@@ -126,12 +125,11 @@ export async function generarAnexo1(actividadId: string, opciones?: OpcionesAnex
       : null;
 
     const staff = actividad.staff || [];
-    const { director, dirigenteResponsable } = staffAnexo4(staff);
-    const destinatario = opciones?.aprobador;
+    const aprobador = opciones?.aprobador;
 
     const data: Anexo1Data = {
-      destinatario: destinatario
-        ? { nombre: destinatario.nombre_completo, cargo: destinatario.cargo }
+      destinatario: aprobador
+        ? { nombre: aprobador.nombre_completo, cargo: aprobador.cargo }
         : undefined,
       jefeGrupo: {
         nombre: jefe?.nombre_completo,
@@ -147,11 +145,14 @@ export async function generarAnexo1(actividadId: string, opciones?: OpcionesAnex
       ramas: actividad.ramas_participantes?.join(', '),
       lugar: actividad.ubicacion,
       fechaHora: fechaHoraActividad(actividad),
+      ...staffAnexo4(staff),
       costoPorParticipante: actividad.costo_por_participante || 0,
-      presupuestoReal: Number(dashboard?.total_real ?? 0),
-      adultoResponsable: dirigenteResponsable || director,
-      responsableSalud: buscarStaffPorRol(staff, ['ENFERMERO', 'MEDICO', 'SALUD'])?.nombre,
-      responsableSFH: buscarStaffPorRol(staff, ['SFH'])?.nombre,
+      responsableSaludSeguridad: buscarStaffPorRol(staff, ['ENFERMERO', 'MEDICO', 'SALUD', 'SEGURIDAD'])?.nombre,
+      // Rol "Responsable de SFH" del step Responsables (catalogo_roles_staff)
+      responsableSFH: staff
+        .filter((s) => (s.rol || '').trim().toUpperCase() === 'RESPONSABLE_SFH')
+        .map((s) => s.nombre)
+        .join(', ') || undefined,
       fechaDocumento: hoyISO(),
     };
 
