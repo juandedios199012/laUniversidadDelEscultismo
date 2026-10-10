@@ -874,7 +874,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               onKeyDown={(e) => {
                 // Evita que Enter (p. ej. al confirmar una hora) envíe el
                 // formulario completo y cierre el modal antes de tiempo.
-                if (e.key === 'Enter') e.preventDefault();
+                // En los textarea sí se permite Enter para saltos de línea.
+                if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) e.preventDefault();
               }}
             >
               {/* Información Básica */}
@@ -1236,7 +1237,8 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               onKeyDown={(e) => {
                 // Evita que Enter (p. ej. al confirmar una hora) envíe el
                 // formulario completo y cierre el modal antes de tiempo.
-                if (e.key === 'Enter') e.preventDefault();
+                // En los textarea sí se permite Enter para saltos de línea.
+                if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) e.preventDefault();
               }}
             >
               {/* Formulario idéntico al crear pero usando editForm */}
@@ -1726,7 +1728,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               {selectedPrograma.observaciones_generales && (
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Observaciones Generales</h3>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg whitespace-pre-line">
                     {selectedPrograma.observaciones_generales}
                   </p>
                 </div>

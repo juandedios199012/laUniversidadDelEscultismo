@@ -21,6 +21,7 @@ interface Programa {
   tema_central: string;
   fecha_inicio: string;
   rama: string;
+  observaciones_generales?: string;
   actividades: Actividad[];
 }
 
@@ -146,6 +147,7 @@ export default function PuntajesScreen() {
         tema_central: p.tema_central || 'Sin tema',
         fecha_inicio: p.fecha_inicio,
         rama: p.rama || 'N/A',
+        observaciones_generales: p.observaciones_generales || '',
         actividades: (p.actividades || p.programa_actividades || []).map((act: any) => ({
           id: act.id,
           nombre: act.nombre || 'Sin nombre',
@@ -594,6 +596,12 @@ export default function PuntajesScreen() {
                       <p className="text-sm text-blue-600 font-medium">Programa:</p>
                       <p className="text-blue-900 font-semibold">{programa.tema_central}</p>
                       <p className="text-sm text-blue-600 mt-1">📅 {formatFechaLocal(programa.fecha_inicio)} • 🏕️ {programa.rama}</p>
+                      {programa.observaciones_generales && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <p className="text-sm text-blue-600 font-medium">Observaciones generales:</p>
+                          <p className="text-sm text-blue-900 whitespace-pre-line break-words">{programa.observaciones_generales}</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Ranking compacto */}

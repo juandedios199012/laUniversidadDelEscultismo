@@ -137,7 +137,21 @@ export class ProgramaSemanalService {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data || [];
+
+      // Supabase no garantiza el orden de las relaciones anidadas: se ordenan
+      // las actividades por orden_ejecucion (y hora_inicio como desempate) para
+      // que web y mobile muestren el mismo orden definido con subir/bajar.
+      return (data || []).map((p: any) => ({
+        ...p,
+        programa_actividades: Array.isArray(p.programa_actividades)
+          ? [...p.programa_actividades].sort((a: any, b: any) => {
+              const ordenA = typeof a?.orden_ejecucion === 'number' ? a.orden_ejecucion : Number.MAX_SAFE_INTEGER;
+              const ordenB = typeof b?.orden_ejecucion === 'number' ? b.orden_ejecucion : Number.MAX_SAFE_INTEGER;
+              if (ordenA !== ordenB) return ordenA - ordenB;
+              return (a?.hora_inicio || '99:99').localeCompare(b?.hora_inicio || '99:99');
+            })
+          : p.programa_actividades,
+      }));
     } catch (error) {
       console.error('❌ Error al obtener programas:', error);
       return [];
