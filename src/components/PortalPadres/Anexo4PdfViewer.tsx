@@ -56,7 +56,7 @@ const Anexo4PdfViewer: React.FC<Anexo4PdfViewerProps> = ({ actividad, config, on
     (async () => {
       try {
         const { generarAnexo4Padre } = await import('./anexo4PdfPadre');
-        const pdfBlob = await generarAnexo4Padre(actividad, config);
+        const pdfBlob = await generarAnexo4Padre(actividad);
         if (cancelado) return;
         setBlob(pdfBlob);
         if (paginasRef.current) {
@@ -78,7 +78,7 @@ const Anexo4PdfViewer: React.FC<Anexo4PdfViewerProps> = ({ actividad, config, on
     return () => {
       cancelado = true;
     };
-  }, [actividad.participante_id, actividad.autorizacion_aceptada_at, config]);
+  }, [actividad.participante_id, actividad.autorizacion_aceptada_at]);
 
   const descargar = () => {
     if (!blob) return;

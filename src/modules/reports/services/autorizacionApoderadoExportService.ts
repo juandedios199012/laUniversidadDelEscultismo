@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { generateAndDownloadPDF } from './pdfService';
+import { generateAndDownloadPDF, generatePDF } from './pdfService';
 import { getAutorizacionApoderadoData } from './reportDataService';
 import { ReportGenerationResult, ReportStatus, AutorizacionApoderadoReportData } from '../types/reportTypes';
 import { AutorizacionApoderadoTemplate, AutorizacionApoderadoConsolidadoTemplate } from '../templates/pdf/AutorizacionApoderadoTemplate';
@@ -62,6 +62,13 @@ function actividadFilas(actividad?: AutorizacionApoderadoReportData['actividad']
     ['Dirigente(s) Acompañante(s)', actividad?.acompanantes || ''],
     ['Colaborador:', actividad?.colaborador || ''],
   ];
+}
+
+/** PDF como Blob (Portal de Padres: se muestra en pantalla antes del ACEPTO). */
+export async function generarAutorizacionApoderadoBlob(data: AutorizacionApoderadoReportData): Promise<Blob> {
+  const result = await generatePDF(React.createElement(AutorizacionApoderadoTemplate, { data }), 'anexo4');
+  if (!result.blob) throw new Error(result.error || 'No se pudo generar el Anexo 4');
+  return result.blob;
 }
 
 type AutorizacionApoderadoExportOptions = {

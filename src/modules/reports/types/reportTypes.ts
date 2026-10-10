@@ -451,6 +451,9 @@ export interface AutorizacionApoderadoReportData {
     acompanantes?: string;
     colaborador?: string;
   };
+
+  /** Portal de Padres: aceptación digital (botón ACEPTO). El reporte no la usa. */
+  aceptacion?: { fecha: string };
 }
 
 export interface EspecialidadesReportData {

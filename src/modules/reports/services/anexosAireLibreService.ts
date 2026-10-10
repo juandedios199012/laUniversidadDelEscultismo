@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { generateAndDownloadPDF, generatePDF, formatDate } from './pdfService';
+import { generateAndDownloadPDF, formatDate } from './pdfService';
 import { ReportGenerationResult, ReportStatus } from '../types/reportTypes';
 import {
   ActividadesExteriorService,
@@ -39,10 +39,6 @@ function buscarStaffPorRol<T extends StaffConRol>(staff: T[], keywords: string[]
   return staff.find((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
 }
 
-function buscarStaffsPorRol<T extends StaffConRol>(staff: T[], keywords: string[]): T[] {
-  return staff.filter((s) => keywords.some((k) => s.rol?.toUpperCase().includes(k)));
-}
-
 /**
  * Campos de responsables del Anexo 4, por rol exacto del step "Responsables":
  *   Director ← DIRECTOR · Dirigente Responsable ← RESPONSABLE
@@ -64,13 +60,6 @@ export function staffAnexo4(staff: StaffConRol[]): Pick<
     adultosAcompanantes: nombresConRol('DIRIGENTE'),
     colaborador: nombresConRol('COLABORADOR'),
   };
-}
-
-/** PDF del Anexo 4 como Blob (Portal de Padres: se muestra en pantalla antes del ACEPTO). */
-export async function generarAnexo4Blob(data: Anexo4Data): Promise<Blob> {
-  const result = await generatePDF(React.createElement(Anexo4AutorizacionTemplate, { data }), 'anexo4');
-  if (!result.blob) throw new Error(result.error || 'No se pudo generar el Anexo 4');
-  return result.blob;
 }
 
 function rangoFechas(actividad: ActividadExteriorCompleta): { inicio: string; fin: string } {

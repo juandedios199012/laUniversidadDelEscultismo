@@ -1,4 +1,4 @@
-/** Declaraciones del Anexo 4 — compartidas entre el PDF y el botón ACEPTO del Portal de Padres. */
+/** Declaraciones por defecto del Anexo 4 de Aire Libre (si no hay textos configurados). */
 export const DECLARACIONES_ANEXO4 = [
   'Que acepto la normativa y condiciones de la actividad, reconociendo expresamente que mi representado se encuentra en condiciones físicas adecuadas para el desarrollo de las diferentes acciones de la actividad.',
   'Que conozco y acepto íntegramente la Metodología Scout para el desarrollo de las actividades donde participarán mis representados.',

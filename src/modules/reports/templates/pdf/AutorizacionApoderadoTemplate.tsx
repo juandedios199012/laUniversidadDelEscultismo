@@ -154,6 +154,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
+  aceptacion: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: '#15803d',
+    textAlign: 'center',
+    marginTop: 8,
+  },
 });
 
 const DECLARACIONES = [
@@ -274,6 +281,11 @@ export const AutorizacionApoderadoPage: React.FC<AutorizacionApoderadoTemplatePr
       <Text style={styles.firmaLabel}>Firma</Text>
       <Text style={styles.firmaDato}>Nombre y Apellidos: {data.apoderado?.nombre || ''}</Text>
       <Text style={styles.firmaDato}>DNI: {data.apoderado?.numeroDocumento || ''}</Text>
+      {data.aceptacion && (
+        <Text style={styles.aceptacion}>
+          ACEPTADO DIGITALMENTE EN EL PORTAL DE PADRES - {data.aceptacion.fecha}
+        </Text>
+      )}
     </Page>
   );
 };

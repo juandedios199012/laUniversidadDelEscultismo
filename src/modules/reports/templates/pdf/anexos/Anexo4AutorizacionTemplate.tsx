@@ -18,23 +18,12 @@ interface Anexo4AutorizacionTemplateProps {
   data: Anexo4Data;
 }
 
-const Checkbox: React.FC<{ label: string; checked?: boolean }> = ({ label, checked }) => (
+const Checkbox: React.FC<{ label: string }> = ({ label }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
-    <View
-      style={{
-        width: 8,
-        height: 8,
-        borderWidth: 1,
-        borderColor: '#000',
-        marginRight: 3,
-        backgroundColor: checked ? '#000' : undefined,
-      }}
-    />
+    <View style={{ width: 8, height: 8, borderWidth: 1, borderColor: '#000', marginRight: 3 }} />
     <Text>{label}</Text>
   </View>
 );
-
-const enBlanco = (valor: string | undefined, lineas: string) => valor || lineas;
 
 const fila = (label: string, valor: string) => (
   <View style={anexoStyles.tableRow} key={label}>
@@ -92,7 +81,6 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
   const itemsDefault = data.itemsQueLlevarDefault?.length ? data.itemsQueLlevarDefault : ITEMS_QUE_LLEVAR_FALLBACK;
   const itemsAMostrar = itemsQueLlevar.length > 0 ? itemsQueLlevar : itemsDefault;
   const declaraciones = data.declaraciones?.length ? data.declaraciones : DECLARACIONES_ANEXO4;
-  const { firmante, menor, aceptacion } = data;
   const formatMonto = (valor?: number) => `S/. ${Number(valor ?? 0).toFixed(2)}`;
 
   return (
@@ -105,23 +93,21 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
         />
 
         <Text style={anexoStyles.paragraph}>
-          Yo {enBlanco(firmante?.nombre, '________________________')} identificado con DNI: {enBlanco(firmante?.dni, '_________')}
+          Yo________________________ identificado con DNI: _________
         </Text>
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-          <Checkbox label="Padre" checked={firmante?.parentesco === 'Padre'} />
-          <Checkbox label="Madre" checked={firmante?.parentesco === 'Madre'} />
-          <Checkbox label="Apoderado" checked={firmante?.parentesco === 'Apoderado'} />
+          <Checkbox label="Padre" />
+          <Checkbox label="Madre" />
+          <Checkbox label="Apoderado" />
         </View>
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-          <Checkbox label="niño" checked={menor?.tipo === 'niño'} />
-          <Checkbox label="niña" checked={menor?.tipo === 'niña'} />
-          <Checkbox label="joven" checked={menor?.tipo === 'joven'} />
-          <Text>
-            : {enBlanco(menor?.nombre, '________________________')} identificado con DNI: {enBlanco(menor?.dni, '_________')}
-          </Text>
+          <Checkbox label="niño" />
+          <Checkbox label="niña" />
+          <Checkbox label="joven" />
+          <Text>: ________________________ identificado con DNI: _________</Text>
         </View>
         <Text style={anexoStyles.paragraph}>
-          y código de asociado N° {enBlanco(menor?.codigoAsociado, '_______')} por medio de la presente, autorizo la participación de mi menor hijo(a) en la Actividad organizada por el Grupo Scout Lima 12 que tiene las siguientes características:
+          y código de asociado N° _______ por medio de la presente, autorizo la participación de mi menor hijo(a) en la Actividad organizada por el Grupo Scout Lima 12 que tiene las siguientes características:
         </Text>
 
         <View style={anexoStyles.table}>
@@ -148,23 +134,12 @@ export const Anexo4AutorizacionTemplate: React.FC<Anexo4AutorizacionTemplateProp
           {data.fechaDocumento}
         </Text>
 
-        {aceptacion ? (
-          <View style={[anexoStyles.firmaContainer, { borderWidth: 1, borderColor: '#15803d', padding: 6 }]}>
-            <Text style={[anexoStyles.text, anexoStyles.textBold, { color: '#15803d' }]}>
-              ACEPTADO DIGITALMENTE - Portal de Padres
-            </Text>
-            <Text style={anexoStyles.text}>{aceptacion.fecha}</Text>
-            <Text style={anexoStyles.text}>Nombre y Apellidos: {aceptacion.nombre || firmante?.nombre || '—'}</Text>
-            <Text style={anexoStyles.text}>DNI: {aceptacion.dni || firmante?.dni || '—'}</Text>
-          </View>
-        ) : (
-          <View style={anexoStyles.firmaContainer}>
-            <View style={anexoStyles.firmaLinea} />
-            <Text style={[anexoStyles.text, anexoStyles.textBold]}>Firma</Text>
-            <Text style={anexoStyles.text}>Nombre y Apellidos: {enBlanco(firmante?.nombre, '________________________')}</Text>
-            <Text style={anexoStyles.text}>DNI: {enBlanco(firmante?.dni, '________________________')}</Text>
-          </View>
-        )}
+        <View style={anexoStyles.firmaContainer}>
+          <View style={anexoStyles.firmaLinea} />
+          <Text style={[anexoStyles.text, anexoStyles.textBold]}>Firma</Text>
+          <Text style={anexoStyles.text}>Nombre y Apellidos: ________________________</Text>
+          <Text style={anexoStyles.text}>DNI: ________________________</Text>
+        </View>
       </Page>
 
       {/* Página 2: ¿Qué debo llevar? */}

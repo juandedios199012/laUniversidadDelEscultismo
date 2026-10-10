@@ -586,43 +586,54 @@ export async function getAutorizacionApoderadoData(
       return null;
     }
 
-    const scoutData = scoutRpcData.data;
-    const familiares = scoutData?.familiares || [];
-
-    // Familiar marcado como "Apoderado Legal"; si ninguno lo está, se usa
-    // el primero (contacto de emergencia) como respaldo.
-    const apoderadoFamiliar = familiares.find((f: any) => f.es_apoderado) || familiares[0];
-
-    let tipo: 'PADRE' | 'MADRE' | 'APODERADO' = 'APODERADO';
-    const parentesco = (apoderadoFamiliar?.parentesco || '').toUpperCase();
-    if (parentesco === 'PADRE') tipo = 'PADRE';
-    else if (parentesco === 'MADRE') tipo = 'MADRE';
-
-    // Firma del apoderado, si la subió en su registro de familiar
-    const firmaApoderado = apoderadoFamiliar?.id
-      ? await scoutDocumentsService.getDocumentForPdf('familiar', apoderadoFamiliar.id, 'firma').catch(() => null)
-      : null;
-
-    return {
-      scoutId: scoutData.id || scoutId,
-      codigoScout: scoutData.codigo_asociado || '',
-      numeroDocumento: scoutData.numero_documento || '',
-      nombreCompleto: scoutData.nombre_completo || `${scoutData.nombres || ''} ${scoutData.apellidos || ''}`.trim(),
-      sexo: scoutData.sexo,
-      apoderado: apoderadoFamiliar ? {
-        nombre: apoderadoFamiliar.nombre_completo || `${apoderadoFamiliar.nombres || ''} ${apoderadoFamiliar.apellidos || ''}`.trim(),
-        numeroDocumento: apoderadoFamiliar.numero_documento || '',
-        tipo,
-        firmaBase64: firmaApoderado || undefined,
-      } : null,
-      // Fecha impresa en el documento; se sobreescribe siempre al exportar
-      // (ver options.fechaDocumento en autorizacionApoderadoExportService)
-      fechaDocumento: new Date().toISOString().split('T')[0],
-    };
+    return await armarAutorizacionApoderadoData(scoutRpcData.data, scoutId);
   } catch (error) {
     console.error('Error obteniendo datos de autorización del padre o apoderado:', error);
     throw error;
   }
+}
+
+/**
+ * Arma los datos del ANEXO 4 a partir del registro completo del scout
+ * (shape de api_obtener_scout). Compartido por el reporte y el Portal de
+ * Padres (que lo obtiene con api_portal_padres_obtener_hijo_completo).
+ */
+export async function armarAutorizacionApoderadoData(
+  scoutData: any,
+  scoutId: string
+): Promise<AutorizacionApoderadoReportData> {
+  const familiares = scoutData?.familiares || [];
+
+  // Familiar marcado como "Apoderado Legal"; si ninguno lo está, se usa
+  // el primero (contacto de emergencia) como respaldo.
+  const apoderadoFamiliar = familiares.find((f: any) => f.es_apoderado) || familiares[0];
+
+  let tipo: 'PADRE' | 'MADRE' | 'APODERADO' = 'APODERADO';
+  const parentesco = (apoderadoFamiliar?.parentesco || '').toUpperCase();
+  if (parentesco === 'PADRE') tipo = 'PADRE';
+  else if (parentesco === 'MADRE') tipo = 'MADRE';
+
+  // Firma del apoderado, si la subió en su registro de familiar
+  const firmaApoderado = apoderadoFamiliar?.id
+    ? await scoutDocumentsService.getDocumentForPdf('familiar', apoderadoFamiliar.id, 'firma').catch(() => null)
+    : null;
+
+  return {
+    scoutId: scoutData.id || scoutId,
+    codigoScout: scoutData.codigo_asociado || '',
+    numeroDocumento: scoutData.numero_documento || '',
+    nombreCompleto: scoutData.nombre_completo || `${scoutData.nombres || ''} ${scoutData.apellidos || ''}`.trim(),
+    sexo: scoutData.sexo,
+    apoderado: apoderadoFamiliar ? {
+      nombre: apoderadoFamiliar.nombre_completo || `${apoderadoFamiliar.nombres || ''} ${apoderadoFamiliar.apellidos || ''}`.trim(),
+      numeroDocumento: apoderadoFamiliar.numero_documento || '',
+      tipo,
+      firmaBase64: firmaApoderado || undefined,
+    } : null,
+    // Fecha impresa en el documento; se sobreescribe siempre al exportar
+    // (ver options.fechaDocumento en autorizacionApoderadoExportService)
+    fechaDocumento: new Date().toISOString().split('T')[0],
+  };
 }
 
 export default {
