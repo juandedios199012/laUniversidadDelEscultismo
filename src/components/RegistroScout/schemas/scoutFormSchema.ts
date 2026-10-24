@@ -60,39 +60,39 @@ const requiredDateSchema = z
 // ============================================
 
 export const SexoEnum = z.enum(["MASCULINO", "FEMENINO", ""], {
-  errorMap: () => ({ message: "Seleccione un sexo" }),
+  error: "Seleccione un sexo",
 });
 
 export const TipoDocumentoEnum = z.enum(["DNI", "CARNET_EXTRANJERIA", "PASAPORTE"], {
-  errorMap: () => ({ message: "Seleccione tipo de documento" }),
+  error: "Seleccione tipo de documento",
 });
 
 export const RamaEnum = z.enum(
   ["Manada", "Tropa", "Comunidad", "Clan", "Dirigentes"],
   {
-    errorMap: () => ({ message: "Seleccione una rama" }),
+    error: "Seleccione una rama",
   }
 );
 
 export const GrupoSanguineoEnum = z.enum(["A", "B", "AB", "O", ""], {
-  errorMap: () => ({ message: "Seleccione grupo sanguíneo" }),
+  error: "Seleccione grupo sanguíneo",
 });
 
 export const FactorSanguineoEnum = z.enum(["+", "-", ""], {
-  errorMap: () => ({ message: "Seleccione factor sanguíneo" }),
+  error: "Seleccione factor sanguíneo",
 });
 
 export const CargoPatrullaEnum = z.enum(
   ["MIEMBRO", "GUIA", "SUBGUIA", "INTENDENTE", "ENFERMERO", "TESORERO", "SECRETARIO", "GUARDALMACEN"],
   {
-    errorMap: () => ({ message: "Seleccione cargo" }),
+    error: "Seleccione cargo",
   }
 );
 
 export const ParentescoEnum = z.enum(
   ["PADRE", "MADRE", "TUTOR", "HERMANO", "ABUELO", "TIO", "OTRO"],
   {
-    errorMap: () => ({ message: "Seleccione parentesco" }),
+    error: "Seleccione parentesco",
   }
 );
 
@@ -418,7 +418,7 @@ export function validateField<T extends keyof ScoutFormData>(
 ): string | null {
   const fieldSchema = scoutFormSchema.shape[field];
   const result = fieldSchema.safeParse(value);
-  return result.success ? null : result.error.errors[0]?.message || "Error de validación";
+  return result.success ? null : result.error.issues[0]?.message || "Error de validación";
 }
 
 /**
@@ -436,7 +436,7 @@ export function validateScoutForm(data: unknown): {
   }
   
   const errors: Record<string, string> = {};
-  result.error.errors.forEach((error) => {
+  result.error.issues.forEach((error) => {
     const path = error.path.join(".");
     errors[path] = error.message;
   });

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart, LineChart } from '@tremor/react';
 import {
   PieChart as RechartsPieChart, Pie, Cell,
   Tooltip as RechartsTooltip, ResponsiveContainer, Label,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import ProgresionService, { type TendenciaProgresionMensual } from '../../../services/progresionService';
@@ -13,7 +13,8 @@ import { AREA_COLORS, type V4AreaData, type V4StageBar } from '../useProgresionD
 // Colores de paleta para etapas dinámicas (hasta 8)
 const DYNAMIC_PALETTE = ['#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#a855f7'];
 const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
-const STAGE_TREMOR_MAP: Record<string, string> = { PISTA: 'blue', SENDA: 'green', RUMBO: 'amber', TRAVESIA: 'violet' };
+const STAGE_COLOR_MAP: Record<string, string> = { PISTA: '#3b82f6', SENDA: '#22c55e', RUMBO: '#f59e0b', TRAVESIA: '#8b5cf6' };
+const AXIS_TICK = { fontSize: 12, fill: '#6b7280' };
 
 const AREA_ORDER = ['CORPORALIDAD', 'CREATIVIDAD', 'CARACTER', 'AFECTIVIDAD', 'SOCIABILIDAD', 'ESPIRITUALIDAD'];
 
@@ -134,7 +135,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
     .map(([, value]) => value);
 
   const activeSeries = stageList.filter((s) => selectedEtapas.has(s.etapaCodigo)).map((s) => stageNameMap.get(s.etapaCodigo) ?? s.etapaNombre);
-  const activeColors = stageList.filter((s) => selectedEtapas.has(s.etapaCodigo)).map((s, i) => STAGE_TREMOR_MAP[s.etapaCodigo] ?? ['blue','green','amber','violet','red','cyan','orange','purple'][i % 8]);
+  const activeColors = stageList.filter((s) => selectedEtapas.has(s.etapaCodigo)).map((s, i) => STAGE_COLOR_MAP[s.etapaCodigo] ?? DYNAMIC_PALETTE[i % DYNAMIC_PALETTE.length]);
 
   const pctFmt = (v: number) => `${v}%`;
 
@@ -274,18 +275,13 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
             <p className="mb-4 text-xs text-gray-400">Porcentaje de objetivos completados por área de crecimiento</p>
             {loading ? <CardSkeleton className="h-72" /> : (
               <>
-                <BarChart
-                  data={barData}
-                  index="area"
-                  categories={['% Completado']}
-                  colors={['blue']}
-                  valueFormatter={pctFmt}
-                  className="h-72"
-                  showAnimation
-                  showLegend={false}
-                  maxValue={100}
-                  yAxisWidth={55}
-                  customTooltipContent={({ payload, active }: any) => {
+                <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="area" tick={AXIS_TICK} tickLine={false} axisLine={false} interval={0} />
+                  <YAxis domain={[0, 100]} tickFormatter={pctFmt} width={55} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <RechartsTooltip cursor={{ fill: 'rgba(59,130,246,0.06)' }} content={({ payload, active }: any) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload;
                     const area = orderedAreas.find((a) => a.nombre === d.area);
@@ -297,8 +293,11 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                         <p className="text-xs text-gray-400">{d.completados} de {d.total} objetivos</p>
                       </div>
                     );
-                  }}
-                />
+                  }} />
+                  <Bar dataKey="% Completado" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+                </ResponsiveContainer>
+                </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {orderedAreas.map((area) => (
                     <span key={area.codigo} className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -377,21 +376,14 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                 No hay historial mensual disponible para los filtros seleccionados
               </div>
             ) : (
-              <LineChart
-                data={trendData}
-                index="mes"
-                categories={activeSeries}
-                colors={activeColors as any}
-                valueFormatter={pctFmt}
-                className="h-80"
-                showAnimation
-                showLegend
-                showGridLines
-                yAxisWidth={40}
-                maxValue={100}
-                minValue={0}
-                curveType="monotone"
-                customTooltipContent={({ payload, active, label }: any) => {
+              <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis dataKey="mes" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} tickFormatter={pctFmt} width={40} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: 12, paddingBottom: 8 }} />
+                <RechartsTooltip content={({ payload, active, label }: any) => {
                   if (!active || !payload?.length) return null;
                   return (
                     <div className="rounded-xl border border-gray-100 bg-white p-3 shadow-lg">
@@ -407,8 +399,13 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                       ))}
                     </div>
                   );
-                }}
-              />
+                }} />
+                {activeSeries.map((serie, i) => (
+                  <Line key={serie} type="monotone" dataKey={serie} stroke={activeColors[i]} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                ))}
+              </LineChart>
+              </ResponsiveContainer>
+              </div>
             )}
           </div>
         </div>

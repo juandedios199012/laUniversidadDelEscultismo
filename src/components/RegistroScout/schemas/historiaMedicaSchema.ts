@@ -17,12 +17,12 @@ import { z } from "zod";
 
 export const TipoAlergiaEnum = z.enum(
   ["MEDICAMENTO", "ALIMENTO", "AMBIENTAL", "CONTACTO", "OTRA"],
-  { errorMap: () => ({ message: "Seleccione tipo de alergia" }) }
+  { error: "Seleccione tipo de alergia" }
 );
 
 export const TipoCondicionEnum = z.enum(
   ["CRONICA", "AGUDA", "CONTROLADA", "EN_TRATAMIENTO"],
-  { errorMap: () => ({ message: "Seleccione tipo de condición" }) }
+  { error: "Seleccione tipo de condición" }
 );
 
 // ============================================

@@ -83,7 +83,7 @@ export default defineConfig({
           // Separar vendors grandes
           'vendor-react': ['react', 'react-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
           'vendor-ui': ['lucide-react', 'sonner'],
         }
       }

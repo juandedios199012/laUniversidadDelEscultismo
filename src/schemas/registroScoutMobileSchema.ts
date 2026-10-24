@@ -49,7 +49,7 @@ export const paso1Schema = z.object({
     .min(2, 'Los apellidos deben tener al menos 2 caracteres')
     .max(100, 'Los apellidos no pueden exceder 100 caracteres'),
   sexo: z.enum(['M', 'F'], {
-    required_error: 'Selecciona el sexo',
+    error: 'Selecciona el sexo',
   }),
   fecha_nacimiento: z
     .string()
@@ -68,7 +68,7 @@ export const paso1Schema = z.object({
  */
 export const paso2Schema = z.object({
   rama_actual: z.enum(['Manada', 'Tropa', 'Comunidad', 'Clan'], {
-    required_error: 'Selecciona una rama',
+    error: 'Selecciona una rama',
   }),
   fecha_ingreso: z.string().optional(),
   patrulla_id: z.string().nullable().optional(),

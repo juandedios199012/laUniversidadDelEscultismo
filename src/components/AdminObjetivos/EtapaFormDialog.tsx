@@ -56,8 +56,8 @@ const COLOR_ETAPA_DEFAULT = PALETA_ETAPAS[0].valor;
 const etapaSchema = z.object({
   nombre:            z.string().min(2, 'El nombre es requerido').max(50),
   descripcion:       z.string().optional(),
-  edad_tipica:       z.coerce.number().int().positive().optional(),
-  orden:             z.coerce.number().int().positive().optional(),
+  edad_tipica:       z.coerce.number<number>().int().positive().optional(),
+  orden:             z.coerce.number<number>().int().positive().optional(),
   icono:             z.string().max(10).optional(),
   color:             z.string().max(50).optional(),
   requisitos_avance: z.string().optional(),
@@ -67,7 +67,7 @@ const grupoSchema = z.object({
   nombre:      z.string().min(2, 'El nombre es requerido').max(80),
   codigo:      z.string().max(30).optional(),
   descripcion: z.string().optional(),
-  orden:       z.coerce.number().int().positive().optional(),
+  orden:       z.coerce.number<number>().int().positive().optional(),
 });
 
 type EtapaFormValues = z.infer<typeof etapaSchema>;
