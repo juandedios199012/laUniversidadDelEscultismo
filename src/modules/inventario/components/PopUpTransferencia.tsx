@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, ArrowRight, Loader2, MapPin, User, Calendar } from 'lucide-react';
 import { usePersonasRegistradas } from '../hooks/usePersonasRegistradas';
 import { ComboboxUbicaciones } from './ComboboxUbicaciones';

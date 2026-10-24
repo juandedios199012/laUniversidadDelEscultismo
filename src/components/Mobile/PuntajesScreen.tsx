@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, Medal,
+  Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, 
   Mountain, Tent, ChevronLeft, Lock, Save
 } from 'lucide-react';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';

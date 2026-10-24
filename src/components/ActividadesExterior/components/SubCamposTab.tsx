@@ -85,7 +85,7 @@ const SubCamposTab: React.FC<SubCamposTabProps> = ({
   // Estado
   const [subcampos, setSubcampos] = useState<SubCampo[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [rankingSubcampos, setRankingSubcampos] = useState<any[]>([]);
+  const [, setRankingSubcampos] = useState<any[]>([]);
   
   // Dialogs
   const [showCrearDialog, setShowCrearDialog] = useState(false);
@@ -360,7 +360,6 @@ const SubCamposTab: React.FC<SubCamposTabProps> = ({
           ) : (
             <div className="grid gap-4">
               {subcampos.map((subcampo, index) => {
-                const rankingData = rankingSubcampos.find(r => r.subcampo_id === subcampo.id);
                 return (
                   <Card 
                     key={subcampo.id} 

@@ -199,7 +199,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                         animationBegin={0}
                         animationDuration={700}
                       >
-                        {(donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1, color: '#d1d5db' }]).map((entry, i) => (
+                        {(donutData.length > 0 ? donutData : [{ name: 'Sin datos', value: 1, color: '#d1d5db' }]).map((entry, _i) => (
                           <Cell key={entry.name} fill={'color' in entry ? (entry as any).color : '#d1d5db'} />
                         ))}
                         <Label

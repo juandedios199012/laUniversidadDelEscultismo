@@ -5,7 +5,7 @@
 import { UseFormReturn } from "react-hook-form";
 import { Flag } from "lucide-react";
 import { ScoutFormData } from "../schemas/scoutFormSchema";
-import { TextField, DateField, CheckboxField, SelectField } from "./FormFields";
+import { TextField, DateField, SelectField } from "./FormFields";
 import { FormSection } from "./FormSection";
 import PatrullaSelector from "../PatrullaSelector";
 import CargoPatrullaSelector from "../CargoPatrullaSelector";

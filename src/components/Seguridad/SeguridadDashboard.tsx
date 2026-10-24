@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions, AccesoDenegado } from '../../contexts/PermissionsContext';
-import { shouldSkipAuth } from '../../config/dev';
 import {
   PermissionsService,
   Rol,

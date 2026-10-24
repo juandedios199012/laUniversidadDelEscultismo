@@ -22,10 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   FileCheck, 
-  Upload, 
   X, 
   CheckCircle,
   Clock,

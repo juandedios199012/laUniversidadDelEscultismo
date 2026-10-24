@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import {
   Layers, Plus, RefreshCw, AlertCircle,
-  Edit2, Trash2, FolderOpen, Settings,
+  Edit2, Trash2, FolderOpen,
 } from 'lucide-react';
 import useEtapasAdmin from '../../hooks/useEtapasAdmin';
 import { RAMAS, RamaCodigo, Etapa, GrupoObjetivo } from '../../services/progresionService';

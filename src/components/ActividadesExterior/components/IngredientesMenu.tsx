@@ -17,7 +17,6 @@ import {
   Loader2,
   ShoppingCart,
   Edit2,
-  Receipt,
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';

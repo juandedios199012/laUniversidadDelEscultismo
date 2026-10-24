@@ -385,7 +385,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
+                {recentActivity.map((activity, _index) => (
                   <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                     <div className="flex-1">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 

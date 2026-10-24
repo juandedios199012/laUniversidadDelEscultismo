@@ -18,10 +18,6 @@ interface Props {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function toNum(v: unknown): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -315,7 +311,7 @@ const AttendanceAdvancedTemplate: React.FC<Props> = ({ data, metadata, dateRange
 
         {/* Frecuencia de sesiones por scout */}
         <Text style={S.sectionTitle}>Frecuencia de participación por scout (sesiones totales)</Text>
-        {st.scouts.slice(0, 12).map((s, i) => (
+        {st.scouts.slice(0, 12).map((s, _i) => (
           <View key={s.id} style={[S.trendRow, { marginBottom: 4 }]}>
             <Text style={[S.trendLabel, { width: 120 }]} numberOfLines={1}>{s.nombre}</Text>
             <View style={S.barTrack}>

@@ -183,7 +183,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   // ================================================================
   
   const [permisosAireLibre, setPermisosAireLibre] = React.useState<SubAccionAireLibre[]>([]);
-  const [loadingPermisosAL, setLoadingPermisosAL] = React.useState(false);
+  const [, setLoadingPermisosAL] = React.useState(false);
 
   // ================================================================
   // RAMA DEL DIRIGENTE LOGUEADO (para Programa Semanal / Asistencia /

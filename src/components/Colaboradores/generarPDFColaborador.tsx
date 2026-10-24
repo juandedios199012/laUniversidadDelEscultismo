@@ -7,7 +7,6 @@
  * Usa @react-pdf/renderer igual que el resto de plantillas del sistema.
  */
 
-import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Colaborador, CARGOS_LABELS, TIPOS_MEMBRESIA_LABELS } from '../../types/colaborador';
 import ColaboradorRegistroTemplate from '../../modules/reports/templates/pdf/ColaboradorRegistroTemplate';

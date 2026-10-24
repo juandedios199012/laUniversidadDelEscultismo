@@ -120,7 +120,7 @@ const EstadoVacioFinanzas: React.FC<{ onNuevaTransaccion: () => void }> = ({ onN
 
 const FinanzasDashboard: React.FC = () => {
   // Permisos
-  const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+  const { puedeCrear, puedeEliminar } = usePermissions();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

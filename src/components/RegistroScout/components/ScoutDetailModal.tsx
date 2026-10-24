@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, User, Users, FileText, Phone, Mail, MapPin, Building2, Calendar, ArrowRight, History } from 'lucide-react';
+import { User, Users, FileText, Phone, Mail, MapPin, Building2, Calendar, ArrowRight, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';

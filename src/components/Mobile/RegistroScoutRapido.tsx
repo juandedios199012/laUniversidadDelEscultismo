@@ -22,7 +22,6 @@ import {
   defaultRegistroValues,
   RAMAS,
   CARGOS_PATRULLA,
-  Familiar,
 } from '../../schemas/registroScoutMobileSchema';
 
 // ============================================================================

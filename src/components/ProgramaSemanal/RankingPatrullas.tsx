@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, TrendingUp, X } from 'lucide-react';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 
@@ -53,18 +53,6 @@ export default function RankingPatrullas({
     }
   };
 
-  const obtenerColorPosicion = (posicion: number) => {
-    switch (posicion) {
-      case 1:
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
-      case 2:
-        return 'bg-gradient-to-r from-gray-300 to-gray-500';
-      case 3:
-        return 'bg-gradient-to-r from-amber-600 to-amber-800';
-      default:
-        return 'bg-gradient-to-r from-gray-100 to-gray-200';
-    }
-  };
 
   const calcularPromedio = (total: number, actividades: number) => {
     return actividades > 0 ? (total / actividades).toFixed(1) : '0';

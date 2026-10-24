@@ -62,9 +62,7 @@ export function ScoutList({
   onDeactivate,
   onActivate,
   onDelete,
-  onRefresh,
   selectedId,
-  showTitle = true,
   soloLectura = false,
 }: ScoutListProps) {
   const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();

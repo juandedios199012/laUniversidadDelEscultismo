@@ -705,7 +705,7 @@ export class AsistenciaService {
    * 📅 Obtener calendario de asistencias
    * Endpoint: GET /api/asistencia/calendario
    */
-  static async getCalendarioAsistencias(filtros: {
+  static async getCalendarioAsistencias(_filtros: {
     fecha_desde: string;
     fecha_hasta: string;
     scout_id?: string;

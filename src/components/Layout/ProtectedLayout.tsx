@@ -10,7 +10,7 @@ interface ProtectedLayoutProps {
 }
 
 export default function ProtectedLayout({ children, activeModule, onTabChange }: ProtectedLayoutProps) {
-  const { user } = useAuth();
+  useAuth();
 
   return (
     <div className="min-h-screen" style={{ background: 'hsl(var(--gaming-bg))' }}>

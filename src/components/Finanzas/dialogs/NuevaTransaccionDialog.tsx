@@ -12,7 +12,6 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Calendar,
-  DollarSign,
   FileText,
   Image as ImageIcon,
   AlertTriangle,

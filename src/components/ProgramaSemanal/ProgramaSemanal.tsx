@@ -25,7 +25,7 @@ interface DirigenteActivo {
 interface ProgramaSemanalProps {}
 
 export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
-  const { esAdmin, miRama: miRamaSinNormalizar } = usePermissions();
+  const { miRama: miRamaSinNormalizar } = usePermissions();
 
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
@@ -385,13 +385,6 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   };
 
   // Función para ordenar actividades por hora_inicio
-  const ordenarActividadesPorHora = (actividades: ProgramaActividad[]): ProgramaActividad[] => {
-    return [...actividades].sort((a, b) => {
-      const horaA = a.hora_inicio || '00:00';
-      const horaB = b.hora_inicio || '00:00';
-      return horaA.localeCompare(horaB);
-    });
-  };
 
   // Mover actividad hacia arriba
   const moveActividadUp = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {

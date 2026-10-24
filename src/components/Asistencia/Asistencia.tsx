@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-	Calendar, Save, Plus, Search, Eye, Trash2, 
+	Calendar, Save, Plus, Eye, Trash2, 
 	TrendingUp, BarChart3, CheckCircle, Users, FileText, AlertTriangle
 } from 'lucide-react';
 import AsistenciaService from '../../services/asistenciaService';
@@ -57,7 +57,7 @@ interface AsistenciaFormData {
 // ==================== COMPONENT ====================
 export default function Asistencia() {
 	// ============= PERMISOS =============
-	const { puedeCrear, puedeEliminar, esAdmin, miRama } = usePermissions();
+	const { puedeEliminar, esAdmin, miRama } = usePermissions();
 	
 	// ============= ESTADOS =============
 	const [scouts, setScouts] = useState<Scout[]>([]);
@@ -68,7 +68,7 @@ export default function Asistencia() {
 	const [vistaActual, setVistaActual] = useState<'reuniones' | 'asistencia' | 'estadisticas' | 'asistencia_masiva' | 'detalle_programa' | 'reporte_scout'>('reuniones');
 	// ============= ASISTENCIA MASIVA =============
 	const [selectedPrograma, setSelectedPrograma] = useState<Reunion | null>(null);
-	const [selectedPatrulla, setSelectedPatrulla] = useState<string>('');
+	const [, setSelectedPatrulla] = useState<string>('');
 	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
 	const [horaMarcadaMasiva, setHoraMarcadaMasiva] = useState<Record<string, string>>({});
 	const [scoutsProgramaActual, setScoutsProgramaActual] = useState<Scout[]>([]);
@@ -126,10 +126,6 @@ export default function Asistencia() {
 		setHoraMarcadaMasiva(horasMarcadas);
 	};
 
-	const handleSelectPatrulla = (patrulla: string) => {
-		setSelectedPatrulla(patrulla);
-		setAsistenciaMasiva({});
-	};
 
 	// Filtrar scouts: en asistencia masiva usa los scouts del programa (ya filtrados por rama)
 	const scoutsFiltrados = vistaActual === 'asistencia_masiva' 
@@ -192,7 +188,7 @@ export default function Asistencia() {
 	const [selectedReunion, setSelectedReunion] = useState<Reunion | null>(null);
 
 	// Formularios
-	const [reunionFormData, setReunionFormData] = useState<ReunionFormData>({
+	const [] = useState<ReunionFormData>({
 		fecha: new Date().toISOString().split('T')[0],
 		titulo: '',
 		descripcion: '',
@@ -226,14 +222,6 @@ export default function Asistencia() {
 		{ value: 'CLAN', label: 'Clan (Rovers)' }
 	];
 
-	const tiposActividad = [
-		{ value: 'reunion_semanal', label: 'Reunión Semanal' },
-		{ value: 'campamento', label: 'Campamento' },
-		{ value: 'actividad_especial', label: 'Actividad Especial' },
-		{ value: 'ceremonia', label: 'Ceremonia' },
-		{ value: 'capacitacion', label: 'Capacitación' },
-		{ value: 'servicio', label: 'Servicio Comunitario' }
-	];
 
 	const estadosAsistencia = [
 		{ value: 'presente', label: 'Presente', color: 'text-green-700 bg-green-100' },
@@ -324,21 +312,6 @@ export default function Asistencia() {
 	};
 
 	// ============= FUNCIONES AUXILIARES =============
-	const validateReunionForm = (): Record<string, string> => {
-		const errors: Record<string, string> = {};
-
-		if (!reunionFormData.fecha.trim()) {
-			errors.fecha = 'La fecha es obligatoria';
-		}
-		if (!reunionFormData.titulo.trim()) {
-			errors.titulo = 'El título es obligatoria';
-		}
-		if (!reunionFormData.rama) {
-			errors.rama = 'La rama es obligatoria';
-		}
-
-		return errors;
-	};
 
 	const validateAsistenciaForm = (): Record<string, string> => {
 		const errors: Record<string, string> = {};
@@ -353,21 +326,6 @@ export default function Asistencia() {
 		return errors;
 	};
 
-	const resetReunionForm = () => {
-		setReunionFormData({
-			fecha: new Date().toISOString().split('T')[0],
-			titulo: '',
-			descripcion: '',
-			rama: '',
-			tipo_actividad: 'reunion_semanal',
-			ubicacion: '',
-			hora_inicio: '15:00',
-			hora_fin: '17:00',
-			responsable: ''
-		});
-		setFormErrors({});
-		setSelectedReunion(null);
-	};
 
 	const resetAsistenciaForm = () => {
 		setAsistenciaFormData({
@@ -381,37 +339,6 @@ export default function Asistencia() {
 	};
 
 	// ============= FUNCIONES CRUD =============
-	const handleCreateReunion = async () => {
-		// Verificar permiso
-		if (!puedeCrear('asistencia')) {
-			alert('No tienes permiso para crear reuniones');
-			return;
-		}
-		try {
-			const errors = validateReunionForm();
-			if (Object.keys(errors).length > 0) {
-				setFormErrors(errors);
-				return;
-			}
-
-			setLoading(true);
-			const result = await AsistenciaService.crearReunion(reunionFormData);
-      
-			if (result.success) {
-				await loadInitialData();
-				setShowCreateReunionModal(false);
-				resetReunionForm();
-				alert('✅ Reunión creada exitosamente');
-			} else {
-				alert(`❌ Error: ${result.error}`);
-			}
-		} catch (error) {
-			console.error('Error creando reunión:', error);
-			alert('❌ Error al crear la reunión');
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	const handleDeleteReunion = async (reunion: Reunion) => {
 		if (!puedeEliminar('asistencia')) {
@@ -501,12 +428,6 @@ export default function Asistencia() {
 			const user = session.user;
 
 			// Normalizar estado para el enum de la BD
-			const estadoMap: Record<string, string> = {
-				'presente': 'PRESENTE',
-				'ausente': 'AUSENTE',
-				'tardanza': 'TARDANZA',
-				'justificado': 'JUSTIFICADO'
-			};
 			const result = await AsistenciaService.registrarAsistencia({
 				actividad_id: asistenciaFormData.reunion_id, // Usamos el id de la reunión (programa_semanal) como actividad_id
 				scout_id: asistenciaFormData.scout_id,
@@ -568,7 +489,6 @@ export default function Asistencia() {
 		const presentes = asistenciasPrograma.filter(a => a.estado_asistencia === 'PRESENTE').length;
 		const ausentes = asistenciasPrograma.filter(a => a.estado_asistencia === 'AUSENTE').length;
 		const tardanzas = asistenciasPrograma.filter(a => a.estado_asistencia === 'TARDANZA').length;
-		const justificados = asistenciasPrograma.filter(a => a.estado_asistencia === 'JUSTIFICADO').length;
 		const porcentajeAsistencia = totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : 0;
 
 		return (

@@ -95,7 +95,7 @@ const PatrullasTab: React.FC<PatrullasTabProps> = ({
 
   // Rankings (opcional, para mostrar puntajes)
   const [rankings, setRankings] = useState<PatrullaActividad[]>([]);
-  const [cargandoRankings, setCargandoRankings] = useState(false);
+  const [, setCargandoRankings] = useState(false);
 
   // Cargar rankings
   useEffect(() => {

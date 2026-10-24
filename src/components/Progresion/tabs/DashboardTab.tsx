@@ -12,18 +12,11 @@ import {
   PieChart,
   Pie,
   Cell,
-  RadialBarChart,
-  RadialBar,
-  Legend,
-  LineChart,
-  Line,
   LabelList,
 } from 'recharts';
-import { Award, CheckCircle2, Download, Target, TrendingUp, Users, Zap, AlertTriangle } from 'lucide-react';
-import { CardSkeleton, KpiCard } from '../ProgresionComponents';
+import { Award, CheckCircle2, Download, Target, TrendingUp, Users, AlertTriangle } from 'lucide-react';
+import { CardSkeleton } from '../ProgresionComponents';
 import {
-  AREA_COLORS,
-  AREA_NAMES,
   AREA_ICONS,
   STAGE_COLORS,
   type V4AreaData,
@@ -53,7 +46,6 @@ interface DashboardTabProps {
 const DYNAMIC_PALETTE = ['#4f8ddb', '#27c664', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4', '#f97316', '#8b5cf6'];
 
 // Fallback para compatibilidad con códigos legacy de TROPA
-const STAGE_ORDER = ['PISTA', 'SENDA', 'RUMBO', 'TRAVESIA'];
 
 // ─── Tooltip personalizado ───────────────────────────────────────────────────
 const CustomBarTooltip = ({ active, payload, label }: any) => {
@@ -143,16 +135,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
   }, [stageBars, totalScouts]);
 
   // ── Radial de porcentaje por área ─────────────────────────────────────────
-  const radialData = useMemo(() => {
-    return globalAreas
-      .filter((a) => a.total > 0)
-      .map((a) => ({
-        name: a.nombre,
-        value: a.porcentaje,
-        fill: a.color,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [globalAreas]);
 
   // ── Top 10 scouts por progreso ────────────────────────────────────────────
   const topScouts = useMemo(() => {
@@ -233,7 +215,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       const barW1 = slotW * 0.58;
       const barOffX = (slotW - barW1) / 2;
       const maxTotal = Math.max(...globalAreas.map((a) => a.total), 1);
-      const cYTop = y;
       const cYBot = y + chartH1;
 
       // Líneas de grid + etiquetas eje Y

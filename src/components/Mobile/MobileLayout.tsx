@@ -12,7 +12,7 @@ interface MobileLayoutProps {
 }
 
 export default function MobileLayout({ children, currentTab, onTabChange }: MobileLayoutProps) {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { puedeAcceder, puedeCrear, rolPrincipal, loading: loadingPermisos } = usePermissions();
 
   const handleLogout = async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Braces, Download, FileText, Loader2, Printer, Table as TableIcon } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';

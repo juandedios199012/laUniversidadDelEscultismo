@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
-  CheckCircle2,
-  XCircle,
   RefreshCw,
   Users,
   AlertTriangle,
@@ -164,7 +162,7 @@ function ModuloRow({ modulo, roles, toggleState, saving, canEdit, onToggle }: Mo
                 <td key={rol.id} className="px-4 py-2.5 text-center">
                   <PermSwitch
                     checked={isGranted}
-                    onChange={(val) => onToggle(perm.id, rol.id, isGranted)}
+                    onChange={(_val) => onToggle(perm.id, rol.id, isGranted)}
                     disabled={!canEdit}
                     loading={isLoading}
                   />

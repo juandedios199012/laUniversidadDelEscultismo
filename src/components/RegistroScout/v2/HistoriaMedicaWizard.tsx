@@ -266,7 +266,6 @@ export function HistoriaMedicaWizard({
   // Reset form when initialData changes AND catalogos are loaded
   useEffect(() => {
     // Solo proceder si tenemos datos, catálogos cargados, y no hemos reseteado aún
-    const catalogosCargados = catalogoCondiciones.length > 0 || catalogoAlergias.length > 0 || catalogoVacunas.length > 0;
     
     if (isOpen && initialData && !formReseteado) {
       // Si hay condiciones pero no hay catálogo aún, esperar
@@ -482,22 +481,6 @@ export function HistoriaMedicaWizard({
   };
 
   // Error handler for form validation
-  const onFormError = (errors: any) => {
-    console.error("Errores de validación:", errors);
-    const errorMessages: string[] = [];
-    
-    if (errors.fecha_llenado) errorMessages.push("Fecha de llenado requerida");
-    if (errors.condiciones) errorMessages.push("Error en condiciones médicas");
-    if (errors.alergias) errorMessages.push("Error en alergias");
-    if (errors.medicamentos) errorMessages.push("Error en medicamentos");
-    if (errors.vacunas) errorMessages.push("Error en vacunas");
-    
-    if (errorMessages.length > 0) {
-      error(`Errores: ${errorMessages.join(", ")}`);
-    } else {
-      error("Por favor complete los campos requeridos");
-    }
-  };
 
   // Manual submit that bypasses strict validation
   const handleManualSubmit = async () => {

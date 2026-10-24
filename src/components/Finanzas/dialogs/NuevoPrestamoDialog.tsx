@@ -9,7 +9,6 @@ import { z } from 'zod';
 import { 
   CreditCard,
   Calendar,
-  DollarSign,
   User,
   AlertCircle
 } from 'lucide-react';

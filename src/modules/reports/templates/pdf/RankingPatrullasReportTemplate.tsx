@@ -351,7 +351,6 @@ const RankingPatrullasReportTemplate: React.FC<RankingPatrullasReportProps> = ({
   const minPuntos = enrichedData.length > 0 ? Math.min(...enrichedData.map((row) => row.totalPuntos)) : 0;
   const brechaTopBottom = Math.max(0, maxPuntos - minPuntos);
 
-  const topPatrullaConDetalle = enrichedData.find((row) => row.puntajes.length > 0) || enrichedData[0];
 
   const monthlyMap = new Map<string, number>();
   enrichedData.forEach((row) => {
@@ -378,11 +377,6 @@ const RankingPatrullasReportTemplate: React.FC<RankingPatrullasReportProps> = ({
   const top3Points = top3.reduce((acc, r) => acc + r.totalPuntos, 0);
   const top3Share = totalPuntos > 0 ? Math.round((top3Points / totalPuntos) * 100) : 0;
 
-  const statusFor = (puntos: number): { label: string; color: string } => {
-    if (puntos >= highThreshold) return { label: 'Muy bien', color: '#16a34a' };
-    if (puntos >= midThreshold) return { label: 'En progreso', color: '#f59e0b' };
-    return { label: 'A reforzar', color: '#ef4444' };
-  };
 
   const top5 = enrichedData.slice(0, 5);
   const bottom5 = [...enrichedData].slice(-5).reverse();

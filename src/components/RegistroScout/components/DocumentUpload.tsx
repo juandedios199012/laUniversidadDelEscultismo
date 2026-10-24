@@ -71,11 +71,6 @@ interface FilePreviewProps {
 // Constantes
 // ============================================
 
-const DOCUMENT_LABELS: Record<DocumentType, { title: string; icon: React.ElementType }> = {
-  documento_identidad: { title: 'Documento de Identidad', icon: FileText },
-  huella_digital: { title: 'Huella Digital', icon: FileText },
-  firma: { title: 'Firma', icon: FileText },
-};
 
 const ACCEPT_FILES = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx';
 const ACCEPT_IMAGES_ONLY = '.jpg,.jpeg,.png,.gif,.webp';

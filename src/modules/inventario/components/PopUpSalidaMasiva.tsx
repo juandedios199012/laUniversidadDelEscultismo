@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, PackageMinus, Loader2, Check, CircleOff, Users } from 'lucide-react';
 import { useSalidaMasiva } from '../hooks/useSalidaMasiva';
 import type { InventarioItem } from '../../../lib/supabase';

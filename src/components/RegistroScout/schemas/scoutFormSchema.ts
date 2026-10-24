@@ -18,23 +18,7 @@ import { z } from "zod";
 // Base Validation Rules (Reusable)
 // ============================================
 
-/**
- * Peruvian DNI validation (8 digits)
- */
-const dniSchema = z
-  .string()
-  .regex(/^\d{8}$/, "DNI debe tener 8 dígitos")
-  .optional()
-  .or(z.literal(""));
 
-/**
- * Carné de Extranjería validation
- */
-const ceSchema = z
-  .string()
-  .min(9, "CE debe tener al menos 9 caracteres")
-  .optional()
-  .or(z.literal(""));
 
 /**
  * Email validation
