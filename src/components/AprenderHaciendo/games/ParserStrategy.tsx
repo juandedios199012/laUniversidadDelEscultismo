@@ -32,9 +32,9 @@ function GlifosMorse({ codigo }: { codigo: string }) {
     <div className="flex flex-wrap items-center justify-center gap-3" aria-hidden="true">
       {simbolos.map((simbolo, i) => (
         simbolo === '-' ? (
-          <div key={i} className="w-14 h-8 sm:w-16 sm:h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-md" />
+          <div key={i} className="w-14 h-8 sm:w-16 sm:h-9 rounded-full bg-linear-to-br from-fuchsia-500 to-purple-600 shadow-md" />
         ) : (
-          <div key={i} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-md" />
+          <div key={i} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-linear-to-br from-fuchsia-500 to-purple-600 shadow-md" />
         )
       ))}
     </div>
@@ -155,8 +155,8 @@ function MorseDecoder({ retos, puntosBase, onComplete }: {
               type="button"
               onClick={() => reproducir(retoActual.codigo)}
               className="min-h-[48px] px-6 inline-flex items-center gap-2 rounded-full font-bold text-white text-base shadow-md
-                bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-transform hover:scale-105 active:scale-95
-                focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
+                bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-transform hover:scale-105 active:scale-95
+                focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
             >
               <Play className="w-5 h-5" />
               Reproducir sonido
@@ -177,9 +177,9 @@ function MorseDecoder({ retos, puntosBase, onComplete }: {
                 disabled={estado === 'correcto'}
                 onClick={() => handleResponder(opcion)}
                 className={`min-h-[64px] px-4 py-3 rounded-2xl font-bold text-white text-base shadow-md
-                  bg-gradient-to-br ${OPCION_COLORS[i % OPCION_COLORS.length]}
+                  bg-linear-to-br ${OPCION_COLORS[i % OPCION_COLORS.length]}
                   transition-transform hover:scale-105 active:scale-95 disabled:opacity-60
-                  focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
+                  focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
                   ${estado === 'correcto' && opcion === retoActual.respuestaCorrecta ? 'ring-4 ring-green-400' : ''}`}
               >
                 <span className="flex items-center justify-center gap-2">

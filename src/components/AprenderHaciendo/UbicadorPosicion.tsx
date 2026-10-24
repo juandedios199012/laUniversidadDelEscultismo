@@ -58,7 +58,7 @@ export default function UbicadorPosicion({ imagenUrl, posicion, marcadoresExiste
             key={i}
             title={m.etiqueta}
             style={{ left: `${m.x}%`, top: `${m.y}%`, transform: 'translate(-50%, -50%)' }}
-            className="absolute w-3 h-3 rounded-full bg-gray-400 border border-white shadow"
+            className="absolute w-3 h-3 rounded-full bg-gray-400 border border-white shadow-sm"
           />
         ))}
 

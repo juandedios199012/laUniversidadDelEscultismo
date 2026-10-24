@@ -76,12 +76,12 @@ const ProgresionModule: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top nav */}
-      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-xs">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex items-center gap-6 py-3">
             {/* Brand */}
             <div className="flex items-center gap-3 shrink-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                 <Shield className="h-5 w-5" />
               </div>
               <div className="hidden sm:block">
@@ -94,7 +94,7 @@ const ProgresionModule: React.FC = () => {
             <select
               value={ramaActiva}
               onChange={(e) => setRamaActiva(e.target.value)}
-              className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+              className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-xs outline-hidden focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
             >
               <option value="">🌐 Todas las ramas</option>
               {RAMAS.map((r) => (
@@ -116,7 +116,7 @@ const ProgresionModule: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow'
+                        ? 'bg-blue-600 text-white shadow-sm'
                         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
                     }`}
                   >

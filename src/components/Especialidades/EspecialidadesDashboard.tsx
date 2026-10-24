@@ -128,14 +128,14 @@ export default function EspecialidadesDashboard({ onNavigate, onNavigateGlobal }
       <div className="flex flex-wrap gap-3">
         <button
           onClick={() => onNavigate?.('catalogo')}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
         >
           <Search className="w-5 h-5" />
           Ver Catálogo
         </button>
         <button
           onClick={() => onNavigate?.('seguimiento')}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
         >
           <TrendingUp className="w-5 h-5" />
           Seguimiento
@@ -213,7 +213,7 @@ function MetricCard({ label, value, icon: Icon, gradient }: MetricCardProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-shadow">
       <div className="flex items-center gap-3">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
+        <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${gradient} flex items-center justify-center shadow-lg`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -239,7 +239,7 @@ function AreaCard({ area, onClick }: AreaCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`bg-gradient-to-br ${gradient} rounded-xl p-5 text-left text-white transition-all hover:scale-[1.02] hover:shadow-xl w-full`}
+      className={`bg-linear-to-br ${gradient} rounded-xl p-5 text-left text-white transition-all hover:scale-[1.02] hover:shadow-xl w-full`}
     >
       <div className="flex justify-between items-start">
         <div className="text-3xl mb-2">{area.icono}</div>

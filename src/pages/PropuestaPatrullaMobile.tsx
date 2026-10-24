@@ -84,7 +84,7 @@ export default function PropuestaPatrullaMobile() {
     <div className="min-h-screen bg-slate-50 pb-10">
       <Toaster richColors position="top-center" />
 
-      <header className="sticky top-0 z-10 text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-4 shadow-sm" style={{ backgroundColor: colorPatrulla }}>
+      <header className="sticky top-0 z-10 text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-4 shadow-xs" style={{ backgroundColor: colorPatrulla }}>
         <p className="text-xs uppercase tracking-wide opacity-80">{plan.rama} · {plan.nombre}</p>
         <h1 className="text-2xl font-extrabold">Patrulla {patrulla.nombre}</h1>
       </header>

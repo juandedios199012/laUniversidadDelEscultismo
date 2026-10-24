@@ -425,7 +425,7 @@ export default function LibroOroComplete() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#D4AF37] via-[#F7DC6F] to-[#F8C471] p-4">
+    <div className="min-h-screen bg-linear-to-br from-[#D4AF37] via-[#F7DC6F] to-[#F8C471] p-4">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
@@ -632,7 +632,7 @@ export default function LibroOroComplete() {
                   onChange={(e) => handleInputChange('descripcion', e.target.value)}
                   placeholder="Describe el logro y las circunstancias..."
                   rows={4}
-                  className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                  className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                 />
               </FormField>
 
@@ -674,7 +674,7 @@ export default function LibroOroComplete() {
                     onChange={(e) => handleInputChange('evidencias', e.target.value)}
                     placeholder="Fotos, documentos, enlaces a evidencias"
                     rows={3}
-                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                   />
                 </FormField>
 
@@ -684,7 +684,7 @@ export default function LibroOroComplete() {
                     onChange={(e) => handleInputChange('impacto', e.target.value)}
                     placeholder="Impacto en la comunidad o el grupo scout"
                     rows={3}
-                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                   />
                 </FormField>
               </div>
@@ -852,7 +852,7 @@ export default function LibroOroComplete() {
 
         {/* Modal Ver Logro */}
         {showViewModal && selectedEntry && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -972,7 +972,7 @@ export default function LibroOroComplete() {
 
         {/* Modal Editar Logro */}
         {showEditModal && selectedEntry && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -1079,7 +1079,7 @@ export default function LibroOroComplete() {
                     onChange={(e) => handleInputChange('descripcion', e.target.value)}
                     placeholder="Describe el logro y las circunstancias..."
                     rows={4}
-                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                    className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                   />
                 </FormField>
 
@@ -1119,7 +1119,7 @@ export default function LibroOroComplete() {
                       onChange={(e) => handleInputChange('evidencias', e.target.value)}
                       placeholder="Fotos, documentos, enlaces a evidencias"
                       rows={3}
-                      className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                      className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                     />
                   </FormField>
 
@@ -1129,7 +1129,7 @@ export default function LibroOroComplete() {
                       onChange={(e) => handleInputChange('impacto', e.target.value)}
                       placeholder="Impacto en la comunidad o el grupo scout"
                       rows={3}
-                      className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
+                      className="w-full bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-3 text-white placeholder-yellow-100 focus:outline-hidden focus:ring-2 focus:ring-white/50 resize-none"
                     />
                   </FormField>
                 </div>
@@ -1167,7 +1167,7 @@ export default function LibroOroComplete() {
 
         {/* Modal Eliminar Logro */}
         {showDeleteModal && selectedEntry && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-md w-full">
               <div className="text-center">
                 <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">

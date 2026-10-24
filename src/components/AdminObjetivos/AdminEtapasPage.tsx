@@ -106,7 +106,7 @@ const AdminEtapasPage: React.FC = () => {
       </div>
 
       {/* ---- SELECTOR DE RAMA ---- */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Rama scout
         </p>
@@ -119,8 +119,8 @@ const AdminEtapasPage: React.FC = () => {
               className={`
                 flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all
                 ${ramaActiva === rama.codigo
-                  ? `bg-gradient-to-r ${rama.color} text-white shadow-md scale-[1.02]`
-                  : `${rama.bg} ${rama.text} hover:scale-[1.01] hover:shadow-sm`
+                  ? `bg-linear-to-r ${rama.color} text-white shadow-md scale-[1.02]`
+                  : `${rama.bg} ${rama.text} hover:scale-[1.01] hover:shadow-xs`
                 }
               `}
             >
@@ -134,13 +134,13 @@ const AdminEtapasPage: React.FC = () => {
       {/* ---- ERROR ---- */}
       {etapasAdmin.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 shrink-0" />
           {etapasAdmin.error}
         </div>
       )}
 
       {/* ---- ETAPAS ---- */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <section className="bg-white rounded-xl shadow-xs border border-gray-100">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -229,7 +229,7 @@ const AdminEtapasPage: React.FC = () => {
       </section>
 
       {/* ---- GRUPOS DE OBJETIVOS ---- */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <section className="bg-white rounded-xl shadow-xs border border-gray-100">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">

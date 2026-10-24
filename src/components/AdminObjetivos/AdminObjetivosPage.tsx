@@ -26,7 +26,7 @@ interface KPICardProps {
 }
 
 const KPICard: React.FC<KPICardProps> = ({ titulo, valor, icono, colorClase }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+  <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
     <div className="flex items-center gap-3">
       <div className={`p-2 rounded-lg ${colorClase}`}>{icono}</div>
       <div>
@@ -205,7 +205,7 @@ const AdminObjetivosPage: React.FC = () => {
       </div>
 
       {/* ---- SELECTOR DE RAMA ---- */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Rama scout</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {RAMAS.map(rama => (
@@ -216,8 +216,8 @@ const AdminObjetivosPage: React.FC = () => {
               className={`
                 flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all
                 ${ramaActiva === rama.codigo
-                  ? `bg-gradient-to-r ${rama.color} text-white shadow-md scale-[1.02]`
-                  : `${rama.bg} ${rama.text} hover:scale-[1.01] hover:shadow-sm`
+                  ? `bg-linear-to-r ${rama.color} text-white shadow-md scale-[1.02]`
+                  : `${rama.bg} ${rama.text} hover:scale-[1.01] hover:shadow-xs`
                 }
               `}
             >
@@ -263,7 +263,7 @@ const AdminObjetivosPage: React.FC = () => {
           </div>
 
           {/* Filtros */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -312,7 +312,7 @@ const AdminObjetivosPage: React.FC = () => {
 
           {/* Lista */}
           {objetivosFiltrados.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-center py-12 bg-white rounded-xl shadow-xs border border-gray-100">
               <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-700 mb-2">
                 {filtros.busqueda || filtros.grupo || filtros.area

@@ -92,7 +92,7 @@ export default function EvaluacionPublica() {
   return (
     <div className="min-h-screen bg-slate-50 pb-10">
       <Toaster richColors position="top-center" />
-      <header className="sticky top-0 z-10 bg-violet-600 text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-4 shadow-sm">
+      <header className="sticky top-0 z-10 bg-violet-600 text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-4 shadow-xs">
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5" />
           <p className="text-xs uppercase tracking-wide opacity-80">Evaluación{evaluacion.modo_anonimo ? ' · anónima' : ''}</p>

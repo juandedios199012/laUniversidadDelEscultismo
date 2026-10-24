@@ -451,7 +451,7 @@ const LogisticaTab: React.FC<LogisticaTabProps> = ({
                               <TableCell>
                                 <div className="flex items-start gap-2">
                                   {item.es_critico && (
-                                    <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
                                   )}
                                   <div>
                                     <span className="font-medium">{item.nombre}</span>

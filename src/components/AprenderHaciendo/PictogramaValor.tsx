@@ -48,7 +48,7 @@ export default function PictogramaValor({ valor, tamano = 'md', alt, className }
       <div
         className={cn(
           BOX_CLASSES[tamano],
-          'rounded-2xl overflow-hidden shrink-0 bg-white shadow-sm',
+          'rounded-2xl overflow-hidden shrink-0 bg-white shadow-xs',
           className
         )}
       >

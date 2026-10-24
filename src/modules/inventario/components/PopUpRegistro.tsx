@@ -212,7 +212,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                 required
                 value={formData.nombre}
                 onChange={handleChange}
-                className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 placeholder="Ej: Carpa de 4 personas"
               />
             </div>
@@ -227,7 +227,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                 required
                 value={formData.categoria}
                 onChange={handleChange}
-                className="w-full border border-gray-300 p-2 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 p-2 rounded-md bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
                 {CATEGORIAS.map(c => (
                   <option key={c.value} value={c.value}>
@@ -247,7 +247,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                 rows={2}
                 value={formData.descripcion}
                 onChange={handleChange}
-                className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 placeholder="Marca, color, características especiales..."
               />
             </div>
@@ -317,7 +317,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   rows={2}
                   value={formData.situacionObservaciones}
                   onChange={handleChange}
-                  className="w-full border border-amber-300 p-2 rounded-md text-sm bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full border border-amber-300 p-2 rounded-md text-sm bg-amber-50 focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                   placeholder="Ej: Varilla rota, tela desgastada en la entrada..."
                 />
               </div>
@@ -344,7 +344,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   required
                   value={formData.cantidadInicial}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -357,7 +357,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   name="fechaIngreso"
                   value={formData.fechaIngreso}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -399,7 +399,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                 step="0.01"
                 value={formData.valorUnitario}
                 onChange={handleChange}
-                className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -425,7 +425,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   required
                   value={formData.cantidadInicial}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -440,7 +440,7 @@ export function PopUpRegistro({ onClose, onSave, itemToEdit }: PopUpRegistroProp
                   step="0.01"
                   value={formData.valorUnitario}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 p-2 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
               </div>

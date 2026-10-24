@@ -324,9 +324,9 @@ export default function AsignarEspecialidadDialog({
                 <div className="space-y-4 animate-fade-in">
                   {/* Banner de especialidad preseleccionada */}
                   {especialidadPreseleccionada && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                    <div className="bg-linear-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-gradient-to-br ${AREA_GRADIENTS[especialidadPreseleccionada.area.codigo as AreaId]}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-linear-to-br ${AREA_GRADIENTS[especialidadPreseleccionada.area.codigo as AreaId]}`}>
                           {especialidadPreseleccionada.area.icono}
                         </div>
                         <div className="flex-1">
@@ -400,7 +400,7 @@ export default function AsignarEspecialidadDialog({
                 <div className="space-y-4 animate-fade-in">
                   {/* Banner de scout preseleccionado */}
                   {scoutPreseleccionado && scoutSeleccionado && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                    <div className="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold bg-blue-500 text-white">
                           {scoutSeleccionado.nombres[0]}{scoutSeleccionado.apellidos[0]}
@@ -440,7 +440,7 @@ export default function AsignarEspecialidadDialog({
                         onClick={() => setAreaSeleccionada(area.codigo)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                           areaSeleccionada === area.codigo
-                            ? `bg-gradient-to-r ${AREA_GRADIENTS[area.codigo]} text-white`
+                            ? `bg-linear-to-r ${AREA_GRADIENTS[area.codigo]} text-white`
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
@@ -478,7 +478,7 @@ export default function AsignarEspecialidadDialog({
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-gradient-to-br ${AREA_GRADIENTS[esp.area.codigo as AreaId]}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-linear-to-br ${AREA_GRADIENTS[esp.area.codigo as AreaId]}`}>
                               {esp.area.icono}
                             </div>
                             <div className="flex-1 min-w-0">

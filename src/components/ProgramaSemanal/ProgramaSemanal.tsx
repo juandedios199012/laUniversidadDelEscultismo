@@ -599,14 +599,14 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
   // ============= COMPONENTE PRINCIPAL =============
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-linear-to-br from-green-50 to-blue-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto w-full">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white p-6 rounded-xl mb-6 shadow-xl">
+        <div className="bg-linear-to-r from-green-600 via-emerald-600 to-teal-600 text-white p-6 rounded-xl mb-6 shadow-xl">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center space-x-4">
-              <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+              <div className="bg-white/20 p-3 rounded-lg backdrop-blur-xs">
                 <Calendar className="w-8 h-8" />
               </div>
               <div>
@@ -686,7 +686,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-6">
+        <div className="bg-white/70 backdrop-blur-xs p-6 rounded-xl shadow-lg mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -695,7 +695,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                 placeholder="Buscar programas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500 bg-white/80"
               />
             </div>
             {miRama ? (
@@ -706,7 +706,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               <select
                 value={filterRama}
                 onChange={(e) => setFilterRama(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500 bg-white/80"
               >
                 <option value="">Todas las ramas</option>
                 {ramas.map(rama => (
@@ -717,7 +717,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
             <select
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500 bg-white/80"
             >
               <option value="">Todos los estados</option>
               {estadosPrograma.map(estado => (
@@ -730,7 +730,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         {/* Lista de Programas */}
         <div className="space-y-6">
           {filteredProgramas.map((programa) => (
-            <div key={programa.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
+            <div key={programa.id} className="bg-white/80 backdrop-blur-xs rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -851,7 +851,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
       {/* Modal Crear Programa */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
               <div className="flex items-center justify-between">
@@ -1214,7 +1214,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
       {/* Modal Editar Programa (Similar al crear, reutilizando lógica) */}
       {isEditModalOpen && selectedPrograma && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
               <div className="flex items-center justify-between">
@@ -1588,7 +1588,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
 
       {/* Modal Ver Programa */}
       {isViewModalOpen && selectedPrograma && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
               <div className="flex items-center justify-between">
@@ -1660,7 +1660,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
                       setSelectedPrograma(selectedPrograma);
                       setIsRankingModalOpen(true);
                     }}
-                    className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2 font-medium shadow-sm"
+                    className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2 font-medium shadow-xs"
                   >
                     <Trophy className="w-5 h-5" />
                     <span>Ver Ranking</span>

@@ -37,7 +37,7 @@ export default function SalidaScreen() {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-red-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center space-x-3 mb-2">
           <PackageMinus className="w-8 h-8" />
           <h2 className="text-2xl font-bold">Salida</h2>
@@ -74,7 +74,7 @@ export default function SalidaScreen() {
             <button
               key={item.id}
               onClick={() => setItemSeleccionado(item)}
-              className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all active:scale-98 text-left"
+              className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 text-left"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -83,7 +83,7 @@ export default function SalidaScreen() {
                     📦 {item.cantidad_disponible} disponible{item.cantidad_disponible === 1 ? '' : 's'}
                   </span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
               </div>
             </button>
           ))}
@@ -122,7 +122,7 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-red-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center space-x-3 mb-2">
           <PackageMinus className="w-8 h-8" />
           <h2 className="text-xl font-bold">{item.nombre}</h2>
@@ -142,7 +142,7 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
             <select
               value={rama}
               onChange={e => setRama(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500"
             >
               <option value="">Selecciona una rama...</option>
               {RAMAS_VALIDAS.map(r => (
@@ -158,7 +158,7 @@ function SalidaFlujo({ item, ramaFija, onVolver }: SalidaFlujoProps) {
               value={fecha}
               max={new Date().toISOString().split('T')[0]}
               onChange={e => setFecha(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
             />
           </div>
 

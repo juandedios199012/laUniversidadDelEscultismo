@@ -167,14 +167,14 @@ function MiniMapPreview({ lat, lng, address, onClick }: MiniMapPreviewProps) {
       <div className="relative w-full h-40">
         <div ref={mapRef} className="w-full h-full" />
         {/* Badge de "Toca para editar" */}
-        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm z-[1000]">
+        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-full shadow-xs z-1000">
           <span className="text-xs text-blue-600 font-medium">Toca para editar</span>
         </div>
       </div>
       {/* Info de ubicación */}
       <div className="p-3 bg-blue-50">
         <div className="flex items-start gap-2">
-          <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <MapPin className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             {address && (
               <p className="text-sm text-gray-800 font-medium truncate">
@@ -542,7 +542,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-t-2xl">
+        <div className="sticky top-0 bg-linear-to-r from-blue-500 to-blue-600 text-white p-4 rounded-t-2xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <UserPlus className="w-6 h-6" />
@@ -1256,7 +1256,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-red-800">Error al registrar</p>
                       <p className="text-xs text-red-700 mt-1">{error}</p>
@@ -1289,7 +1289,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
                 type="button"
                 onClick={handleSiguiente}
                 className="flex-1 flex items-center justify-center space-x-2 py-3 
-                           bg-gradient-to-r from-blue-600 to-blue-700 text-white 
+                           bg-linear-to-r from-blue-600 to-blue-700 text-white 
                            font-semibold rounded-lg active:scale-95 transition-transform"
               >
                 <span>Siguiente</span>
@@ -1300,7 +1300,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
                 type="button"
                 onClick={handleSubmit(onSubmit)}
                 disabled={loading}
-                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 
+                className="flex-1 py-3 bg-linear-to-r from-green-600 to-green-700 
                            text-white font-semibold rounded-lg active:scale-95 
                            transition-transform disabled:opacity-50"
               >

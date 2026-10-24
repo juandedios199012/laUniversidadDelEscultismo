@@ -163,7 +163,7 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack, onVerRan
         </div>
       </div>
 
-      <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-white to-fuchsia-50/40">
+      <Card className="border-0 shadow-lg rounded-3xl bg-linear-to-br from-white to-fuchsia-50/40">
         <CardContent className="p-6 sm:p-8">
           {completado ? (
             <motion.div
@@ -231,7 +231,7 @@ export default function RetoRunner({ reto, scoutId, patrullaId, onBack, onVerRan
                 <Button
                   onClick={onBack}
                   disabled={registrando}
-                  className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                  className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
                 >
                   Volver a los retos
                 </Button>

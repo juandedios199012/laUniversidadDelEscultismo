@@ -304,7 +304,7 @@ const LocationPickerMobile: React.FC<LocationPickerMobileProps> = ({
 
   // Renderizar botón de ubicación con estados
   const renderLocationButton = () => {
-    const baseClasses = "absolute bottom-24 right-4 shadow-lg rounded-full p-3.5 transition-all z-[1000] active:scale-95";
+    const baseClasses = "absolute bottom-24 right-4 shadow-lg rounded-full p-3.5 transition-all z-1000 active:scale-95";
     
     switch (geoStatus) {
       case 'locating':
@@ -351,9 +351,9 @@ const LocationPickerMobile: React.FC<LocationPickerMobileProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-[60] flex flex-col">
+    <div className="fixed inset-0 bg-white z-60 flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 flex items-center justify-between safe-area-pt">
+      <div className="bg-linear-to-r from-blue-500 to-blue-600 text-white p-4 flex items-center justify-between safe-area-pt">
         <div className="flex items-center gap-2">
           <MapPin className="w-5 h-5" />
           <h2 className="font-semibold">Seleccionar Ubicación</h2>
@@ -406,9 +406,9 @@ const LocationPickerMobile: React.FC<LocationPickerMobileProps> = ({
         {/* Error detallado */}
         {error && (
           <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-300 
-                          rounded-lg p-3 z-[1000] shadow-lg">
+                          rounded-lg p-3 z-1000 shadow-lg">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm text-red-700 font-medium">Error de ubicación</p>
                 <p className="text-xs text-red-600 mt-1">{error}</p>
@@ -428,7 +428,7 @@ const LocationPickerMobile: React.FC<LocationPickerMobileProps> = ({
       {location && (
         <div className="bg-gray-50 border-t p-4">
           <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+            <MapPin className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-500 mb-1">Ubicación seleccionada:</p>
               <p className="text-sm text-gray-800 line-clamp-2">{location.address}</p>
@@ -445,7 +445,7 @@ const LocationPickerMobile: React.FC<LocationPickerMobileProps> = ({
         <button
           onClick={handleConfirm}
           disabled={!location}
-          className="w-full py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white 
+          className="w-full py-3.5 bg-linear-to-r from-green-500 to-green-600 text-white 
                      font-semibold rounded-xl flex items-center justify-center gap-2
                      disabled:opacity-50 disabled:cursor-not-allowed
                      active:scale-[0.98] transition-transform shadow-lg"

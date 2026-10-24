@@ -168,7 +168,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
           isActive
             ? 'bg-white shadow-lg'
-            : `bg-gradient-to-br ${item.gradient} opacity-80 group-hover:opacity-100 group-hover:scale-110`
+            : `bg-linear-to-br ${item.gradient} opacity-80 group-hover:opacity-100 group-hover:scale-110`
         }`}>
           <Icon className={`w-4 h-4 ${isActive ? 'text-gray-700' : 'text-white'}`} />
         </div>
@@ -183,7 +183,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Logo */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <Trophy className="w-7 h-7 text-white" />
           </div>
           <div>
@@ -220,15 +220,15 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center bg-gradient-to-br ${group.gradient} flex-shrink-0`}>
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center bg-linear-to-br ${group.gradient} shrink-0`}>
                     <GroupIcon className="w-3.5 h-3.5 text-white" />
                   </div>
                   <span className="text-xs font-semibold uppercase tracking-wider flex-1 text-left">
                     {group.label}
                   </span>
                   {isExpanded
-                    ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
-                    : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+                    ? <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                    : <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                   }
                 </button>
 
@@ -245,7 +245,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
         {/* Stats — solo visibles para admins y dirigentes */}
         {(esSuperAdmin || esAdmin || esDirigente) && (
-        <div className="mt-8 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+        <div className="mt-8 p-4 bg-linear-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
             <Trophy className="w-4 h-4 mr-2 text-yellow-500" />
             Acceso
@@ -257,7 +257,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                className="bg-linear-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(visibleItems / totalItems) * 100}%` }}
               />
             </div>
@@ -280,7 +280,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           {(esSuperAdmin || esAdmin || puedeAcceder('scouts')) && (
             <button
               onClick={() => onTabChange('scouts')}
-              className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="w-full p-3 bg-linear-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               ➕ Nuevo Scout
             </button>
@@ -288,7 +288,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           {(esSuperAdmin || esAdmin || puedeAcceder('dashboard')) && (
             <button
               onClick={() => onTabChange('dashboard')}
-              className="w-full p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="w-full p-3 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               📊 Ver Dashboard
             </button>

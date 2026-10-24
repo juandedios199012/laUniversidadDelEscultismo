@@ -159,7 +159,7 @@ export function PopUpTransferencia({ item, onClose, onSuccess }: PopUpTransferen
                 value={fecha}
                 max={new Date().toISOString().split('T')[0]}
                 onChange={e => setFecha(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -207,7 +207,7 @@ export function PopUpTransferencia({ item, onClose, onSuccess }: PopUpTransferen
                   onChange={e => setSituacionObservaciones(e.target.value)}
                   rows={2}
                   placeholder="Ej: Cuerda desgastada, tela rota en la entrada..."
-                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg bg-amber-50 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg bg-amber-50 resize-none focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                 />
               </div>
             )}

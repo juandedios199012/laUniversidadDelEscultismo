@@ -2106,7 +2106,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
                       ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed' 
                       : selectedReportType === report.type
                         ? `border-${report.color}-600 bg-${report.color}-50 shadow-md`
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-xs'
                     }
                   `}
                 >

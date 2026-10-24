@@ -382,7 +382,7 @@ export function EtapaFormDialog({
                               style={{ backgroundColor: valor }}
                             >
                               {seleccionado && (
-                                <span className="text-xs font-bold text-white drop-shadow">✓</span>
+                                <span className="text-xs font-bold text-white drop-shadow-sm">✓</span>
                               )}
                             </button>
                           );
@@ -450,7 +450,7 @@ export function EtapaFormDialog({
                           onClick={() => toggleEtapa(etapa.codigo)}
                           className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
                             activa
-                              ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                              ? 'border-blue-500 bg-blue-500 text-white shadow-xs'
                               : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
                           }`}
                         >

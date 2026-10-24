@@ -119,7 +119,7 @@ const PendientesAsistente: React.FC<PendientesAsistenteProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : cerrar())}>
-      <DialogContent className="max-w-2xl w-full h-[100dvh] sm:h-[92vh] p-0 gap-0 flex flex-col overflow-hidden rounded-none sm:rounded-lg">
+      <DialogContent className="max-w-2xl w-full h-dvh sm:h-[92vh] p-0 gap-0 flex flex-col overflow-hidden rounded-none sm:rounded-lg">
         {actual && paso ? (
           <>
             {/* Cabecera */}
@@ -129,7 +129,7 @@ const PendientesAsistente: React.FC<PendientesAsistenteProps> = ({
                   {indiceActual + 1} de {items.length}
                 </p>
               )}
-              <DialogTitle className="text-base sm:text-lg leading-tight">
+              <DialogTitle className="text-base sm:text-lg sm:leading-7 leading-tight">
                 {actual.scout_nombre}
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">

@@ -79,7 +79,7 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                 <select
                   value={rama}
                   onChange={e => setRama(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Selecciona una rama...</option>
                   {RAMAS_VALIDAS.map(r => (
@@ -97,7 +97,7 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                   value={fecha}
                   max={new Date().toISOString().split('T')[0]}
                   onChange={e => setFecha(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -110,7 +110,7 @@ export function PopUpSalidaMasiva({ item, onClose, onSuccess }: PopUpSalidaMasiv
                   value={motivo}
                   onChange={e => setMotivo(e.target.value)}
                   placeholder="Ej: Entrega de insignia de rama"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
                 />
               </div>
 

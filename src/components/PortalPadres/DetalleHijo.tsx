@@ -89,7 +89,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({
           onClick={() => setTab('basica')}
           className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
             tab === 'basica'
-              ? 'bg-white text-gray-800 shadow-sm'
+              ? 'bg-white text-gray-800 shadow-xs'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -101,7 +101,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({
           onClick={() => setTab('progresion')}
           className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
             tab === 'progresion'
-              ? 'bg-white text-gray-800 shadow-sm'
+              ? 'bg-white text-gray-800 shadow-xs'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -113,7 +113,7 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({
           onClick={() => setTab('actividades')}
           className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
             tab === 'actividades'
-              ? 'bg-white text-gray-800 shadow-sm'
+              ? 'bg-white text-gray-800 shadow-xs'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -138,9 +138,9 @@ const DetalleHijo: React.FC<DetalleHijoProps> = ({
       )}
 
       {/* Tarjeta principal (tab Básica) */}
-      {tab === 'basica' && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {tab === 'basica' && <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
         {/* Header con gradiente */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-8 text-white">
+        <div className="bg-linear-to-r from-blue-600 to-purple-600 px-8 py-8 text-white">
           <div className="flex items-center gap-6">
             {hijo.foto_url ? (
               <img
@@ -236,7 +236,7 @@ interface DataRowProps {
 
 const DataRow: React.FC<DataRowProps> = ({ icon, label, value }) => (
   <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
-    <div className="mt-0.5 flex-shrink-0">{icon}</div>
+    <div className="mt-0.5 shrink-0">{icon}</div>
     <div>
       <p className="text-xs text-gray-400 mb-0.5">{label}</p>
       <p className="text-sm font-semibold text-gray-800">{value}</p>

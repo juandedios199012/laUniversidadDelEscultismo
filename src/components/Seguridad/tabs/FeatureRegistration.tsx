@@ -76,7 +76,7 @@ function FormNuevoModulo({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-3 p-4 bg-white rounded-xl border border-gray-200 shadow-xs">
       <h4 className="font-semibold text-gray-800 flex items-center gap-2">
         <Layers className="w-4 h-4 text-blue-500" />
         Registrar Módulo
@@ -94,7 +94,7 @@ function FormNuevoModulo({
             onChange={(e) => handleLabelChange(e.target.value)}
             disabled={disabled}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           />
         </div>
         <div>
@@ -107,7 +107,7 @@ function FormNuevoModulo({
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             disabled={disabled}
             placeholder="inventario"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 font-mono text-gray-500 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 font-mono text-gray-500 disabled:opacity-50"
           />
         </div>
         <div>
@@ -120,7 +120,7 @@ function FormNuevoModulo({
             value={form.icon}
             onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))}
             disabled={disabled}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           />
         </div>
         <div>
@@ -130,7 +130,7 @@ function FormNuevoModulo({
             value={form.orden}
             onChange={(e) => setForm((f) => ({ ...f, orden: e.target.value }))}
             disabled={disabled}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           />
         </div>
       </div>
@@ -230,7 +230,7 @@ function FormNuevoPermiso({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-3 p-4 bg-white rounded-xl border border-gray-200 shadow-xs">
       <h4 className="font-semibold text-gray-800 flex items-center gap-2">
         <Key className="w-4 h-4 text-green-500" />
         Registrar Permiso
@@ -246,7 +246,7 @@ function FormNuevoPermiso({
             onChange={(e) => handleModuleChange(e.target.value)}
             disabled={disabled}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           >
             <option value="">Selecciona un módulo…</option>
             {modulos.map((m) => (
@@ -268,7 +268,7 @@ function FormNuevoPermiso({
             onChange={(e) => handleNameChange(e.target.value)}
             disabled={disabled}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           />
         </div>
 
@@ -284,7 +284,7 @@ function FormNuevoPermiso({
             onChange={(e) => setForm((f) => ({ ...f, permission_key: e.target.value }))}
             disabled={disabled}
             required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 font-mono disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 font-mono disabled:opacity-50"
           />
         </div>
 
@@ -298,7 +298,7 @@ function FormNuevoPermiso({
             value={form.descripcion}
             onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
             disabled={disabled}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
           />
         </div>
       </div>
@@ -343,7 +343,7 @@ function ArbolModulos({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-xs overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
         <h4 className="font-semibold text-gray-800 text-sm">Diccionario de Funcionalidades</h4>
         <span className="text-xs text-gray-400">{modulos.length} módulos registrados</span>

@@ -83,7 +83,7 @@ export default function PictogramCard({
       <div
         className={cn(
           sizes.box,
-          'rounded-3xl flex items-center justify-center shadow-lg bg-gradient-to-br overflow-hidden shrink-0',
+          'rounded-3xl flex items-center justify-center shadow-lg bg-linear-to-br overflow-hidden shrink-0',
           gradiente
         )}
       >
@@ -108,7 +108,7 @@ export default function PictogramCard({
           aria-label={isSpeaking ? 'Detener lectura en voz alta' : `Escuchar: ${textoVoz || label}`}
           className={cn(
             'min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm transition-all',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500',
+            'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500',
             isSpeaking
               ? 'bg-fuchsia-600 text-white shadow-md scale-105'
               : 'bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 hover:scale-105'

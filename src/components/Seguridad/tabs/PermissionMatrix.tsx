@@ -43,7 +43,7 @@ function PermSwitch({ checked, onChange, disabled, loading }: SwitchProps) {
       disabled={disabled || loading}
       className={`
         relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
+        focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-400
         ${checked ? 'bg-green-500' : 'bg-gray-300'}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         ${loading ? 'opacity-60 cursor-wait' : ''}
@@ -324,7 +324,7 @@ export default function PermissionMatrix() {
       )}
 
       {/* Tabla */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-xs bg-white">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-100 border-b border-gray-200">

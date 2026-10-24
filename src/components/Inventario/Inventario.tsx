@@ -251,7 +251,7 @@ const Inventario: React.FC = () => {
       <div className="max-w-7xl mx-auto w-full">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 md:p-6 rounded-lg mb-6 shadow-lg">
+        <div className="bg-linear-to-r from-blue-600 to-purple-600 text-white p-4 md:p-6 rounded-lg mb-6 shadow-lg">
           <div className="flex flex-col gap-4">
             <div className="flex items-center space-x-3">
               <Package className="w-6 h-6 md:w-8 md:h-8" />
@@ -263,7 +263,7 @@ const Inventario: React.FC = () => {
             <div className="flex justify-center md:justify-start">
               <button
                 onClick={() => setShowAddForm(true)}
-                className="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 font-medium flex items-center space-x-2 shadow-sm transition-colors duration-200 w-full max-w-xs md:w-auto"
+                className="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 font-medium flex items-center space-x-2 shadow-xs transition-colors duration-200 w-full max-w-xs md:w-auto"
               >
                 <Plus className="w-5 h-5" />
                 <span className="text-base font-semibold">Agregar Item</span>
@@ -342,7 +342,7 @@ const Inventario: React.FC = () => {
                   placeholder="Buscar items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -351,7 +351,7 @@ const Inventario: React.FC = () => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todas las categorías</option>
                 <option value="CAMPING">Camping / Material Scout</option>
@@ -368,7 +368,7 @@ const Inventario: React.FC = () => {
               <select
                 value={selectedCategory.startsWith('estado:') ? selectedCategory : 'all'}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Todos los estados</option>
                 <option value="estado:DISPONIBLE">🟢 Solo Disponibles</option>

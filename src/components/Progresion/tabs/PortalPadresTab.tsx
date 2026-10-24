@@ -508,7 +508,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           type="button"
           onClick={handleExport}
           disabled={exportando || !scout || !detalle || loadingDetalle}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-xs transition hover:bg-gray-50 disabled:opacity-50"
         >
           <Download className={`h-4 w-4 ${exportando ? 'animate-bounce' : ''}`} />
           {exportando ? 'Generando PDF...' : 'Exportar Informe'}
@@ -529,7 +529,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
               onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
               onFocus={() => setShowDropdown(true)}
               placeholder="Buscar por nombre..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-8 text-sm text-gray-700 shadow-sm outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-8 text-sm text-gray-700 shadow-xs outline-hidden focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
             />
             {search && (
               <button
@@ -608,7 +608,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
       ) : (
         <>
           {/* Scout profile card */}
-          <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:flex-nowrap">
+          <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-xs lg:flex-nowrap">
             <div className="relative shrink-0">
               <ProgressRing percentage={scout.progreso} size={120} strokeWidth={8} color={etapaColor}>
                 <div className="text-center">
@@ -647,7 +647,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           </div>
 
           {/* Sub-tabs */}
-          <div className="flex gap-2 rounded-xl border border-gray-100 bg-white p-1 shadow-sm w-fit">
+          <div className="flex gap-2 rounded-xl border border-gray-100 bg-white p-1 shadow-xs w-fit">
             {([
               { id: 'resumen', label: 'Resumen', icon: <Users className="h-4 w-4" /> },
               { id: 'logros', label: 'Logros', icon: <Trophy className="h-4 w-4" /> },
@@ -659,7 +659,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
                 onClick={() => setSubTab(tab.id)}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
                   subTab === tab.id
-                    ? 'bg-blue-600 text-white shadow'
+                    ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
@@ -673,7 +673,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           {subTab === 'resumen' && (
             <div className="grid gap-6 xl:grid-cols-2">
               {/* Progreso general */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
                 <h4 className="text-base font-black text-gray-800">Progreso de Etapa</h4>
                 <div className="mt-4">
                   <div className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-600">
@@ -714,7 +714,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
               </div>
 
               {/* Áreas de crecimiento */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
                 <h4 className="text-base font-black text-gray-800">Áreas de Crecimiento</h4>
                 <div className="mt-4 space-y-3">
                   {loadingDetalle ? (
@@ -758,7 +758,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           {subTab === 'logros' && (
             <div className="space-y-6">
               {/* Objetivos completados */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <h4 className="text-base font-black text-gray-800">Objetivos Completados</h4>
                   <span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
@@ -799,7 +799,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
               </div>
 
               {/* Especialidades */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <h4 className="text-base font-black text-gray-800">Especialidades Logradas</h4>
                   {especialidades && (
@@ -917,17 +917,17 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
                               setModalEsp(e);
                               setCarouselIdx(0);
                             }}
-                            className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm
+                            className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs
                                        hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
                           >
                             {/* ── Collage ── */}
-                            <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden">
+                            <div className="relative w-full aspect-square sm:aspect-4/3 overflow-hidden">
                               {renderCollage()}
 
                               {/* Badge área */}
                               <span
                                 className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white
-                                           backdrop-blur-sm shadow-sm"
+                                           backdrop-blur-xs shadow-xs"
                                 style={{ background: `${e.area.color}cc` }}
                               >
                                 {e.area.nombre}
@@ -935,14 +935,14 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
 
                               {/* Award icon */}
                               <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center
-                                               rounded-full bg-white/90 backdrop-blur-sm shadow-sm">
+                                               rounded-full bg-white/90 backdrop-blur-xs shadow-xs">
                                 <Award className="h-3.5 w-3.5 text-yellow-500" />
                               </span>
 
                               {/* Evidencias badge (si hay varias) */}
                               {totalEvs > 1 && (
                                 <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full
-                                                 bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white">
+                                                 bg-black/50 backdrop-blur-xs text-[10px] font-bold text-white">
                                   {totalEvs} ev.
                                 </span>
                               )}
@@ -985,7 +985,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
               </div>
 
               {/* Record de asistencia */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
                 <h4 className="text-base font-black text-gray-800 mb-4">Record de Asistencia (Año Actual)</h4>
                 {loadingLogros ? (
                   <CardSkeleton className="h-24" />
@@ -1024,7 +1024,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
 
           {/* ── Eventos ─────────────────────────────────────────────────────── */}
           {subTab === 'eventos' && (
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                   <h4 className="text-base font-black text-gray-800">Próximos Programas</h4>
@@ -1090,7 +1090,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs"
               onClick={() => setModalEsp(null)}
             />
 
@@ -1110,12 +1110,12 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
                 </button>
 
                 {/* Drag handle (solo mobile) */}
-                <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
                   <div className="h-1 w-10 rounded-full bg-gray-300" />
                 </div>
 
                 {/* ── IZQUIERDA: Carrusel de imágenes ── */}
-                <div className="sm:w-[58%] sm:flex-shrink-0 flex flex-col">
+                <div className="sm:w-[58%] sm:shrink-0 flex flex-col">
                   <div
                     className="relative bg-gray-900 overflow-hidden"
                     style={{ aspectRatio: '4/3' }}
@@ -1182,7 +1182,7 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
 
                         {/* Descripción de la foto */}
                         {imgEvs[safeIdx].descripcion && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3">
+                          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent px-4 py-3">
                             <p className="text-xs text-white/90">{imgEvs[safeIdx].descripcion}</p>
                           </div>
                         )}

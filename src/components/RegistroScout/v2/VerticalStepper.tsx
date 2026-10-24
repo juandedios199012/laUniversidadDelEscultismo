@@ -38,7 +38,7 @@ export function VerticalStepper({
   const progressPercentage = Math.round((completedSteps / steps.length) * 100);
 
   return (
-    <div className="w-64 flex-shrink-0 bg-card border-r border-border p-4 flex flex-col">
+    <div className="w-64 shrink-0 bg-card border-r border-border p-4 flex flex-col">
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -59,7 +59,7 @@ export function VerticalStepper({
               onClick={() => onStepClick(index)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all",
-                "hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                "hover:bg-accent/50 focus:outline-hidden focus:ring-2 focus:ring-primary/20",
                 isActive && "bg-primary/10 border border-primary/30",
                 !isActive && "border border-transparent"
               )}
@@ -67,7 +67,7 @@ export function VerticalStepper({
               {/* Step Indicator */}
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
+                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all",
                   status === "completed" && "bg-green-500 text-white",
                   status === "current" && "bg-primary text-primary-foreground ring-2 ring-primary/30",
                   status === "error" && "bg-red-500 text-white",
@@ -122,7 +122,7 @@ export function VerticalStepper({
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+            className="h-full bg-linear-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>

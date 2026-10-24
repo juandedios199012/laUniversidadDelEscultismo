@@ -59,10 +59,10 @@ export default function RankingPatrullas({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-yellow-500 via-yellow-600 to-orange-600 text-white p-6">
+        <div className="bg-linear-to-r from-yellow-500 via-yellow-600 to-orange-600 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Trophy className="w-10 h-10" />
@@ -100,7 +100,7 @@ export default function RankingPatrullas({
                   {/* 2do Lugar */}
                   <div className="flex flex-col items-center" style={{ width: '180px' }}>
                     <Medal className="w-12 h-12 text-gray-400 mb-2" />
-                    <div className="w-full bg-gradient-to-t from-gray-400 to-gray-300 rounded-t-lg shadow-lg" style={{ height: '140px' }}>
+                    <div className="w-full bg-linear-to-t from-gray-400 to-gray-300 rounded-t-lg shadow-lg" style={{ height: '140px' }}>
                       <div className="p-4 text-center h-full flex flex-col justify-between">
                         <div>
                           <div
@@ -122,7 +122,7 @@ export default function RankingPatrullas({
                   {/* 1er Lugar */}
                   <div className="flex flex-col items-center" style={{ width: '200px' }}>
                     <Trophy className="w-16 h-16 text-yellow-500 mb-2 animate-pulse" />
-                    <div className="w-full bg-gradient-to-t from-yellow-500 to-yellow-400 rounded-t-lg shadow-2xl" style={{ height: '180px' }}>
+                    <div className="w-full bg-linear-to-t from-yellow-500 to-yellow-400 rounded-t-lg shadow-2xl" style={{ height: '180px' }}>
                       <div className="p-4 text-center h-full flex flex-col justify-between">
                         <div>
                           <div
@@ -144,7 +144,7 @@ export default function RankingPatrullas({
                   {/* 3er Lugar */}
                   <div className="flex flex-col items-center" style={{ width: '180px' }}>
                     <Award className="w-12 h-12 text-amber-700 mb-2" />
-                    <div className="w-full bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-lg shadow-lg" style={{ height: '120px' }}>
+                    <div className="w-full bg-linear-to-t from-amber-700 to-amber-600 rounded-t-lg shadow-lg" style={{ height: '120px' }}>
                       <div className="p-4 text-center h-full flex flex-col justify-between">
                         <div>
                           <div
@@ -203,7 +203,7 @@ export default function RankingPatrullas({
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-xs"
                                 style={{ backgroundColor: total.color_patrulla || '#6B7280' }}
                               >
                                 {total.patrulla_nombre.charAt(0)}

@@ -221,7 +221,7 @@ export default function SeguimientoEspecialidades({
         {onAsignarClick && (
           <button
             onClick={onAsignarClick}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
           >
             <Plus className="w-5 h-5" />
             Asignar Especialidad
@@ -230,7 +230,7 @@ export default function SeguimientoEspecialidades({
       </div>
 
       {/* Selector de Scout Mejorado */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Seleccionar Scout
         </label>
@@ -296,7 +296,7 @@ export default function SeguimientoEspecialidades({
                     placeholder="Buscar por nombre, código o rama..."
                     value={scoutSearchQuery}
                     onChange={(e) => setScoutSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-hidden transition-all"
                     autoFocus
                   />
                 </div>
@@ -327,7 +327,7 @@ export default function SeguimientoEspecialidades({
                         }`}
                       >
                         {/* Avatar */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
                           ramaColor.bg
                         } ${ramaColor.text}`}>
                           {getInitials(scout.nombres, scout.apellidos)}
@@ -349,7 +349,7 @@ export default function SeguimientoEspecialidades({
                         
                         {/* Check si está seleccionado */}
                         {isSelected && (
-                          <Check className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                          <Check className="w-5 h-5 text-blue-600 shrink-0" />
                         )}
                       </button>
                     );
@@ -370,7 +370,7 @@ export default function SeguimientoEspecialidades({
 
       {/* Stats del scout seleccionado */}
       {selectedScout && scoutSeleccionado && (
-        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+        <div className="bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-xl font-bold">
@@ -435,7 +435,7 @@ export default function SeguimientoEspecialidades({
           {onAsignarClick && (
             <button
               onClick={onAsignarClick}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium"
+              className="px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-medium"
             >
               Asignar Primera Especialidad
             </button>
@@ -650,7 +650,7 @@ function ProgresoCard({
         onClick={onToggle}
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-gray-50 transition-colors"
       >
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${areaGradient} flex items-center justify-center text-xl shadow-lg shrink-0`}>
+        <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${areaGradient} flex items-center justify-center text-xl shadow-lg shrink-0`}>
           {progreso.area.icono}
         </div>
 

@@ -170,7 +170,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm transition hover:bg-gray-50"
+          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 shadow-xs transition hover:bg-gray-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver
@@ -189,7 +189,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
             load();
           }}
           disabled={loading || guardandoCambios}
-          className="ml-auto rounded-xl border border-gray-200 bg-white p-2 text-gray-500 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
+          className="ml-auto rounded-xl border border-gray-200 bg-white p-2 text-gray-500 shadow-xs transition hover:bg-gray-50 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -206,7 +206,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
       )}
 
       {dirty.size > 0 && (
-        <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-sm">
+        <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-xs">
           <span className="text-sm font-medium text-amber-800">
             Tienes {dirty.size} cambio{dirty.size > 1 ? 's' : ''} sin guardar
           </span>
@@ -223,7 +223,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
               type="button"
               onClick={guardarCambios}
               disabled={guardandoCambios}
-              className="rounded-lg bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
+              className="rounded-lg bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white shadow-xs transition hover:bg-amber-700 disabled:opacity-50"
             >
               {guardandoCambios ? 'Guardando…' : 'Guardar cambios'}
             </button>
@@ -238,7 +238,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
       ) : progreso ? (
         <>
           {/* Resumen general */}
-          <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
             <ProgressRing percentage={computedProgreso} size={100} strokeWidth={7} color={etapaColor}>
               <div className="text-center">
                 <div className="text-lg font-black" style={{ color: etapaColor }}>
@@ -274,7 +274,7 @@ const ScoutDetail: React.FC<{ scoutId: string; scoutNombre: string; scoutRama: s
                     type="button"
                     onClick={() => setAreaActiva(area.area_codigo)}
                     className={`flex items-center gap-3 rounded-xl border p-3 text-left transition hover:shadow-md ${
-                      isActive ? 'shadow-md ring-1' : 'border-gray-100 bg-white shadow-sm'
+                      isActive ? 'shadow-md ring-1' : 'border-gray-100 bg-white shadow-xs'
                     }`}
                     style={isActive ? { borderColor: `${color}50` } : undefined}
                   >
@@ -415,7 +415,7 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaAc
       </div>
 
       {/* Search + filters bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -423,13 +423,13 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaAc
             placeholder="Buscar por nombre o código..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+            className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm text-gray-700 outline-hidden focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
           />
         </div>
         <select
           value={filtroPatrulla}
           onChange={(e) => setFiltroPatrulla(e.target.value)}
-          className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-300"
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-hidden focus:border-blue-300"
         >
           <option value="">Todas las patrullas</option>
           {patrullas.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -437,7 +437,7 @@ const ScoutsTab: React.FC<ScoutsTabProps> = ({ loading, scouts, onReload, ramaAc
         <select
           value={filtroEtapa}
           onChange={(e) => setFiltroEtapa(e.target.value)}
-          className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-300"
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-hidden focus:border-blue-300"
         >
           <option value="">Todas las etapas</option>
           {etapas.map((e) => {

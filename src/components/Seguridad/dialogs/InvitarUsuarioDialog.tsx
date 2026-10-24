@@ -103,14 +103,14 @@ export default function InvitarUsuarioDialog({ isOpen, onClose, onUsuarioCreado 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
         onClick={handleClose}
       />
 
       {/* Dialog */}
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-linear-to-r from-blue-50 to-indigo-50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-blue-600" />

@@ -183,7 +183,7 @@ const TiposActividadAireLibre: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border">
+      <div className="bg-white rounded-xl shadow-xs border">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="font-semibold text-gray-900">Catálogo</h2>
           <button

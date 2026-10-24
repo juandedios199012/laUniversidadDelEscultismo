@@ -126,7 +126,7 @@ export default function ScoutsScreen() {
   return (
     <div className="p-4 space-y-4">
       {/* Header con Botón CTA */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
             <Users className="w-8 h-8" />
@@ -144,7 +144,7 @@ export default function ScoutsScreen() {
       </div>
 
       {/* Toggle Vista: Lista / Cumpleaños */}
-      <div className="bg-white rounded-xl p-1 shadow flex gap-1">
+      <div className="bg-white rounded-xl p-1 shadow-sm flex gap-1">
         <button
           onClick={() => setVista('lista')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-colors ${
@@ -189,7 +189,7 @@ export default function ScoutsScreen() {
       )}
 
       {/* Búsqueda */}
-      <div className="bg-white rounded-xl p-4 shadow">
+      <div className="bg-white rounded-xl p-4 shadow-sm">
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -213,7 +213,7 @@ export default function ScoutsScreen() {
       </div>
 
       {/* Contador */}
-      <div className="bg-white rounded-xl p-4 shadow">
+      <div className="bg-white rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-gray-600">
             {vista === 'cumpleanos' ? 'Cumpleaños encontrados:' : 'Scouts encontrados:'}
@@ -224,7 +224,7 @@ export default function ScoutsScreen() {
 
       {/* Estado Vacío */}
       {filtrados.length === 0 && !loading && (
-        <div className="bg-white rounded-xl p-8 shadow text-center">
+        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
           <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
             {vista === 'cumpleanos' ? (
               <Cake className="w-12 h-12 text-pink-400" />
@@ -247,7 +247,7 @@ export default function ScoutsScreen() {
           {vista === 'lista' && !busqueda && !ramaFiltro && (
             <button
               onClick={() => setMostrarRegistro(true)}
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold mx-auto active:scale-95 transition-transform shadow-lg"
+              className="flex items-center space-x-2 bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold mx-auto active:scale-95 transition-transform shadow-lg"
             >
               <UserPlus className="w-5 h-5" />
               <span>Registrar Primer Scout</span>

@@ -41,7 +41,7 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 shadow-lg">
+      <header className="bg-linear-to-r from-blue-600 to-blue-800 text-white p-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">

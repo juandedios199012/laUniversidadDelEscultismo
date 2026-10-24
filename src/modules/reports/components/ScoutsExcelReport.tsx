@@ -181,7 +181,7 @@ export function ScoutsExcelReport() {
       {/* Info Box */}
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
         <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
           <div className="text-sm text-blue-800">
             <p className="font-medium">Estructura del Excel (8 hojas por Steps)</p>
             <ul className="mt-1 list-disc list-inside space-y-0.5">
@@ -381,7 +381,7 @@ export function ScoutsExcelReport() {
               {/* Error message */}
               {status === 'error' && error && (
                 <div className="mt-4 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   <span className="text-sm">{error}</span>
                 </div>
               )}

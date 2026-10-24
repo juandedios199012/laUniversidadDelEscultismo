@@ -36,7 +36,7 @@ async function renderizarPaginas(blob: Blob, contenedor: HTMLDivElement, cancela
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     canvas.style.width = '100%';
-    canvas.className = 'bg-white shadow-sm border border-gray-200 rounded mb-3';
+    canvas.className = 'bg-white shadow-xs border border-gray-200 rounded mb-3';
     contenedor.appendChild(canvas);
 
     await pagina.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;

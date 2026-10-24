@@ -47,7 +47,7 @@ export function FormSection({
         className={cn(
           "w-full flex items-center justify-between p-4",
           "hover:bg-muted/50 transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         )}
         aria-expanded={isOpen}
       >

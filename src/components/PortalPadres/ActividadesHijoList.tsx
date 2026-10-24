@@ -50,7 +50,7 @@ const ActividadesHijoList: React.FC<ActividadesHijoListProps> = ({
 
       {/* Anexo 4 ya aceptado: solo lectura / descarga */}
       <Dialog open={!!anexoDe} onOpenChange={(o) => !o && setAnexoDe(null)}>
-        <DialogContent className="max-w-2xl w-full h-[100dvh] sm:h-[92vh] p-0 gap-0 flex flex-col overflow-hidden rounded-none sm:rounded-lg">
+        <DialogContent className="max-w-2xl w-full h-dvh sm:h-[92vh] p-0 gap-0 flex flex-col overflow-hidden rounded-none sm:rounded-lg">
           <DialogHeader className="px-4 sm:px-6 py-4 border-b pr-12 text-left">
             <DialogTitle>Anexo 4 · {anexoDe?.scout_nombre}</DialogTitle>
             <DialogDescription>{anexoDe?.nombre}</DialogDescription>
@@ -82,7 +82,7 @@ const ActividadCard: React.FC<ActividadCardProps> = ({ actividad: a, onCompletar
   const faltaPago = pagoPendiente(a);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
       {/* Cabecera */}
       <div className="px-5 py-4 border-b border-gray-100">
         <div className="flex items-start justify-between gap-3">

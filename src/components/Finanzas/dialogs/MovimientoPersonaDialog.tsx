@@ -252,7 +252,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                 onClick={() => setTipo('INGRESO')}
                 className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                   tipo === 'INGRESO'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs'
                     : 'border-gray-200 text-gray-500 hover:border-emerald-200'
                 }`}
               >
@@ -265,7 +265,7 @@ const MovimientoPersonaDialog: React.FC<MovimientoPersonaDialogProps> = ({
                 onClick={() => setTipo('EGRESO')}
                 className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                   tipo === 'EGRESO'
-                    ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm'
+                    ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-xs'
                     : 'border-gray-200 text-gray-500 hover:border-rose-200'
                 }`}
               >

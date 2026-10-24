@@ -59,8 +59,8 @@ function DraggableChip({ id, pictograma, deshabilitado }: { id: string; pictogra
         touchAction: 'none',
       }}
       className={`min-w-[64px] min-h-[64px] w-16 h-16 sm:w-20 sm:h-20 rounded-3xl shadow-lg flex items-center justify-center
-        bg-gradient-to-br from-fuchsia-500 to-purple-600
-        focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
+        bg-linear-to-br from-fuchsia-500 to-purple-600
+        focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
         ${deshabilitado ? 'opacity-40 cursor-default' : 'cursor-grab active:cursor-grabbing hover:scale-105'}
         ${isDragging ? 'z-20 scale-110 shadow-2xl' : 'z-10'}
       `}
@@ -98,7 +98,7 @@ function DropZone({ id, etiqueta, resuelto }: { id: string; etiqueta: string; re
           type="button"
           onClick={() => (isSpeaking ? stop() : speak(etiqueta))}
           aria-label={isSpeaking ? 'Detener lectura' : `Escuchar: ${etiqueta}`}
-          className="min-h-[44px] min-w-[44px] shrink-0 rounded-full flex items-center justify-center text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+          className="min-h-[44px] min-w-[44px] shrink-0 rounded-full flex items-center justify-center text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
@@ -137,7 +137,7 @@ function ZonaEspacial({ id, etiqueta, resuelto, posicion }: {
           type="button"
           onClick={() => (isSpeaking ? stop() : speak(etiqueta))}
           aria-label={isSpeaking ? 'Detener lectura' : `Escuchar: ${etiqueta}`}
-          className="min-h-[44px] min-w-[44px] w-full h-full rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+          className="min-h-[44px] min-w-[44px] w-full h-full rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
@@ -240,7 +240,7 @@ function EmparejarDragAndDrop({ config, puntosBase, onComplete }: {
             <button
               type="button"
               onClick={() => speak(config.instruccion)}
-              className="mt-3 min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+              className="mt-3 min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
             >
               🔊 Escuchar instrucción
             </button>
@@ -328,7 +328,7 @@ function TarjetaPaso({ paso, posicion, fueraDeLugar }: { paso: PasoOrdenable; po
         ${fueraDeLugar ? 'ring-4 ring-amber-400 border-amber-300' : 'border-gray-200'}
       `}
     >
-      <span className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm">
+      <span className="w-8 h-8 shrink-0 rounded-full bg-linear-to-br from-fuchsia-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm">
         {posicion}
       </span>
 
@@ -341,7 +341,7 @@ function TarjetaPaso({ paso, posicion, fueraDeLugar }: { paso: PasoOrdenable; po
           type="button"
           onClick={() => (isSpeaking ? stop() : speak(paso.texto))}
           aria-label={isSpeaking ? 'Detener lectura' : `Escuchar: ${paso.texto}`}
-          className="min-h-[44px] min-w-[44px] shrink-0 rounded-full flex items-center justify-center text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+          className="min-h-[44px] min-w-[44px] shrink-0 rounded-full flex items-center justify-center text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
@@ -352,7 +352,7 @@ function TarjetaPaso({ paso, posicion, fueraDeLugar }: { paso: PasoOrdenable; po
         {...attributes}
         {...listeners}
         aria-label={`Arrastrar para reordenar: ${paso.texto}`}
-        className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 hover:bg-gray-200 cursor-grab active:cursor-grabbing touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+        className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 hover:bg-gray-200 cursor-grab active:cursor-grabbing touch-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
       >
         <GripVertical className="w-5 h-5" />
       </button>
@@ -434,7 +434,7 @@ function OrdenarDragAndDrop({ config, puntosBase, onComplete }: {
           <button
             type="button"
             onClick={() => speak(config.instruccion)}
-            className="mt-3 min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+            className="mt-3 min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
           >
             🔊 Escuchar instrucción
           </button>
@@ -461,8 +461,8 @@ function OrdenarDragAndDrop({ config, puntosBase, onComplete }: {
         type="button"
         onClick={handleVerificar}
         className="self-center min-h-[48px] px-8 inline-flex items-center gap-2 rounded-2xl font-bold text-white text-base shadow-md
-          bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-transform hover:scale-105 active:scale-95
-          focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
+          bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 transition-transform hover:scale-105 active:scale-95
+          focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
       >
         <CheckCircle2 className="w-5 h-5" />
         Verificar orden

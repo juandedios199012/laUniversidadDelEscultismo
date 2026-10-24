@@ -132,7 +132,7 @@ export default function MemoriaGame({ configuracion, puntosBase, onComplete }: G
               onClick={() => handleClickCarta(carta)}
               disabled={bocaArriba || bloqueado}
               aria-label={bocaArriba ? `Carta: ${carta.etiqueta || carta.pictograma}` : 'Carta boca abajo'}
-              className="relative aspect-square min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400 rounded-2xl disabled:cursor-default"
+              className="relative aspect-square min-h-[64px] focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400 rounded-2xl disabled:cursor-default"
               style={{ perspective: 1000 }}
             >
               <motion.div
@@ -143,7 +143,7 @@ export default function MemoriaGame({ configuracion, puntosBase, onComplete }: G
               >
                 {/* Reverso (boca abajo) */}
                 <div
-                  className="absolute inset-0 rounded-2xl shadow-md bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-3xl text-white font-bold"
+                  className="absolute inset-0 rounded-2xl shadow-md bg-linear-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-3xl text-white font-bold"
                   style={{ backfaceVisibility: 'hidden' }}
                 >
                   ?

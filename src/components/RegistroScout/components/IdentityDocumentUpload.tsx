@@ -153,7 +153,7 @@ function DocumentSlot({
 
       {state.url ? (
         // Documento cargado
-        <div className="relative group aspect-[3/2] bg-gray-100 rounded-lg overflow-hidden border-2 border-green-300">
+        <div className="relative group aspect-3/2 bg-gray-100 rounded-lg overflow-hidden border-2 border-green-300">
           {isImage ? (
             <img
               src={state.url}
@@ -224,7 +224,7 @@ function DocumentSlot({
         // Slot vacío
         <div
           className={cn(
-            "aspect-[3/2] rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all",
+            "aspect-3/2 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all",
             isDragging && "border-blue-500 bg-blue-50",
             !isDragging && "border-gray-300 hover:border-blue-400 hover:bg-gray-50",
             (disabled || state.isUploading || !entityId) && "opacity-50 cursor-not-allowed"

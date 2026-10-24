@@ -99,7 +99,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       {...props}
     >
       {/* Gradiente sutil de fondo */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-slate-100/30 dark:from-slate-800/50 dark:to-slate-900/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-white/50 via-transparent to-slate-100/30 dark:from-slate-800/50 dark:to-slate-900/30 pointer-events-none" />
       
       {/* Contenido */}
       <div className="relative z-10">{children}</div>
@@ -135,7 +135,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700"
+      className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-xs border border-slate-100 dark:border-slate-700"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -376,7 +376,7 @@ export const InputField: React.FC<InputFieldProps> = ({
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
               : 'border-slate-200 dark:border-slate-700 focus:border-cyan-500 focus:ring-cyan-500/20'
             }
-            focus:outline-none focus:ring-4
+            focus:outline-hidden focus:ring-4
             text-slate-900 dark:text-slate-100
             placeholder:text-slate-400
           `}
@@ -431,7 +431,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
             ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
             : 'border-slate-200 dark:border-slate-700 focus:border-cyan-500 focus:ring-cyan-500/20'
           }
-          focus:outline-none focus:ring-4
+          focus:outline-hidden focus:ring-4
           text-slate-900 dark:text-slate-100
           cursor-pointer
         `}
@@ -568,7 +568,7 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
             ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
             : 'border-slate-200 dark:border-slate-700 focus:border-cyan-500 focus:ring-cyan-500/20'
           }
-          focus:outline-none focus:ring-4
+          focus:outline-hidden focus:ring-4
           text-slate-900 dark:text-slate-100
           placeholder:text-slate-400
         `}
@@ -610,11 +610,11 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
 }) => {
   const variants: Record<string, string> = {
-    primary: 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 shadow-lg shadow-cyan-500/25',
+    primary: 'bg-linear-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 shadow-lg shadow-cyan-500/25',
     secondary: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600',
     outline: 'bg-transparent border-2 border-cyan-500 text-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-500/10',
     ghost: 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-    danger: 'bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600 shadow-lg shadow-red-500/25',
+    danger: 'bg-linear-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600 shadow-lg shadow-red-500/25',
   };
 
   const sizes: Record<string, string> = {
@@ -634,7 +634,7 @@ export const Button: React.FC<ButtonProps> = ({
         inline-flex items-center justify-center gap-2
         font-semibold rounded-lg
         transition-all duration-200
-        focus:outline-none focus:ring-4 focus:ring-cyan-500/20
+        focus:outline-hidden focus:ring-4 focus:ring-cyan-500/20
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variants[variant]}
         ${sizes[size]}
@@ -790,7 +790,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md' }) => {
 
   return (
     <div
-      className={`${sizes[size]} rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold ring-2 ring-white dark:ring-slate-800`}
+      className={`${sizes[size]} rounded-full bg-linear-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold ring-2 ring-white dark:ring-slate-800`}
     >
       {initials}
     </div>

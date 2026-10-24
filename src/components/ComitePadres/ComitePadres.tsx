@@ -161,7 +161,7 @@ const iniciales = (nombres = '', apellidos = '') =>
 
 // Clases base reutilizables (glow focus claro)
 const inputBase =
-  'w-full px-4 py-2.5 rounded-xl border bg-white/90 text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-2';
+  'w-full px-4 py-2.5 rounded-xl border bg-white/90 text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:outline-hidden focus:ring-2';
 const inputOk =
   'border-slate-200 focus:border-blue-400 focus:ring-blue-100 focus:shadow-[0_0_15px_rgba(59,130,246,0.2)]';
 const inputErr =
@@ -473,15 +473,15 @@ export default function ComitePadres() {
 
   // ============= RENDER =============
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-white to-blue-50/40 p-4 md:p-6">
+    <div className="min-h-screen bg-linear-to-tr from-slate-50 via-white to-blue-50/40 p-4 md:p-6">
       <div className="max-w-7xl mx-auto w-full">
         {/* ---------- Header ---------- */}
-        <header className="relative overflow-hidden rounded-2xl mb-6 border border-white/60 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-6 shadow-[0_8px_30px_rgba(59,130,246,0.25)]">
+        <header className="relative overflow-hidden rounded-2xl mb-6 border border-white/60 bg-linear-to-r from-blue-600 via-indigo-600 to-violet-600 p-6 shadow-[0_8px_30px_rgba(59,130,246,0.25)]">
           <div className="absolute -top-16 -right-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-20 left-1/3 h-44 w-44 rounded-full bg-violet-300/20 blur-3xl" />
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-white/15 p-3 backdrop-blur-sm ring-1 ring-white/30">
+              <div className="rounded-xl bg-white/15 p-3 backdrop-blur-xs ring-1 ring-white/30">
                 <Users className="h-7 w-7 text-white" />
               </div>
               <div>
@@ -493,7 +493,7 @@ export default function ComitePadres() {
               <button
                 type="button"
                 onClick={() => setCargosModalOpen(true)}
-                className="group inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 font-semibold text-white ring-1 ring-white/30 backdrop-blur-sm transition-all hover:bg-white/25"
+                className="group inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 font-semibold text-white ring-1 ring-white/30 backdrop-blur-xs transition-all hover:bg-white/25"
               >
                 <Settings2 className="h-5 w-5" />
                 Gestionar cargos
@@ -511,7 +511,7 @@ export default function ComitePadres() {
         </header>
 
         {/* ---------- Filtros ---------- */}
-        <div className="sticky top-0 z-20 mb-6 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur-md">
+        <div className="sticky top-0 z-20 mb-6 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-xs backdrop-blur-md">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="relative md:col-span-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -577,10 +577,10 @@ export default function ComitePadres() {
       {modalMode !== 'closed' && (
         <Modal onClose={cerrarModal} ancho="max-w-3xl">
           {/* Encabezado wizard */}
-          <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
+          <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-linear-to-br from-blue-500 to-indigo-500 text-white shadow-md">
                   {modoEdicion ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
                 </div>
                 <div>
@@ -615,7 +615,7 @@ export default function ComitePadres() {
                       <span
                         className={`grid h-10 w-10 place-items-center rounded-full ring-1 transition-all ${
                           activo
-                            ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white ring-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.35)]'
+                            ? 'bg-linear-to-br from-blue-500 to-indigo-500 text-white ring-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.35)]'
                             : completado
                             ? 'bg-blue-50 text-blue-600 ring-blue-200'
                             : 'bg-slate-50 text-slate-400 ring-slate-200'
@@ -701,7 +701,7 @@ export default function ComitePadres() {
           </div>
 
           {/* Footer wizard */}
-          <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
+          <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-slate-100 bg-white/95 px-6 py-4 backdrop-blur-sm">
             <button
               type="button"
               onClick={anterior}
@@ -716,7 +716,7 @@ export default function ComitePadres() {
                 type="button"
                 onClick={guardar}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
               >
                 <Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
@@ -724,7 +724,7 @@ export default function ComitePadres() {
               <button
                 type="button"
                 onClick={siguiente}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
               >
                 Siguiente <ChevronRight className="h-4 w-4" />
               </button>
@@ -733,7 +733,7 @@ export default function ComitePadres() {
                 type="button"
                 onClick={guardar}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
               >
                 <BadgeCheck className="h-4 w-4" /> {saving ? 'Registrando…' : 'Registrar miembro'}
               </button>
@@ -771,7 +771,7 @@ export default function ComitePadres() {
 
       {/* ---------- Toast ---------- */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-[60] animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-5 right-5 z-60 animate-in fade-in slide-in-from-bottom-2">
           <div
             className={`flex items-center gap-2 rounded-xl px-4 py-3 shadow-lg ring-1 ${
               toast.type === 'ok'
@@ -800,7 +800,7 @@ export default function ComitePadres() {
 function Modal({ children, onClose, ancho }: { children: React.ReactNode; onClose: () => void; ancho: string }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={onClose} />
       <div className={`relative ${ancho} w-full max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200`}>
         {children}
       </div>
@@ -832,7 +832,7 @@ function PasoIdentidad({
   return (
     <div className="space-y-6">
       {!modoEdicion && (
-        <div className="rounded-2xl border border-blue-100 bg-gradient-to-tr from-blue-50/60 to-indigo-50/40 p-4">
+        <div className="rounded-2xl border border-blue-100 bg-linear-to-tr from-blue-50/60 to-indigo-50/40 p-4">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Search className="h-4 w-4 text-blue-500" />
             ¿Ya está registrada en el sistema?
@@ -979,7 +979,7 @@ function PasoCargo({
                   onClick={() => setForm((f) => ({ ...f, cargo: c.nombre }))}
                   className={`group relative flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 transition-all ${
                     activo
-                      ? `border-transparent bg-gradient-to-br ${info.from} ${info.to} text-white shadow-lg`
+                      ? `border-transparent bg-linear-to-br ${info.from} ${info.to} text-white shadow-lg`
                       : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
                   }`}
                 >
@@ -1065,7 +1065,7 @@ function PasoExperiencia({
             {form.habilidades.map((s) => (
               <span
                 key={s}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1 text-sm text-blue-700 ring-1 ring-blue-100"
+                className="inline-flex items-center gap-1.5 rounded-full bg-linear-to-r from-blue-50 to-indigo-50 px-3 py-1 text-sm text-blue-700 ring-1 ring-blue-100"
               >
                 {s}
                 <button type="button" onClick={() => onRemoveSkill(s)} className="text-blue-400 hover:text-rose-500">
@@ -1180,7 +1180,7 @@ function PasoEducacionTrabajo({
       </div>
 
       {/* Datos scout */}
-      <div className="rounded-2xl border border-blue-100 bg-gradient-to-tr from-blue-50/50 to-indigo-50/30 p-4">
+      <div className="rounded-2xl border border-blue-100 bg-linear-to-tr from-blue-50/50 to-indigo-50/30 p-4">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
           <Award className="h-4 w-4 text-indigo-500" /> Datos Scout (si aplica)
         </h3>
@@ -1328,7 +1328,7 @@ function PasoContactoReligion({
   return (
     <div className="space-y-6">
       {/* Religión */}
-      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-tr from-indigo-50/50 to-violet-50/30 p-4">
+      <div className="rounded-2xl border border-indigo-100 bg-linear-to-tr from-indigo-50/50 to-violet-50/30 p-4">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
           <BookOpen className="h-4 w-4 text-indigo-500" /> Religión
         </h3>
@@ -1342,7 +1342,7 @@ function PasoContactoReligion({
       </div>
 
       {/* Datos de contacto */}
-      <div className="rounded-2xl border border-emerald-100 bg-gradient-to-tr from-emerald-50/50 to-teal-50/30 p-4">
+      <div className="rounded-2xl border border-emerald-100 bg-linear-to-tr from-emerald-50/50 to-teal-50/30 p-4">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
           <Contact className="h-4 w-4 text-emerald-500" /> Datos de contacto
         </h3>
@@ -1637,9 +1637,9 @@ function GestionarCargos({
 
   return (
     <>
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md">
+          <div className="grid h-11 w-11 place-items-center rounded-xl bg-linear-to-br from-blue-500 to-indigo-500 text-white shadow-md">
             <Tags className="h-5 w-5" />
           </div>
           <div>
@@ -1691,7 +1691,7 @@ function GestionarCargos({
               type="button"
               onClick={guardar}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60"
             >
               {editId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               {editId ? 'Guardar' : 'Agregar'}
@@ -1714,7 +1714,7 @@ function GestionarCargos({
                     c.activo ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50 opacity-70'
                   }`}
                 >
-                  <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br ${info.from} ${info.to} text-white`}>
+                  <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-linear-to-br ${info.from} ${info.to} text-white`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -1772,11 +1772,11 @@ function MiembroCard({
   const cargo = cargoInfo(m.cargo);
   const estado = estadoInfo(m.estado);
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-      <div className={`h-1.5 w-full bg-gradient-to-r ${cargo.from} ${cargo.to}`} />
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs transition-all hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+      <div className={`h-1.5 w-full bg-linear-to-r ${cargo.from} ${cargo.to}`} />
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start gap-3">
-          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${cargo.from} ${cargo.to} text-sm font-bold text-white shadow-md`}>
+          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-linear-to-br ${cargo.from} ${cargo.to} text-sm font-bold text-white shadow-md`}>
             {iniciales(m.nombres, m.apellidos)}
           </div>
           <div className="min-w-0 flex-1">
@@ -1859,12 +1859,12 @@ function DetalleMiembro({
   const habilidades = (m.habilidades || []).filter(Boolean);
   return (
     <>
-      <div className={`relative overflow-hidden bg-gradient-to-r ${cargo.from} ${cargo.to} px-6 py-6 text-white`}>
+      <div className={`relative overflow-hidden bg-linear-to-r ${cargo.from} ${cargo.to} px-6 py-6 text-white`}>
         <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/20 hover:text-white">
           <X className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/20 text-xl font-bold ring-1 ring-white/30 backdrop-blur">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/20 text-xl font-bold ring-1 ring-white/30 backdrop-blur-sm">
             {iniciales(m.nombres, m.apellidos)}
           </div>
           <div>
@@ -1975,7 +1975,7 @@ function DetalleMiembro({
           <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
             Cerrar
           </button>
-          <button type="button" onClick={onEdit} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg">
+          <button type="button" onClick={onEdit} className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg">
             <Edit className="h-4 w-4" /> Editar
           </button>
         </div>
@@ -2010,7 +2010,7 @@ function DetalleBloque({ titulo, children }: { titulo: string; children: React.R
 function EmptyState({ filtrando, onNuevo }: { filtrando: boolean; onNuevo: () => void }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 py-16 text-center">
-      <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 ring-1 ring-blue-100">
+      <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-linear-to-br from-blue-50 to-indigo-50 ring-1 ring-blue-100">
         <Users className="h-10 w-10 text-blue-400" />
       </div>
       <h3 className="text-lg font-semibold text-slate-700">
@@ -2025,7 +2025,7 @@ function EmptyState({ filtrando, onNuevo }: { filtrando: boolean; onNuevo: () =>
         <button
           type="button"
           onClick={onNuevo}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
+          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg"
         >
           <Plus className="h-4 w-4" /> Registrar miembro
         </button>

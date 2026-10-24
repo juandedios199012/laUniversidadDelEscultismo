@@ -14,7 +14,7 @@ Referencia de librerías, frameworks y decisiones técnicas del proyecto `scout-
 | Lenguaje | TypeScript 5.5 (modo `strict`, 0 errores) |
 | UI framework | React 19 |
 | Bundler / dev server | Vite 6.4 |
-| Estilos | Tailwind CSS 3.4 + shadcn/ui (Radix UI) |
+| Estilos | Tailwind CSS 4 + shadcn/ui (Radix UI) |
 | Backend (BaaS) | Supabase: PostgreSQL + Auth + Storage + Edge Functions |
 | Lógica de negocio | Funciones RPC en PostgreSQL (`SECURITY DEFINER`) |
 | Hosting | Azure Static Web Apps |
@@ -32,8 +32,11 @@ Referencia de librerías, frameworks y decisiones técnicas del proyecto `scout-
 - Alias de imports: `@/*` → `./src/*` (definido en `tsconfig.app.json` y `vite.config.ts`).
 
 ### UI y estilos
-- **tailwindcss** `^3.4` + **postcss** + **autoprefixer**; `darkMode: "class"`; colores por variables CSS HSL (estilo shadcn) más una paleta `scout.*` (manada, tropa, comunidad, clan).
-- **tailwindcss-animate**, **class-variance-authority**, **clsx**, **tailwind-merge** (helper `cn` en `src/lib/utils.ts`).
+- **tailwindcss** `^4.3` con el plugin **@tailwindcss/vite** (sin PostCSS ni `tailwind.config.js`). Toda la configuración está en [src/index.css](src/index.css): `@theme inline` (colores shadcn desde variables HSL, paleta `scout-*`, radios, animaciones de acordeón), `@custom-variant dark` (modo oscuro por clase `.dark`) y `@source` limitado a `index.html` y `src/`.
+- Estilos de compatibilidad con v3 en `@layer base`: color de borde por defecto `gray-200`, `cursor: pointer` en botones y placeholders `gray-400`.
+- **tw-animate-css** (reemplaza a `tailwindcss-animate`), **class-variance-authority**, **clsx**, **tailwind-merge** (helper `cn` en `src/lib/utils.ts`).
+- Navegadores soportados por Tailwind 4: Safari 16.4+, Chrome 111+, Firefox 128+.
+- Diferencias de v4 a tener en cuenta al escribir clases: `bg-opacity-*` no existe (usar `bg-black/50`); `shadow-sm`→`shadow-xs`, `shadow`→`shadow-sm`, `outline-none`→`outline-hidden`, `bg-gradient-to-*`→`bg-linear-to-*`; un `leading-*` explícito ahora gana sobre el interlineado de `md:text-*`.
 - **shadcn/ui** (`components.json`: style `default`, baseColor `slate`, sin RSC). Componentes en [src/components/ui/](src/components/ui/).
 - **@radix-ui/react-\*** — accordion, alert-dialog, checkbox, collapsible, dialog, dropdown-menu, label, progress, scroll-area, select, separator, slot, switch, tabs, tooltip.
 - Componentes propios con estilo "Glassmorphism" (`GlassUI.tsx`).
@@ -150,7 +153,7 @@ npm run lint         # eslint 9 + typescript-eslint + react-hooks + react-refres
 
 ## 7. Notas para integrar otro proyecto
 
-1. **Versiones a alinear**: React 19, Tailwind 3 (no 4, config JS clásica), Vite 6 (Vite 7 exige Node ≥ 20.19 y `.node-version` es 20.18.1), react-router 7, zod 4, Node 20.
+1. **Versiones a alinear**: React 19, Tailwind 4 (configuración en CSS, no `tailwind.config.js`), Vite 6 (Vite 7 exige Node ≥ 20.19 y `.node-version` es 20.18.1), react-router 7, zod 4, Node 20.
 2. **Dependencias peer**: la instalación depende de `legacy-peer-deps=true`; un proyecto que comparta `node_modules` heredará este comportamiento.
 3. **Alias `@/`** apunta a `src/` de este proyecto; si el nuevo proyecto usa el mismo alias, conviene un monorepo con workspaces (npm workspaces) y alias distintos, o reutilizar `shared/` (`@scout/shared`) para tipos comunes.
 4. **Supabase compartido**: si el nuevo proyecto usa la misma BD, debe reutilizar las RPCs existentes y respetar los roles/permisos y el modelo multi-tenant; los nuevos scripts SQL deben seguir la numeración de `database/`.

@@ -153,7 +153,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-xs p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {onClose && (
@@ -174,7 +174,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-xs p-4 mb-6">
           <div className="flex gap-4 flex-wrap">
             <select
               value={filtroRama}
@@ -210,12 +210,12 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
 
         {/* Tabla de Scouts */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white rounded-lg shadow-xs p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando scouts...</p>
           </div>
         ) : scoutsFiltrados.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white rounded-lg shadow-xs p-12 text-center">
             <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No se encontraron scouts
@@ -225,7 +225,7 @@ export default function ReporteAsistenciaScout({ onClose }: ReporteAsistenciaSco
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">

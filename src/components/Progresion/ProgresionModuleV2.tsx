@@ -26,12 +26,12 @@ const ProgresionModuleV2: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top nav */}
-      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-xs">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex items-center gap-6 py-3">
             {/* Brand */}
             <div className="flex items-center gap-3 shrink-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                 <Shield className="h-5 w-5" />
               </div>
               <div className="hidden sm:block">
@@ -46,7 +46,7 @@ const ProgresionModuleV2: React.FC = () => {
               <select
                 value={ramaActiva}
                 onChange={(e) => setRamaActiva(e.target.value as RamaCodigo)}
-                className="cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-7 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="cursor-pointer rounded-lg border border-gray-200 bg-white py-1.5 pl-3 pr-7 text-sm font-semibold text-gray-700 shadow-xs transition hover:border-gray-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
                 {RAMAS.map((r) => (
                   <option key={r.codigo} value={r.codigo}>
@@ -68,7 +68,7 @@ const ProgresionModuleV2: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow'
+                        ? 'bg-blue-600 text-white shadow-sm'
                         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
                     }`}
                   >

@@ -32,7 +32,7 @@ function ChildAvatar({ fotoUrl, nombre }: { fotoUrl: string | null; nombre: stri
   const [imgError, setImgError] = useState(false);
   if (!fotoUrl || imgError) {
     return (
-      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow">
+      <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-sm">
         <User className="w-8 h-8 text-white" />
       </div>
     );
@@ -41,7 +41,7 @@ function ChildAvatar({ fotoUrl, nombre }: { fotoUrl: string | null; nombre: stri
     <img
       src={fotoUrl}
       alt={nombre}
-      className="w-16 h-16 rounded-full object-cover shadow"
+      className="w-16 h-16 rounded-full object-cover shadow-sm"
       onError={() => setImgError(true)}
     />
   );
@@ -68,7 +68,7 @@ const MisHijosGrid: React.FC<MisHijosGridProps> = ({ hijos, onSeleccionar }) => 
           key={hijo.scout_id}
           type="button"
           onClick={() => onSeleccionar(hijo)}
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-left hover:shadow-md hover:border-blue-200 transition-all duration-200 group"
+          className="bg-white rounded-2xl shadow-xs border border-gray-100 p-6 text-left hover:shadow-md hover:border-blue-200 transition-all duration-200 group"
         >
           {/* Foto / Avatar */}
           <div className="flex items-center gap-4 mb-4">
@@ -89,12 +89,12 @@ const MisHijosGrid: React.FC<MisHijosGridProps> = ({ hijos, onSeleccionar }) => 
           <div className="space-y-1 text-sm text-gray-600">
             {hijo.codigo_asociado && (
               <div className="flex items-center gap-2">
-                <Hash className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <Hash className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                 <span>{hijo.codigo_asociado}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+              <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <span>{calcularEdad(hijo.fecha_nacimiento)}</span>
             </div>
           </div>

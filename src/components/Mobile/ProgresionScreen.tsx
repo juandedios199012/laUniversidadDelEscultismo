@@ -47,7 +47,7 @@ const MobileKpiCard: React.FC<{
   icon: React.ReactNode; label: string; value: string | number;
   sub?: string; color: string;
 }> = ({ icon, label, value, sub, color }) => (
-  <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+  <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
     <div
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
       style={{ background: `${color}20`, color }}
@@ -68,7 +68,7 @@ const MobileStageCard: React.FC<{ bar: V4StageBar }> = ({ bar }) => {
   const icon  = STAGE_ICONS[bar.etapaCodigo]  ?? '●';
   return (
     <div
-      className="rounded-2xl border p-4 shadow-sm"
+      className="rounded-2xl border p-4 shadow-xs"
       style={{ borderColor: `${color}40`, background: `${color}09` }}
     >
       <div className="flex items-center justify-between mb-3">
@@ -103,7 +103,7 @@ const MobileAreaBar: React.FC<{ area: V4AreaData }> = ({ area }) => {
   const color = AREA_COLORS[area.codigo] ?? '#888';
   const icon  = AREA_ICONS[area.codigo]  ?? '●';
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-xs">
       <ProgressRing percentage={area.porcentaje} size={52} strokeWidth={4} color={color}>
         <span className="text-sm">{icon}</span>
       </ProgressRing>
@@ -123,7 +123,7 @@ const MobileScoutCard: React.FC<{ scout: V4Scout; onClick: () => void }> = ({ sc
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left rounded-2xl border border-gray-100 bg-white p-4 shadow-sm active:scale-[0.98] transition-transform"
+      className="w-full text-left rounded-2xl border border-gray-100 bg-white p-4 shadow-xs active:scale-[0.98] transition-transform"
     >
       <div className="flex items-start gap-3">
         <ProgressRing percentage={scout.progreso} size={56} strokeWidth={5} color={color}>
@@ -252,7 +252,7 @@ const ScoutDetailMobile: React.FC<{
   return (
     <div className="flex flex-col h-full">
       {/* Header del detalle */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xs">
         <button
           type="button"
           onClick={onBack}
@@ -302,7 +302,7 @@ const ScoutDetailMobile: React.FC<{
         ) : (
           <>
             {/* Resumen del scout */}
-            <div className="flex items-center gap-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
               <ProgressRing percentage={computedPct} size={88} strokeWidth={7} color={etapaColor}>
                 <div className="text-center">
                   <p className="text-base font-black leading-none" style={{ color: etapaColor }}>
@@ -363,7 +363,7 @@ const ScoutDetailMobile: React.FC<{
                       <button key={area.area_id} type="button"
                         onClick={() => setAreaActiva(area.area_codigo)}
                         className={`flex items-center gap-3 rounded-xl border p-3 text-left transition hover:shadow-md ${
-                          isActive ? 'shadow-md ring-1' : 'border-gray-100 bg-white shadow-sm'
+                          isActive ? 'shadow-md ring-1' : 'border-gray-100 bg-white shadow-xs'
                         }`}
                         style={isActive ? { borderColor: `${color}50` } : undefined}
                       >
@@ -551,7 +551,7 @@ const ScoutsTab: React.FC<{
   return (
     <div className="flex flex-col h-full">
       {/* Filtros sticky */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 space-y-2 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 space-y-2 shadow-xs">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -559,14 +559,14 @@ const ScoutsTab: React.FC<{
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre o código…"
-            className="w-full rounded-xl border border-gray-200 py-3 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+            className="w-full rounded-xl border border-gray-200 py-3 pl-9 pr-3 text-sm text-gray-700 outline-hidden focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
           />
         </div>
         <div className="flex items-center gap-2">
           <select
             value={filtroEtapa}
             onChange={e => setFiltroEtapa(e.target.value)}
-            className="flex-1 rounded-xl border border-gray-200 px-3 py-3 text-sm text-gray-700 outline-none focus:border-blue-300 bg-white"
+            className="flex-1 rounded-xl border border-gray-200 px-3 py-3 text-sm text-gray-700 outline-hidden focus:border-blue-300 bg-white"
           >
             <option value="">Todas las etapas</option>
             {etapas.map(e => {
@@ -624,7 +624,7 @@ export default function ProgresionScreen() {
   return (
     <div className="flex flex-col h-full">
       {/* Header con tabs */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-xs">
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <div>
             <h2 className="text-base font-black tracking-tight text-gray-800">Progresión Scout</h2>
@@ -665,7 +665,7 @@ export default function ProgresionScreen() {
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
-                  isActive ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:bg-gray-100'
+                  isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="h-4 w-4" />

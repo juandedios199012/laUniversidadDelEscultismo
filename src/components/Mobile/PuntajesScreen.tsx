@@ -453,7 +453,7 @@ export default function PuntajesScreen() {
   return (
     <div className="p-4 space-y-4">
       {/* Header con selector de contexto */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-5 text-white shadow-lg">
+      <div className="bg-linear-to-r from-yellow-400 to-orange-500 rounded-xl p-5 text-white shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <Award className="w-8 h-8" />
@@ -467,7 +467,7 @@ export default function PuntajesScreen() {
             onClick={() => { setContexto('SEMANAL'); setPasoSemanal(1); }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
               contexto === 'SEMANAL' 
-                ? 'bg-white text-yellow-600 shadow' 
+                ? 'bg-white text-yellow-600 shadow-sm' 
                 : 'text-white/90 hover:bg-white/10'
             }`}
           >
@@ -478,7 +478,7 @@ export default function PuntajesScreen() {
             onClick={() => { setContexto('AIRE_LIBRE'); setPasoAL(1); }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
               contexto === 'AIRE_LIBRE' 
-                ? 'bg-white text-orange-600 shadow' 
+                ? 'bg-white text-orange-600 shadow-sm' 
                 : 'text-white/90 hover:bg-white/10'
             }`}
           >
@@ -552,7 +552,7 @@ export default function PuntajesScreen() {
                     <button
                       key={programa.id}
                       onClick={() => seleccionarPrograma(programa.id)}
-                      className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all active:scale-98 text-left"
+                      className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 text-left"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-semibold text-gray-800">{programa.tema_central}</h4>
@@ -600,7 +600,7 @@ export default function PuntajesScreen() {
                       {programa.observaciones_generales && (
                         <div className="mt-3 pt-3 border-t border-blue-200">
                           <p className="text-sm text-blue-600 font-medium">Observaciones generales:</p>
-                          <p className="text-sm text-blue-900 whitespace-pre-line break-words">{programa.observaciones_generales}</p>
+                          <p className="text-sm text-blue-900 whitespace-pre-line wrap-break-word">{programa.observaciones_generales}</p>
                         </div>
                       )}
                     </div>
@@ -610,10 +610,10 @@ export default function PuntajesScreen() {
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-2">
                           {ranking.slice(0, 3).map((p, i) => (
-                            <div key={p.patrulla_id} className={`rounded-lg p-2 text-white shadow-sm ${
-                              i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' :
-                              i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400' :
-                              'bg-gradient-to-br from-orange-400 to-orange-500'
+                            <div key={p.patrulla_id} className={`rounded-lg p-2 text-white shadow-xs ${
+                              i === 0 ? 'bg-linear-to-br from-yellow-400 to-yellow-500' :
+                              i === 1 ? 'bg-linear-to-br from-gray-300 to-gray-400' :
+                              'bg-linear-to-br from-orange-400 to-orange-500'
                             }`}>
                               <div className="text-center">
                                 <div className="text-lg font-bold">{p.total_puntaje}</div>
@@ -625,7 +625,7 @@ export default function PuntajesScreen() {
 
                         <button
                           onClick={() => setRankingExpandido(!rankingExpandido)}
-                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md flex items-center justify-center space-x-2"
+                          className="w-full bg-linear-to-r from-purple-600 to-purple-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md flex items-center justify-center space-x-2"
                         >
                           <Trophy className="w-4 h-4" />
                           <span>{rankingExpandido ? 'Ocultar' : 'Ver'} Ranking</span>
@@ -661,7 +661,7 @@ export default function PuntajesScreen() {
                         <button
                           key={actividad.id}
                           onClick={() => seleccionarActividadSemanal(actividad.id)}
-                          className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all text-left"
+                          className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left"
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -750,7 +750,7 @@ export default function PuntajesScreen() {
                   <button
                     onClick={guardarPuntajesSemanal}
                     disabled={loading || !puedeRegistrarPuntajes}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+                    className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>⏳ Guardando...</>
@@ -801,7 +801,7 @@ export default function PuntajesScreen() {
                     <button
                       key={actividad.id}
                       onClick={() => seleccionarActividadAL(actividad)}
-                      className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all active:scale-98 text-left"
+                      className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 text-left"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -849,10 +849,10 @@ export default function PuntajesScreen() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     {rankingAL.slice(0, 3).map((p, i) => (
-                      <div key={p.id} className={`rounded-lg p-2 text-white shadow-sm ${
-                        i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' :
-                        i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400' :
-                        'bg-gradient-to-br from-orange-400 to-orange-500'
+                      <div key={p.id} className={`rounded-lg p-2 text-white shadow-xs ${
+                        i === 0 ? 'bg-linear-to-br from-yellow-400 to-yellow-500' :
+                        i === 1 ? 'bg-linear-to-br from-gray-300 to-gray-400' :
+                        'bg-linear-to-br from-orange-400 to-orange-500'
                       }`}>
                         <div className="text-center">
                           <div className="text-lg font-bold">{p.total_puntaje || 0}</div>
@@ -864,7 +864,7 @@ export default function PuntajesScreen() {
 
                   <button
                     onClick={() => setRankingALExpandido(!rankingALExpandido)}
-                    className="w-full bg-gradient-to-r from-orange-600 to-orange-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md flex items-center justify-center space-x-2"
+                    className="w-full bg-linear-to-r from-orange-600 to-orange-700 text-white py-2.5 rounded-lg font-medium text-sm shadow-md flex items-center justify-center space-x-2"
                   >
                     <Trophy className="w-4 h-4" />
                     <span>{rankingALExpandido ? 'Ocultar' : 'Ver'} Ranking</span>
@@ -907,7 +907,7 @@ export default function PuntajesScreen() {
                     <button
                       key={programa.id}
                       onClick={() => seleccionarProgramaAL(programa)}
-                      className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all text-left"
+                      className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -957,7 +957,7 @@ export default function PuntajesScreen() {
                       <button
                         key={bloque.id}
                         onClick={() => seleccionarBloqueAL(bloque)}
-                        className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all text-left"
+                        className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left"
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -1051,7 +1051,7 @@ export default function PuntajesScreen() {
                   <button
                     onClick={guardarPuntajesAL}
                     disabled={loading || !puedeRegistrarAireLibre}
-                    className="w-full bg-gradient-to-r from-orange-600 to-orange-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+                    className="w-full bg-linear-to-r from-orange-600 to-orange-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>⏳ Guardando...</>
