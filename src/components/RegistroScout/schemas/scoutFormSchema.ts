@@ -13,28 +13,13 @@
  */
 
 import { z } from "zod";
+import type { UseFormReturn } from "react-hook-form";
 
 // ============================================
 // Base Validation Rules (Reusable)
 // ============================================
 
-/**
- * Peruvian DNI validation (8 digits)
- */
-const dniSchema = z
-  .string()
-  .regex(/^\d{8}$/, "DNI debe tener 8 dígitos")
-  .optional()
-  .or(z.literal(""));
 
-/**
- * Carné de Extranjería validation
- */
-const ceSchema = z
-  .string()
-  .min(9, "CE debe tener al menos 9 caracteres")
-  .optional()
-  .or(z.literal(""));
 
 /**
  * Email validation
@@ -76,39 +61,39 @@ const requiredDateSchema = z
 // ============================================
 
 export const SexoEnum = z.enum(["MASCULINO", "FEMENINO", ""], {
-  errorMap: () => ({ message: "Seleccione un sexo" }),
+  error: "Seleccione un sexo",
 });
 
 export const TipoDocumentoEnum = z.enum(["DNI", "CARNET_EXTRANJERIA", "PASAPORTE"], {
-  errorMap: () => ({ message: "Seleccione tipo de documento" }),
+  error: "Seleccione tipo de documento",
 });
 
 export const RamaEnum = z.enum(
   ["Manada", "Tropa", "Comunidad", "Clan", "Dirigentes"],
   {
-    errorMap: () => ({ message: "Seleccione una rama" }),
+    error: "Seleccione una rama",
   }
 );
 
 export const GrupoSanguineoEnum = z.enum(["A", "B", "AB", "O", ""], {
-  errorMap: () => ({ message: "Seleccione grupo sanguíneo" }),
+  error: "Seleccione grupo sanguíneo",
 });
 
 export const FactorSanguineoEnum = z.enum(["+", "-", ""], {
-  errorMap: () => ({ message: "Seleccione factor sanguíneo" }),
+  error: "Seleccione factor sanguíneo",
 });
 
 export const CargoPatrullaEnum = z.enum(
   ["MIEMBRO", "GUIA", "SUBGUIA", "INTENDENTE", "ENFERMERO", "TESORERO", "SECRETARIO", "GUARDALMACEN"],
   {
-    errorMap: () => ({ message: "Seleccione cargo" }),
+    error: "Seleccione cargo",
   }
 );
 
 export const ParentescoEnum = z.enum(
   ["PADRE", "MADRE", "TUTOR", "HERMANO", "ABUELO", "TIO", "OTRO"],
   {
-    errorMap: () => ({ message: "Seleccione parentesco" }),
+    error: "Seleccione parentesco",
   }
 );
 
@@ -342,6 +327,9 @@ export const scoutFormSchema = z.object({
  * Type inference from schema
  */
 export type ScoutFormData = z.infer<typeof scoutFormSchema>;
+/** Valores antes de validar: los campos con .default() pueden faltar */
+export type ScoutFormInput = z.input<typeof scoutFormSchema>;
+export type ScoutFormApi = UseFormReturn<ScoutFormInput, unknown, ScoutFormData>;
 export type FamiliarFormData = z.infer<typeof familiarSchema>;
 
 /**
@@ -434,7 +422,7 @@ export function validateField<T extends keyof ScoutFormData>(
 ): string | null {
   const fieldSchema = scoutFormSchema.shape[field];
   const result = fieldSchema.safeParse(value);
-  return result.success ? null : result.error.errors[0]?.message || "Error de validación";
+  return result.success ? null : result.error.issues[0]?.message || "Error de validación";
 }
 
 /**
@@ -452,7 +440,7 @@ export function validateScoutForm(data: unknown): {
   }
   
   const errors: Record<string, string> = {};
-  result.error.errors.forEach((error) => {
+  result.error.issues.forEach((error) => {
     const path = error.path.join(".");
     errors[path] = error.message;
   });

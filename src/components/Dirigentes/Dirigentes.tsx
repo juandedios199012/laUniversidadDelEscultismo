@@ -152,7 +152,7 @@ interface FiltrosState {
 
 export const Dirigentes: React.FC = () => {
   // Permisos
-  const { puedeCrear, puedeEditar, puedeEliminar, puedeExportar } = usePermissions();
+  const { puedeCrear, puedeEditar } = usePermissions();
   
   // Estados
   const [vista, setVista] = useState<Vista>('lista');
@@ -171,7 +171,7 @@ export const Dirigentes: React.FC = () => {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [mostrarMenuExportar, setMostrarMenuExportar] = useState(false);
   const [exportando, setExportando] = useState(false);
-  const [menuExportarIndividual, setMenuExportarIndividual] = useState<string | null>(null);
+  const [] = useState<string | null>(null);
 
   // ==========================================================================
   // EFECTOS

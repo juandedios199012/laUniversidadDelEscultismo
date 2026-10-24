@@ -17,7 +17,7 @@ const Inventario: React.FC = () => {
   console.log('🏗️ Inventario component loading...');
 
   // ============= PERMISOS =============
-  const { puedeCrear, puedeEditar, puedeEliminar } = usePermissions();
+  const { puedeEditar, puedeEliminar } = usePermissions();
 
   // ============= ESTADOS =============
   const [items, setItems] = useState<InventarioItem[]>([]);
@@ -36,8 +36,8 @@ const Inventario: React.FC = () => {
   const [showSalidaMasivaModal, setShowSalidaMasivaModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventarioItem | null>(null);
   const [itemBorrowers, setItemBorrowers] = useState<Record<string, string>>({});
-  const [itemHistory, setItemHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [, setItemHistory] = useState<any[]>([]);
+  const [, setLoadingHistory] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // ============= EFECTOS =============

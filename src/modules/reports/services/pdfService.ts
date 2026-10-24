@@ -3,7 +3,7 @@
  * Utiliza @react-pdf/renderer
  */
 
-import { pdf } from '@react-pdf/renderer';
+import { pdf, type DocumentProps } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import {
   ReportConfig,
@@ -20,7 +20,7 @@ export async function generatePDF(
 ): Promise<ReportGenerationResult> {
   try {
     // Generar el blob del PDF
-    const blob = await pdf(Component).toBlob();
+    const blob = await pdf(Component as React.ReactElement<DocumentProps>).toBlob();
 
     return {
       status: ReportStatus.SUCCESS,

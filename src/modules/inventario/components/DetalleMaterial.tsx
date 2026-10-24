@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Info, ScrollText, Package, AlertCircle } from 'lucide-react';
 import { useHistorialKardex } from '../hooks/useHistorialKardex';
 import type { InventarioItem } from '../../../lib/supabase';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { ProgressRing } from '../shared/ui/ProgressRing';
 import {
   AREA_COLORS,
@@ -8,7 +8,6 @@ import {
   STAGE_ICONS,
   type V4AreaData,
   type V4Scout,
-  type V4StageBar,
 } from './useProgresionData';
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
@@ -167,7 +166,7 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
       className={`group cursor-pointer rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         selected ? 'ring-2 shadow-md -translate-y-0.5' : 'border-gray-100'
       }`}
-      style={selected ? { borderColor: color, ringColor: color } : undefined}
+      style={selected ? ({ borderColor: color, '--tw-ring-color': color } as React.CSSProperties) : undefined}
     >
       {/* Banda de color superior (etapa) — degradado del mismo tono: bajo → fuerte */}
       <div

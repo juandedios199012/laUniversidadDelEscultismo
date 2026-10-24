@@ -10,7 +10,7 @@
  *  - "No encontrado" → el usuario puede continuar ingresando manualmente
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Search, Loader2, X, UserCheck } from 'lucide-react';
 import { usePersonSearch } from '../../../hooks/usePersonSearch';
 import { PersonaResult } from '../../../services/personaService';

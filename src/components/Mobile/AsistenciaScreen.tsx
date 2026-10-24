@@ -92,7 +92,7 @@ export default function AsistenciaScreen() {
         programa.rama
       );
       if (scoutsError) throw scoutsError;
-      const data = (rawData || []).map((s: any) => ({
+      const data: Scout[] = (rawData || []).map((s: any) => ({
         id: s.scout_id,
         codigo_asociado: s.codigo_asociado,
         nombres: s.nombres,

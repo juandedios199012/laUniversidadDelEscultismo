@@ -4,7 +4,6 @@
  * Usa @react-pdf/renderer igual que DNGI-03
  */
 
-import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Dirigente, CARGOS_LABELS, TIPOS_MEMBRESIA_LABELS } from '../../types/dirigente';
 import DNGI02Template from '../../modules/reports/templates/pdf/DNGI02Template';
@@ -56,7 +55,6 @@ export async function descargarPDFDirigente(dirigente: Dirigente) {
 // ============================================================================
 
 // Logo Scouts del Perú en base64 para embeber en Word
-const LOGO_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAACACAYAAAC7gW9qAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAABgAAAAAQAAAGAAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAAECgAwAEAAAAAQAAAIAAAAAAsyMrrwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAMxZJREFUeAHtfQeQncdxZv/x5bc5YrEBu8iZAEGABIhEggTADIESScmWZYuSxZPOOtt19lW5DrqqK7vO9kmiZEkMsijLSoQYAJIAAygCBEnkHBY5LDZgc3rxj/f1vPcWC2CxAVxQvrqbqrfvf/8/09PdM9Pd093zL9EfqMTj8UrHdetsx7nE138gNP4w3ZqmuRTE2+aJ06554pQrrnHvD4PN';
 
 export async function generarWordDirigente(dirigente: Dirigente): Promise<Blob> {
   const fechaActual = new Date().toLocaleDateString('es-PE');

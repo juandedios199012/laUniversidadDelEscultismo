@@ -268,7 +268,6 @@ interface DNGI03TemplateProps {
 
 export const DNGI03Template: React.FC<DNGI03TemplateProps> = ({
   scout,
-  metadata,
   additionalData = {},
 }) => {
   // Calcular apoderados y total de páginas

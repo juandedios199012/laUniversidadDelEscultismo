@@ -234,7 +234,7 @@ export function HistoriaMedicaWizard({
     const condicion = catalogoCondiciones.find(c => c.id === condicionId);
     if (condicion) {
       setValue(`condiciones.${index}.nombre`, condicion.nombre);
-      setValue(`condiciones.${index}.tipo`, condicion.tipo || 'CONTROLADA');
+      setValue(`condiciones.${index}.tipo`, 'CONTROLADA'); // el catálogo no trae tipo
     }
   }, [catalogoCondiciones, setValue]);
 
@@ -242,7 +242,7 @@ export function HistoriaMedicaWizard({
     const alergia = catalogoAlergias.find(a => a.id === alergiaId);
     if (alergia) {
       setValue(`alergias.${index}.nombre`, alergia.nombre);
-      setValue(`alergias.${index}.tipo`, alergia.tipo || '');
+      setValue(`alergias.${index}.tipo`, ''); // el catálogo no trae tipo
     }
   }, [catalogoAlergias, setValue]);
 
@@ -266,7 +266,6 @@ export function HistoriaMedicaWizard({
   // Reset form when initialData changes AND catalogos are loaded
   useEffect(() => {
     // Solo proceder si tenemos datos, catálogos cargados, y no hemos reseteado aún
-    const catalogosCargados = catalogoCondiciones.length > 0 || catalogoAlergias.length > 0 || catalogoVacunas.length > 0;
     
     if (isOpen && initialData && !formReseteado) {
       // Si hay condiciones pero no hay catálogo aún, esperar
@@ -291,8 +290,9 @@ export function HistoriaMedicaWizard({
         datosConIds.condiciones = initialData.condiciones.map(c => {
           console.log(`Procesando condicion: nombre="${c.nombre}", condicion_id="${c.condicion_id}"`);
           if (c.nombre && !c.condicion_id) {
+            const nombre = c.nombre.toLowerCase().trim();
             const catalogoItem = catalogoCondiciones.find(
-              cat => cat.nombre.toLowerCase().trim() === c.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               console.log(`✅ Matched condicion "${c.nombre}" -> ${catalogoItem.id}`);
@@ -311,8 +311,9 @@ export function HistoriaMedicaWizard({
       if (catalogoAlergias.length > 0 && initialData.alergias) {
         datosConIds.alergias = initialData.alergias.map(a => {
           if (a.nombre && !a.alergia_id) {
+            const nombre = a.nombre.toLowerCase().trim();
             const catalogoItem = catalogoAlergias.find(
-              cat => cat.nombre.toLowerCase().trim() === a.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               return { ...a, alergia_id: catalogoItem.id };
@@ -326,8 +327,9 @@ export function HistoriaMedicaWizard({
       if (catalogoVacunas.length > 0 && initialData.vacunas) {
         datosConIds.vacunas = initialData.vacunas.map(v => {
           if (v.nombre && !v.vacuna_id) {
+            const nombre = v.nombre.toLowerCase().trim();
             const catalogoItem = catalogoVacunas.find(
-              cat => cat.nombre.toLowerCase().trim() === v.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               return { ...v, vacuna_id: catalogoItem.id };
@@ -482,22 +484,6 @@ export function HistoriaMedicaWizard({
   };
 
   // Error handler for form validation
-  const onFormError = (errors: any) => {
-    console.error("Errores de validación:", errors);
-    const errorMessages: string[] = [];
-    
-    if (errors.fecha_llenado) errorMessages.push("Fecha de llenado requerida");
-    if (errors.condiciones) errorMessages.push("Error en condiciones médicas");
-    if (errors.alergias) errorMessages.push("Error en alergias");
-    if (errors.medicamentos) errorMessages.push("Error en medicamentos");
-    if (errors.vacunas) errorMessages.push("Error en vacunas");
-    
-    if (errorMessages.length > 0) {
-      error(`Errores: ${errorMessages.join(", ")}`);
-    } else {
-      error("Por favor complete los campos requeridos");
-    }
-  };
 
   // Manual submit that bypasses strict validation
   const handleManualSubmit = async () => {

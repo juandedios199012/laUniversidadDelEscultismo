@@ -291,7 +291,6 @@ const PortalPadresTab: React.FC<PortalPadresTabProps> = ({ loading, scouts }) =>
           AFECTIVIDAD: '#808285', SOCIABILIDAD: '#00A651', ESPIRITUALIDAD: '#9B59B6',
         };
         const chartCompactH = 26;
-        const chartCompactBarH = 10;
         const slotCW = contentW / computedAreasPdf.length;
         const barCW = slotCW * 0.65;
         const barOffCX = (slotCW - barCW) / 2;

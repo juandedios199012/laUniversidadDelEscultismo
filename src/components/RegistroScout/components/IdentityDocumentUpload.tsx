@@ -87,12 +87,10 @@ const ACCEPT_FILES = '.jpg,.jpeg,.png,.gif,.webp,.pdf';
 // ============================================
 
 function DocumentSlot({
-  side,
   label,
   state,
   onUpload,
   onDelete,
-  onView,
   disabled,
   entityId,
 }: {

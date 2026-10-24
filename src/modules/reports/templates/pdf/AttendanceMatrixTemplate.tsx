@@ -351,7 +351,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
               return (
                 <View key={scout.id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]}>
                     {`${scout.apellidos}, ${scout.nombres}`}
                   </Text>
                   <Text style={[S.tdDate, { width: INGRESO_W, height: ROW_H }]}>
@@ -512,7 +512,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
                     {`${rank}.`}
                   </Text>
                   {/* Nombre */}
-                  <Text style={[S.barLabel, { width: 130 }]} numberOfLines={1}>
+                  <Text style={[S.barLabel, { width: 130 }]}>
                     {`${s.apellidos}, ${s.nombres}`}
                   </Text>
                   {/* Badge empate */}
@@ -562,7 +562,7 @@ const AttendanceMatrixTemplate: React.FC<Props> = ({ data, metadata, minSessions
                     <View style={{ flex: 1 }} />
                     <Text style={[S.vBarPct, { color }]}>{`${sess.pct}%`}</Text>
                     <View style={[S.vBarBlock, { height: barH, backgroundColor: color }]} />
-                    <Text style={S.vBarLbl} numberOfLines={1}>{sess.label}</Text>
+                    <Text style={S.vBarLbl}>{sess.label}</Text>
                     <Text style={[S.vBarLbl, { color: '#15803d' }]}>{`${sess.P}P`}</Text>
                   </View>
                 );

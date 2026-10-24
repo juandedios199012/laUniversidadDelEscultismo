@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, Medal,
+  Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, 
   Mountain, Tent, ChevronLeft, Lock, Save
 } from 'lucide-react';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
@@ -311,7 +311,8 @@ export default function PuntajesScreen() {
             estado: act.estado,
             fecha_inicio: act.fecha_inicio,
             fecha_fin: act.fecha_fin,
-            programas: detalle.programas || [],
+            // Leídos de la BD: programas y bloques siempre traen id (en el servicio es opcional por la creación)
+            programas: (detalle.programas || []) as ProgramaAireLibre[],
             patrullas_actividad: detalle.patrullas_actividad || []
           });
         } catch (e) {

@@ -209,10 +209,10 @@ const FinancieroRamaTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.tdCenter, { width: FECHA_W, height: ROW_H }]}>
                     {fmtFecha(t.fecha_transaccion)}
                   </Text>
-                  <Text style={[S.tdLeft, { width: DESC_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: DESC_W, height: ROW_H }]}>
                     {t.descripcion || t.concepto || '—'}
                   </Text>
-                  <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]}>
                     {t.categoria}
                   </Text>
                   <Text style={[S.tdCenter, { width: TIPO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c', fontFamily: 'Helvetica-Bold' }]}>
@@ -221,7 +221,7 @@ const FinancieroRamaTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.tdMonto, { width: MONTO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c' }]}>
                     {money(t.monto)}
                   </Text>
-                  <Text style={[S.tdLeft, { width: RESP_W, height: ROW_H, borderRightWidth: 0 }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: RESP_W, height: ROW_H, borderRightWidth: 0 }]}>
                     {t.responsable_nombre || '—'}
                   </Text>
                 </View>

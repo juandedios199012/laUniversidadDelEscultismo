@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart3, LayoutDashboard, Shield, TrendingUp, Users } from 'lucide-react';
 import { useProgresionData, AREA_COLORS, AREA_ICONS, AREA_NAMES } from './useProgresionData';
-import { usePermissions } from '../../contexts/PermissionsContext';
 import ProgresionTab from './tabs/ProgresionTab';
 import ScoutsTab from './tabs/ScoutsTab';
 import AnalisisTab from './tabs/AnalisisTab';

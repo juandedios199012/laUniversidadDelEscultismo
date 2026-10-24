@@ -479,7 +479,6 @@ function ProgresoCard({
   progreso, 
   isExpanded, 
   onToggle, 
-  onToggleFase,
   onEliminar,
   onRecargar
 }: ProgresoCardProps) {

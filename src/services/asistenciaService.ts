@@ -206,7 +206,7 @@ export class AsistenciaService {
     scout_id: string;
     programa_id: string;
     fecha: string;
-    estado_asistencia: 'presente' | 'ausente' | 'tardanza';
+    estado_asistencia: 'presente' | 'ausente' | 'tardanza' | 'justificado';
   }>): Promise<{ success: boolean; registros_creados?: number; error?: string }> {
     const registrosFormateados = registros.map(r => ({
       scout_id: r.scout_id,
@@ -344,7 +344,7 @@ export class AsistenciaService {
   static async registrarAsistencia(asistencia: {
     actividad_id: string;
     scout_id: string;
-    estado_asistencia: 'presente' | 'ausente' | 'tardanza' | 'justificado';
+    estado_asistencia: 'PRESENTE' | 'AUSENTE' | 'TARDANZA' | 'JUSTIFICADO'; // enum de la BD
     hora_llegada?: string;
     observaciones?: string;
     registrado_por?: string;
@@ -705,7 +705,7 @@ export class AsistenciaService {
    * 📅 Obtener calendario de asistencias
    * Endpoint: GET /api/asistencia/calendario
    */
-  static async getCalendarioAsistencias(filtros: {
+  static async getCalendarioAsistencias(_filtros: {
     fecha_desde: string;
     fecha_hasta: string;
     scout_id?: string;

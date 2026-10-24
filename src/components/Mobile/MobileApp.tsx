@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import MobileLayout, { type MobileTab } from './MobileLayout';
 import ScoutsScreen from './ScoutsScreen';
 import AsistenciaScreen from './AsistenciaScreen';

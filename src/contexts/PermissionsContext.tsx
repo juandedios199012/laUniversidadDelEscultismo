@@ -65,16 +65,15 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     if (skipAuth) {
       console.log('🔓 DEV: Permisos completos otorgados en localhost');
       setSeguridad({
-        usuario: {
-          id: 'dev-user-001',
-          email: 'dev@localhost',
-          nombre: 'Usuario Desarrollo'
-        },
+        user_id: 'dev-user-001',
         roles: [{
           id: 'dev-role',
           nombre: 'super_admin',
           descripcion: 'Super Administrador (DEV)',
           nivel_jerarquia: 100,
+          es_sistema: true,
+          color: '#7c3aed',
+          icono: 'shield',
           activo: true
         }],
         rol_principal: {
@@ -82,6 +81,9 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
           nombre: 'super_admin',
           descripcion: 'Super Administrador (DEV)',
           nivel_jerarquia: 100,
+          es_sistema: true,
+          color: '#7c3aed',
+          icono: 'shield',
           activo: true
         },
         permisos: [], // Se usará esSuperAdmin para bypass
@@ -183,7 +185,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   // ================================================================
   
   const [permisosAireLibre, setPermisosAireLibre] = React.useState<SubAccionAireLibre[]>([]);
-  const [loadingPermisosAL, setLoadingPermisosAL] = React.useState(false);
+  const [, setLoadingPermisosAL] = React.useState(false);
 
   // ================================================================
   // RAMA DEL DIRIGENTE LOGUEADO (para Programa Semanal / Asistencia /

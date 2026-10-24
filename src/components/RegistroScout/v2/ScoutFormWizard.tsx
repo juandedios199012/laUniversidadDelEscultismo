@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/useToast";
 import {
   scoutFormSchema,
   ScoutFormData,
+  type ScoutFormInput,
   defaultScoutFormValues,
 } from "../schemas/scoutFormSchema";
 import {
@@ -97,8 +98,8 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
   const isEditing = !!scout;
 
   // Initialize form with explicit type
-  const form = useForm({
-    resolver: zodResolver(scoutFormSchema) as any,
+  const form = useForm<ScoutFormInput, unknown, ScoutFormData>({
+    resolver: zodResolver(scoutFormSchema),
     defaultValues: scout ? mapScoutToFormData(scout) : loadDraft() || defaultScoutFormValues,
     mode: "onBlur" as const,
   });
@@ -120,7 +121,7 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
   useEffect(() => {
     if (!isEditing) {
       const subscription = form.watch((data) => {
-        saveDraft(data as ScoutFormData);
+        saveDraft(data as ScoutFormInput);
       });
       return () => subscription.unsubscribe();
     }
@@ -727,7 +728,7 @@ export function ScoutFormWizard({ scout, onSuccess, onCancel }: ScoutFormWizardP
 // Helper Functions
 // ============================================
 
-export function mapScoutToFormData(scout: Scout): ScoutFormData {
+export function mapScoutToFormData(scout: Scout): ScoutFormInput {
   // Mapear familiares si existen en el objeto scout
   const scoutAny = scout as any;
   const familiaresFromScout = scoutAny.familiares?.map((f: any) => {
@@ -808,7 +809,7 @@ export function mapScoutToFormData(scout: Scout): ScoutFormData {
   };
 }
 
-function saveDraft(data: ScoutFormData): void {
+function saveDraft(data: ScoutFormInput): void {
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
   } catch (e) {
@@ -816,7 +817,7 @@ function saveDraft(data: ScoutFormData): void {
   }
 }
 
-function loadDraft(): ScoutFormData | null {
+function loadDraft(): ScoutFormInput | null {
   try {
     const draft = localStorage.getItem(DRAFT_KEY);
     return draft ? JSON.parse(draft) : null;

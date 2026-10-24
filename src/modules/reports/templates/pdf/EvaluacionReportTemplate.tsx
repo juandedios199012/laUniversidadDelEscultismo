@@ -20,7 +20,6 @@
  * "semáforo") se dibuja acá como un círculo de color (<View>), nunca
  * como el emoji 🟢🟡🔴.
  */
-import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { ReportMetadata } from '../../types/reportTypes';
 import commonStyles from '../../styles/pdfStyles';

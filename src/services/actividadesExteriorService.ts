@@ -1155,7 +1155,7 @@ export class ActividadesExteriorService {
     if (error) throw error;
     if (!data?.success) throw new Error(data?.error || 'Error al listar tipos de costo');
 
-    let tipos = Array.isArray(data.tipos) && data.tipos.length > 0 ? data.tipos : [];
+    let tipos: TipoCostoAireLibre[] = Array.isArray(data.tipos) && data.tipos.length > 0 ? data.tipos : [];
 
     if (tipos.length === 0) {
       for (const tipo of TIPOS_COSTO_AIRE_LIBRE_DEFAULT) {

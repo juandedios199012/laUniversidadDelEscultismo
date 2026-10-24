@@ -771,7 +771,7 @@ export const ReportManager: React.FC<ReportManagerProps> = ({ className = '' }) 
   };
 
   const exportAttendanceAdvancedReport = async (
-    format: ExportFormat,
+    _format: ExportFormat,
     metadata: any
   ): Promise<ReportGenerationResult> => {
     const attendanceData = await getAttendanceData(filters);

@@ -50,7 +50,7 @@ export async function getAllScoutsForExcel(options?: {
     }
 
     // Obtener patrullas de todos los scouts de una vez
-    const scoutIds = scoutsData.map(s => s.id);
+    const scoutIds = scoutsData.map((s: { id: string }) => s.id);
     
     const { data: membresiasData } = await supabase
       .from('miembros_patrulla')

@@ -3,7 +3,6 @@
  * Badge de color pequeño que indica el rol de una persona en el sistema.
  */
 
-import React from 'react';
 import { PersonaRol } from '../../../services/personaService';
 
 const ROL_STYLES: Record<PersonaRol['tipo'], { bg: string; text: string; label: string }> = {

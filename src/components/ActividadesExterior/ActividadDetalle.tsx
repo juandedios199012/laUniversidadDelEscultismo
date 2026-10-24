@@ -29,7 +29,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import {
   Collapsible,
   CollapsibleContent,
@@ -108,12 +107,12 @@ const ActividadDetalle: React.FC<ActividadDetalleProps> = ({
   const [showParticipantesDialog, setShowParticipantesDialog] = useState(false);
   const [showMenuDialog, setShowMenuDialog] = useState(false);
   const [dashboardPresupuesto, setDashboardPresupuesto] = useState<DashboardPresupuesto | null>(null);
-  const [menuEditar, setMenuEditar] = useState<any>(null);
+  const [, setMenuEditar] = useState<any>(null);
   const [bloqueParaPuntaje, setBloqueParaPuntaje] = useState<{ id: string; nombre: string } | null>(null);
   const [showStaffDialog, setShowStaffDialog] = useState(false);
   const [showDocumentoDialog, setShowDocumentoDialog] = useState(false);
   const [showCompraDialog, setShowCompraDialog] = useState(false);
-  const [compraEditar, setCompraEditar] = useState<any>(null);
+  const [, setCompraEditar] = useState<any>(null);
   const [showPagoDialog, setShowPagoDialog] = useState(false);
   const [participantePago, setParticipantePago] = useState<any>(null);
   const [showAutorizacionDialog, setShowAutorizacionDialog] = useState(false);

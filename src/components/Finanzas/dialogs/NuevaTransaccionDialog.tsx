@@ -12,7 +12,6 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Calendar,
-  DollarSign,
   FileText,
   Image as ImageIcon,
   AlertTriangle,
@@ -87,7 +86,8 @@ const transaccionSchema = z.object({
   motivo_prestamo: z.string().optional(),
 });
 
-type TransaccionFormData = z.infer<typeof transaccionSchema>;
+type TransaccionFormInput = z.input<typeof transaccionSchema>;
+type TransaccionFormData = z.output<typeof transaccionSchema>;
 
 interface NuevaTransaccionDialogProps {
   open: boolean;
@@ -104,7 +104,7 @@ const NuevaTransaccionDialog: React.FC<NuevaTransaccionDialogProps> = ({
   const [tipoActivo, setTipoActivo] = useState<'INGRESO' | 'EGRESO'>('INGRESO');
   const [evidencias, setEvidencias] = useState<File[]>([]);
 
-  const form = useForm<TransaccionFormData>({
+  const form = useForm<TransaccionFormInput, unknown, TransaccionFormData>({
     resolver: zodResolver(transaccionSchema),
     defaultValues: {
       tipo: 'INGRESO',

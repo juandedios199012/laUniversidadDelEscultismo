@@ -56,8 +56,8 @@ const COLOR_ETAPA_DEFAULT = PALETA_ETAPAS[0].valor;
 const etapaSchema = z.object({
   nombre:            z.string().min(2, 'El nombre es requerido').max(50),
   descripcion:       z.string().optional(),
-  edad_tipica:       z.coerce.number().int().positive().optional(),
-  orden:             z.coerce.number().int().positive().optional(),
+  edad_tipica:       z.coerce.number<number>().int().positive().optional(),
+  orden:             z.coerce.number<number>().int().positive().optional(),
   icono:             z.string().max(10).optional(),
   color:             z.string().max(50).optional(),
   requisitos_avance: z.string().optional(),
@@ -67,11 +67,13 @@ const grupoSchema = z.object({
   nombre:      z.string().min(2, 'El nombre es requerido').max(80),
   codigo:      z.string().max(30).optional(),
   descripcion: z.string().optional(),
-  orden:       z.coerce.number().int().positive().optional(),
+  orden:       z.coerce.number<number>().int().positive().optional(),
 });
 
-type EtapaFormValues = z.infer<typeof etapaSchema>;
-type GrupoFormValues  = z.infer<typeof grupoSchema>;
+type EtapaFormInput  = z.input<typeof etapaSchema>;
+type EtapaFormValues = z.output<typeof etapaSchema>;
+type GrupoFormInput  = z.input<typeof grupoSchema>;
+type GrupoFormValues = z.output<typeof grupoSchema>;
 
 // ============================================================================
 // PROPS
@@ -143,16 +145,16 @@ export function EtapaFormDialog({
   };
 
   // ---- Formulario Etapa ----
-  const etapaForm = useForm<EtapaFormValues>({
+  const etapaForm = useForm<EtapaFormInput, unknown, EtapaFormValues>({
     resolver: zodResolver(etapaSchema),
     defaultValues: {
-      nombre: '', codigo: '', descripcion: '', icono: '📍',
+      nombre: '', descripcion: '', icono: '📍',
       color: COLOR_ETAPA_DEFAULT,
     },
   });
 
   // ---- Formulario Grupo ----
-  const grupoForm = useForm<GrupoFormValues>({
+  const grupoForm = useForm<GrupoFormInput, unknown, GrupoFormValues>({
     resolver: zodResolver(grupoSchema),
     defaultValues: { nombre: '', codigo: '', descripcion: '' },
   });
@@ -163,7 +165,6 @@ export function EtapaFormDialog({
     if (modo === 'etapa' && etapaEditar) {
       etapaForm.reset({
         nombre:            etapaEditar.nombre,
-        codigo:            etapaEditar.codigo,
         descripcion:       etapaEditar.descripcion || '',
         edad_tipica:       etapaEditar.edad_tipica,
         orden:             etapaEditar.orden,
@@ -172,7 +173,7 @@ export function EtapaFormDialog({
         requisitos_avance: etapaEditar.requisitos_avance || '',
       });
     } else if (modo === 'etapa') {
-      etapaForm.reset({ nombre: '', codigo: '', descripcion: '', icono: '📍', color: COLOR_ETAPA_DEFAULT });
+      etapaForm.reset({ nombre: '', descripcion: '', icono: '📍', color: COLOR_ETAPA_DEFAULT });
     }
 
     if (modo === 'grupo' && grupoEditar) {

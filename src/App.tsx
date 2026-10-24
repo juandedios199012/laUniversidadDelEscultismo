@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
@@ -35,7 +35,6 @@ import AdminEtapasPage from './components/AdminObjetivos/AdminEtapasPage';
 // Módulo de Especialidades Scout
 import { EspecialidadesModule } from './components/Especialidades';
 import { ProgresionModule } from './components/Progresion';
-import ProgresionModuleV2 from './components/Progresion/ProgresionModuleV2';
 import PortalPadresPage from './components/PortalPadres/PortalPadresPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider, usePermissions } from './contexts/PermissionsContext';

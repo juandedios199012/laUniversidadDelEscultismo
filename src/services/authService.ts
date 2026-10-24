@@ -45,7 +45,7 @@ export class AuthService {
     try {
       console.log('🔵 Iniciando login con Google...');
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: getRedirectUrl(),
@@ -223,7 +223,7 @@ export class AuthService {
     try {
       console.log('📝 Registro de nuevo dirigente:', email);
 
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {

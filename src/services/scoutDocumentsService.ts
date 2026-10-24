@@ -142,7 +142,6 @@ class ScoutDocumentsService {
     fileName: string
   ): string {
     const timestamp = Date.now();
-    const extension = fileName.split('.').pop()?.toLowerCase() || 'file';
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     // Usar subcarpeta dentro del bucket finanzas
     return `${STORAGE_BASE_PATH}/${entityType}/${entityId}/${documentType}/${timestamp}_${sanitizedName}`;
@@ -171,7 +170,7 @@ class ScoutDocumentsService {
       await this.deleteExistingDocument(entityType, entityId, documentType);
 
       // Subir archivo a Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(storagePath, fileToUpload, {
           cacheControl: '3600',
@@ -733,7 +732,6 @@ class ScoutDocumentsService {
       
       // Generar path de storage con el lado incluido
       const timestamp = Date.now();
-      const extension = file.name.split('.').pop()?.toLowerCase() || 'file';
       const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const storagePath = `${STORAGE_BASE_PATH}/${entityType}/${entityId}/documento_identidad/${side.toLowerCase()}_${timestamp}_${sanitizedName}`;
 

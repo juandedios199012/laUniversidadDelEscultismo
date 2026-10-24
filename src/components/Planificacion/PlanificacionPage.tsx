@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarRange, CheckCircle2, Clock3, Copy, Link2, Loader2, Plus, RefreshCw, Search, Sparkles, Target, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarRange, Copy, Link2, Loader2, Plus, RefreshCw, Search, Sparkles, Target, Trash2 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import {
   ActividadPlan,

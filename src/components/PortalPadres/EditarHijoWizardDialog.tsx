@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   scoutFormSchema,
   ScoutFormData,
+  type ScoutFormInput,
   defaultScoutFormValues,
 } from "@/components/RegistroScout/schemas/scoutFormSchema";
 import {
@@ -50,8 +51,8 @@ export default function EditarHijoWizardDialog({ scoutId, scoutNombre, open, onC
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm({
-    resolver: zodResolver(scoutFormSchema) as any,
+  const form = useForm<ScoutFormInput, unknown, ScoutFormData>({
+    resolver: zodResolver(scoutFormSchema),
     defaultValues: defaultScoutFormValues,
     mode: "onBlur" as const,
   });

@@ -229,6 +229,7 @@ export class ProgramaSemanalService {
     rama?: string;
     objetivos?: string[];
     actividades?: Array<{
+      id?: string;
       nombre: string;
       desarrollo: string;
       hora_inicio: string;
@@ -294,7 +295,7 @@ export class ProgramaSemanalService {
             observaciones: act.observaciones,
             orden_ejecucion: i + 1
           };
-          let actividadId = act.id as string | undefined;
+          let actividadId = act.id;
 
           if (actividadId) {
             // Actualizar existente

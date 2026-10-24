@@ -25,7 +25,7 @@ interface DirigenteActivo {
 interface ProgramaSemanalProps {}
 
 export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
-  const { esAdmin, miRama: miRamaSinNormalizar } = usePermissions();
+  const { miRama: miRamaSinNormalizar } = usePermissions();
 
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
@@ -133,7 +133,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
         actividades: (Array.isArray(p.programa_actividades)
           ? p.programa_actividades
           : (Array.isArray(p.actividades) ? p.actividades : [])
-        ).sort((a, b) => {
+        ).sort((a: ProgramaActividad, b: ProgramaActividad) => {
           const ordenA = typeof a?.orden_ejecucion === 'number' ? a.orden_ejecucion : Number.MAX_SAFE_INTEGER;
           const ordenB = typeof b?.orden_ejecucion === 'number' ? b.orden_ejecucion : Number.MAX_SAFE_INTEGER;
 
@@ -317,6 +317,13 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
     // ... lógica de borrado aquí ...
   };
 
+  const addObjetivo = (setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
+    setForm(prev => ({
+      ...prev,
+      objetivos: [...prev.objetivos, '']
+    }));
+  };
+
   const removeObjetivo = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
     setForm(prev => ({
       ...prev,
@@ -385,13 +392,6 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   };
 
   // Función para ordenar actividades por hora_inicio
-  const ordenarActividadesPorHora = (actividades: ProgramaActividad[]): ProgramaActividad[] => {
-    return [...actividades].sort((a, b) => {
-      const horaA = a.hora_inicio || '00:00';
-      const horaB = b.hora_inicio || '00:00';
-      return horaA.localeCompare(horaB);
-    });
-  };
 
   // Mover actividad hacia arriba
   const moveActividadUp = (index: number, setForm: React.Dispatch<React.SetStateAction<typeof createForm>>) => {
@@ -585,7 +585,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
       'COMUNIDAD': 'bg-blue-100 text-blue-800',
       'CLAN': 'bg-purple-100 text-purple-800'
     };
-    return colors[rama as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[rama?.toUpperCase() as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   const formatDuration = (minutes: number) => {

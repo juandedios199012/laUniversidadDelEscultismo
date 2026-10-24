@@ -402,7 +402,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
   // Al cambiar la cantidad de semanas, recorta/rellena los arrays de
   // casillas ya cargados en cada fila del GANTT en vez de romper.
   React.useEffect(() => {
-    cronogramaActividadesArray.fields.forEach((field, index) => {
+    cronogramaActividadesArray.fields.forEach((_field, index) => {
       const semanasActuales = form.getValues(`cronograma_actividades.${index}.semanas`) || [];
       if (semanasActuales.length === cronogramaSemanas) return;
       const nuevasSemanas = Array.from({ length: cronogramaSemanas }, (_, i) => semanasActuales[i] || false);
@@ -422,7 +422,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
       form.reset({
         nombre: actividadEditar.nombre,
         tipo: actividadEditar.tipo,
-        estado: actividadEditar.estado,
+        estado: actividadEditar.estado as ActividadFormData['estado'],
         descripcion: actividadEditar.descripcion || '',
         participacion_asistencia: actividadEditar.participacion_asistencia || '',
         objetivo_general: actividadEditar.objetivo_general || '',

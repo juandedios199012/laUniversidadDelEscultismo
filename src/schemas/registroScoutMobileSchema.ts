@@ -49,7 +49,7 @@ export const paso1Schema = z.object({
     .min(2, 'Los apellidos deben tener al menos 2 caracteres')
     .max(100, 'Los apellidos no pueden exceder 100 caracteres'),
   sexo: z.enum(['M', 'F'], {
-    required_error: 'Selecciona el sexo',
+    error: 'Selecciona el sexo',
   }),
   fecha_nacimiento: z
     .string()
@@ -68,7 +68,7 @@ export const paso1Schema = z.object({
  */
 export const paso2Schema = z.object({
   rama_actual: z.enum(['Manada', 'Tropa', 'Comunidad', 'Clan'], {
-    required_error: 'Selecciona una rama',
+    error: 'Selecciona una rama',
   }),
   fecha_ingreso: z.string().optional(),
   patrulla_id: z.string().nullable().optional(),
@@ -132,6 +132,7 @@ export type Paso2Data = z.infer<typeof paso2Schema>;
 export type Paso3Data = z.infer<typeof paso3Schema>;
 export type Paso4Data = z.infer<typeof paso4Schema>;
 export type RegistroScoutMobileFormData = z.infer<typeof registroScoutMobileSchema>;
+export type RegistroScoutMobileFormInput = z.input<typeof registroScoutMobileSchema>;
 
 // ============================================================================
 // VALORES POR DEFECTO

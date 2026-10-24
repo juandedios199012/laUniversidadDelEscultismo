@@ -20,7 +20,7 @@ function cellToString(value: ExcelJS.CellValue): string {
 
   // Celdas con fórmula → usar el resultado
   if (typeof value === 'object') {
-    const anyVal = value as Record<string, unknown>;
+    const anyVal = value as unknown as Record<string, unknown>;
     if ('result' in anyVal) return cellToString(anyVal.result as ExcelJS.CellValue);
     if ('text' in anyVal) return String(anyVal.text ?? '');
     if ('richText' in anyVal && Array.isArray(anyVal.richText)) {

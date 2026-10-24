@@ -10,7 +10,6 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  DollarSign,
   Calendar,
   User,
   XCircle

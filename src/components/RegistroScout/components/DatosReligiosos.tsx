@@ -2,14 +2,13 @@
  * Religious Data Section Component
  */
 
-import { UseFormReturn } from "react-hook-form";
 import { Church } from "lucide-react";
-import { ScoutFormData } from "../schemas/scoutFormSchema";
+import type { ScoutFormApi } from "../schemas/scoutFormSchema";
 import { TextField } from "./FormFields";
 import { FormSection } from "./FormSection";
 
 interface DatosReligiososProps {
-  form: UseFormReturn<ScoutFormData>;
+  form: ScoutFormApi;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;

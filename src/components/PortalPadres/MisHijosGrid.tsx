@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HijoInfo } from '../../services/portalPadresService';
-import { User, Calendar, Hash, Shield, ChevronRight } from 'lucide-react';
+import { User, Calendar, Hash, ChevronRight } from 'lucide-react';
 import { calculateAge } from '../../lib/utils';
 
 // ─────────────────────────────────────────────────────────────

@@ -2,16 +2,15 @@
  * Contact Data Section Component
  */
 
-import { UseFormReturn } from "react-hook-form";
 import { Phone } from "lucide-react";
-import { ScoutFormData } from "../schemas/scoutFormSchema";
+import type { ScoutFormApi } from "../schemas/scoutFormSchema";
 import { TextField, PhoneField } from "./FormFields";
 import { FormSection } from "./FormSection";
 import { LocationPickerWeb } from "./LocationPickerWeb";
 import { UbigeoSelector } from "./UbigeoSelector";
 
 interface DatosContactoProps {
-  form: UseFormReturn<ScoutFormData>;
+  form: ScoutFormApi;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;

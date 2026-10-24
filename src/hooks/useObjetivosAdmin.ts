@@ -200,7 +200,6 @@ export function useObjetivosAdmin(): UseObjetivosAdminReturn {
         etapa_objetivo_grupo_id: datos.etapa_objetivo_grupo_id,
         area_id: datos.area_id,
         titulo: datos.titulo,
-        descripcion: datos.descripcion,
         indicadores: datos.indicadores.filter(i => i.trim() !== ''),
       });
       await cargarDatos();

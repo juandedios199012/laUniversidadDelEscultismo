@@ -69,7 +69,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    historyApiFallback: true,  // Serve index.html for all routes (SPA fallback, incl. /auth/callback)
+    // El fallback SPA (index.html para /auth/callback, etc.) viene por defecto con appType: 'spa'
   },
   root: '.',
   build: {
@@ -83,7 +83,7 @@ export default defineConfig({
           // Separar vendors grandes
           'vendor-react': ['react', 'react-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
           'vendor-ui': ['lucide-react', 'sonner'],
         }
       }

@@ -2,14 +2,13 @@
  * Education Data Section Component
  */
 
-import { UseFormReturn } from "react-hook-form";
 import { GraduationCap } from "lucide-react";
-import { ScoutFormData } from "../schemas/scoutFormSchema";
+import type { ScoutFormApi } from "../schemas/scoutFormSchema";
 import { TextField, SelectField } from "./FormFields";
 import { FormSection } from "./FormSection";
 
 interface DatosEducacionProps {
-  form: UseFormReturn<ScoutFormData>;
+  form: ScoutFormApi;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;

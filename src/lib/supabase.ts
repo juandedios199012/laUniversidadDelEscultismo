@@ -22,6 +22,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 
 export interface Scout {
   id: string;
+  persona_id?: string;
   codigo_asociado: string;
   nombres: string;
   apellidos: string;
@@ -210,7 +211,7 @@ export interface ProgramaSemanalEntry {
   fecha_inicio: string;
   fecha_fin: string;
   tema_central: string;
-  rama: 'MANADA' | 'TROPA' | 'COMUNIDAD' | 'CLAN';
+  rama: 'Manada' | 'Tropa' | 'Comunidad' | 'Clan';
   objetivos: string[];
   responsable_programa?: string;
   observaciones_generales?: string;
@@ -225,6 +226,7 @@ export interface ProgramaActividad {
   programa_id?: string;
   nombre: string;
   descripcion?: string;
+  desarrollo?: string;
   hora_inicio: string;
   duracion_minutos: number;
   responsable?: string;

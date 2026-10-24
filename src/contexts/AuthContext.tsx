@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, AuthUser } from '../services/authService';
 import { supabase } from '../lib/supabase';
 import { shouldSkipAuth, DEV_USER, shouldAutoLogin, DEV_AUTO_EMAIL, DEV_AUTO_PASSWORD } from '../config/dev';
