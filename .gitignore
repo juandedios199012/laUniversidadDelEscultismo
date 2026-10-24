@@ -191,3 +191,17 @@ mobile/android/local.properties
 
 # Edge Functions 
 supabase/
+
+# Material de referencia local: puede contener datos personales (evaluaciones,
+# fichas médicas). Los archivos ya versionados en archive/ no se ven afectados;
+# para versionar uno nuevo a propósito: git add -f archive/<archivo>
+archive/
+
+# Borradores locales
+EVALUACION_ANALITICA_ML_PLAN.md
+Sistemas_Alternativos_Aumentativos_Comunicacion.md
+Sistemas_Alternativos_Aumentativos_Comunicacion_sugerencia.md
+ampliar_cobertura_pedagogicas.md
+ampliar_cobertura_pedagogicas_sugerencia.md
+ranking.md
+database/modulo_aorender_haciendo_implementacion_escalable_.md
