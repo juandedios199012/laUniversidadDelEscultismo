@@ -224,7 +224,7 @@ const PersonasIngresosTemplate: React.FC<Props> = ({ data, metadata }) => {
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
               return (
                 <View key={p.persona_id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]}>
                     {`${p.apellidos}, ${p.nombres}`}
                   </Text>
                   <Text style={[S.tdMonto, { width: NUM_W, height: ROW_H, color: '#15803d' }]}>

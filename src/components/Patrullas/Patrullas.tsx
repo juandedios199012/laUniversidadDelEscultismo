@@ -11,6 +11,7 @@ interface Patrulla {
   id: string;
   nombre: string;
   lema?: string;
+  color_distintivo?: string; // así lo devuelve obtener_patrullas (columna color_patrulla)
   color_principal?: string;
   color_secundario?: string;
   rama: string;
@@ -35,6 +36,8 @@ interface PatrullaFormData {
   color_patrulla?: string;
   fecha_fundacion?: string;
 }
+
+const colorDe = (p: Patrulla) => p.color_distintivo || p.color_principal || '';
 
 // ==================== COMPONENT ====================
 export default function PatrullasNew() {
@@ -190,7 +193,7 @@ export default function PatrullasNew() {
       nombre: patrulla.nombre || '',
       lema: patrulla.lema || '',
       animal_totem: patrulla.animal_totem || '',
-      color_patrulla: patrulla.color_principal || patrulla.color_secundario || '',
+      color_patrulla: colorDe(patrulla),
       rama: patrulla.rama || '',
       fecha_fundacion: patrulla.fecha_fundacion || ''
     });
@@ -485,10 +488,10 @@ export default function PatrullasNew() {
                         <span className="font-bold text-green-600">{patrulla.total_puntos}</span>
                       </div>
                     )}
-                    {patrulla.color_principal && (
+                    {colorDe(patrulla) && (
                       <div className="flex justify-between">
-                        <span className="font-medium">Colores:</span>
-                        <span>{patrulla.color_principal}{patrulla.color_secundario && ` / ${patrulla.color_secundario}`}</span>
+                        <span className="font-medium">Color:</span>
+                        <span>{colorDe(patrulla)}</span>
                       </div>
                     )}
                   </div>
@@ -718,14 +721,14 @@ export default function PatrullasNew() {
                     />
                   </div>
 
-                  {/* Color Principal */}
+                  {/* Color (actualizar_patrulla solo persiste color_patrulla) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color Principal
+                      Color de la Patrulla
                     </label>
                     <select
-                      value={formData.color_principal}
-                      onChange={(e) => setFormData(prev => ({ ...prev, color_principal: e.target.value }))}
+                      value={formData.color_patrulla}
+                      onChange={(e) => setFormData(prev => ({ ...prev, color_patrulla: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     >
                       <option value="">Seleccionar color</option>
@@ -736,39 +739,6 @@ export default function PatrullasNew() {
                       ))}
                     </select>
                   </div>
-
-                  {/* Color Secundario */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color Secundario
-                    </label>
-                    <select
-                      value={formData.color_secundario}
-                      onChange={(e) => setFormData(prev => ({ ...prev, color_secundario: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar color</option>
-                      {colores.map(color => (
-                        <option key={color} value={color}>
-                          {color}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Grito de Patrulla */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grito de Patrulla
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.grito_patrulla}
-                    onChange={(e) => setFormData(prev => ({ ...prev, grito_patrulla: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Ej: ¡Águilas al vuelo!"
-                  />
                 </div>
 
                 {/* Fecha de Fundación */}
@@ -781,20 +751,6 @@ export default function PatrullasNew() {
                     value={formData.fecha_fundacion}
                     onChange={(e) => setFormData(prev => ({ ...prev, fecha_fundacion: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Historia */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Historia de la Patrulla
-                  </label>
-                  <textarea
-                    value={formData.historia}
-                    onChange={(e) => setFormData(prev => ({ ...prev, historia: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Breve historia de cómo se formó la patrulla..."
                   />
                 </div>
               </div>

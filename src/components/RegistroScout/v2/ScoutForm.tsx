@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/useToast";
 import {
   scoutFormSchema,
   ScoutFormData,
+  type ScoutFormInput,
   defaultScoutFormValues,
 } from "../schemas/scoutFormSchema";
 import {
@@ -89,7 +90,7 @@ export function ScoutForm({ scout, onSuccess, onCancel }: ScoutFormProps) {
   });
 
   // Initialize form with React Hook Form + Zod
-  const form = useForm<ScoutFormData>({
+  const form = useForm<ScoutFormInput, unknown, ScoutFormData>({
     resolver: zodResolver(scoutFormSchema),
     defaultValues: scout
       ? mapScoutToFormData(scout)
@@ -355,7 +356,7 @@ export function ScoutForm({ scout, onSuccess, onCancel }: ScoutFormProps) {
 /**
  * Maps a Scout object to form data
  */
-function mapScoutToFormData(scout: Scout): ScoutFormData {
+function mapScoutToFormData(scout: Scout): ScoutFormInput {
   return {
     nombres: scout.nombres || "",
     apellidos: scout.apellidos || "",

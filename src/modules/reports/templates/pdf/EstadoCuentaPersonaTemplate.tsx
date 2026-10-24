@@ -228,7 +228,7 @@ const EstadoCuentaPersonaTemplate: React.FC<Props> = ({ data, metadata }) => {
               const deuda = esIngreso && meta != null && m.monto < meta ? meta - m.monto : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
-                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]}>
                     {m.concepto}
                   </Text>
                   <Text style={[S.tdCenter, { width: TIPO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c' }]}>

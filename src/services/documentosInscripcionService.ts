@@ -181,7 +181,7 @@ export interface DocumentoCondicion {
 }
 
 export interface DocumentoReglaGrupo {
-  id: string;
+  grupo_id: string;
   nombre: string | null;
   prioridad: number;
   activo: boolean;

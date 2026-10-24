@@ -3,15 +3,14 @@
  * First section of the scout registration form
  */
 
-import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-import { ScoutFormData } from "../schemas/scoutFormSchema";
+import type { ScoutFormApi } from "../schemas/scoutFormSchema";
 import { TextField, SelectField, DateField } from "./FormFields";
 import { FormSection } from "./FormSection";
 import { IdentityDocumentUpload } from "./IdentityDocumentUpload";
 
 interface DatosPersonalesProps {
-  form: UseFormReturn<ScoutFormData>;
+  form: ScoutFormApi;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;

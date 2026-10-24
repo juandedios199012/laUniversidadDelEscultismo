@@ -66,8 +66,9 @@ export default function ScoutsScreen() {
     try {
       const data = await ScoutService.getAllScouts();
       console.log('📱 Scouts cargados:', data);
-      setScouts(data || []);
-      setFiltrados(data || []);
+      const lista: Scout[] = (data || []).map(s => ({ ...s, rama_actual: s.rama_actual || '' }));
+      setScouts(lista);
+      setFiltrados(lista);
     } catch (error) {
       console.error('Error al cargar scouts:', error);
     } finally {

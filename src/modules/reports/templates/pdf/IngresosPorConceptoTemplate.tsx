@@ -226,7 +226,7 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
                 </View>
                 {resumen.map((r, idx) => (
                   <View key={r.concepto} style={idx % 2 === 0 ? S.trEven : S.trOdd}>
-                    <Text style={[S.tdName, { width: RES_CONCEPTO_W, height: ROW_H }]} numberOfLines={1}>
+                    <Text style={[S.tdName, { width: RES_CONCEPTO_W, height: ROW_H }]}>
                       {r.concepto}
                     </Text>
                     <Text style={[S.tdCenter, { width: RES_COUNT_W, height: ROW_H }]}>{r.movimientos_count}</Text>
@@ -277,10 +277,10 @@ const IngresosPorConceptoTemplate: React.FC<Props> = ({ data, metadata }) => {
               const deuda = meta != null && m.monto < meta ? meta - m.monto : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]}>
                     {`${m.apellidos}, ${m.nombres}`}
                   </Text>
-                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]}>
                     {m.concepto}
                   </Text>
                   <Text style={[S.tdCenter, { width: CANTIDAD_W, height: ROW_H }]}>

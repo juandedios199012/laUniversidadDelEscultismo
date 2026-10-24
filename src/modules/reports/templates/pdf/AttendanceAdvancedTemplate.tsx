@@ -255,7 +255,7 @@ const AttendanceAdvancedTemplate: React.FC<Props> = ({ data, metadata, dateRange
         </View>
         {top7.map((s, i) => (
           <View key={s.id} style={[S.tableRow, { backgroundColor: i % 2 === 0 ? '#fff' : '#f8fafc' }]}>
-            <Text style={[S.tdText, { flex: 3 }]} numberOfLines={1}>{s.nombre}</Text>
+            <Text style={[S.tdText, { flex: 3 }]}>{s.nombre}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center' }]}>{s.total}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center', color: '#16a34a' }]}>{s.presente}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center', color: '#ef4444' }]}>{s.ausente}</Text>
@@ -294,7 +294,7 @@ const AttendanceAdvancedTemplate: React.FC<Props> = ({ data, metadata, dateRange
         </View>
         {bot7.map((s, i) => (
           <View key={s.id} style={[S.tableRow, { backgroundColor: i % 2 === 0 ? '#fff' : '#fef2f2' }]}>
-            <Text style={[S.tdText, { flex: 3 }]} numberOfLines={1}>{s.nombre}</Text>
+            <Text style={[S.tdText, { flex: 3 }]}>{s.nombre}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center' }]}>{s.total}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center', color: '#16a34a' }]}>{s.presente}</Text>
             <Text style={[S.tdText, { width: 40, textAlign: 'center', color: '#ef4444' }]}>{s.ausente}</Text>
@@ -313,7 +313,7 @@ const AttendanceAdvancedTemplate: React.FC<Props> = ({ data, metadata, dateRange
         <Text style={S.sectionTitle}>Frecuencia de participación por scout (sesiones totales)</Text>
         {st.scouts.slice(0, 12).map((s, _i) => (
           <View key={s.id} style={[S.trendRow, { marginBottom: 4 }]}>
-            <Text style={[S.trendLabel, { width: 120 }]} numberOfLines={1}>{s.nombre}</Text>
+            <Text style={[S.trendLabel, { width: 120 }]}>{s.nombre}</Text>
             <View style={S.barTrack}>
               <View style={[S.barFill, {
                 backgroundColor: '#2563eb',

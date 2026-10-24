@@ -311,7 +311,7 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
 
   // Imagen base del rompecabezas (sólo relevante para ROMPECABEZAS)
   const [imagenBase, setImagenBase] = useState<string>(
-    () => (tipoInicial === 'ROMPECABEZAS' ? ((configInicial as DragAndDropConfiguracion)?.imagenBaseUrl || '') : '')
+    () => (tipoInicial === 'ROMPECABEZAS' ? ((configInicial as unknown as DragAndDropConfiguracion | undefined)?.imagenBaseUrl || '') : '')
   );
 
   // Parser (MORSE)

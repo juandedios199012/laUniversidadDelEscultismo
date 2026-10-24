@@ -24,7 +24,7 @@ import { HistoriaMedicaWizard } from "../RegistroScout/v2/HistoriaMedicaWizard";
 import { ScoutDetailModal } from "../RegistroScout/components/ScoutDetailModal";
 
 import ScoutService from "@/services/scoutService";
-import HistoriaMedicaService from "@/services/historiaMedicaService";
+import HistoriaMedicaService, { type CondicionMedica, type Alergia, type Medicamento, type Vacuna } from "@/services/historiaMedicaService";
 import MembresiaService, { ScoutPendienteMembresia } from "@/services/membresiaService";
 import type { Scout } from "@/lib/supabase";
 import type { HistoriaMedicaData } from "../RegistroScout/schemas/historiaMedicaSchema";
@@ -326,10 +326,12 @@ export default function JuvenilPage() {
           hospital_preferencia: data.hospital_preferencia,
           observaciones_generales: data.observaciones_generales,
         },
-        condiciones: data.condiciones?.map(c => ({ ...c, tipo: c.tipo as any })) || [],
-        alergias: data.alergias?.map(a => ({ ...a, tipo: a.tipo as any })) || [],
-        medicamentos: data.medicamentos || [],
-        vacunas: data.vacunas || [],
+        // El form permite nombre vacío (se completa desde el catálogo); el servicio
+        // transforma cada ítem antes de enviarlo, así que solo se ajusta el tipo.
+        condiciones: (data.condiciones?.map(c => ({ ...c, tipo: c.tipo as any })) || []) as CondicionMedica[],
+        alergias: (data.alergias?.map(a => ({ ...a, tipo: a.tipo as any })) || []) as Alergia[],
+        medicamentos: (data.medicamentos || []) as Medicamento[],
+        vacunas: (data.vacunas || []) as Vacuna[],
       });
       return { success: true, message: "Historia médica guardada exitosamente" };
     } catch (err) {

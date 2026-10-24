@@ -234,7 +234,7 @@ export function HistoriaMedicaWizard({
     const condicion = catalogoCondiciones.find(c => c.id === condicionId);
     if (condicion) {
       setValue(`condiciones.${index}.nombre`, condicion.nombre);
-      setValue(`condiciones.${index}.tipo`, condicion.tipo || 'CONTROLADA');
+      setValue(`condiciones.${index}.tipo`, 'CONTROLADA'); // el catálogo no trae tipo
     }
   }, [catalogoCondiciones, setValue]);
 
@@ -242,7 +242,7 @@ export function HistoriaMedicaWizard({
     const alergia = catalogoAlergias.find(a => a.id === alergiaId);
     if (alergia) {
       setValue(`alergias.${index}.nombre`, alergia.nombre);
-      setValue(`alergias.${index}.tipo`, alergia.tipo || '');
+      setValue(`alergias.${index}.tipo`, ''); // el catálogo no trae tipo
     }
   }, [catalogoAlergias, setValue]);
 
@@ -290,8 +290,9 @@ export function HistoriaMedicaWizard({
         datosConIds.condiciones = initialData.condiciones.map(c => {
           console.log(`Procesando condicion: nombre="${c.nombre}", condicion_id="${c.condicion_id}"`);
           if (c.nombre && !c.condicion_id) {
+            const nombre = c.nombre.toLowerCase().trim();
             const catalogoItem = catalogoCondiciones.find(
-              cat => cat.nombre.toLowerCase().trim() === c.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               console.log(`✅ Matched condicion "${c.nombre}" -> ${catalogoItem.id}`);
@@ -310,8 +311,9 @@ export function HistoriaMedicaWizard({
       if (catalogoAlergias.length > 0 && initialData.alergias) {
         datosConIds.alergias = initialData.alergias.map(a => {
           if (a.nombre && !a.alergia_id) {
+            const nombre = a.nombre.toLowerCase().trim();
             const catalogoItem = catalogoAlergias.find(
-              cat => cat.nombre.toLowerCase().trim() === a.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               return { ...a, alergia_id: catalogoItem.id };
@@ -325,8 +327,9 @@ export function HistoriaMedicaWizard({
       if (catalogoVacunas.length > 0 && initialData.vacunas) {
         datosConIds.vacunas = initialData.vacunas.map(v => {
           if (v.nombre && !v.vacuna_id) {
+            const nombre = v.nombre.toLowerCase().trim();
             const catalogoItem = catalogoVacunas.find(
-              cat => cat.nombre.toLowerCase().trim() === v.nombre.toLowerCase().trim()
+              cat => cat.nombre.toLowerCase().trim() === nombre
             );
             if (catalogoItem) {
               return { ...v, vacuna_id: catalogoItem.id };

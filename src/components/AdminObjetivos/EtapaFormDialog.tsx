@@ -70,8 +70,10 @@ const grupoSchema = z.object({
   orden:       z.coerce.number<number>().int().positive().optional(),
 });
 
-type EtapaFormValues = z.infer<typeof etapaSchema>;
-type GrupoFormValues  = z.infer<typeof grupoSchema>;
+type EtapaFormInput  = z.input<typeof etapaSchema>;
+type EtapaFormValues = z.output<typeof etapaSchema>;
+type GrupoFormInput  = z.input<typeof grupoSchema>;
+type GrupoFormValues = z.output<typeof grupoSchema>;
 
 // ============================================================================
 // PROPS
@@ -143,16 +145,16 @@ export function EtapaFormDialog({
   };
 
   // ---- Formulario Etapa ----
-  const etapaForm = useForm<EtapaFormValues>({
+  const etapaForm = useForm<EtapaFormInput, unknown, EtapaFormValues>({
     resolver: zodResolver(etapaSchema),
     defaultValues: {
-      nombre: '', codigo: '', descripcion: '', icono: '📍',
+      nombre: '', descripcion: '', icono: '📍',
       color: COLOR_ETAPA_DEFAULT,
     },
   });
 
   // ---- Formulario Grupo ----
-  const grupoForm = useForm<GrupoFormValues>({
+  const grupoForm = useForm<GrupoFormInput, unknown, GrupoFormValues>({
     resolver: zodResolver(grupoSchema),
     defaultValues: { nombre: '', codigo: '', descripcion: '' },
   });
@@ -163,7 +165,6 @@ export function EtapaFormDialog({
     if (modo === 'etapa' && etapaEditar) {
       etapaForm.reset({
         nombre:            etapaEditar.nombre,
-        codigo:            etapaEditar.codigo,
         descripcion:       etapaEditar.descripcion || '',
         edad_tipica:       etapaEditar.edad_tipica,
         orden:             etapaEditar.orden,
@@ -172,7 +173,7 @@ export function EtapaFormDialog({
         requisitos_avance: etapaEditar.requisitos_avance || '',
       });
     } else if (modo === 'etapa') {
-      etapaForm.reset({ nombre: '', codigo: '', descripcion: '', icono: '📍', color: COLOR_ETAPA_DEFAULT });
+      etapaForm.reset({ nombre: '', descripcion: '', icono: '📍', color: COLOR_ETAPA_DEFAULT });
     }
 
     if (modo === 'grupo' && grupoEditar) {

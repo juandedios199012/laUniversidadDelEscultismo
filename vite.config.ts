@@ -69,7 +69,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    historyApiFallback: true,  // Serve index.html for all routes (SPA fallback, incl. /auth/callback)
+    // El fallback SPA (index.html para /auth/callback, etc.) viene por defecto con appType: 'spa'
   },
   root: '.',
   build: {

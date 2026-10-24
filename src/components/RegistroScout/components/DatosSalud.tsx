@@ -3,11 +3,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { UseFormReturn, useFieldArray } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 import { Heart, AlertTriangle, Pill, Syringe, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  ScoutFormData,
+  type ScoutFormApi,
   defaultSaludCondicion,
   defaultSaludAlergia,
   defaultSaludMedicamento,
@@ -22,7 +22,7 @@ import HistoriaMedicaService, {
 } from "@/services/historiaMedicaService";
 
 interface DatosSaludProps {
-  form: UseFormReturn<ScoutFormData>;
+  form: ScoutFormApi;
   isOpen: boolean;
   onToggle: () => void;
   errorCount?: number;

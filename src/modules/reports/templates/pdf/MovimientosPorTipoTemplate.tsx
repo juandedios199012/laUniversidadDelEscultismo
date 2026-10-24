@@ -243,13 +243,13 @@ const MovimientosPorTipoTemplate: React.FC<Props> = ({ data, metadata }) => {
               const faltante = meta != null && m.monto < meta ? meta - m.monto : undefined;
               return (
                 <View key={m.id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdName, { width: NAME_W, height: ROW_H }]}>
                     {`${m.apellidos}, ${m.nombres}`}
                   </Text>
                   <Text style={[S.tdCenter, { width: TIPO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c', fontFamily: 'Helvetica-Bold' }]}>
                     {esIngreso ? 'Ingreso' : 'Egreso'}
                   </Text>
-                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: CONCEPTO_W, height: ROW_H }]}>
                     {m.concepto}
                   </Text>
                   <Text style={[S.tdMonto, { width: MONTO_W, height: ROW_H, color: esIngreso ? '#15803d' : '#b91c1c' }]}>

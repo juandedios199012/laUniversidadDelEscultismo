@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import {
   registroScoutMobileSchema,
   RegistroScoutMobileFormData,
+  type RegistroScoutMobileFormInput,
   defaultRegistroValues,
   RAMAS,
   CARGOS_PATRULLA,
@@ -219,7 +220,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
     watch,
     setValue,
     formState: { errors },
-  } = useForm<RegistroScoutMobileFormData>({
+  } = useForm<RegistroScoutMobileFormInput, unknown, RegistroScoutMobileFormData>({
     resolver: zodResolver(registroScoutMobileSchema),
     defaultValues: defaultRegistroValues,
     mode: 'onBlur',
@@ -408,7 +409,7 @@ export default function RegistroScoutRapido({ onClose, onSuccess }: RegistroScou
       
       // Normalizar sexo a formato DB
       const sexoNormalizado: 'MASCULINO' | 'FEMENINO' = 
-        data.sexo === 'F' || data.sexo === 'FEMENINO' ? 'FEMENINO' : 'MASCULINO';
+        data.sexo === 'F' ? 'FEMENINO' : 'MASCULINO';
 
       // Preparar familiares (filtrar vacíos)
       const familiaresValidos = (data.familiares || []).filter(f => 

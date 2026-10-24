@@ -221,10 +221,10 @@ const InventarioReportTemplate: React.FC<Props> = ({ data, metadata }) => {
               const rowStyle = absIdx % 2 === 0 ? S.trEven : S.trOdd;
               return (
                 <View key={item.id} style={rowStyle}>
-                  <Text style={[S.tdName, { width: NOMBRE_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdName, { width: NOMBRE_W, height: ROW_H }]}>
                     {item.nombre}
                   </Text>
-                  <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdCenter, { width: CAT_W, height: ROW_H }]}>
                     {CATEGORIA_LABEL[item.categoria] || item.categoria}
                   </Text>
                   <Text style={[S.tdCenter, { width: CANT_W, height: ROW_H }]}>
@@ -233,7 +233,7 @@ const InventarioReportTemplate: React.FC<Props> = ({ data, metadata }) => {
                   <Text style={[S.tdCenter, { width: ESTADO_W, height: ROW_H, color: ESTADO_COLOR[item.estado_item] || '#4b5563', fontFamily: 'Helvetica-Bold' }]}>
                     {ESTADO_LABEL[item.estado_item] || item.estado_item}
                   </Text>
-                  <Text style={[S.tdLeft, { width: UBIC_W, height: ROW_H }]} numberOfLines={1}>
+                  <Text style={[S.tdLeft, { width: UBIC_W, height: ROW_H }]}>
                     {item.ubicacion || '—'}
                   </Text>
                   <Text style={[S.tdMonto, { width: COSTO_W, height: ROW_H, borderRightWidth: 0 }]}>

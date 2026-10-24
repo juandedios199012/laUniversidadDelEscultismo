@@ -42,7 +42,7 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
 
   const calcularEdad = (fechaNacimiento: string) => calculateAge(fechaNacimiento);
 
-  const formatearFecha = (fecha: string) => {
+  const formatearFecha = (fecha?: string) => {
     if (!fecha) return 'No registrada';
     return formatDate(fecha);
   };

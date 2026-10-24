@@ -422,7 +422,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
       form.reset({
         nombre: actividadEditar.nombre,
         tipo: actividadEditar.tipo,
-        estado: actividadEditar.estado,
+        estado: actividadEditar.estado as ActividadFormData['estado'],
         descripcion: actividadEditar.descripcion || '',
         participacion_asistencia: actividadEditar.participacion_asistencia || '',
         objetivo_general: actividadEditar.objetivo_general || '',

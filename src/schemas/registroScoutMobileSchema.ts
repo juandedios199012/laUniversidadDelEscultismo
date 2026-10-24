@@ -132,6 +132,7 @@ export type Paso2Data = z.infer<typeof paso2Schema>;
 export type Paso3Data = z.infer<typeof paso3Schema>;
 export type Paso4Data = z.infer<typeof paso4Schema>;
 export type RegistroScoutMobileFormData = z.infer<typeof registroScoutMobileSchema>;
+export type RegistroScoutMobileFormInput = z.input<typeof registroScoutMobileSchema>;
 
 // ============================================================================
 // VALORES POR DEFECTO

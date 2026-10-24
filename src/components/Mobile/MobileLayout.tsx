@@ -51,7 +51,7 @@ export default function MobileLayout({ children, currentTab, onTabChange }: Mobi
               <h1 className="text-lg font-bold">Scout Lima 12</h1>
               <div className="flex items-center gap-1 text-xs text-blue-100">
                 <Shield className="w-3 h-3" />
-                <span>{rolPrincipal?.nombre_display || 'Usuario'}</span>
+                <span>{rolPrincipal?.nombre?.replace('_', ' ') || 'Usuario'}</span>
               </div>
             </div>
           </div>

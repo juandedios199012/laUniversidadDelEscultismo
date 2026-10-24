@@ -13,6 +13,7 @@
  */
 
 import { z } from "zod";
+import type { UseFormReturn } from "react-hook-form";
 
 // ============================================
 // Base Validation Rules (Reusable)
@@ -326,6 +327,9 @@ export const scoutFormSchema = z.object({
  * Type inference from schema
  */
 export type ScoutFormData = z.infer<typeof scoutFormSchema>;
+/** Valores antes de validar: los campos con .default() pueden faltar */
+export type ScoutFormInput = z.input<typeof scoutFormSchema>;
+export type ScoutFormApi = UseFormReturn<ScoutFormInput, unknown, ScoutFormData>;
 export type FamiliarFormData = z.infer<typeof familiarSchema>;
 
 /**
