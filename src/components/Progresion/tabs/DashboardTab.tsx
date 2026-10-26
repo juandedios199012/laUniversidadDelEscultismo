@@ -461,9 +461,9 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       {/* ══════════════════════════════════════════════════════════════════════
           ENCABEZADO EJECUTIVO
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+      <div className="rounded-2xl overflow-hidden shadow-xs border border-gray-100">
         {/* Banda de color */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-500 px-8 py-6">
+        <div className="bg-linear-to-r from-blue-700 to-blue-500 px-8 py-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest">
@@ -522,7 +522,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
         {/* Objetivos por Área — barras apiladas */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="lg:col-span-2 rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
           <SectionHeader
             title="Cumplimiento por Área de Crecimiento"
             sub="Objetivos completados vs pendientes por área"
@@ -561,7 +561,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
 
         {/* Distribución por Etapa — donut */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
           <SectionHeader title="Scouts por Etapa" sub="Distribución actual" accent="#7c3aed" />
           {etapaDonutData.length > 0 ? (
             <>
@@ -610,7 +610,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
         {/* Porcentaje de avance por área — radial bars */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
           <SectionHeader
             title="% de Avance por Área"
             sub="Porcentaje de objetivos completados"
@@ -646,7 +646,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
 
         {/* Distribución de scouts por nivel de progreso */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
           <SectionHeader
             title="Distribución de Scouts por Progreso"
             sub="¿En qué rango está cada scout?"
@@ -696,7 +696,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       {/* ══════════════════════════════════════════════════════════════════════
           FILA 3: Ranking de Scouts
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
         <SectionHeader
           title="Ranking de Scouts — Top 10 por Progreso"
           sub="Scouts ordenados de mayor a menor avance en sus objetivos"
@@ -709,7 +709,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
               <div
                 key={scout.id}
                 className={`flex items-center gap-4 rounded-xl px-4 py-3 transition ${
-                  idx < 3 ? 'bg-gradient-to-r from-amber-50 to-white border border-amber-100' : 'bg-gray-50'
+                  idx < 3 ? 'bg-linear-to-r from-amber-50 to-white border border-amber-100' : 'bg-gray-50'
                 }`}
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center">

@@ -204,7 +204,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl flex flex-col max-h-[85vh]">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
             Inscribir Participantes
@@ -215,7 +215,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
         </DialogHeader>
 
         {/* Filtros */}
-        <div className="flex gap-3 flex-shrink-0">
+        <div className="flex gap-3 shrink-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -238,7 +238,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
         </div>
 
         {/* Acciones rápidas */}
-        <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center justify-between shrink-0">
           <div className="text-sm text-muted-foreground">
             {scoutsFiltrados.length} disponible(s) • {seleccionados.size} seleccionado(s)
           </div>
@@ -306,7 +306,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
 
         {/* Resumen de selección */}
         {seleccionados.size > 0 && (
-          <div className="bg-muted/50 rounded-lg p-3 flex items-center justify-between flex-shrink-0">
+          <div className="bg-muted/50 rounded-lg p-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
               <span className="font-medium">{seleccionados.size} scout(s) seleccionado(s)</span>
@@ -314,7 +314,7 @@ const InscribirParticipantesDialog: React.FC<InscribirParticipantesDialogProps> 
           </div>
         )}
 
-        <DialogFooter className="flex-shrink-0 border-t pt-4">
+        <DialogFooter className="shrink-0 border-t pt-4">
           <Button variant="ghost" onClick={handleClose}>
             Cancelar
           </Button>

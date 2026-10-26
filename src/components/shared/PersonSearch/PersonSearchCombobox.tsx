@@ -131,7 +131,7 @@ export function PersonSearchCombobox({
           onFocus={() => query.length >= 2 && setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+          className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
         />
         {/* Indicador de carga / limpiar */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2">

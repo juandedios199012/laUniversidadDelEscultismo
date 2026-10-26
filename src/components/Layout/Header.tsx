@@ -43,7 +43,7 @@ export default function Header() {
     <header className="header-gaming h-16 fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6">
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-xs">
             <Award className="w-6 h-6 text-yellow-300" />
           </div>
           <div>
@@ -59,7 +59,7 @@ export default function Header() {
           <input
             type="text"
             placeholder="Buscar scouts, patrullas, actividades..."
-            className="w-full pl-10 pr-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50"
+            className="w-full pl-10 pr-4 py-2 bg-white/20 backdrop-blur-xs border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-hidden focus:ring-2 focus:ring-white/50 focus:border-white/50"
           />
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function Header() {
           </div>
         </div>
 
-        <button className="relative p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-colors backdrop-blur-sm">
+        <button className="relative p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-colors backdrop-blur-xs">
           <Bell className="w-5 h-5" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
         </button>
@@ -95,7 +95,7 @@ export default function Header() {
               <p className="text-xs text-white/70 capitalize">{rolMostrar}</p>
             </div>
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"
+              className="w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xs"
               style={{ backgroundColor: rolPrincipal?.color || 'rgba(255,255,255,0.2)' }}
             >
               <User className="w-5 h-5 text-white" />
@@ -136,7 +136,7 @@ export default function Header() {
           )}
         </div>
 
-        <button className="md:hidden p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+        <button className="md:hidden p-2 rounded-xl bg-white/20 backdrop-blur-xs">
           <Menu className="w-5 h-5 text-white" />
         </button>
       </div>

@@ -182,7 +182,7 @@ export default function AprenderHacienoDashboard() {
             Ranking de Patrullas
           </Button>
           {puedeCrear('aprender_haciendo') && (
-            <Button size="sm" onClick={handleNuevoModulo} className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
+            <Button size="sm" onClick={handleNuevoModulo} className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Módulo
             </Button>
@@ -195,9 +195,9 @@ export default function AprenderHacienoDashboard() {
         <button
           type="button"
           onClick={() => setCategoriaFiltro('TODAS')}
-          className={`min-h-[44px] px-4 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 ${
+          className={`min-h-[44px] px-4 rounded-full text-sm font-semibold transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 ${
             categoriaFiltro === 'TODAS'
-              ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-md'
+              ? 'bg-linear-to-r from-fuchsia-500 to-purple-600 text-white shadow-md'
               : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
           }`}
         >
@@ -208,9 +208,9 @@ export default function AprenderHacienoDashboard() {
             key={c.value}
             type="button"
             onClick={() => setCategoriaFiltro(c.value)}
-            className={`min-h-[44px] px-4 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 ${
+            className={`min-h-[44px] px-4 rounded-full text-sm font-semibold transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 ${
               categoriaFiltro === c.value
-                ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-md'
+                ? 'bg-linear-to-r from-fuchsia-500 to-purple-600 text-white shadow-md'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -252,10 +252,10 @@ export default function AprenderHacienoDashboard() {
                       abrirModulo(modulo.id);
                     }
                   }}
-                  className="cursor-pointer overflow-hidden border-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-300 rounded-2xl"
+                  className="cursor-pointer overflow-hidden border-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-fuchsia-300 rounded-2xl"
                 >
                   <div
-                    className="h-28 flex items-center justify-center bg-gradient-to-br"
+                    className="h-28 flex items-center justify-center bg-linear-to-br"
                     style={{
                       backgroundImage: `linear-gradient(to bottom right, ${modulo.color_gradiente_inicio}, ${modulo.color_gradiente_fin})`,
                     }}
@@ -263,7 +263,7 @@ export default function AprenderHacienoDashboard() {
                     {modulo.portada_url ? (
                       <img src={modulo.portada_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Icono className="w-14 h-14 text-white drop-shadow" />
+                      <Icono className="w-14 h-14 text-white drop-shadow-sm" />
                     )}
                   </div>
                   <CardContent className="p-4">
@@ -352,7 +352,7 @@ export default function AprenderHacienoDashboard() {
             <Button variant="outline" onClick={() => setDialogAbierto(false)} disabled={guardando}>
               Cancelar
             </Button>
-            <Button onClick={handleGuardarModulo} loading={guardando} className="bg-gradient-to-r from-fuchsia-500 to-purple-600">
+            <Button onClick={handleGuardarModulo} loading={guardando} className="bg-linear-to-r from-fuchsia-500 to-purple-600">
               Guardar módulo
             </Button>
           </DialogFooter>

@@ -40,7 +40,7 @@ function MetricCard({
   accent: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all duration-200 hover:border-indigo-200 hover:shadow-md">
       <div className="flex items-center justify-between gap-3 mb-2">
         <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{title}</span>
         <span className={`h-2.5 w-2.5 rounded-full ${accent}`} aria-hidden="true" />
@@ -93,7 +93,7 @@ function MobileAgendaList({
           key={actividad.id}
           type="button"
           onClick={() => onEditarActividad(actividad)}
-          className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-xs transition hover:border-indigo-200 hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -297,10 +297,10 @@ export default function PlanificacionPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1500px] mx-auto space-y-5">
-      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-900 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-r from-slate-950 via-indigo-950 to-violet-900 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
         <div className="flex flex-col gap-4 p-5 md:p-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-xs">
               <CalendarRange className="w-6 h-6 text-indigo-200" />
             </div>
             <div>
@@ -340,7 +340,7 @@ export default function PlanificacionPage() {
 
       {plan ? (
         <section className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
-          <div className="overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-[0_18px_35px_rgba(79,70,229,0.08)]">
+          <div className="overflow-hidden rounded-3xl border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-[0_18px_35px_rgba(79,70,229,0.08)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
@@ -355,15 +355,15 @@ export default function PlanificacionPage() {
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-xs">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Rama</p>
                 <p className="mt-1 font-semibold text-slate-800">{plan.rama}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-xs">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Inicio</p>
                 <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_inicio + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-xs">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Fin</p>
                 <p className="mt-1 font-semibold text-slate-800">{new Date(plan.fecha_fin + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
@@ -421,19 +421,19 @@ export default function PlanificacionPage() {
       )}
 
       {isMobile && plan && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
           <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
             <button
               type="button"
               onClick={() => setVistaMobile('tablero')}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'tablero' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'tablero' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'}`}
             >
               Tablero
             </button>
             <button
               type="button"
               onClick={() => setVistaMobile('lista')}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'lista' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${vistaMobile === 'lista' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'}`}
             >
               Lista
             </button>

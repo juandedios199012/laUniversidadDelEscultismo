@@ -183,7 +183,7 @@ export default function AsistenciaScreen() {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center space-x-3 mb-2">
           <ClipboardCheck className="w-8 h-8" />
           <h2 className="text-2xl font-bold">Asistencia</h2>
@@ -247,7 +247,7 @@ export default function AsistenciaScreen() {
                 <button
                   key={programa.id}
                   onClick={() => seleccionarPrograma(programa.id)}
-                  className="w-full bg-white rounded-xl p-4 shadow hover:shadow-md transition-all active:scale-98 text-left"
+                  className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 text-left"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -263,7 +263,7 @@ export default function AsistenciaScreen() {
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
                   </div>
                 </button>
               ))}
@@ -290,7 +290,7 @@ export default function AsistenciaScreen() {
                 {programa.observaciones_generales && (
                   <div className="mt-3 pt-3 border-t border-blue-200">
                     <p className="text-sm text-blue-600 font-medium">Observaciones generales:</p>
-                    <p className="text-sm text-blue-900 whitespace-pre-line break-words">{programa.observaciones_generales}</p>
+                    <p className="text-sm text-blue-900 whitespace-pre-line wrap-break-word">{programa.observaciones_generales}</p>
                   </div>
                 )}
               </div>
@@ -313,27 +313,27 @@ export default function AsistenciaScreen() {
           {/* Estadísticas */}
           {scouts.length > 0 && (
             <div className="grid grid-cols-5 gap-2">
-              <div className="bg-white rounded-xl p-3 shadow text-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm text-center">
                 <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                 <div className="text-xl font-bold">{scouts.length}</div>
                 <div className="text-xs text-gray-500">Total</div>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow text-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm text-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-green-600">{presentes}</div>
                 <div className="text-xs text-gray-500">Presentes</div>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow text-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm text-center">
                 <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-yellow-600">{tardanzas}</div>
                 <div className="text-xs text-gray-500">Tardanzas</div>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow text-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm text-center">
                 <CheckCircle className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-blue-600">{justificados}</div>
                 <div className="text-xs text-gray-500">Justif.</div>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow text-center">
+              <div className="bg-white rounded-xl p-3 shadow-sm text-center">
                 <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-red-600">{ausentes}</div>
                 <div className="text-xs text-gray-500">Ausentes</div>
@@ -410,7 +410,7 @@ export default function AsistenciaScreen() {
                   <button
                     key={scout.id}
                     onClick={() => toggleAsistencia(scout.id)}
-                    className={`w-full rounded-xl p-4 shadow transition-all active:scale-95 ${config.bg}`}
+                    className={`w-full rounded-xl p-4 shadow-sm transition-all active:scale-95 ${config.bg}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -441,7 +441,7 @@ export default function AsistenciaScreen() {
             <button
               onClick={guardarAsistencias}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+              className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50"
             >
               {loading ? '⏳ Guardando...' : '💾 Guardar Asistencia'}
             </button>

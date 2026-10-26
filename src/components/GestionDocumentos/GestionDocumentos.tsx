@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string; icon: typeof FileText }[] = [
 ];
 
 const inputCls =
-  'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+  'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500';
 const labelCls = 'block text-xs font-semibold text-gray-600 mb-1';
 
 export default function GestionDocumentos() {
@@ -51,7 +51,7 @@ export default function GestionDocumentos() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Encabezado */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
+        <div className="p-3 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
           <FileText className="w-6 h-6" />
         </div>
         <div>
@@ -158,7 +158,7 @@ function GenerarCartaTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
       {/* Panel de control */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 h-fit space-y-4">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-5 h-fit space-y-4">
         <h2 className="font-semibold text-gray-700">Datos de la carta</h2>
 
         <div>
@@ -299,7 +299,7 @@ function InstitucionesTab({
       </div>
 
       {form && (
-        <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-5 space-y-3">
+        <div className="bg-white rounded-xl shadow-xs border border-blue-200 p-5 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2">
               <label className={labelCls}>Nombre de la institución *</label>
@@ -368,7 +368,7 @@ function InstitucionesTab({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {instituciones.map((inst) => (
-            <div key={inst.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div key={inst.id} className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
                   <h3 className="font-semibold text-gray-800 truncate">{inst.nombre_institucion}</h3>
@@ -458,7 +458,7 @@ function EventosTab({ eventos, onChange }: { eventos: EventoCarta[]; onChange: (
       </div>
 
       {form && (
-        <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-5 space-y-3">
+        <div className="bg-white rounded-xl shadow-xs border border-blue-200 p-5 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2">
               <label className={labelCls}>Título interno (para identificarlo)</label>
@@ -515,7 +515,7 @@ function EventosTab({ eventos, onChange }: { eventos: EventoCarta[]; onChange: (
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {eventos.map((ev) => (
-            <div key={ev.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div key={ev.id} className="bg-white rounded-xl shadow-xs border border-gray-100 p-4">
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
                   <h3 className="font-semibold text-gray-800 truncate">{ev.titulo || ev.dinamico_actividad}</h3>
@@ -571,7 +571,7 @@ function PlantillaTab({ plantilla, onSaved }: { plantilla: PlantillaCarta | null
   const areaCls = `${inputCls} min-h-[90px] resize-y`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4 max-w-3xl">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-5 space-y-4 max-w-3xl">
       <h2 className="font-semibold text-gray-700">Textos y firma de la plantilla</h2>
 
       <div>

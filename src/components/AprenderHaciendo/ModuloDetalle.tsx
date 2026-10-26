@@ -299,7 +299,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
           </div>
 
           <Card
-            className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-white to-fuchsia-50/40 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
+            className="border-0 shadow-lg rounded-3xl bg-linear-to-br from-white to-fuchsia-50/40 cursor-pointer select-none focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400"
             onClick={handleSiguiente}
             role="button"
             tabIndex={0}
@@ -336,14 +336,14 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                 <button
                   type="button"
                   onClick={e => { e.stopPropagation(); repetirSonido(); }}
-                  className="min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 -mt-2"
+                  className="min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 -mt-2"
                 >
                   <Repeat className="w-4 h-4" />
                   Repetir sonido
                 </button>
               )}
 
-              <p className="text-base sm:text-lg text-gray-700 text-center max-w-xl leading-relaxed">
+              <p className="text-base sm:text-lg sm:leading-7 text-gray-700 text-center max-w-xl leading-relaxed">
                 {pasoActual.instruccion_texto}
               </p>
 
@@ -374,7 +374,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
             </Button>
             <Button
               onClick={handleSiguiente}
-              className="min-h-[48px] px-6 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+              className="min-h-[48px] px-6 bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
             >
               {pasoIndex >= pasos.length - 1 ? 'Ver retos' : 'Siguiente'}
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -403,7 +403,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
           {puedeCrear('aprender_haciendo') && (
             <Button
               onClick={() => setDialogoPaso('nuevo')}
-              className="min-h-[44px] mt-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+              className="min-h-[44px] mt-1 bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
             >
               <Plus className="h-4 w-4 mr-2" />
               Agregar paso
@@ -433,7 +433,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                 <Button
                   size="sm"
                   onClick={() => setDialogoReto('nuevo')}
-                  className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                  className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar reto
@@ -464,7 +464,7 @@ export default function ModuloDetalle({ moduloId, onBack, onVerRanking }: Modulo
                       {puedeJugar && (
                         <Button
                           onClick={() => handleJugar(reto)}
-                          className="min-h-[44px] flex-1 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
+                          className="min-h-[44px] flex-1 bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90"
                         >
                           <Gamepad2 className="h-4 w-4 mr-2" />
                           Jugar

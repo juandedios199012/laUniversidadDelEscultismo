@@ -126,10 +126,10 @@ export default function PuntajesActividad({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+        <div className="bg-linear-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Trophy className="w-8 h-8" />
@@ -150,14 +150,14 @@ export default function PuntajesActividad({
         {/* Alerts */}
         {error && (
           <div className="mx-6 mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <p className="text-red-800">{error}</p>
           </div>
         )}
 
         {success && (
           <div className="mx-6 mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg flex items-start space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
             <p className="text-green-800">{success}</p>
           </div>
         )}
@@ -199,7 +199,7 @@ export default function PuntajesActividad({
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-xs"
                                 style={{ backgroundColor: patrulla.color_patrulla || '#6B7280' }}
                               >
                                 {patrulla.nombre.charAt(0)}
@@ -252,7 +252,7 @@ export default function PuntajesActividad({
               {/* Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Consejos para asignar puntajes:</p>
                     <ul className="list-disc list-inside space-y-1 text-blue-700">

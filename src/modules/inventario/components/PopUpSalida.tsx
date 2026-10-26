@@ -133,7 +133,7 @@ export function PopUpSalida({ item, onClose, onSuccess }: PopUpSalidaProps) {
                 max={stockDisponible}
                 value={cantidad}
                 onChange={e => setCantidad(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div>
@@ -160,7 +160,7 @@ export function PopUpSalida({ item, onClose, onSuccess }: PopUpSalidaProps) {
               onChange={e => setMotivo(e.target.value)}
               rows={2}
               placeholder="Ej: Entrega de insignia de rama"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-hidden focus:ring-2 focus:ring-red-500"
             />
           </div>
 

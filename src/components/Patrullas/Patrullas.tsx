@@ -323,7 +323,7 @@ export default function PatrullasNew() {
       <div className="max-w-7xl mx-auto">
         
         {/* ========== HEADER ========== */}
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6 rounded-lg mb-6 shadow-lg">
+        <div className="bg-linear-to-r from-orange-600 to-red-600 text-white p-6 rounded-lg mb-6 shadow-lg">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Flag className="w-8 h-8" />
@@ -334,7 +334,7 @@ export default function PatrullasNew() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-white text-orange-600 px-6 py-3 rounded-lg hover:bg-orange-50 font-medium flex items-center space-x-2 shadow-sm transition-colors duration-200"
+              className="bg-white text-orange-600 px-6 py-3 rounded-lg hover:bg-orange-50 font-medium flex items-center space-x-2 shadow-xs transition-colors duration-200"
             >
               <Plus className="w-5 h-5" />
               <span>Nueva Patrulla</span>
@@ -396,7 +396,7 @@ export default function PatrullasNew() {
                   placeholder="Buscar patrullas..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -404,7 +404,7 @@ export default function PatrullasNew() {
               <select
                 value={selectedRama}
                 onChange={(e) => setSelectedRama(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">Todas las ramas</option>
                 {ramas.map(rama => (
@@ -452,7 +452,7 @@ export default function PatrullasNew() {
                   {/* Header de la carta */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-linear-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-sm">
                           {patrulla.animal_totem?.charAt(0) || patrulla.nombre.charAt(0)}
                         </span>
@@ -545,7 +545,7 @@ export default function PatrullasNew() {
 
         {/* ========== MODAL CREAR PATRULLA ========== */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -627,7 +627,7 @@ export default function PatrullasNew() {
 
         {/* ========== MODAL EDITAR PATRULLA ========== */}
         {showEditModal && selectedPatrulla && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -777,7 +777,7 @@ export default function PatrullasNew() {
 
         {/* ========== MODAL VER PATRULLA ========== */}
         {showViewModal && selectedPatrulla && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -798,7 +798,7 @@ export default function PatrullasNew() {
                 {/* Información básica */}
                 <div className="bg-gray-50 rounded-lg p-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-linear-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold">
                         {selectedPatrulla.animal_totem?.charAt(0) || selectedPatrulla.nombre.charAt(0)}
                       </span>
@@ -882,7 +882,7 @@ export default function PatrullasNew() {
 
                 {/* Estadísticas adicionales */}
                 {selectedPatrulla.total_puntos && (
-                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
+                  <div className="bg-linear-to-r from-green-50 to-blue-50 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Puntos Totales</label>

@@ -97,7 +97,7 @@ const TextosAnexo4: React.FC = () => {
       )}
 
       {/* Declaraciones */}
-      <div className="bg-white rounded-xl shadow-sm border p-5 space-y-3">
+      <div className="bg-white rounded-xl shadow-xs border p-5 space-y-3">
         <div>
           <h2 className="font-semibold text-gray-800">Declaraciones ("Asimismo, declaro:")</h2>
           <p className="text-xs text-gray-500">
@@ -144,7 +144,7 @@ const TextosAnexo4: React.FC = () => {
       </div>
 
       {/* ¿Qué debo llevar? */}
-      <div className="bg-white rounded-xl shadow-sm border p-5 space-y-2">
+      <div className="bg-white rounded-xl shadow-xs border p-5 space-y-2">
         <h2 className="font-semibold text-gray-800">"¿Qué debo llevar?" por defecto</h2>
         <p className="text-xs text-gray-500">
           Una línea por ítem. Se usa en la página 2 solo cuando la actividad no tiene equipamiento ni recomendaciones cargadas.
@@ -159,7 +159,7 @@ const TextosAnexo4: React.FC = () => {
       </div>
 
       {/* Instrucciones de pago */}
-      <div className="bg-white rounded-xl shadow-sm border p-5 space-y-2">
+      <div className="bg-white rounded-xl shadow-xs border p-5 space-y-2">
         <h2 className="font-semibold text-gray-800">Instrucciones de pago (Portal de Padres)</h2>
         <p className="text-xs text-gray-500">
           Se muestran al padre cuando registra el pago. Ej: "Yape / Plin al 987 654 321 — Juan Pérez (Tesorería)".

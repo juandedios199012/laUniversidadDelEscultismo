@@ -326,7 +326,7 @@ export function DocumentUpload({
 
         {uploadedUrl ? (
           <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
-            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
             <span className="text-sm text-green-700 truncate flex-1">{fileName || 'Documento cargado'}</span>
             <Button
               type="button"
@@ -481,7 +481,7 @@ export function DocumentUpload({
           {/* Error */}
           {error && (
             <div className="flex items-center gap-2 p-2 bg-red-50 rounded text-red-700">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span className="text-sm">{error}</span>
             </div>
           )}

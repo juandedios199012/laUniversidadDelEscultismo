@@ -274,7 +274,7 @@ export function DetalleMaterial({ material, onClose }: DetalleMaterialProps) {
                           {mov.destino || '—'}
                         </td>
                         <td
-                          className="px-3 py-2.5 text-gray-500 text-xs max-w-[14rem] truncate hidden md:table-cell"
+                          className="px-3 py-2.5 text-gray-500 text-xs max-w-56 truncate hidden md:table-cell"
                           title={mov.motivo || mov.observaciones || undefined}
                         >
                           {mov.motivo || mov.observaciones || '—'}

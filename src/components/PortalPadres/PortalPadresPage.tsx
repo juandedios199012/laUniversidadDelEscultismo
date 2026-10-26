@@ -31,7 +31,7 @@ const PortalPadresPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Tabs (solo visibles si el usuario puede ver la vista de dirigente) */}
       {puedeConsultar && (
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-xs">
           <div className="max-w-4xl mx-auto px-6">
             <nav className="flex gap-1 py-1">
               <TabButton
@@ -83,7 +83,7 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label }) =
     onClick={onClick}
     className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-all ${
       active
-        ? 'bg-blue-600 text-white shadow'
+        ? 'bg-blue-600 text-white shadow-sm'
         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
     }`}
   >

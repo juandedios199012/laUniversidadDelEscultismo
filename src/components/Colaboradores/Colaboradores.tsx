@@ -431,7 +431,7 @@ export const Colaboradores: React.FC = () => {
   // ==========================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -604,7 +604,7 @@ export const Colaboradores: React.FC = () => {
                     placeholder="Buscar por nombre, documento o correo..."
                     value={filtros.busqueda}
                     onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500"
                   />
                 </div>
               </div>
@@ -743,7 +743,7 @@ export const Colaboradores: React.FC = () => {
                 <GlassCard hoverable glowColor="primary" padding="none">
                   <div className="flex items-center p-4">
                     {/* Avatar */}
-                    <div className="flex-shrink-0 mr-4">
+                    <div className="shrink-0 mr-4">
                       <Avatar
                         name={`${colaborador.persona.nombres} ${colaborador.persona.apellidos}`}
                         size="lg"

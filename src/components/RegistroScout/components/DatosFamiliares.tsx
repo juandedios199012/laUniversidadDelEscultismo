@@ -299,7 +299,7 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
       {/* Información */}
       <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
         <div className="flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" />
           <div className="text-sm text-indigo-800">
             <p className="font-medium">Información Importante</p>
             <p className="mt-1">
@@ -839,7 +839,7 @@ export function DatosFamiliares({ familiarIds = [] }: DatosFamiliaresProps) {
                 {!familiarIds[index] && (
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-700 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 shrink-0" />
                       Guarda el registro para poder subir la copia del documento de identidad.
                     </p>
                   </div>

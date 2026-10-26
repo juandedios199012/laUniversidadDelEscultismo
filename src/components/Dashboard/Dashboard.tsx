@@ -357,7 +357,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 <button
                   key={index}
                   onClick={() => onNavigate(action.action)}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all text-left group"
+                  className="bg-white rounded-xl shadow-xs border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all text-left group"
                 >
                   <div className="flex items-start space-x-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -377,7 +377,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {/* Recent Activity */}
         <div>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Actividad Reciente</h2>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
             {recentActivity.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 text-sm">No hay actividad reciente</p>

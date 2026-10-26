@@ -122,7 +122,7 @@ export function ScoutDetailModal({ scout, isOpen, onClose, onEdit }: ScoutDetail
 
             <TabsContent value="datos" className="space-y-4 mt-4">
               {/* Header del Scout */}
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4">
+              <div className="bg-linear-to-r from-primary/10 to-primary/5 rounded-lg p-4">
                 <div className="flex items-center space-x-4">
                   <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-xl font-bold text-primary">

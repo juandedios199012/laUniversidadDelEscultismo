@@ -83,7 +83,7 @@ function PostIt({ item, onClick }: { item: PostItItem; onClick: () => void }) {
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`flex w-full items-center gap-1 rounded-md border border-black/5 px-1 py-0.5 text-left text-[9px] font-semibold shadow-sm transition hover:shadow-md active:cursor-grabbing ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
+      className={`flex w-full items-center gap-1 rounded-md border border-black/5 px-1 py-0.5 text-left text-[9px] font-semibold shadow-xs transition hover:shadow-md active:cursor-grabbing ${item.esGanadora ? 'ring-2 ring-emerald-500' : ''}`}
       title={item.titulo}
     >
       <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
@@ -363,7 +363,7 @@ export default function TableroPlanificacion({
         className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#f2f6f4] shadow-[0_18px_35px_rgba(15,23,42,0.06)]"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[#f5f7f6] px-4 py-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#1b2a35] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-xs">
             <Badge variant="secondary" className="bg-white/10 text-white border-white/10 hover:bg-white/10">
               Calendario
             </Badge>
@@ -371,7 +371,7 @@ export default function TableroPlanificacion({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white p-1 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white p-1 shadow-xs">
               <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Texto</span>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -394,14 +394,14 @@ export default function TableroPlanificacion({
               </Tooltip>
             </div>
 
-            <div className="min-w-[200px] flex-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 shadow-sm">
+            <div className="min-w-[200px] flex-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 shadow-xs">
               <input
                 type="search"
                 value={busqueda}
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 placeholder="Buscar por titular, lugar o patrulla"
                 aria-label="Buscar actividades o propuestas"
-                className="w-full border-0 bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                className="w-full border-0 bg-transparent text-xs text-slate-700 placeholder:text-slate-400 focus:outline-hidden"
               />
             </div>
 

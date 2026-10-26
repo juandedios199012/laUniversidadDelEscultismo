@@ -70,7 +70,7 @@ function PreguntaSeleccionable({ pregunta, estado, onResponder }: PreguntaSelecc
         <button
           type="button"
           onClick={() => (isSpeaking ? stop() : speak(pregunta.texto))}
-          className="min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+          className="min-h-[44px] px-5 inline-flex items-center gap-2 rounded-full font-semibold text-sm bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
           {isSpeaking ? 'Detener' : '🔊 Escuchar pregunta'}
@@ -91,9 +91,9 @@ function PreguntaSeleccionable({ pregunta, estado, onResponder }: PreguntaSelecc
             disabled={estado === 'correcto'}
             onClick={() => onResponder(i)}
             className={`min-h-[64px] px-4 py-3 rounded-2xl font-bold text-white text-base shadow-md
-              bg-gradient-to-br ${OPCION_COLORS[i % OPCION_COLORS.length]}
+              bg-linear-to-br ${OPCION_COLORS[i % OPCION_COLORS.length]}
               transition-transform hover:scale-105 active:scale-95 disabled:opacity-60
-              focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
+              focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400
               ${estado === 'correcto' && i === pregunta.respuestaCorrecta ? 'ring-4 ring-green-400' : ''}`}
           >
             <span className="flex items-center justify-center gap-2">
@@ -329,9 +329,9 @@ function TriviaTorre({ preguntas, puntosBase, onComplete }: {
               onClick={() => abrirBloque(bloque.id)}
               aria-label={`Bloque ${i + 1}, todavía sin responder`}
               className={`w-full min-h-[52px] rounded-2xl shadow-md flex items-center justify-center text-white font-bold text-lg
-                bg-gradient-to-r ${bloque.pregunta.color || COLOR_ROTACION_TORRE[i % COLOR_ROTACION_TORRE.length]}
+                bg-linear-to-r ${bloque.pregunta.color || COLOR_ROTACION_TORRE[i % COLOR_ROTACION_TORRE.length]}
                 transition-transform hover:scale-[1.02] active:scale-95
-                focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400`}
+                focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-400`}
             >
               ?
             </motion.button>

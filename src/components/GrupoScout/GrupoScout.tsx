@@ -194,7 +194,7 @@ export default function GrupoScout() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-linear-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <Flag className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -225,7 +225,7 @@ export default function GrupoScout() {
 
       {/* Simple Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">

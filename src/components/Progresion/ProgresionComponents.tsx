@@ -20,7 +20,7 @@ interface KpiCardProps {
 }
 
 export const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, sub, color }) => (
-  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
     <div
       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
       style={{ background: `${color}18`, color }}
@@ -60,7 +60,7 @@ export const StageCard: React.FC<StageCardProps> = ({
 
   return (
     <div
-      className="rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="rounded-2xl border p-5 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md"
       style={{ borderColor: `${color}40`, background: `${color}09` }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -112,7 +112,7 @@ interface AreaCardProps {
 
 export const AreaCard: React.FC<AreaCardProps> = ({ area }) => (
   <div
-    className="flex items-center gap-4 rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
+    className="flex items-center gap-4 rounded-2xl border p-4 shadow-xs transition hover:shadow-md"
     style={{ borderColor: `${area.color}35`, background: `${area.color}0a` }}
   >
     <ProgressRing
@@ -163,7 +163,7 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
-      className={`group cursor-pointer rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group cursor-pointer rounded-2xl border bg-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         selected ? 'ring-2 shadow-md -translate-y-0.5' : 'border-gray-100'
       }`}
       style={selected ? ({ borderColor: color, '--tw-ring-color': color } as React.CSSProperties) : undefined}
@@ -176,7 +176,7 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
 
       <div className="flex gap-4 p-4">
         {/* Anillo de progreso */}
-        <div className="flex-shrink-0 self-center">
+        <div className="shrink-0 self-center">
           <ProgressRing
             percentage={scout.progreso}
             size={80}
@@ -235,7 +235,7 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
                     : 0;
                 return (
                   <div key={area.area_id} className="flex items-center gap-2">
-                    <span className="w-5 flex-shrink-0 text-center text-sm">{areaIcon}</span>
+                    <span className="w-5 shrink-0 text-center text-sm">{areaIcon}</span>
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full transition-all duration-700"
@@ -245,7 +245,7 @@ export const ScoutCard: React.FC<ScoutCardProps> = ({ scout, selected, onClick }
                         }}
                         />
                       </div>
-                      <span className="w-8 flex-shrink-0 text-right font-mono text-xs text-gray-400">
+                      <span className="w-8 shrink-0 text-right font-mono text-xs text-gray-400">
                         {area.objetivos_completados}/{area.total_objetivos}
                       </span>
                     </div>

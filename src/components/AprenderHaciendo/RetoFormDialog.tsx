@@ -180,7 +180,7 @@ function FilaUbicacion({ fila, actualizar, imagenBase, otras }: {
         <button
           type="button"
           onClick={() => setAbierto(true)}
-          className="min-h-[44px] px-3 inline-flex items-center gap-2 rounded-lg border-2 border-fuchsia-200 text-fuchsia-700 text-sm font-semibold hover:bg-fuchsia-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+          className="min-h-[44px] px-3 inline-flex items-center gap-2 rounded-lg border-2 border-fuchsia-200 text-fuchsia-700 text-sm font-semibold hover:bg-fuchsia-50 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           📍 Ubicar en la imagen
         </button>
@@ -214,7 +214,7 @@ function FilaUbicacion({ fila, actualizar, imagenBase, otras }: {
               </p>
             )}
             <DialogFooter>
-              <Button type="button" onClick={() => setAbierto(false)} className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
+              <Button type="button" onClick={() => setAbierto(false)} className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
                 Listo
               </Button>
             </DialogFooter>
@@ -757,7 +757,7 @@ export default function RetoFormDialog({ moduloId, retoEditar, onClose, onGuarda
           <Button type="button" variant="outline" onClick={onClose} disabled={guardando} className="min-h-[44px]">
             Cancelar
           </Button>
-          <Button type="button" onClick={handleGuardar} disabled={guardando} className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
+          <Button type="button" onClick={handleGuardar} disabled={guardando} className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
             {guardando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Guardar
           </Button>

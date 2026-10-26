@@ -136,7 +136,7 @@ export const UbigeoSelector: React.FC<UbigeoSelectorProps> = ({
               <SelectValue placeholder="Seleccionar departamento" />
             )}
           </SelectTrigger>
-          <SelectContent className="z-[100]">
+          <SelectContent className="z-100">
             {departamentos.map((dep) => (
               <SelectItem key={dep.id} value={dep.nombre}>
                 {dep.nombre}
@@ -164,7 +164,7 @@ export const UbigeoSelector: React.FC<UbigeoSelectorProps> = ({
               <SelectValue placeholder={selectedDepId ? "Seleccionar provincia" : "Primero seleccione departamento"} />
             )}
           </SelectTrigger>
-          <SelectContent className="z-[100]">
+          <SelectContent className="z-100">
             {provincias.map((prov) => (
               <SelectItem key={prov.id} value={prov.nombre}>
                 {prov.nombre}
@@ -192,7 +192,7 @@ export const UbigeoSelector: React.FC<UbigeoSelectorProps> = ({
               <SelectValue placeholder={selectedProvId ? "Seleccionar distrito" : "Primero seleccione provincia"} />
             )}
           </SelectTrigger>
-          <SelectContent className="z-[100]">
+          <SelectContent className="z-100">
             {distritos.map((dist) => (
               <SelectItem key={dist.id} value={dist.nombre}>
                 {dist.nombre}

@@ -495,7 +495,7 @@ export default function Asistencia() {
 			<div className="min-h-screen bg-gray-50 p-4 md:p-6">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
-					<div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl shadow-lg p-6 text-white mb-6">
+					<div className="bg-linear-to-r from-purple-600 to-purple-700 rounded-xl shadow-lg p-6 text-white mb-6">
 						<div className="flex items-center justify-between">
 							<div>
 								<h1 className="text-2xl font-bold mb-2">Detalle de Asistencia</h1>
@@ -627,7 +627,7 @@ export default function Asistencia() {
 			<div className="min-h-screen bg-gray-50 p-4 md:p-6">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
-					<div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white mb-6">
+					<div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white mb-6">
 						<div className="flex items-center justify-between">
 							<div>
 								<h1 className="text-2xl font-bold mb-2">Asistencia Masiva</h1>
@@ -744,7 +744,7 @@ export default function Asistencia() {
 										<tr key={scout.id} className={`hover:bg-gray-50 ${tieneRegistro ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
 											<td className="px-6 py-4">
 												<div className="flex items-center">
-													<div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+													<div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
 														<span className="text-blue-600 font-bold text-sm">
 															{scout.nombres.charAt(0)}{scout.apellidos.charAt(0)}
 														</span>
@@ -826,7 +826,7 @@ export default function Asistencia() {
 				</div>
 
 				{/* Filtros y búsqueda */}
-				<div className="bg-white rounded-lg shadow mb-6 p-4 flex gap-4 items-center flex-wrap">
+				<div className="bg-white rounded-lg shadow-sm mb-6 p-4 flex gap-4 items-center flex-wrap">
 					{miRamaFija ? (
 						<div className="px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-500 w-40">
 							Rama: <span className="font-medium text-gray-700">{ramas.find(r => r.value === miRamaFija)?.label ?? miRamaFija}</span>
@@ -861,7 +861,7 @@ export default function Asistencia() {
 				{filteredReuniones.length > 0 ? (
 					<div className="space-y-4 mt-6">
 						{filteredReuniones.map(reunion => (
-							<div key={reunion.id} className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+							<div key={reunion.id} className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between">
 								<div>
 									<h3 className="font-bold text-lg">{reunion.titulo}</h3>
 									<p className="text-gray-600">{reunion.descripcion}</p>
@@ -897,7 +897,7 @@ export default function Asistencia() {
 
 				{/* MODAL CREAR REUNION */}
 				{showCreateReunionModal && (
-					<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+					<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
 						<div className="bg-white rounded-lg max-w-md w-full">
 							{/* ...contenido del modal... */}
 						</div>
@@ -905,7 +905,7 @@ export default function Asistencia() {
 				)}
 				   {/* MODAL REGISTRAR ASISTENCIA */}
 				   {showAsistenciaModal && selectedReunion && (
-					   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+					   <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
 						   <div className="bg-white rounded-lg max-w-md w-full p-6">
 							   <h2 className="text-xl font-bold mb-4">Registrar Asistencia</h2>
 							   <div className="mb-4">

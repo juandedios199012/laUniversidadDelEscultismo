@@ -166,10 +166,10 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={handleClose} />
 
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-linear-to-r from-green-50 to-emerald-50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-green-600" />
@@ -200,7 +200,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
                 onClick={() => cambiarTipo('dni')}
                 disabled={guardando || exito}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                  tipo === 'dni' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  tipo === 'dni' ? 'bg-white text-green-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
@@ -211,7 +211,7 @@ export default function CrearUsuarioClaveDialog({ isOpen, onClose, onUsuarioCrea
                 onClick={() => cambiarTipo('email')}
                 disabled={guardando || exito}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                  tipo === 'email' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  tipo === 'email' ? 'bg-white text-green-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Mail className="w-4 h-4" />

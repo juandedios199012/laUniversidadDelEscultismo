@@ -77,11 +77,11 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 via-white to-green-50 px-4">
       <div className="w-full max-w-md">
         {/* Logo y título */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-4xl">⚜️</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Grupo Scout Lima 12</h1>
@@ -99,7 +99,7 @@ export default function LoginScreen() {
             <button
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all ${
                 method === 'password' 
-                  ? 'bg-white text-blue-600 shadow-sm' 
+                  ? 'bg-white text-blue-600 shadow-xs' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               onClick={() => { setMethod('password'); setError(''); setSuccess(''); }}
@@ -111,7 +111,7 @@ export default function LoginScreen() {
             <button
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all ${
                 method === 'otp' 
-                  ? 'bg-white text-blue-600 shadow-sm' 
+                  ? 'bg-white text-blue-600 shadow-xs' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               onClick={() => { setMethod('otp'); setOtpSent(false); setError(''); setSuccess(''); }}
@@ -168,7 +168,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </button>
@@ -195,7 +195,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-linear-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Enviando...' : 'Enviar Código'}
               </button>
@@ -226,7 +226,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading || otpCode.length !== 6}
-                className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-linear-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Verificando...' : 'Verificar Código'}
               </button>

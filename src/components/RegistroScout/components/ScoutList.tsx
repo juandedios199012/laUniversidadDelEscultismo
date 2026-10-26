@@ -197,7 +197,7 @@ export function ScoutList({
           <select
             value={ramaFiltro}
             onChange={(e) => setRamaFiltro(e.target.value)}
-            className="w-32 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="w-32 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             <option value="">Todas</option>
             {RAMAS.map((r) => (

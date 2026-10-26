@@ -284,7 +284,7 @@ export const GestionDocumentos: React.FC<GestionDocumentosProps> = ({
   // ==========================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Toast */}
         <AnimatePresence>
@@ -380,7 +380,7 @@ export const GestionDocumentos: React.FC<GestionDocumentosProps> = ({
               <select
                 value={tipoSeleccionado}
                 onChange={e => setTipoSeleccionado(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                className="w-full px-4 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-cyan-500/30"
               >
                 <option value="">Seleccionar tipo...</option>
                 {TIPOS_DOCUMENTO_ADJUNTO.map(tipo => (
@@ -495,7 +495,7 @@ export const GestionDocumentos: React.FC<GestionDocumentosProps> = ({
                   <GlassCard hoverable padding="none">
                     <div className="flex items-center p-4">
                       {/* Icono y preview */}
-                      <div className="flex-shrink-0 mr-4">
+                      <div className="shrink-0 mr-4">
                         {doc.url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <div
                             className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden cursor-pointer"

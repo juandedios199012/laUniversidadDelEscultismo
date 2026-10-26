@@ -522,7 +522,7 @@ const GestionarAutorizacionDialog: React.FC<GestionarAutorizacionDialogProps> = 
           </div>
           </div>
 
-          <DialogFooter className="mt-4 pt-4 border-t flex-shrink-0">
+          <DialogFooter className="mt-4 pt-4 border-t shrink-0">
             <Button
               type="button"
               variant="outline"

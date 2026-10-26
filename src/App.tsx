@@ -67,7 +67,7 @@ function AppContent() {
   // Mostrar loading mientras verifica sesión (solo si no estamos saltando auth)
   if (loading && !skipAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 via-white to-green-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Verificando sesión...</p>

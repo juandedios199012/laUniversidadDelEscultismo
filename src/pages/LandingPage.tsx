@@ -138,14 +138,14 @@ export default function LandingPage() {
           </video>
         ) : (
           <div
-            className="absolute inset-0 bg-gradient-to-br from-blue-900 via-slate-800 to-slate-900"
+            className="absolute inset-0 bg-linear-to-br from-blue-900 via-slate-800 to-slate-900"
             aria-hidden="true"
           />
         )}
 
         {/* Overlay de contraste — garantiza legibilidad WCAG AA (4.5:1) */}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/55 to-slate-900"
+          className="absolute inset-0 bg-linear-to-b from-slate-900/30 via-slate-900/55 to-slate-900"
           aria-hidden="true"
         />
 
@@ -155,7 +155,7 @@ export default function LandingPage() {
             Movimiento Scout — Lima, Perú
           </span>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl md:leading-none font-extrabold tracking-tight leading-tight">
             Formando los líderes
             <br className="hidden md:block" />
             <span className="text-blue-400"> del mañana</span>
@@ -199,7 +199,7 @@ export default function LandingPage() {
             <span className="text-blue-400 text-sm font-semibold tracking-widest uppercase">
               Nuestra misión
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+            <h2 className="text-3xl md:text-4xl md:leading-10 font-bold leading-tight">
               Voluntariado profesional al servicio de la juventud
             </h2>
             <p className="text-gray-400 leading-relaxed text-lg">
@@ -254,13 +254,13 @@ export default function LandingPage() {
             {LANDING_ASSETS.equipo.map((miembro) => (
               <div
                 key={miembro.id}
-                className="bg-slate-800/60 border border-white/5 rounded-2xl p-6 backdrop-blur-sm hover:border-blue-500/30 hover:bg-slate-800/80 transition-all group"
+                className="bg-slate-800/60 border border-white/5 rounded-2xl p-6 backdrop-blur-xs hover:border-blue-500/30 hover:bg-slate-800/80 transition-all group"
               >
                 <div className="flex items-start gap-4 mb-4">
                   <img
                     src={miembro.foto}
                     alt={`Foto de ${miembro.nombre}`}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-600 group-hover:border-blue-500 transition-colors flex-shrink-0"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-600 group-hover:border-blue-500 transition-colors shrink-0"
                     loading="lazy"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = avatarFallback(
@@ -332,7 +332,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── LOGROS ─────────────────────────────────────────────────────── */}
-      <section id="logros" className="py-24 bg-gradient-to-b from-blue-950/30 to-slate-900/50 scroll-mt-20">
+      <section id="logros" className="py-24 bg-linear-to-b from-blue-950/30 to-slate-900/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 space-y-3">
             <span className="text-blue-400 text-sm font-semibold tracking-widest uppercase">

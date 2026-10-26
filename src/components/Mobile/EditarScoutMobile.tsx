@@ -128,14 +128,14 @@ function MiniMapPreview({ lat, lng, address, onClick }: MiniMapPreviewProps) {
       <div className="relative w-full h-40">
         <div ref={mapRef} className="w-full h-full" />
         {/* Badge de "Toca para editar" */}
-        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm z-[1000]">
+        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-full shadow-xs z-1000">
           <span className="text-xs text-purple-600 font-medium">Toca para editar</span>
         </div>
       </div>
       {/* Info de ubicación */}
       <div className="p-3 bg-green-50">
         <div className="flex items-start gap-2">
-          <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+          <MapPin className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             {address && (
               <p className="text-sm text-gray-800 font-medium truncate">
@@ -822,7 +822,7 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header con Stepper */}
-        <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 rounded-t-2xl">
+        <div className="sticky top-0 bg-linear-to-r from-amber-500 to-orange-600 text-white p-4 rounded-t-2xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <Edit3 className="w-6 h-6" />
@@ -1443,7 +1443,7 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
             {paso < 6 ? (
               <button
                 onClick={handleSiguiente}
-                className="flex-1 flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center space-x-2 py-3 bg-linear-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg active:scale-95 transition-transform"
               >
                 <span>Siguiente</span>
                 <ChevronRight className="w-5 h-5" />
@@ -1452,7 +1452,7 @@ export default function EditarScoutMobile({ scout, onClose, onSuccess }: EditarS
               <button
                 onClick={handleActualizar}
                 disabled={loading}
-                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-linear-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

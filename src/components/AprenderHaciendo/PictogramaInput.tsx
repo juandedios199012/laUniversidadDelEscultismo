@@ -54,7 +54,7 @@ export default function PictogramaInput({ value, onChange, label }: PictogramaIn
           <button
             type="button"
             onClick={() => onChange('')}
-            className="min-h-[44px] px-2 text-sm text-gray-500 hover:text-red-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 rounded"
+            className="min-h-[44px] px-2 text-sm text-gray-500 hover:text-red-600 underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 rounded"
           >
             ✕ Quitar
           </button>
@@ -74,7 +74,7 @@ export default function PictogramaInput({ value, onChange, label }: PictogramaIn
           disabled={subiendo}
           className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 rounded-lg font-semibold text-sm shrink-0
             bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all disabled:opacity-60
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+            focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
         >
           {subiendo && <Loader2 className="w-4 h-4 animate-spin" />}
           {subiendo ? 'Subiendo...' : '📷 Subir imagen'}

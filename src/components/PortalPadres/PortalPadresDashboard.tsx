@@ -95,7 +95,7 @@ const PortalPadresDashboard: React.FC = () => {
         <PageHeader />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+            <div key={i} className="bg-white rounded-2xl shadow-xs border border-gray-100 p-6 animate-pulse">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 rounded-full bg-gray-200" />
                 <div className="flex-1">
@@ -231,7 +231,7 @@ const PendientesAviso: React.FC<{
 const PageHeader: React.FC<{ count?: number }> = ({ count }) => (
   <div className="flex items-start justify-between">
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+      <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
         <Heart className="w-6 h-6 text-white" />
       </div>
       <div>

@@ -112,7 +112,7 @@ export function ComboboxPuntoEncuentro({
             setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none disabled:cursor-not-allowed disabled:text-gray-400"
+          className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-hidden disabled:cursor-not-allowed disabled:text-gray-400"
         />
         {loading ? (
           <Loader2 className="w-4 h-4 text-gray-400 mr-3 animate-spin" />

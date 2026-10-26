@@ -120,7 +120,7 @@ export default function CatalogoEspecialidades({
               onClick={() => setSelectedArea(null)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 !selectedArea 
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' 
+                  ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white shadow-lg' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -133,7 +133,7 @@ export default function CatalogoEspecialidades({
                 onClick={() => handleAreaClick(area.codigo)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   selectedArea === area.codigo
-                    ? `bg-gradient-to-r ${AREA_GRADIENTS[area.codigo]} text-white shadow-lg ring-2 ring-offset-2 ring-blue-300`
+                    ? `bg-linear-to-r ${AREA_GRADIENTS[area.codigo]} text-white shadow-lg ring-2 ring-offset-2 ring-blue-300`
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -225,7 +225,7 @@ function EspecialidadCard({ especialidad, isExpanded, onToggle, onSelect }: Espe
         className="w-full flex items-center gap-4 p-4 text-left hover:bg-gray-50 transition-colors"
       >
         {/* Icono del área */}
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${areaGradient} flex items-center justify-center text-xl shadow-lg shrink-0`}>
+        <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${areaGradient} flex items-center justify-center text-xl shadow-lg shrink-0`}>
           {especialidad.area.icono}
         </div>
 
@@ -291,7 +291,7 @@ function EspecialidadCard({ especialidad, isExpanded, onToggle, onSelect }: Espe
                   e.stopPropagation();
                   onSelect();
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
               >
                 <Target className="w-4 h-4" />
                 Asignar a Scout

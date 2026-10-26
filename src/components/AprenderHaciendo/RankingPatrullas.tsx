@@ -161,7 +161,7 @@ export default function RankingPatrullas({ onBack }: RankingPatrullasProps) {
                     <p className="font-bold text-sm text-center truncate w-full">{nombre}</p>
                     <p className="text-xs text-gray-500">{item.total_puntos} pts</p>
                     <div
-                      className={`w-full ${estilo.alto} rounded-t-xl bg-gradient-to-b ${estilo.bg} flex items-start justify-center pt-2 shadow-md`}
+                      className={`w-full ${estilo.alto} rounded-t-xl bg-linear-to-b ${estilo.bg} flex items-start justify-center pt-2 shadow-md`}
                     >
                       <span className="text-white font-black text-xl">#{estilo.orden}</span>
                     </div>
@@ -195,7 +195,7 @@ export default function RankingPatrullas({ onBack }: RankingPatrullasProps) {
                   : (resto as AhRankingScout[]).map((scout, i) => (
                     <div key={scout.scout_id} className="flex items-center gap-4 px-5 py-3">
                       <span className="w-8 text-center font-bold text-gray-400">#{i + 4}</span>
-                      <div className="w-8 h-8 rounded-full shrink-0 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full shrink-0 bg-linear-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
                         <User className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">

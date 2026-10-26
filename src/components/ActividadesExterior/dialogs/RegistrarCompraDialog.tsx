@@ -309,7 +309,7 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             {getStepTitle()}
@@ -322,7 +322,7 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-2 shrink-0">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
             step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}>
@@ -729,7 +729,7 @@ const RegistrarCompraDialog: React.FC<RegistrarCompraDialogProps> = ({
           )}
         </ScrollArea>
 
-        <DialogFooter className="gap-2 flex-shrink-0 border-t pt-4">
+        <DialogFooter className="gap-2 shrink-0 border-t pt-4">
           {step > 1 && !guardando && (
             <Button variant="outline" onClick={() => setStep((step - 1) as 1 | 2)}>
               Atrás

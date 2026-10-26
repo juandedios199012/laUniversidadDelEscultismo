@@ -151,14 +151,14 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 rounded-xl border border-gray-100 bg-white p-1 shadow-sm w-fit">
+      <div className="flex gap-2 rounded-xl border border-gray-100 bg-white p-1 shadow-xs w-fit">
         {([
           { id: 'general' as const,    label: 'Vista General', icon: <BarChart3 className="h-4 w-4" /> },
           { id: 'tendencias' as const, label: 'Tendencias',    icon: <TrendingUp className="h-4 w-4" /> },
         ]).map((tab) => (
           <button key={tab.id} type="button" onClick={() => setSubTab(tab.id)}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
-              subTab === tab.id ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:bg-gray-50'
+              subTab === tab.id ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
             }`}>
             {tab.icon}{tab.label}
           </button>
@@ -182,7 +182,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
         <div className="space-y-6">
 
           {/* Donut — full width, legend on the right */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
             <h3 className="mb-1 text-base font-black text-gray-800">Distribución por Etapa</h3>
             <p className="mb-4 text-xs text-gray-400">Cantidad de scouts por etapa de progresión</p>
             {loading ? <CardSkeleton className="h-72" /> : (
@@ -270,7 +270,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
           </div>
 
           {/* Bar — below donut */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
             <h3 className="mb-1 text-base font-black text-gray-800">Tasa de Completitud por Área</h3>
             <p className="mb-4 text-xs text-gray-400">Porcentaje de objetivos completados por área de crecimiento</p>
             {loading ? <CardSkeleton className="h-72" /> : (
@@ -316,7 +316,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
       {subTab === 'tendencias' && (
         <div className="space-y-5">
           {/* Filters panel */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
             <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-gray-400">Filtros de Visualización</h3>
             <div className="flex flex-wrap items-start gap-8">
 
@@ -330,7 +330,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                     return (
                       <button key={stage.etapaCodigo} type="button" onClick={() => toggleEtapa(stage.etapaCodigo)}
                         className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                          active ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
+                          active ? 'text-white shadow-xs' : 'border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
                         }`}
                         style={active ? { background: hex, borderColor: hex } : undefined}>
                         <span className="h-2 w-2 rounded-full"
@@ -350,7 +350,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
                     <button key={p.value} type="button" onClick={() => setPeriod(p.value)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                         period === p.value
-                          ? 'border-blue-500 bg-blue-600 text-white shadow-sm'
+                          ? 'border-blue-500 bg-blue-600 text-white shadow-xs'
                           : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
                       }`}>
                       {p.label}
@@ -362,7 +362,7 @@ const AnalisisTab: React.FC<AnalisisTabProps> = ({
           </div>
 
           {/* Line chart */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
               <h3 className="text-base font-black text-gray-800">Tendencia de Progresión Mensual</h3>
             </div>

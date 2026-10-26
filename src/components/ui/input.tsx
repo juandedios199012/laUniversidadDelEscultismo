@@ -17,7 +17,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
           // Placeholder más tenue para diferenciarse de datos ingresados
           "placeholder:text-muted-foreground/60 placeholder:italic",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "transition-colors duration-200",
           error && "border-destructive focus-visible:ring-destructive",

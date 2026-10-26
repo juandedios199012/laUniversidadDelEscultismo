@@ -119,7 +119,7 @@ export default function EgresosScreen() {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-rose-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-rose-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center space-x-3 mb-2">
           <Wallet className="w-8 h-8" />
           <h2 className="text-2xl font-bold">Egresos</h2>
@@ -128,7 +128,7 @@ export default function EgresosScreen() {
       </div>
 
       {/* Formulario */}
-      <div className="bg-white rounded-xl shadow p-4 space-y-5">
+      <div className="bg-white rounded-xl shadow-sm p-4 space-y-5">
         {/* Monto */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
@@ -140,7 +140,7 @@ export default function EgresosScreen() {
               value={monto}
               onChange={(e) => setMonto(e.target.value.replace(/[^0-9.,]/g, ''))}
               placeholder="0.00"
-              className="w-full pl-14 pr-4 py-4 text-3xl font-bold border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none"
+              className="w-full pl-14 pr-4 py-4 text-3xl font-bold border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function EgresosScreen() {
             onChange={(e) => setConcepto(e.target.value)}
             placeholder="Ej. Pasajes salida a Chosica"
             maxLength={255}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden"
           />
           {concepto.length > 0 && !conceptoValido && (
             <p className="text-xs text-red-600 mt-1">Mínimo 3 caracteres</p>
@@ -213,7 +213,7 @@ export default function EgresosScreen() {
               value={numeroOperacion}
               onChange={(e) => setNumeroOperacion(e.target.value)}
               placeholder="Opcional"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden"
             />
           </div>
         )}
@@ -227,7 +227,7 @@ export default function EgresosScreen() {
               value={fecha}
               max={hoy()}
               onChange={(e) => setFecha(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none bg-white"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden bg-white"
             />
           </div>
           <div>
@@ -237,7 +237,7 @@ export default function EgresosScreen() {
               value={proveedor}
               onChange={(e) => setProveedor(e.target.value)}
               placeholder="Opcional"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function EgresosScreen() {
                   <button
                     type="button"
                     onClick={() => setFotos((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 shadow"
+                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 shadow-sm"
                     aria-label="Quitar foto"
                   >
                     <X className="w-3 h-3" />
@@ -293,7 +293,7 @@ export default function EgresosScreen() {
             onChange={(e) => setNotas(e.target.value)}
             rows={2}
             placeholder="Opcional"
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-hidden"
           />
         </div>
 
@@ -301,7 +301,7 @@ export default function EgresosScreen() {
           type="button"
           onClick={handleGuardar}
           disabled={!formularioValido || guardando}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600 text-white text-lg font-semibold shadow disabled:bg-gray-300 disabled:shadow-none active:scale-[0.99] transition-transform"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600 text-white text-lg font-semibold shadow-sm disabled:bg-gray-300 disabled:shadow-none active:scale-[0.99] transition-transform"
         >
           {guardando ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
           {guardando ? 'Registrando...' : `Registrar egreso${montoValido ? ` de ${formatMonto(montoNumero)}` : ''}`}
@@ -317,7 +317,7 @@ export default function EgresosScreen() {
           <p className="text-sm text-gray-500 text-center py-4">Aún no hay egresos registrados</p>
         ) : (
           recientes.map((t) => (
-            <div key={t.id} className="bg-white rounded-xl shadow-sm p-3 flex items-center justify-between gap-3">
+            <div key={t.id} className="bg-white rounded-xl shadow-xs p-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-medium text-gray-800 truncate">{t.concepto}</p>
                 <p className="text-xs text-gray-500">

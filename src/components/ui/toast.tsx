@@ -54,11 +54,11 @@ export function Toast({ id, message, type, duration = 5000, onClose }: ToastProp
       )}
       role="alert"
     >
-      <Icon className="h-5 w-5 flex-shrink-0" />
+      <Icon className="h-5 w-5 shrink-0" />
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={handleClose}
-        className="flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors"
+        className="shrink-0 p-1 rounded hover:bg-black/5 transition-colors"
         aria-label="Cerrar"
       >
         <X className="h-4 w-4" />

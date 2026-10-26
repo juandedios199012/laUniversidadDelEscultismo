@@ -200,7 +200,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevaActividad.nombre || ''}
             onChange={(e) => setNuevaActividad({ ...nuevaActividad, nombre: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: Reunión de Manada"
           />
         </div>
@@ -210,7 +210,7 @@ const Maps: React.FC = () => {
           <select
             value={nuevaActividad.tipo}
             onChange={(e) => setNuevaActividad({ ...nuevaActividad, tipo: e.target.value as any })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           >
             <option value="Reunión">Reunión</option>
             <option value="Actividad">Actividad</option>
@@ -225,7 +225,7 @@ const Maps: React.FC = () => {
             type="date"
             value={nuevaActividad.fecha || ''}
             onChange={(e) => setNuevaActividad({ ...nuevaActividad, fecha: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
         
@@ -235,7 +235,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevaActividad.responsable || ''}
             onChange={(e) => setNuevaActividad({ ...nuevaActividad, responsable: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Dirigente responsable"
           />
         </div>
@@ -246,7 +246,7 @@ const Maps: React.FC = () => {
         <textarea
           value={nuevaActividad.descripcion || ''}
           onChange={(e) => setNuevaActividad({ ...nuevaActividad, descripcion: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           rows={3}
           placeholder="Descripción de la actividad"
         />
@@ -303,7 +303,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevoPunto.nombre || ''}
             onChange={(e) => setNuevoPunto({ ...nuevoPunto, nombre: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: Local Scout San Martín"
           />
         </div>
@@ -314,7 +314,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevoPunto.grupo || ''}
             onChange={(e) => setNuevoPunto({ ...nuevoPunto, grupo: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: Grupo Scout Lima 12"
           />
         </div>
@@ -324,7 +324,7 @@ const Maps: React.FC = () => {
           <select
             value={nuevoPunto.rama || ''}
             onChange={(e) => setNuevoPunto({ ...nuevoPunto, rama: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Seleccionar rama</option>
             <option value="Manada">Manada (6-10 años)</option>
@@ -341,7 +341,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevoPunto.horarios || ''}
             onChange={(e) => setNuevoPunto({ ...nuevoPunto, horarios: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: Sábados 3:00-6:00 PM"
           />
         </div>
@@ -353,7 +353,7 @@ const Maps: React.FC = () => {
           type="text"
           value={nuevoPunto.contacto || ''}
           onChange={(e) => setNuevoPunto({ ...nuevoPunto, contacto: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           placeholder="Teléfono o email de contacto"
         />
       </div>
@@ -409,7 +409,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevaRuta.nombre || ''}
             onChange={(e) => setNuevaRuta({ ...nuevaRuta, nombre: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: Excursión a Marcahuasi"
           />
         </div>
@@ -419,7 +419,7 @@ const Maps: React.FC = () => {
           <select
             value={nuevaRuta.tipo}
             onChange={(e) => setNuevaRuta({ ...nuevaRuta, tipo: e.target.value as any })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           >
             <option value="Excursión">Excursión</option>
             <option value="Campamento">Campamento</option>
@@ -433,7 +433,7 @@ const Maps: React.FC = () => {
             type="text"
             value={nuevaRuta.duracion || ''}
             onChange={(e) => setNuevaRuta({ ...nuevaRuta, duracion: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             placeholder="Ej: 2 días, 6 horas"
           />
         </div>
@@ -443,7 +443,7 @@ const Maps: React.FC = () => {
           <select
             value={nuevaRuta.dificultad}
             onChange={(e) => setNuevaRuta({ ...nuevaRuta, dificultad: e.target.value as any })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           >
             <option value="Fácil">Fácil</option>
             <option value="Moderada">Moderada</option>
@@ -457,7 +457,7 @@ const Maps: React.FC = () => {
         <textarea
           value={nuevaRuta.descripcion || ''}
           onChange={(e) => setNuevaRuta({ ...nuevaRuta, descripcion: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           rows={3}
           placeholder="Descripción de la ruta y puntos de interés"
         />
@@ -631,7 +631,7 @@ const Maps: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-t-lg">
+        <div className="bg-linear-to-r from-green-600 to-blue-600 text-white p-6 rounded-t-lg">
           <div className="flex items-center space-x-3 mb-4">
             <MapPin className="w-8 h-8" />
             <div>

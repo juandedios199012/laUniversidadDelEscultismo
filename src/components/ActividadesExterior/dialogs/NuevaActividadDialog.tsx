@@ -717,7 +717,7 @@ const NuevaActividadDialog: React.FC<NuevaActividadDialogProps> = ({
                   } ${isClickable ? 'hover:scale-105 hover:shadow-md transition-transform' : ''}`}>
                     {isCompleted ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                   </div>
-                  <span className={`text-[10px] mt-1 text-center leading-tight max-w-[4.5rem] ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
+                  <span className={`text-[10px] mt-1 text-center leading-tight max-w-18 ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
                     {p.title}
                   </span>
                 </div>

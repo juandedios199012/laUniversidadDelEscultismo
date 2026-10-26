@@ -87,7 +87,7 @@ export default function SeguridadDashboard() {
       </div>
 
       {/* Contenido */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
         {activeTab === 'usuarios' && <TabUsuarios />}
         {activeTab === 'matriz' && <div className="p-6"><PermissionMatrix /></div>}
         {activeTab === 'registro' && <div className="p-6"><FeatureRegistration /></div>}

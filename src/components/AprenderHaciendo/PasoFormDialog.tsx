@@ -165,7 +165,7 @@ export default function PasoFormDialog({
                 disabled={subiendoSonido}
                 className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 rounded-lg font-semibold text-sm shrink-0
                   bg-white text-fuchsia-700 border-2 border-fuchsia-200 hover:bg-fuchsia-50 transition-all disabled:opacity-60
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
+                  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500"
               >
                 {subiendoSonido ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
                 {subiendoSonido ? 'Subiendo...' : efectoSonido ? 'Cambiar sonido' : 'Subir sonido'}
@@ -174,7 +174,7 @@ export default function PasoFormDialog({
                 <button
                   type="button"
                   onClick={() => setEfectoSonido('')}
-                  className="min-h-[44px] px-2 text-sm text-gray-500 hover:text-red-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 rounded"
+                  className="min-h-[44px] px-2 text-sm text-gray-500 hover:text-red-600 underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-fuchsia-500 rounded"
                 >
                   ✕ Quitar
                 </button>
@@ -232,7 +232,7 @@ export default function PasoFormDialog({
           <Button type="button" variant="outline" onClick={onClose} disabled={guardando} className="min-h-[44px]">
             Cancelar
           </Button>
-          <Button type="button" onClick={handleGuardar} disabled={guardando} className="min-h-[44px] bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
+          <Button type="button" onClick={handleGuardar} disabled={guardando} className="min-h-[44px] bg-linear-to-r from-fuchsia-500 to-purple-600 hover:opacity-90">
             {guardando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Guardar
           </Button>
