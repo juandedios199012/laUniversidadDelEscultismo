@@ -1,0 +1,110 @@
+/*
+  Estilos del módulo Juegos3D (importado desde src/index.css).
+  El tema oscuro y las fuentes quedan aislados en el contenedor `.juegos3d`
+  para no afectar al resto del sistema.
+*/
+@theme {
+  --color-ink-950: #04050d;
+  --color-ink-900: #090b1a;
+  --color-ink-800: #11142a;
+}
+
+.juegos3d {
+  --font-inter: 'Inter';
+  --font-grotesk: 'Space Grotesk';
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  color: #e8eaf6;
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #04050d;
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(139, 92, 246, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(34, 211, 238, 0.12), transparent 60%),
+    radial-gradient(800px 600px at 50% 110%, rgba(236, 72, 153, 0.1), transparent 60%);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.juegos3d ::selection {
+  background: rgba(139, 92, 246, 0.6);
+  color: #fff;
+}
+
+/* Texto con degradado neón */
+@utility text-gradient {
+  background-image: linear-gradient(100deg, #f0abfc 0%, #a78bfa 35%, #67e8f9 75%, #bef264 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Oculta la barra en carruseles horizontales (sigue siendo desplazable) */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Fondo aurora animado (se detiene si el usuario prefiere menos movimiento) */
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, -3%, 0) scale(1.08); }
+}
+
+.aurora-blob {
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob {
+    animation: none;
+  }
+}
+
+/* Línea de tiempo: pista con progreso en degradado y control grande para dedos */
+.timeline-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.timeline-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6 50%, #22d3ee) 0 0 / var(--progress, 0%) 100% no-repeat, rgba(255, 255, 255, 0.1);
+}
+.timeline-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.timeline-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6 50%, #22d3ee);
+}
+.timeline-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25), 0 0 18px rgba(34, 211, 238, 0.6);
+}
+.timeline-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25), 0 0 18px rgba(34, 211, 238, 0.6);
+}
+.timeline-range:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 4px;
+  border-radius: 8px;
+}

@@ -1,9 +1,10 @@
 /* Gaming Typography */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap')
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap')
 layer(base);
 
 @import 'tailwindcss' source(none);
 @import 'tw-animate-css';
+@import './modules/juegos3d/juegos3d.css';
 
 /* Mismo alcance que el `content` de Tailwind 3: no escanear archive/, database/, docs/ */
 @source '../index.html';

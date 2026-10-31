@@ -4,7 +4,7 @@ import {
   BarChart, Home, Award, Star, Flag, Map, TrendingUp,
   Tent, Wallet, Lock, Trophy, Medal, Settings, FileText,
   ChevronDown, ChevronRight, Rocket, Heart, Target,
-  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList, FileSignature, UserCheck
+  MapPin, User, Sparkles, Handshake, Gamepad2, CalendarRange, ClipboardList, FileSignature, UserCheck, Box
 } from 'lucide-react';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { Modulo } from '../../services/permissionsService';
@@ -91,6 +91,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { id: 'programa-semanal',    label: 'Programa',    icon: Calendar,      gradient: 'from-indigo-500 to-purple-500', modulo: 'programa_semanal'    },
       { id: 'planificacion',       label: 'Planificación Anual', icon: CalendarRange, gradient: 'from-violet-500 to-fuchsia-500', modulo: 'planificacion' },
+      { id: 'juegos-3d',           label: 'Juegos 3D',   icon: Box,           gradient: 'from-fuchsia-500 to-cyan-500',   modulo: 'programa_semanal'    },
       { id: 'evaluacion',          label: 'Evaluación',  icon: ClipboardList, gradient: 'from-fuchsia-500 to-pink-500',   modulo: 'evaluacion'          },
       { id: 'asistencia',          label: 'Asistencia',  icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500',    modulo: 'asistencia'          },
       { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent,           gradient: 'from-green-600 to-teal-600',   modulo: 'actividades_exterior' },
