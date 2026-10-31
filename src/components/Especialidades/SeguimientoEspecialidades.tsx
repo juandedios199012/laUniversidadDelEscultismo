@@ -12,8 +12,6 @@ import {
   ChevronUp,
   Upload,
   Trash2,
-  Video,
-  X,
   Search,
   User,
   Check,
@@ -24,6 +22,7 @@ import { toast } from 'sonner';
 import { supabase } from '../../lib/supabase';
 import EspecialidadesService from '../../services/especialidadesService';
 import ScoutService from '../../services/scoutService';
+import EvidenciasCarrusel from './EvidenciasCarrusel';
 import type { 
   FaseId,
   FaseEstado,
@@ -903,29 +902,10 @@ function ProgresoCard({
                 No hay evidencias aún
               </p>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {progreso.evidencias.map((ev) => (
-                  <div key={ev.id} className="relative group">
-                    {ev.tipo === 'imagen' ? (
-                      <img
-                        src={ev.url}
-                        alt={ev.descripcion || 'Evidencia'}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Video className="w-8 h-8 text-gray-400" />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handleEliminarEvidencia(ev.id)}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <EvidenciasCarrusel
+                evidencias={progreso.evidencias}
+                onEliminar={handleEliminarEvidencia}
+              />
             )}
           </div>
 

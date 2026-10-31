@@ -160,6 +160,35 @@ export class AsistenciaService {
   }
 
   /**
+   * 📱 Obtener nombre de patrulla activa por scout (Mobile)
+   * @returns Record<scout_id, nombre_patrulla>; scouts sin patrulla no aparecen
+   */
+  static async obtenerPatrullasPorScouts(scoutIds: string[]): Promise<Record<string, string>> {
+    if (scoutIds.length === 0) return {};
+    try {
+      const { data, error } = await supabase
+        .from('miembros_patrulla')
+        .select('scout_id, patrulla:patrullas (nombre)')
+        .in('scout_id', scoutIds)
+        .eq('estado_miembro', 'ACTIVO')
+        .is('fecha_salida', null);
+
+      if (error) throw error;
+
+      const patrullasMap: Record<string, string> = {};
+      (data || []).forEach((m: any) => {
+        if (m.patrulla?.nombre) {
+          patrullasMap[m.scout_id] = m.patrulla.nombre;
+        }
+      });
+      return patrullasMap;
+    } catch (error) {
+      console.error('Error al obtener patrullas por scouts:', error);
+      return {};
+    }
+  }
+
+  /**
    * � Registrar asistencia masiva
    * Usa UPSERT para actualizar registros existentes o crear nuevos
    * @param registros - Array de registros con actividad_id, scout_id, estado_asistencia

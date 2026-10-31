@@ -33,6 +33,7 @@ export default function AsistenciaScreen() {
   const [programaSeleccionado, setProgramaSeleccionado] = useState<string>('');
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [asistencias, setAsistencias] = useState<Record<string, EstadoAsistencia>>({});
+  const [patrullaPorScout, setPatrullaPorScout] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [paso, setPaso] = useState<1 | 2>(1); // Flujo de 2 pasos
@@ -102,15 +103,19 @@ export default function AsistenciaScreen() {
       console.log('📦 Scouts elegibles recibidos:', data.length);
       setScouts(data);
       
-      // Cargar asistencias existentes para este programa
-      const asistenciasExistentes = await AsistenciaService.obtenerAsistenciasPorPrograma(programaId);
+      // Cargar asistencias existentes y patrullas de los scouts
+      const [asistenciasExistentes, patrullas] = await Promise.all([
+        AsistenciaService.obtenerAsistenciasPorPrograma(programaId),
+        AsistenciaService.obtenerPatrullasPorScouts(data.map(s => s.id)),
+      ]);
+      setPatrullaPorScout(patrullas);
       console.log('📋 Asistencias existentes:', asistenciasExistentes);
       
       // Inicializar asistencias: usar existentes si hay, o 'presente' por defecto
       const asistenciasIniciales: Record<string, EstadoAsistencia> = {};
       data?.forEach(scout => {
         const estadoExistente = asistenciasExistentes[scout.id];
-        if (estadoExistente && ['presente', 'ausente', 'tardanza'].includes(estadoExistente)) {
+        if (estadoExistente && ['presente', 'ausente', 'tardanza', 'justificado'].includes(estadoExistente)) {
           asistenciasIniciales[scout.id] = estadoExistente as EstadoAsistencia;
         } else {
           asistenciasIniciales[scout.id] = 'presente';
@@ -179,6 +184,20 @@ export default function AsistenciaScreen() {
   const tardanzas = Object.values(asistencias).filter(a => a === 'tardanza').length;
   const justificados = Object.values(asistencias).filter(a => a === 'justificado').length;
   const ausentes = Object.values(asistencias).filter(a => a === 'ausente').length;
+
+  // Presentes por patrulla (scouts sin patrulla se agrupan aparte, al final)
+  const SIN_PATRULLA = 'Sin patrulla';
+  const resumenPatrullas = Object.entries(
+    scouts.reduce<Record<string, { presentes: number; total: number }>>((acc, scout) => {
+      const nombre = patrullaPorScout[scout.id] || SIN_PATRULLA;
+      acc[nombre] ??= { presentes: 0, total: 0 };
+      acc[nombre].total++;
+      if ((asistencias[scout.id] || 'presente') === 'presente') acc[nombre].presentes++;
+      return acc;
+    }, {})
+  ).sort(([a], [b]) =>
+    a === SIN_PATRULLA ? 1 : b === SIN_PATRULLA ? -1 : a.localeCompare(b)
+  );
 
   return (
     <div className="p-4 space-y-4">
@@ -304,6 +323,7 @@ export default function AsistenciaScreen() {
               setProgramaSeleccionado('');
               setScouts([]);
               setAsistencias({});
+              setPatrullaPorScout({});
             }}
             className="text-green-600 font-medium text-sm"
           >
@@ -337,6 +357,25 @@ export default function AsistenciaScreen() {
                 <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
                 <div className="text-xl font-bold text-red-600">{ausentes}</div>
                 <div className="text-xs text-gray-500">Ausentes</div>
+              </div>
+            </div>
+          )}
+
+          {/* Presentes por patrulla */}
+          {!loading && scouts.length > 0 && (
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-semibold text-gray-700 mb-2">Presentes por patrulla</h3>
+              <div className="divide-y divide-gray-100">
+                {resumenPatrullas.map(([nombre, { presentes: p, total }]) => (
+                  <div key={nombre} className="flex items-center justify-between py-2">
+                    <span className={`text-sm ${nombre === SIN_PATRULLA ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+                      {nombre}
+                    </span>
+                    <span className="text-sm font-semibold text-green-600">
+                      {p}<span className="text-gray-400 font-normal"> / {total}</span>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
