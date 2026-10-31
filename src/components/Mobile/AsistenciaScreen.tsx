@@ -373,6 +373,9 @@ export default function AsistenciaScreen() {
                     </span>
                     <span className="text-sm font-semibold text-green-600">
                       {p}<span className="text-gray-400 font-normal"> / {total}</span>
+                      <span className="ml-2 inline-block w-12 text-right">
+                        {Math.round((p / total) * 100)}%
+                      </span>
                     </span>
                   </div>
                 ))}

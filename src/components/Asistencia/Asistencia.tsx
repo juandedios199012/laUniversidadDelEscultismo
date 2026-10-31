@@ -72,6 +72,7 @@ export default function Asistencia() {
 	const [asistenciaMasiva, setAsistenciaMasiva] = useState<Record<string, 'presente' | 'ausente' | 'tardanza' | 'justificado'>>({});
 	const [horaMarcadaMasiva, setHoraMarcadaMasiva] = useState<Record<string, string>>({});
 	const [scoutsProgramaActual, setScoutsProgramaActual] = useState<Scout[]>([]);
+	const [patrullaPorScout, setPatrullaPorScout] = useState<Record<string, string>>({});
 	// ============= DETALLE PROGRAMA =============
 	const [asistenciasPrograma, setAsistenciasPrograma] = useState<any[]>([]);
 
@@ -79,7 +80,9 @@ export default function Asistencia() {
 		setSelectedPrograma(programa);
 		setVistaActual('asistencia_masiva');
 		setSelectedPatrulla('');
+		setPatrullaPorScout({});
 		
+		let scoutsPrograma: Scout[];
 		try {
 			// Cargar scouts elegibles: solo los que ya habían ingresado al grupo en la fecha del programa
 			const { data: rawData, error: scoutsError } = await AsistenciaService.getScoutsElegiblesFecha(
@@ -94,11 +97,13 @@ export default function Asistencia() {
 				rama_actual: s.rama_actual,
 				codigo_asociado: s.codigo_asociado,
 			}));
-			setScoutsProgramaActual(elegibles.length > 0 ? elegibles : scouts.filter(s => !programa.rama || s.rama_actual === programa.rama));
+			scoutsPrograma = elegibles.length > 0 ? elegibles : scouts.filter(s => !programa.rama || s.rama_actual === programa.rama);
 		} catch (error) {
 			console.error('Error cargando scouts elegibles:', error);
-			setScoutsProgramaActual(scouts.filter(s => !programa.rama || s.rama_actual === programa.rama));
+			scoutsPrograma = scouts.filter(s => !programa.rama || s.rama_actual === programa.rama);
 		}
+		setScoutsProgramaActual(scoutsPrograma);
+		AsistenciaService.obtenerPatrullasPorScouts(scoutsPrograma.map(s => s.id)).then(setPatrullaPorScout);
 		
 		// Cargar asistencias ya guardadas para este programa
 		console.log('📋 Cargando asistencias para programa:', programa.id);
@@ -623,6 +628,20 @@ export default function Asistencia() {
 
 	// ============= VISTA ASISTENCIA MASIVA =============
 	if (vistaActual === 'asistencia_masiva' && selectedPrograma) {
+		// Presentes por patrulla (solo estado PRESENTE; scouts sin patrulla al final)
+		const SIN_PATRULLA = 'Sin patrulla';
+		const resumenPatrullas = Object.entries(
+			scoutsFiltrados.reduce<Record<string, { presentes: number; total: number }>>((acc, scout) => {
+				const nombre = patrullaPorScout[scout.id] || SIN_PATRULLA;
+				acc[nombre] ??= { presentes: 0, total: 0 };
+				acc[nombre].total++;
+				if (asistenciaMasiva[scout.id] === 'presente') acc[nombre].presentes++;
+				return acc;
+			}, {})
+		).sort(([a], [b]) =>
+			a === SIN_PATRULLA ? 1 : b === SIN_PATRULLA ? -1 : a.localeCompare(b)
+		);
+
 		return (
 			<div className="min-h-screen bg-gray-50 p-4 md:p-6">
 				<div className="max-w-7xl mx-auto">
@@ -641,6 +660,7 @@ export default function Asistencia() {
 									setAsistenciaMasiva({});
 									setHoraMarcadaMasiva({});
 									setScoutsProgramaActual([]);
+									setPatrullaPorScout({});
 								}}
 								className="px-4 py-2 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
 							>
@@ -720,6 +740,32 @@ export default function Asistencia() {
 							</div>
 						)}
 					</div>
+
+					{/* Presentes por patrulla */}
+					{scoutsFiltrados.length > 0 && (
+						<div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+							<h2 className="text-lg font-bold text-gray-900 mb-4">Presentes por patrulla</h2>
+							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+								{resumenPatrullas.map(([nombre, { presentes, total }]) => {
+									const porcentaje = Math.round((presentes / total) * 100);
+									return (
+										<div key={nombre} className="border border-gray-200 rounded-lg p-4">
+											<p className={`text-sm font-medium truncate ${nombre === SIN_PATRULLA ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+												{nombre}
+											</p>
+											<div className="flex items-baseline justify-between mt-1">
+												<span className="text-2xl font-bold text-green-600">{porcentaje}%</span>
+												<span className="text-sm text-gray-500">{presentes} / {total}</span>
+											</div>
+											<div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+												<div className="h-full bg-green-500 transition-all" style={{ width: `${porcentaje}%` }} />
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					)}
 
 					{/* Lista de Scouts */}
 					<div className="bg-white rounded-xl shadow-lg overflow-hidden">

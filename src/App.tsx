@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import Dashboard from './components/Dashboard/Dashboard';
 import GrupoScout from './components/GrupoScout/GrupoScout';
@@ -38,6 +38,8 @@ import { ProgresionModule } from './components/Progresion';
 import PortalPadresPage from './components/PortalPadres/PortalPadresPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PermissionsProvider, usePermissions } from './contexts/PermissionsContext';
+// Juegos3D trae three.js (~1 MB): se carga solo al abrir el módulo
+const Juegos3DPage = lazy(() => import('./modules/juegos3d/Juegos3DPage'));
 import ProtectedLayout from './components/Layout/ProtectedLayout';
 import LoginScreen from './components/Auth/LoginScreen';
 import { useMobileDetect } from './hooks/useMobileDetect';
@@ -144,6 +146,12 @@ function AppContent() {
         return <ProgramaSemanal />;
       case 'planificacion':
         return <PlanificacionPage />;
+      case 'juegos-3d':
+        return (
+          <Suspense fallback={<div className="p-8 text-center text-gray-500">Cargando Juegos 3D…</div>}>
+            <Juegos3DPage />
+          </Suspense>
+        );
       case 'evaluacion':
         return <EvaluacionPage />;
       case 'reportes':
