@@ -507,6 +507,38 @@ export class ProgramaSemanalService {
     }
   }
 
+  /** ⚙️ Configuración de puntajes de todas las ramas que tienen fila */
+  static async obtenerConfigPuntajesTodas(): Promise<ConfigPuntajesRama[]> {
+    try {
+      const { data, error } = await supabase.rpc('api_obtener_config_puntajes_rama', { p_rama: null });
+      if (error) throw error;
+      return (data || []).map((c: any) => ({
+        rama: c.rama,
+        puntos: Number(c.puntos),
+        porcentaje_tardanza: Number(c.porcentaje_tardanza),
+      }));
+    } catch (error) {
+      console.error('❌ Error al obtener config de puntajes:', error);
+      return [];
+    }
+  }
+
+  /** ⚙️ Guardar configuración de puntajes de una rama (requiere programa_semanal:editar) */
+  static async actualizarConfigPuntajesRama(config: ConfigPuntajesRama): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_actualizar_config_puntajes_rama', {
+        p_rama: config.rama,
+        p_puntos: config.puntos,
+        p_porcentaje_tardanza: config.porcentaje_tardanza,
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al guardar config de puntajes:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
   /**
    * ⚙️ Configuración de puntajes de una rama (máximo de asistencia / 1er puesto
    * y % de tardanza). Sin configuración: 100 pts y 50 %.

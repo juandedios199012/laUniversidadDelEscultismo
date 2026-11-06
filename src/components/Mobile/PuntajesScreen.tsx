@@ -7,7 +7,7 @@ import { ProgramaSemanalService } from '../../services/programaSemanalService';
 import { ActividadesExteriorService } from '../../services/actividadesExteriorService';
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { usePermissions } from '../../contexts/PermissionsContext';
-import { CONFIG_PUNTAJES_DEFAULT, formatPuntos, puntajePorPuesto } from '../../utils/puntajes';
+import { CONFIG_PUNTAJES_DEFAULT, formatPuntos, puntajePorPuesto, puestosFaltantes } from '../../utils/puntajes';
 
 // Mismo catálogo que usa Programa Semanal (web) — dirigentes.unidad es
 // texto libre, se normaliza contra esto antes de filtrar.
@@ -263,8 +263,8 @@ export default function PuntajesScreen() {
         return;
       }
     } else {
-      if (puestosFaltantes.length > 0) {
-        setMensaje(`⚠️ Falta asignar el ${puestosFaltantes.join('°, ')}° puesto`);
+      if (faltantes.length > 0) {
+        setMensaje(`⚠️ Falta asignar el ${faltantes.join('°, ')}° puesto`);
         return;
       }
       puntajesArray = Object.entries(puestos).map(([patrullaId, puesto]) => ({
@@ -343,11 +343,8 @@ export default function PuntajesScreen() {
 
   // La escala se arma con las patrullas que tienen puesto (igual que la BD)
   const patrullasConPuesto = Object.keys(puestos).length;
-  const puestosUsados = new Set(Object.values(puestos));
-  const maxPuesto = Math.max(0, ...puestosUsados);
   // Puestos consecutivos: 1°, 1°, 2° es válido; 1°, 1°, 3° no (el empate no salta puestos)
-  const puestosFaltantes = Array.from({ length: maxPuesto }, (_, i) => i + 1)
-    .filter(n => !puestosUsados.has(n));
+  const faltantes = puestosFaltantes(Object.values(puestos));
   const puntosDePuesto = (puesto: number) => puntajePorPuesto(puntosRama, patrullasConPuesto, puesto);
 
   // ===== AIRE LIBRE =====
@@ -800,9 +797,9 @@ export default function PuntajesScreen() {
                       )}
                     </p>
                   )}
-                  {!modoManual && puestosFaltantes.length > 0 && (
+                  {!modoManual && faltantes.length > 0 && (
                     <p className="text-xs text-red-600">
-                      Falta el {puestosFaltantes.join('°, ')}° puesto: después de un empate sigue el puesto siguiente (1°, 1°, 2°).
+                      Falta el {faltantes.join('°, ')}° puesto: después de un empate sigue el puesto siguiente (1°, 1°, 2°).
                     </p>
                   )}
 

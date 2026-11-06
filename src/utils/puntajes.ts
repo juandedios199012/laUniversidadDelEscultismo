@@ -50,3 +50,18 @@ export function calcularPuntajeAsistencia(
 export function formatPuntos(valor: number): string {
   return Number.isInteger(valor) ? String(valor) : valor.toFixed(2).replace(/0$/, '');
 }
+
+/**
+ * Puestos que faltan para que la lista sea consecutiva desde 1°.
+ * 1°, 1°, 2° es válido (empate); 1°, 1°, 3° no: falta el 2°.
+ */
+export function puestosFaltantes(puestos: number[]): number[] {
+  const usados = new Set(puestos);
+  const max = Math.max(0, ...usados);
+  return Array.from({ length: max }, (_, i) => i + 1).filter(n => !usados.has(n));
+}
+
+/** Escala completa para N patrullas, p. ej. 4 → [100, 80, 60, 40] */
+export function escalaPuestos(puntos: number, patrullas: number): number[] {
+  return Array.from({ length: patrullas }, (_, i) => puntajePorPuesto(puntos, patrullas, i + 1));
+}

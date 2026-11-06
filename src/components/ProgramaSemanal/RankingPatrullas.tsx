@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, TrendingUp, X } from 'lucide-react';
 import ProgramaSemanalService from '../../services/programaSemanalService';
+import { formatPuntos } from '../../utils/puntajes';
 
 interface TotalPatrulla {
   patrulla_id: string;
   patrulla_nombre: string;
   color_patrulla: string;
   total_puntaje: number;
+  puntaje_actividades: number;
+  puntaje_asistencia: number;
   actividades_participadas: number;
+  asistencia_presentes: number;
+  asistencia_tardanzas: number;
+  asistencia_total_miembros: number;
 }
 
 interface RankingPatrullasProps {
@@ -111,7 +117,7 @@ export default function RankingPatrullas({
                           </div>
                           <p className="font-bold text-white text-lg">{totales[1].patrulla_nombre}</p>
                         </div>
-                        <div className="text-3xl font-bold text-white">{totales[1].total_puntaje}</div>
+                        <div className="text-3xl font-bold text-white">{formatPuntos(totales[1].total_puntaje)}</div>
                       </div>
                     </div>
                     <div className="bg-gray-500 text-white px-4 py-2 rounded-b-lg w-full text-center font-bold">
@@ -133,7 +139,7 @@ export default function RankingPatrullas({
                           </div>
                           <p className="font-bold text-white text-xl">{totales[0].patrulla_nombre}</p>
                         </div>
-                        <div className="text-4xl font-bold text-white">{totales[0].total_puntaje}</div>
+                        <div className="text-4xl font-bold text-white">{formatPuntos(totales[0].total_puntaje)}</div>
                       </div>
                     </div>
                     <div className="bg-yellow-600 text-white px-4 py-2 rounded-b-lg w-full text-center font-bold">
@@ -155,7 +161,7 @@ export default function RankingPatrullas({
                           </div>
                           <p className="font-bold text-white text-lg">{totales[2].patrulla_nombre}</p>
                         </div>
-                        <div className="text-3xl font-bold text-white">{totales[2].total_puntaje}</div>
+                        <div className="text-3xl font-bold text-white">{formatPuntos(totales[2].total_puntaje)}</div>
                       </div>
                     </div>
                     <div className="bg-amber-800 text-white px-4 py-2 rounded-b-lg w-full text-center font-bold">
@@ -179,11 +185,14 @@ export default function RankingPatrullas({
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                         Total
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                         Actividades
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                        Promedio
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                        Asistencia
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                        Prom. act.
                       </th>
                     </tr>
                   </thead>
@@ -215,18 +224,31 @@ export default function RankingPatrullas({
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="text-2xl font-bold text-blue-600">
-                              {total.total_puntaje}
+                              {formatPuntos(total.total_puntaje)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <div className="text-lg text-gray-700">
-                              {total.actividades_participadas}
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <div className="text-lg font-semibold text-gray-800">
+                              {formatPuntos(total.puntaje_actividades)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {total.actividades_participadas} act.
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <div className="text-lg font-semibold text-purple-700">
+                              {formatPuntos(total.puntaje_asistencia)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {total.asistencia_total_miembros > 0
+                                ? `${total.asistencia_presentes} P · ${total.asistencia_tardanzas} T / ${total.asistencia_total_miembros}`
+                                : 'sin lista'}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
                             <div className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium">
                               <TrendingUp className="w-4 h-4" />
-                              <span>{calcularPromedio(total.total_puntaje, total.actividades_participadas)}</span>
+                              <span>{calcularPromedio(total.puntaje_actividades, total.actividades_participadas)}</span>
                             </div>
                           </td>
                         </tr>
@@ -240,7 +262,7 @@ export default function RankingPatrullas({
               <div className="grid grid-cols-3 gap-4 mt-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
                   <div className="text-3xl font-bold text-blue-600">
-                    {totales.reduce((sum, t) => sum + t.total_puntaje, 0)}
+                    {formatPuntos(Math.round(totales.reduce((sum, t) => sum + t.total_puntaje, 0) * 100) / 100)}
                   </div>
                   <div className="text-sm text-blue-700 mt-1">Puntos Totales</div>
                 </div>

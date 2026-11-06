@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy, Flag, ChevronUp, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import { Calendar, Clock, Save, Plus, Target, Search, Edit, Eye, Trash2, CheckCircle, User, Trophy, Flag, ChevronUp, ChevronDown, FileSpreadsheet, Settings } from 'lucide-react';
 import { ProgramaSemanalEntry, ProgramaActividad } from '../../lib/supabase';
 import ProgramaSemanalService from '../../services/programaSemanalService';
 import PuntajesActividad from './PuntajesActividad';
 import RankingPatrullas from './RankingPatrullas';
+import ConfigPuntajes from './ConfigPuntajes';
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { ImportDialog } from '../shared/ImportDialog/ImportDialog';
 import { programaImportConfig, actividadProgramaSheet } from '../../lib/import/configs/programaImportConfig';
@@ -25,7 +26,8 @@ interface DirigenteActivo {
 interface ProgramaSemanalProps {}
 
 export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
-  const { miRama: miRamaSinNormalizar } = usePermissions();
+  const { miRama: miRamaSinNormalizar, puedeEditar } = usePermissions();
+  const puedeConfigurarPuntajes = puedeEditar('programa_semanal');
 
   // ============= ESTADOS =============
   const [programas, setProgramas] = useState<ProgramaSemanalEntry[]>([]);
@@ -52,6 +54,7 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
   // Estados para puntajes
   const [isPuntajesModalOpen, setIsPuntajesModalOpen] = useState(false);
   const [isRankingModalOpen, setIsRankingModalOpen] = useState(false);
+  const [isConfigPuntajesOpen, setIsConfigPuntajesOpen] = useState(false);
   const [selectedActividad, setSelectedActividad] = useState<{ id: string; nombre: string; rama: string } | null>(null);
 
   // Estados para formularios
@@ -615,6 +618,16 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {puedeConfigurarPuntajes && (
+                <button
+                  type="button"
+                  onClick={() => setIsConfigPuntajesOpen(true)}
+                  className="bg-white/15 text-white border border-white/40 px-6 py-3 rounded-lg hover:bg-white/25 font-medium flex items-center space-x-2 shadow-lg transition-all duration-200"
+                >
+                  <Settings className="w-5 h-5" />
+                  <span>Puntajes</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setImportOpen(true)}
@@ -1772,6 +1785,14 @@ export default function ProgramaSemanalComplete({}: ProgramaSemanalProps) {
             // Recargar datos si es necesario
             loadProgramas(miRama);
           }}
+        />
+      )}
+
+      {/* Modal de Configuración de Puntajes */}
+      {isConfigPuntajesOpen && (
+        <ConfigPuntajes
+          ramaFija={miRama}
+          onClose={() => setIsConfigPuntajesOpen(false)}
         />
       )}
 

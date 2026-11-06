@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
 import ProgramaSemanalService from '../../services/programaSemanalService';
+import {
+  CONFIG_PUNTAJES_DEFAULT, escalaPuestos, puntajePorPuesto, puestosFaltantes,
+} from '../../utils/puntajes';
 
 interface Patrulla {
   id: string;
@@ -11,7 +14,11 @@ interface Patrulla {
 
 interface PuntajePatrulla {
   patrulla_id: string;
+  /** Modo manual */
   puntaje: number;
+  /** Modo por puesto (undefined = sin puesto) */
+  puesto?: number;
+  bonificacion: number;
   observaciones: string;
 }
 
@@ -36,6 +43,9 @@ export default function PuntajesActividad({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // Por puesto (por defecto): la BD calcula los puntos con la escala de la rama
+  const [modoManual, setModoManual] = useState(false);
+  const [puntosRama, setPuntosRama] = useState(CONFIG_PUNTAJES_DEFAULT.puntos);
 
   useEffect(() => {
     cargarDatos();
@@ -49,8 +59,14 @@ export default function PuntajesActividad({
       const patrullasData = await ProgramaSemanalService.obtenerPatrullasPorRama(rama);
       setPatrullas(patrullasData);
 
-      // Cargar puntajes existentes
-      const puntajesData = await ProgramaSemanalService.obtenerPuntajesActividad(actividadId);
+      // Cargar puntajes existentes y configuración de la rama
+      const [puntajesData, config] = await Promise.all([
+        ProgramaSemanalService.obtenerPuntajesActividad(actividadId),
+        ProgramaSemanalService.obtenerConfigPuntajesRama(rama),
+      ]);
+      setPuntosRama(config.puntos);
+      // Puntajes antiguos cargados a mano (sin puesto) se abren en modo manual
+      setModoManual(puntajesData.some(p => !p.puesto && p.puntaje > 0));
       
       // Crear mapa de puntajes
       const puntajesMap = new Map<string, PuntajePatrulla>();
@@ -59,6 +75,8 @@ export default function PuntajesActividad({
         puntajesMap.set(patrulla.id, {
           patrulla_id: patrulla.id,
           puntaje: puntajeExistente?.puntaje || 0,
+          puesto: puntajeExistente?.puesto || undefined,
+          bonificacion: puntajeExistente?.bonificacion || 0,
           observaciones: puntajeExistente?.observaciones || ''
         });
       });
@@ -72,22 +90,36 @@ export default function PuntajesActividad({
     }
   };
 
-  const actualizarPuntaje = (patrullaId: string, campo: 'puntaje' | 'observaciones', valor: any) => {
+  const actualizarPuntaje = (
+    patrullaId: string,
+    campo: 'puntaje' | 'puesto' | 'bonificacion' | 'observaciones',
+    valor: string
+  ) => {
     setPuntajes(prev => {
       const newMap = new Map(prev);
       const puntajeActual = newMap.get(patrullaId) || {
         patrulla_id: patrullaId,
         puntaje: 0,
+        bonificacion: 0,
         observaciones: ''
       };
-      
-      newMap.set(patrullaId, {
-        ...puntajeActual,
-        [campo]: campo === 'puntaje' ? parseInt(valor) || 0 : valor
-      });
-      
+
+      let nuevoValor: string | number | undefined = valor;
+      if (campo === 'puesto') nuevoValor = parseInt(valor) || undefined;
+      else if (campo !== 'observaciones') nuevoValor = parseInt(valor) || 0;
+
+      newMap.set(patrullaId, { ...puntajeActual, [campo]: nuevoValor });
       return newMap;
     });
+  };
+
+  // La escala se arma con las patrullas que tienen puesto (igual que la BD)
+  const conPuesto = Array.from(puntajes.values()).filter(p => p.puesto);
+  const faltantes = puestosFaltantes(conPuesto.map(p => p.puesto!));
+  const totalPatrulla = (p?: PuntajePatrulla) => {
+    if (!p) return 0;
+    if (modoManual) return p.puntaje;
+    return p.puesto ? puntajePorPuesto(puntosRama, conPuesto.length, p.puesto) + p.bonificacion : 0;
   };
 
   const guardarPuntajes = async () => {
@@ -96,12 +128,30 @@ export default function PuntajesActividad({
     setSuccess('');
 
     try {
-      const puntajesArray = Array.from(puntajes.values());
-      
+      let puntajesArray;
+      if (modoManual) {
+        puntajesArray = Array.from(puntajes.values())
+          .filter(p => p.puntaje > 0 || p.observaciones.trim())
+          .map(p => ({ patrulla_id: p.patrulla_id, puntaje: p.puntaje, observaciones: p.observaciones }));
+      } else {
+        if (faltantes.length > 0) {
+          setError(`Falta asignar el ${faltantes.join('°, ')}° puesto: después de un empate sigue el puesto siguiente (1°, 1°, 2°)`);
+          return;
+        }
+        puntajesArray = conPuesto.map(p => ({
+          patrulla_id: p.patrulla_id,
+          puesto: p.puesto,
+          bonificacion: p.bonificacion,
+          observaciones: p.observaciones
+        }));
+      }
+
       const resultado = await ProgramaSemanalService.registrarPuntajesMasivo({
         actividad_id: actividadId,
         puntajes: puntajesArray,
-        registrado_por: 'Sistema' // TODO: Obtener usuario actual
+        registrado_por: 'Sistema', // TODO: Obtener usuario actual
+        // Las patrullas sin puesto/puntaje se quitan de la actividad
+        reemplazar: true
       });
 
       if (resultado.success) {
@@ -122,7 +172,7 @@ export default function PuntajesActividad({
   };
 
   const calcularTotal = () => {
-    return Array.from(puntajes.values()).reduce((sum, p) => sum + p.puntaje, 0);
+    return Array.from(puntajes.values()).reduce((sum, p) => sum + totalPatrulla(p), 0);
   };
 
   return (
@@ -175,6 +225,33 @@ export default function PuntajesActividad({
             </div>
           ) : (
             <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex bg-gray-100 rounded-lg p-1 text-sm font-medium">
+                  <button
+                    onClick={() => setModoManual(false)}
+                    className={`px-4 py-1.5 rounded-md ${!modoManual ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500'}`}
+                  >
+                    Por puesto
+                  </button>
+                  <button
+                    onClick={() => setModoManual(true)}
+                    className={`px-4 py-1.5 rounded-md ${modoManual ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500'}`}
+                  >
+                    Manual
+                  </button>
+                </div>
+                {!modoManual && conPuesto.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    Escala ({conPuesto.length} patrullas): {escalaPuestos(puntosRama, conPuesto.length).join(', ')}
+                  </span>
+                )}
+              </div>
+              {!modoManual && faltantes.length > 0 && (
+                <p className="text-sm text-red-600">
+                  Falta el {faltantes.join('°, ')}° puesto: después de un empate sigue el puesto siguiente (1°, 1°, 2°).
+                </p>
+              )}
+
               {/* Tabla de puntajes */}
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
@@ -183,9 +260,23 @@ export default function PuntajesActividad({
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Patrulla
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                        Puntaje
-                      </th>
+                      {modoManual ? (
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                          Puntaje
+                        </th>
+                      ) : (
+                        <>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                            Puesto
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                            Extra
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                            Pts
+                          </th>
+                        </>
+                      )}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Observaciones
                       </th>
@@ -212,16 +303,46 @@ export default function PuntajesActividad({
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={puntaje?.puntaje || 0}
-                              onChange={(e) => actualizarPuntaje(patrulla.id, 'puntaje', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg font-semibold"
-                            />
-                          </td>
+                          {modoManual ? (
+                            <td className="px-6 py-4">
+                              <input
+                                type="number"
+                                min="0"
+                                value={puntaje?.puntaje || 0}
+                                onChange={(e) => actualizarPuntaje(patrulla.id, 'puntaje', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg font-semibold"
+                              />
+                            </td>
+                          ) : (
+                            <>
+                              <td className="px-4 py-4">
+                                <select
+                                  value={puntaje?.puesto ?? ''}
+                                  onChange={(e) => actualizarPuntaje(patrulla.id, 'puesto', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold"
+                                >
+                                  <option value="">—</option>
+                                  {patrullas.map((_, i) => (
+                                    <option key={i + 1} value={i + 1}>{i + 1}° puesto</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-4">
+                                <input
+                                  type="number"
+                                  value={puntaje?.bonificacion || ''}
+                                  onChange={(e) => actualizarPuntaje(patrulla.id, 'bonificacion', e.target.value)}
+                                  disabled={!puntaje?.puesto}
+                                  placeholder="0"
+                                  title="Puntos adicionales (o negativos)"
+                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center disabled:bg-gray-100"
+                                />
+                              </td>
+                              <td className="px-4 py-4 text-center text-lg font-bold text-blue-700">
+                                {puntaje?.puesto ? totalPatrulla(puntaje) : '—'}
+                              </td>
+                            </>
+                          )}
                           <td className="px-6 py-4">
                             <input
                               type="text"
@@ -238,6 +359,7 @@ export default function PuntajesActividad({
                   <tfoot className="bg-gray-100">
                     <tr>
                       <td className="px-6 py-4 font-bold text-gray-900">TOTAL</td>
+                      {!modoManual && <td colSpan={2}></td>}
                       <td className="px-6 py-4">
                         <div className="text-center text-2xl font-bold text-blue-600">
                           {calcularTotal()}
@@ -256,8 +378,10 @@ export default function PuntajesActividad({
                   <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Consejos para asignar puntajes:</p>
                     <ul className="list-disc list-inside space-y-1 text-blue-700">
-                      <li>Asigna puntajes del 0 al 100 según el desempeño</li>
-                      <li>Agrega observaciones específicas para cada patrulla</li>
+                      <li><strong>Por puesto:</strong> elige el puesto de cada patrulla y los puntos salen de la escala de la rama. En un empate usa el mismo puesto para ambas.</li>
+                      <li><strong>Extra:</strong> puntos adicionales (o negativos) sobre el puesto.</li>
+                      <li><strong>Manual:</strong> escribe el puntaje directamente, para actividades que no se juegan por puestos.</li>
+                      <li>Los puntos de asistencia se suman solos al ranking.</li>
                       <li>Los puntajes se actualizarán automáticamente en el ranking</li>
                     </ul>
                   </div>
