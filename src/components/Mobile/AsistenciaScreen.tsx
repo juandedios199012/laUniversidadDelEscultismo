@@ -4,6 +4,10 @@ import { AsistenciaService } from '../../services/asistenciaService';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { usePermissions } from '../../contexts/PermissionsContext';
+import {
+  CONFIG_PUNTAJES_DEFAULT, calcularPuntajeAsistencia, formatPuntos,
+  type ConfigPuntajesRama,
+} from '../../utils/puntajes';
 
 // Mismo catálogo que usa Programa Semanal (web) — dirigentes.unidad es
 // texto libre, se normaliza contra esto antes de filtrar.
@@ -34,6 +38,7 @@ export default function AsistenciaScreen() {
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [asistencias, setAsistencias] = useState<Record<string, EstadoAsistencia>>({});
   const [patrullaPorScout, setPatrullaPorScout] = useState<Record<string, string>>({});
+  const [configPuntajes, setConfigPuntajes] = useState<Pick<ConfigPuntajesRama, 'puntos' | 'porcentaje_tardanza'>>(CONFIG_PUNTAJES_DEFAULT);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [paso, setPaso] = useState<1 | 2>(1); // Flujo de 2 pasos
@@ -104,11 +109,13 @@ export default function AsistenciaScreen() {
       setScouts(data);
       
       // Cargar asistencias existentes y patrullas de los scouts
-      const [asistenciasExistentes, patrullas] = await Promise.all([
+      const [asistenciasExistentes, patrullas, config] = await Promise.all([
         AsistenciaService.obtenerAsistenciasPorPrograma(programaId),
         AsistenciaService.obtenerPatrullasPorScouts(data.map(s => s.id)),
+        ProgramaSemanalService.obtenerConfigPuntajesRama(programa.rama),
       ]);
       setPatrullaPorScout(patrullas);
+      setConfigPuntajes(config);
       console.log('📋 Asistencias existentes:', asistenciasExistentes);
       
       // Inicializar asistencias: usar existentes si hay, o 'presente' por defecto
@@ -185,14 +192,18 @@ export default function AsistenciaScreen() {
   const justificados = Object.values(asistencias).filter(a => a === 'justificado').length;
   const ausentes = Object.values(asistencias).filter(a => a === 'ausente').length;
 
-  // Presentes por patrulla (scouts sin patrulla se agrupan aparte, al final)
+  // Asistencia y puntos por patrulla (scouts sin patrulla se agrupan aparte, al final).
+  // Los puntos son una vista previa; el valor oficial lo calcula la BD
+  // (vista_puntaje_asistencia_programa) con las asistencias guardadas.
   const SIN_PATRULLA = 'Sin patrulla';
   const resumenPatrullas = Object.entries(
-    scouts.reduce<Record<string, { presentes: number; total: number }>>((acc, scout) => {
+    scouts.reduce<Record<string, { presentes: number; tardanzas: number; total: number }>>((acc, scout) => {
       const nombre = patrullaPorScout[scout.id] || SIN_PATRULLA;
-      acc[nombre] ??= { presentes: 0, total: 0 };
+      acc[nombre] ??= { presentes: 0, tardanzas: 0, total: 0 };
       acc[nombre].total++;
-      if ((asistencias[scout.id] || 'presente') === 'presente') acc[nombre].presentes++;
+      const estado = asistencias[scout.id] || 'presente';
+      if (estado === 'presente') acc[nombre].presentes++;
+      else if (estado === 'tardanza') acc[nombre].tardanzas++;
       return acc;
     }, {})
   ).sort(([a], [b]) =>
@@ -364,22 +375,40 @@ export default function AsistenciaScreen() {
           {/* Presentes por patrulla */}
           {!loading && scouts.length > 0 && (
             <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-700 mb-2">Presentes por patrulla</h3>
-              <div className="divide-y divide-gray-100">
-                {resumenPatrullas.map(([nombre, { presentes: p, total }]) => (
-                  <div key={nombre} className="flex items-center justify-between py-2">
-                    <span className={`text-sm ${nombre === SIN_PATRULLA ? 'text-gray-400 italic' : 'text-gray-800'}`}>
-                      {nombre}
-                    </span>
-                    <span className="text-sm font-semibold text-green-600">
-                      {p}<span className="text-gray-400 font-normal"> / {total}</span>
-                      <span className="ml-2 inline-block w-12 text-right">
-                        {Math.round((p / total) * 100)}%
-                      </span>
-                    </span>
-                  </div>
-                ))}
+              <div className="flex items-baseline justify-between mb-2">
+                <h3 className="font-semibold text-gray-700">Puntos por asistencia</h3>
+                <span className="text-xs text-gray-400">
+                  máx. {formatPuntos(configPuntajes.puntos)} · tarde {formatPuntos(configPuntajes.porcentaje_tardanza)}%
+                </span>
               </div>
+              <div className="divide-y divide-gray-100">
+                {resumenPatrullas.map(([nombre, { presentes: p, tardanzas: t, total }]) => {
+                  const sinPatrulla = nombre === SIN_PATRULLA;
+                  return (
+                    <div key={nombre} className="flex items-center justify-between py-2">
+                      <div className="min-w-0">
+                        <div className={`text-sm ${sinPatrulla ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+                          {nombre}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <span className="text-green-600">{p} P</span>
+                          {' · '}
+                          <span className="text-yellow-600">{t} T</span>
+                          <span className="text-gray-400"> / {total}</span>
+                        </div>
+                      </div>
+                      <span className={`text-base font-bold ${sinPatrulla ? 'text-gray-300' : 'text-purple-600'}`}>
+                        {sinPatrulla
+                          ? '—'
+                          : `${formatPuntos(calcularPuntajeAsistencia(configPuntajes, p, t, total))} pts`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-2">
+                Se suman al ranking al guardar la asistencia.
+              </p>
             </div>
           )}
 
