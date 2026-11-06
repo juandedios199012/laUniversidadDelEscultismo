@@ -7,6 +7,7 @@ import { ProgramaSemanalService } from '../../services/programaSemanalService';
 import { ActividadesExteriorService } from '../../services/actividadesExteriorService';
 import { formatFechaLocal } from '../../utils/dateUtils';
 import { usePermissions } from '../../contexts/PermissionsContext';
+import { CONFIG_PUNTAJES_DEFAULT, formatPuntos, puntajePorPuesto, puestosFaltantes } from '../../utils/puntajes';
 
 // Mismo catálogo que usa Programa Semanal (web) — dirigentes.unidad es
 // texto libre, se normaliza contra esto antes de filtrar.
@@ -42,6 +43,8 @@ interface RankingPatrulla {
   patrulla_nombre: string;
   color_patrulla: string;
   total_puntaje: number;
+  puntaje_actividades: number;
+  puntaje_asistencia: number;
   actividades_participadas: number;
   posicion?: number;
 }
@@ -101,6 +104,11 @@ export default function PuntajesScreen() {
   const [actividadSeleccionada, setActividadSeleccionada] = useState<string>('');
   const [patrullas, setPatrullas] = useState<Patrulla[]>([]);
   const [puntajes, setPuntajes] = useState<Record<string, number>>({});
+  // Modo por puesto (por defecto): la BD calcula los puntos con la escala de la rama
+  const [modoManual, setModoManual] = useState(false);
+  const [puestos, setPuestos] = useState<Record<string, number>>({});
+  const [bonificaciones, setBonificaciones] = useState<Record<string, number>>({});
+  const [puntosRama, setPuntosRama] = useState(CONFIG_PUNTAJES_DEFAULT.puntos);
   const [ranking, setRanking] = useState<RankingPatrulla[]>([]);
   const [mostrarRanking, setMostrarRanking] = useState(false);
   const [rankingExpandido, setRankingExpandido] = useState(false);
@@ -168,8 +176,15 @@ export default function PuntajesScreen() {
     setActividadSeleccionada('');
     setPatrullas([]);
     setPuntajes({});
+    setPuestos({});
+    setBonificaciones({});
     setPasoSemanal(2);
     cargarRankingPrograma(programaId);
+    const programa = programas.find(p => p.id === programaId);
+    if (programa) {
+      ProgramaSemanalService.obtenerConfigPuntajesRama(programa.rama)
+        .then(cfg => setPuntosRama(cfg.puntos));
+    }
   };
 
   const cargarRankingPrograma = async (programaId: string) => {
@@ -199,9 +214,18 @@ export default function PuntajesScreen() {
       const puntajesExistentes = await ProgramaSemanalService.obtenerPuntajesActividad(actividadId);
       
       const puntajesMap: Record<string, number> = {};
+      const puestosMap: Record<string, number> = {};
+      const bonifMap: Record<string, number> = {};
       puntajesExistentes.forEach(p => {
         puntajesMap[p.patrulla_id] = p.puntaje;
+        if (p.puesto) puestosMap[p.patrulla_id] = p.puesto;
+        if (p.bonificacion) bonifMap[p.patrulla_id] = p.bonificacion;
       });
+      // Puntajes antiguos cargados a mano (sin puesto) se abren en modo manual
+      const hayManuales = puntajesExistentes.some(p => !p.puesto && p.puntaje > 0);
+      setModoManual(hayManuales);
+      setPuestos(puestosMap);
+      setBonificaciones(bonifMap);
       
       setPatrullas((patrullasData || []).map(p => ({
         id: p.id,
@@ -228,24 +252,40 @@ export default function PuntajesScreen() {
       return;
     }
 
-    const puntajesArray = Object.entries(puntajes)
-      .filter(([_, puntaje]) => puntaje > 0)
-      .map(([patrullaId, puntaje]) => ({
+    let puntajesArray: Array<{ patrulla_id: string; puntaje?: number; puesto?: number; bonificacion?: number; observaciones?: string }>;
+
+    if (modoManual) {
+      puntajesArray = Object.entries(puntajes)
+        .filter(([_, puntaje]) => puntaje > 0)
+        .map(([patrullaId, puntaje]) => ({ patrulla_id: patrullaId, puntaje, observaciones: '' }));
+      if (puntajesArray.length === 0) {
+        setMensaje('⚠️ Ingresa al menos un puntaje');
+        return;
+      }
+    } else {
+      if (faltantes.length > 0) {
+        setMensaje(`⚠️ Falta asignar el ${faltantes.join('°, ')}° puesto`);
+        return;
+      }
+      puntajesArray = Object.entries(puestos).map(([patrullaId, puesto]) => ({
         patrulla_id: patrullaId,
-        puntaje,
+        puesto,
+        bonificacion: bonificaciones[patrullaId] || 0,
         observaciones: ''
       }));
-
-    if (puntajesArray.length === 0) {
-      setMensaje('⚠️ Ingresa al menos un puntaje');
-      return;
+      if (puntajesArray.length === 0) {
+        setMensaje('⚠️ Asigna el puesto de al menos una patrulla');
+        return;
+      }
     }
 
     setLoading(true);
     try {
       const result = await ProgramaSemanalService.registrarPuntajesMasivo({
         actividad_id: actividadSeleccionada,
-        puntajes: puntajesArray
+        puntajes: puntajesArray,
+        // Lo que se desmarcó en pantalla se quita de la actividad
+        reemplazar: true
       });
 
       if (result.success) {
@@ -280,12 +320,32 @@ export default function PuntajesScreen() {
     setActividadSeleccionada('');
     setPatrullas([]);
     setPuntajes({});
+    setPuestos({});
+    setBonificaciones({});
   };
 
   const handlePuntajeChange = (patrullaId: string, valor: string) => {
     const valorNum = parseInt(valor) || 0;
     setPuntajes({ ...puntajes, [patrullaId]: valorNum });
   };
+
+  // Tocar el puesto ya elegido lo desmarca. Empates: varias patrullas con el mismo puesto.
+  const togglePuesto = (patrullaId: string, puesto: number) => {
+    const nuevos = { ...puestos };
+    if (nuevos[patrullaId] === puesto) delete nuevos[patrullaId];
+    else nuevos[patrullaId] = puesto;
+    setPuestos(nuevos);
+  };
+
+  const handleBonificacionChange = (patrullaId: string, valor: string) => {
+    setBonificaciones({ ...bonificaciones, [patrullaId]: parseInt(valor) || 0 });
+  };
+
+  // La escala se arma con las patrullas que tienen puesto (igual que la BD)
+  const patrullasConPuesto = Object.keys(puestos).length;
+  // Puestos consecutivos: 1°, 1°, 2° es válido; 1°, 1°, 3° no (el empate no salta puestos)
+  const faltantes = puestosFaltantes(Object.values(puestos));
+  const puntosDePuesto = (puesto: number) => puntajePorPuesto(puntosRama, patrullasConPuesto, puesto);
 
   // ===== AIRE LIBRE =====
 
@@ -616,7 +676,7 @@ export default function PuntajesScreen() {
                               'bg-linear-to-br from-orange-400 to-orange-500'
                             }`}>
                               <div className="text-center">
-                                <div className="text-lg font-bold">{p.total_puntaje}</div>
+                                <div className="text-lg font-bold">{formatPuntos(p.total_puntaje)}</div>
                                 <div className="text-[10px] opacity-90">{i + 1}° Lugar</div>
                               </div>
                             </div>
@@ -644,9 +704,12 @@ export default function PuntajesScreen() {
                                   </div>
                                   <div className="flex-1">
                                     <div className="font-semibold text-gray-800">{patrulla.patrulla_nombre}</div>
-                                    <div className="text-xs text-gray-500">{patrulla.actividades_participadas} act.</div>
+                                    <div className="text-xs text-gray-500">
+                                      {patrulla.actividades_participadas} act.: {formatPuntos(patrulla.puntaje_actividades)}
+                                      {' · '}asistencia: {formatPuntos(patrulla.puntaje_asistencia)}
+                                    </div>
                                   </div>
-                                  <div className="text-xl font-bold text-purple-600">{patrulla.total_puntaje}</div>
+                                  <div className="text-xl font-bold text-purple-600">{formatPuntos(patrulla.total_puntaje)}</div>
                                 </div>
                               ))}
                             </div>
@@ -702,47 +765,140 @@ export default function PuntajesScreen() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700 flex items-center">
-                    <TrendingUp className="w-5 h-5 mr-2" />
-                    Asignar Puntajes
-                    {!puedeRegistrarPuntajes && (
-                      <Lock className="w-4 h-4 ml-2 text-yellow-600" />
-                    )}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-700 flex items-center">
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      Asignar Puntajes
+                      {!puedeRegistrarPuntajes && (
+                        <Lock className="w-4 h-4 ml-2 text-yellow-600" />
+                      )}
+                    </h3>
+                    <div className="flex bg-gray-100 rounded-lg p-0.5 text-xs font-medium">
+                      <button
+                        onClick={() => setModoManual(false)}
+                        className={`px-3 py-1.5 rounded-md ${!modoManual ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500'}`}
+                      >
+                        Por puesto
+                      </button>
+                      <button
+                        onClick={() => setModoManual(true)}
+                        className={`px-3 py-1.5 rounded-md ${modoManual ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500'}`}
+                      >
+                        Manual
+                      </button>
+                    </div>
+                  </div>
+
+                  {!modoManual && (
+                    <p className="text-xs text-gray-500">
+                      Toca el puesto de cada patrulla. En un empate, elige el mismo puesto para ambas.
+                      {patrullasConPuesto > 0 && (
+                        <> Escala: {Array.from({ length: patrullasConPuesto }, (_, i) => puntosDePuesto(i + 1)).join(', ')}</>
+                      )}
+                    </p>
+                  )}
+                  {!modoManual && faltantes.length > 0 && (
+                    <p className="text-xs text-red-600">
+                      Falta el {faltantes.join('°, ')}° puesto: después de un empate sigue el puesto siguiente (1°, 1°, 2°).
+                    </p>
+                  )}
 
                   {patrullas.map(patrulla => {
-                    const puntajeActual = puntajes[patrulla.id];
-                    const tienePuntaje = puntajeActual !== undefined && puntajeActual > 0;
-                    
-                    return (
-                      <div key={patrulla.id} className={`bg-white rounded-xl p-4 shadow border-2 transition-all ${
-                        tienePuntaje ? 'border-green-400 bg-green-50' : 'border-gray-200'
-                      }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
+                    if (modoManual) {
+                      const puntajeActual = puntajes[patrulla.id];
+                      const tienePuntaje = puntajeActual !== undefined && puntajeActual > 0;
+                      return (
+                        <div key={patrulla.id} className={`bg-white rounded-xl p-4 shadow border-2 transition-all ${
+                          tienePuntaje ? 'border-green-400 bg-green-50' : 'border-gray-200'
+                        }`}>
+                          <div className="flex items-center space-x-2 mb-3">
                             <Star className={`w-5 h-5 ${tienePuntaje ? 'text-green-500' : 'text-yellow-500'}`} />
                             <span className="font-semibold">{patrulla.nombre}</span>
                             {tienePuntaje && (
                               <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">✓</span>
                             )}
                           </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min="0"
+                              value={puntajeActual || ''}
+                              onChange={(e) => handlePuntajeChange(patrulla.id, e.target.value)}
+                              disabled={!puedeRegistrarPuntajes}
+                              placeholder="Puntos"
+                              className={`flex-1 p-3 border-2 rounded-lg text-lg text-center font-semibold transition-all ${
+                                !puedeRegistrarPuntajes ? 'bg-gray-100 cursor-not-allowed' :
+                                tienePuntaje ? 'border-green-400 bg-white text-green-700' : 'border-gray-300 text-gray-700'
+                              }`}
+                            />
+                            <span className="text-gray-500">pts</span>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={puntajeActual || ''}
-                            onChange={(e) => handlePuntajeChange(patrulla.id, e.target.value)}
-                            disabled={!puedeRegistrarPuntajes}
-                            placeholder="Puntos"
-                            className={`flex-1 p-3 border-2 rounded-lg text-lg text-center font-semibold transition-all ${
-                              !puedeRegistrarPuntajes ? 'bg-gray-100 cursor-not-allowed' :
-                              tienePuntaje ? 'border-green-400 bg-white text-green-700' : 'border-gray-300 text-gray-700'
-                            }`}
-                          />
-                          <span className="text-gray-500">pts</span>
+                      );
+                    }
+
+                    const puesto = puestos[patrulla.id];
+                    const bonif = bonificaciones[patrulla.id] || 0;
+                    const base = puesto ? puntosDePuesto(puesto) : 0;
+                    return (
+                      <div key={patrulla.id} className={`bg-white rounded-xl p-4 shadow border-2 transition-all ${
+                        puesto ? 'border-green-400 bg-green-50' : 'border-gray-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <Star className={`w-5 h-5 ${puesto ? 'text-green-500' : 'text-yellow-500'}`} />
+                            <span className="font-semibold">{patrulla.nombre}</span>
+                          </div>
+                          {puesto && (
+                            <span className="text-lg font-bold text-green-700">
+                              {base + bonif} pts
+                              {bonif !== 0 && (
+                                <span className="block text-[10px] font-normal text-gray-500 text-right">
+                                  {base} {bonif > 0 ? '+' : '−'} {Math.abs(bonif)}
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                          {patrullas.map((_, i) => {
+                            const n = i + 1;
+                            const activo = puesto === n;
+                            return (
+                              <button
+                                key={n}
+                                onClick={() => togglePuesto(patrulla.id, n)}
+                                disabled={!puedeRegistrarPuntajes}
+                                className={`w-11 h-11 rounded-full font-bold text-sm border-2 transition-all disabled:opacity-50 ${
+                                  activo
+                                    ? n === 1 ? 'bg-yellow-400 border-yellow-500 text-white'
+                                      : n === 2 ? 'bg-gray-400 border-gray-500 text-white'
+                                      : n === 3 ? 'bg-orange-400 border-orange-500 text-white'
+                                      : 'bg-blue-500 border-blue-600 text-white'
+                                    : 'bg-white border-gray-300 text-gray-600'
+                                }`}
+                              >
+                                {n}°
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {puesto && (
+                          <div className="flex items-center space-x-2 mt-3">
+                            <span className="text-sm text-gray-600">Extra</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              value={bonif || ''}
+                              onChange={(e) => handleBonificacionChange(patrulla.id, e.target.value)}
+                              disabled={!puedeRegistrarPuntajes}
+                              placeholder="0"
+                              className="w-24 p-2 border-2 border-gray-300 rounded-lg text-center font-semibold"
+                            />
+                            <span className="text-xs text-gray-400">pts adicionales (o negativos)</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

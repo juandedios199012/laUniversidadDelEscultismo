@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { CONFIG_PUNTAJES_DEFAULT, type ConfigPuntajesRama } from '../utils/puntajes';
 
 /**
  * ======================================================================
@@ -408,19 +409,28 @@ export class ProgramaSemanalService {
    */
   static async registrarPuntajesMasivo(data: {
     actividad_id: string;
+    /**
+     * Con `puesto` el puntaje lo calcula la BD (escala por puesto + bonificacion);
+     * sin `puesto` se guarda `puntaje` tal cual (modo manual).
+     */
     puntajes: Array<{
       patrulla_id: string;
-      puntaje: number;
+      puntaje?: number;
+      puesto?: number | null;
+      bonificacion?: number;
       observaciones?: string;
     }>;
     registrado_por?: string;
+    /** true: elimina de la actividad las patrullas que no vienen en `puntajes` */
+    reemplazar?: boolean;
   }): Promise<{ success: boolean; puntajes_registrados?: number; error?: string }> {
     try {
       const { data: result, error } = await supabase
         .rpc('api_registrar_puntajes_masivo', {
           p_actividad_id: data.actividad_id,
           p_puntajes: data.puntajes,
-          p_registrado_por: data.registrado_por || null
+          p_registrado_por: data.registrado_por || null,
+          p_reemplazar: data.reemplazar ?? false
         });
 
       if (error) throw error;
@@ -441,6 +451,9 @@ export class ProgramaSemanalService {
     patrulla_color: string;
     animal_totem: string;
     puntaje: number;
+    puesto: number | null;
+    puntaje_base: number | null;
+    bonificacion: number;
     observaciones?: string;
     registrado_por?: string;
     fecha_registro: string;
@@ -467,7 +480,12 @@ export class ProgramaSemanalService {
     patrulla_nombre: string;
     color_patrulla: string;
     total_puntaje: number;
+    puntaje_actividades: number;
+    puntaje_asistencia: number;
     actividades_participadas: number;
+    asistencia_presentes: number;
+    asistencia_tardanzas: number;
+    asistencia_total_miembros: number;
   }>> {
     try {
       const { data, error } = await supabase
@@ -476,10 +494,68 @@ export class ProgramaSemanalService {
         });
 
       if (error) throw error;
-      return data || [];
+      // NUMERIC llega como number; se normaliza por si algún driver lo manda como string
+      return (data || []).map((t: any) => ({
+        ...t,
+        total_puntaje: Number(t.total_puntaje) || 0,
+        puntaje_actividades: Number(t.puntaje_actividades) || 0,
+        puntaje_asistencia: Number(t.puntaje_asistencia) || 0,
+      }));
     } catch (error) {
       console.error('❌ Error al obtener totales:', error);
       return [];
+    }
+  }
+
+  /** ⚙️ Configuración de puntajes de todas las ramas que tienen fila */
+  static async obtenerConfigPuntajesTodas(): Promise<ConfigPuntajesRama[]> {
+    try {
+      const { data, error } = await supabase.rpc('api_obtener_config_puntajes_rama', { p_rama: null });
+      if (error) throw error;
+      return (data || []).map((c: any) => ({
+        rama: c.rama,
+        puntos: Number(c.puntos),
+        porcentaje_tardanza: Number(c.porcentaje_tardanza),
+      }));
+    } catch (error) {
+      console.error('❌ Error al obtener config de puntajes:', error);
+      return [];
+    }
+  }
+
+  /** ⚙️ Guardar configuración de puntajes de una rama (requiere programa_semanal:editar) */
+  static async actualizarConfigPuntajesRama(config: ConfigPuntajesRama): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('api_actualizar_config_puntajes_rama', {
+        p_rama: config.rama,
+        p_puntos: config.puntos,
+        p_porcentaje_tardanza: config.porcentaje_tardanza,
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Error al guardar config de puntajes:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
+  /**
+   * ⚙️ Configuración de puntajes de una rama (máximo de asistencia / 1er puesto
+   * y % de tardanza). Sin configuración: 100 pts y 50 %.
+   */
+  static async obtenerConfigPuntajesRama(rama: string): Promise<ConfigPuntajesRama> {
+    try {
+      const { data, error } = await supabase
+        .rpc('api_obtener_config_puntajes_rama', { p_rama: rama });
+      if (error) throw error;
+      return {
+        rama,
+        puntos: Number(data?.puntos) || CONFIG_PUNTAJES_DEFAULT.puntos,
+        porcentaje_tardanza: Number(data?.porcentaje_tardanza ?? CONFIG_PUNTAJES_DEFAULT.porcentaje_tardanza),
+      };
+    } catch (error) {
+      console.error('❌ Error al obtener config de puntajes:', error);
+      return { rama, ...CONFIG_PUNTAJES_DEFAULT };
     }
   }
 
