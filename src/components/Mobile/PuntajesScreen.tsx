@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Award, TrendingUp, Star, AlertCircle, Calendar, ChevronRight, Trophy, 
-  Mountain, Tent, ChevronLeft, Lock, Save
+  Mountain, Tent, ChevronLeft, Lock, Save, ChevronDown, FileText
 } from 'lucide-react';
 import { ProgramaSemanalService } from '../../services/programaSemanalService';
 import { ActividadesExteriorService } from '../../services/actividadesExteriorService';
@@ -30,6 +30,11 @@ interface Actividad {
   id: string;
   nombre: string;
   duracion_minutos?: number;
+  desarrollo?: string;
+  hora_inicio?: string;
+  responsable?: string;
+  materiales?: string[];
+  observaciones?: string;
 }
 
 interface Patrulla {
@@ -113,6 +118,7 @@ export default function PuntajesScreen() {
   const [mostrarRanking, setMostrarRanking] = useState(false);
   const [rankingExpandido, setRankingExpandido] = useState(false);
   const [pasoSemanal, setPasoSemanal] = useState<1 | 2 | 3>(1);
+  const [detalleExpandido, setDetalleExpandido] = useState(false);
 
   // Estado Aire Libre
   const [actividadesAireLibre, setActividadesAireLibre] = useState<ActividadAireLibre[]>([]);
@@ -159,7 +165,14 @@ export default function PuntajesScreen() {
         actividades: (p.actividades || p.programa_actividades || []).map((act: any) => ({
           id: act.id,
           nombre: act.nombre || 'Sin nombre',
-          duracion_minutos: act.duracion_minutos
+          duracion_minutos: act.duracion_minutos,
+          desarrollo: act.desarrollo || act.descripcion || '',
+          hora_inicio: act.hora_inicio || '',
+          responsable: act.responsable || '',
+          materiales: Array.isArray(act.materiales)
+            ? act.materiales.filter((m: any) => typeof m === 'string' && m.trim())
+            : [],
+          observaciones: act.observaciones || ''
         }))
       })).filter(p => p.actividades.length > 0);
       
@@ -205,6 +218,7 @@ export default function PuntajesScreen() {
 
   const seleccionarActividadSemanal = async (actividadId: string) => {
     setActividadSeleccionada(actividadId);
+    setDetalleExpandido(false);
     const programa = programas.find(p => p.id === programaSeleccionado);
     if (!programa) return;
 
@@ -751,6 +765,86 @@ export default function PuntajesScreen() {
                 <ChevronLeft className="w-4 h-4" />
                 <span>Volver a actividades</span>
               </button>
+
+              {/* Detalle de la actividad (definido en Programa Semanal web).
+                  Colapsado por defecto para no empujar la lista de patrullas. */}
+              {(() => {
+                const act = programas
+                  .find(p => p.id === programaSeleccionado)
+                  ?.actividades.find(a => a.id === actividadSeleccionada);
+                if (!act) return null;
+                const tieneDetalle = !!(act.desarrollo || act.materiales?.length || act.observaciones || act.responsable);
+                return (
+                  <div className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+                    <button
+                      onClick={() => tieneDetalle && setDetalleExpandido(!detalleExpandido)}
+                      className="w-full p-4 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                            <FileText className="w-3.5 h-3.5" /> Actividad
+                          </p>
+                          <h4 className="font-semibold text-gray-800">{act.nombre}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {act.hora_inicio && <>🕐 {act.hora_inicio.slice(0, 5)} </>}
+                            {act.duracion_minutos ? <>⏱️ {act.duracion_minutos} min</> : null}
+                          </p>
+                        </div>
+                        {tieneDetalle && (
+                          <ChevronDown className={`w-5 h-5 text-gray-400 shrink-0 transition-transform ${detalleExpandido ? 'rotate-180' : ''}`} />
+                        )}
+                      </div>
+                      {act.desarrollo && !detalleExpandido && (
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2 whitespace-pre-line">{act.desarrollo}</p>
+                      )}
+                      {tieneDetalle && !detalleExpandido && (
+                        <p className="text-xs text-blue-600 font-medium mt-1">Ver desarrollo completo</p>
+                      )}
+                    </button>
+                    {detalleExpandido && (
+                      <div className="border-t border-gray-100">
+                      {/* Altura máxima con scroll interno: un desarrollo largo no
+                          empuja la sección de puntajes fuera de la pantalla. */}
+                      <div className="px-4 pt-3 pb-2 space-y-3 text-sm max-h-[40vh] overflow-y-auto overscroll-contain">
+                        {act.desarrollo && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Desarrollo</p>
+                            <p className="text-gray-700 whitespace-pre-line">{act.desarrollo}</p>
+                          </div>
+                        )}
+                        {act.responsable && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Responsable</p>
+                            <p className="text-gray-700">{act.responsable}</p>
+                          </div>
+                        )}
+                        {act.materiales && act.materiales.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Materiales</p>
+                            <ul className="list-disc list-inside text-gray-700">
+                              {act.materiales.map((m, i) => <li key={i}>{m}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        {act.observaciones && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Observaciones</p>
+                            <p className="text-gray-700 whitespace-pre-line">{act.observaciones}</p>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setDetalleExpandido(false)}
+                        className="w-full px-4 py-2 text-xs text-blue-600 font-medium border-t border-gray-100 flex items-center justify-center gap-1"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5 rotate-180" /> Ocultar detalle
+                      </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {loading ? (
                 <div className="text-center py-12">
