@@ -5,6 +5,7 @@
 
 import { pdf, type DocumentProps } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
+import { supabase } from '../../../lib/supabase';
 import {
   ReportConfig,
   ReportGenerationResult,
@@ -96,8 +97,6 @@ export async function savePDFToSupabase(
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     // Nota: Esto requiere que hayas configurado el bucket 'reports' en Supabase Storage
-    const { supabase } = await import('../../../lib/supabase');
-    
     const { error } = await supabase.storage
       .from(bucket)
       .upload(fileName, blob, {

@@ -1,0 +1,29 @@
+{
+  "name": "Sistema de Gestión Scout - Grupo Lima 12",
+  "short_name": "Scout Lima 12",
+  "description": "Sistema integral de gestión para el Grupo Scout Lima 12",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "es-PE",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

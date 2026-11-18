@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import LandingPage from './pages/LandingPage.tsx';
 import PropuestaPatrullaMobile from './pages/PropuestaPatrullaMobile.tsx';
@@ -45,21 +46,16 @@ if (!rootElement) {
   }
 }
 
-// Registrar Service Worker para funcionalidad PWA offline
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        console.log('✅ Service Worker registrado:', registration.scope);
-        
-        // Verificar actualizaciones cada 1 hora
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-      })
-      .catch((error) => {
-        console.log('❌ Error al registrar Service Worker:', error);
-      });
-  });
-}
+// Service Worker (PWA): lo genera vite-plugin-pwa (Workbox) en el build.
+// registerType 'autoUpdate' activa la versión nueva sola; además se busca
+// actualización cada hora para pestañas que quedan abiertas mucho tiempo.
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, registration) {
+    if (!registration) return;
+    setInterval(() => registration.update(), 60 * 60 * 1000);
+  },
+  onRegisterError(error) {
+    console.log('❌ Error al registrar Service Worker:', error);
+  },
+});

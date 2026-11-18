@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -226,7 +227,7 @@ const GestionarAutorizacionDialog: React.FC<GestionarAutorizacionDialogProps> = 
             const fileName = `autorizacion_${participante.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
             const filePath = `autorizaciones/${actividadId}/${fileName}`;
 
-            const { error: uploadError } = await (await import('@/lib/supabase')).supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('finanzas')
               .upload(filePath, file, {
                 cacheControl: '3600',
@@ -236,7 +237,7 @@ const GestionarAutorizacionDialog: React.FC<GestionarAutorizacionDialogProps> = 
             if (uploadError) throw uploadError;
 
             // Obtener URL pública
-            const { data: { publicUrl } } = (await import('@/lib/supabase')).supabase.storage
+            const { data: { publicUrl } } = supabase.storage
               .from('finanzas')
               .getPublicUrl(filePath);
 
