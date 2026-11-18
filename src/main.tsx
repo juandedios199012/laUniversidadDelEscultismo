@@ -5,6 +5,7 @@ import App from './App.tsx';
 import LandingPage from './pages/LandingPage.tsx';
 import PropuestaPatrullaMobile from './pages/PropuestaPatrullaMobile.tsx';
 import EvaluacionPublica from './pages/EvaluacionPublica.tsx';
+import { RegistroAireLibrePublico } from './modules/registroAireLibre';
 import './index.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -25,6 +26,8 @@ if (!rootElement) {
           <Route path="/p/:token" element={<PropuestaPatrullaMobile />} />
           {/* Link público de encuestas de Evaluación — sin login, el scout se identifica buscando su nombre (ver database/150_evaluacion_modulo.sql) */}
           <Route path="/e/:codigo" element={<EvaluacionPublica />} />
+          {/* Formulario público de registro al Programa al Aire Libre — sin login (maqueta UI, ver src/modules/registroAireLibre) */}
+          <Route path="/inscripcion/:codigo" element={<RegistroAireLibrePublico />} />
           <Route path="/*"  element={<App />} />
         </Routes>
       </BrowserRouter>
