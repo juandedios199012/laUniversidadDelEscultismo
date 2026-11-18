@@ -1,7 +1,12 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*", "/sw.js", "/manifest.json"]
+    "exclude": [
+      "/assets/*",
+      "/images/*",
+      "/templates/*",
+      "/*.{js,mjs,css,json,webmanifest,png,jpg,jpeg,gif,svg,ico,webp,woff,woff2,pdf}"
+    ]
   },
   "globalHeaders": {
     "X-Frame-Options": "DENY",
@@ -12,7 +17,8 @@
   "mimeTypes": {
     ".json": "application/json",
     ".js": "application/javascript",
-    ".mjs": "application/javascript"
+    ".mjs": "application/javascript",
+    ".webmanifest": "application/manifest+json"
   },
   "routes": [
     {
@@ -34,12 +40,9 @@
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["anonymous"]
+      "allowedRoles": [
+        "anonymous"
+      ]
     }
-  ],
-  "responseOverrides": {
-    "404": {
-      "rewrite": "/index.html"
-    }
-  }
+  ]
 }
