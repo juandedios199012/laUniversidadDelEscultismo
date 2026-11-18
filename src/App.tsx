@@ -27,6 +27,7 @@ import Asistencia from './components/Asistencia/Asistencia';
 import Inventario from './components/Inventario/Inventario';
 import { FinanzasDashboard } from './components/Finanzas';
 import { ActividadesExteriorDashboard } from './components/ActividadesExterior';
+import { RegistroAireLibreAdmin } from './modules/registroAireLibre';
 import Maps from './components/Maps/Maps';
 import MobileApp from './components/Mobile/MobileApp';
 import SeguridadDashboard from './components/Seguridad/SeguridadDashboard';
@@ -130,6 +131,8 @@ function AppContent() {
         return <ConceptosFinanzas />;
       case 'actividades-exterior':
         return <ActividadesExteriorDashboard />;
+      case 'registro-aire-libre':
+        return <RegistroAireLibreAdmin />;
       case 'config-tipos-actividad-aire-libre':
         return <TiposActividadAireLibre />;
       case 'config-puntos-encuentro-aire-libre':

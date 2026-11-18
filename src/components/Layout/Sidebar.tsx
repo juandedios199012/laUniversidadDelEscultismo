@@ -95,6 +95,7 @@ const menuGroups: MenuGroup[] = [
       { id: 'evaluacion',          label: 'Evaluación',  icon: ClipboardList, gradient: 'from-fuchsia-500 to-pink-500',   modulo: 'evaluacion'          },
       { id: 'asistencia',          label: 'Asistencia',  icon: ClipboardCheck, gradient: 'from-pink-500 to-rose-500',    modulo: 'asistencia'          },
       { id: 'actividades-exterior', label: 'Aire Libre', icon: Tent,           gradient: 'from-green-600 to-teal-600',   modulo: 'actividades_exterior' },
+      { id: 'registro-aire-libre', label: 'Registro Aire Libre', icon: ClipboardList, gradient: 'from-green-600 to-teal-600', modulo: 'actividades_exterior' },
       { id: 'config-tipos-actividad-aire-libre', label: 'Tipos de Actividad', icon: Settings, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-puntos-encuentro-aire-libre', label: 'Puntos de Encuentro', icon: MapPin, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
       { id: 'config-tipos-costo-aire-libre', label: 'Tipos de Costo', icon: Wallet, gradient: 'from-green-500 to-teal-500', modulo: 'actividades_exterior' },
