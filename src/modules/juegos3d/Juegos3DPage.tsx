@@ -44,6 +44,9 @@ export default function Juegos3DPage() {
       <AuroraBackground />
       <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
         <AppHeader />
+        <span className="self-start rounded-full bg-amber-400/20 px-3 py-1 text-xs font-semibold text-amber-200">
+          PRUEBA_DESPLIEGUE
+        </span>
         <CurrentGameBar game={playback.game} onOpenCatalog={openCatalog} />
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
